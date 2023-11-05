@@ -10,13 +10,15 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "antd": "^5.7.0",
+    "@tauri-apps/api": "^1.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@tauri-apps/api": "^1.4.0"
+    "styled-components": "^6.1.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^1.4.0",
     "@vitejs/plugin-react": "^4.0.3",
-    "vite": "^4.4.4",
-    "@tauri-apps/cli": "^1.4.0"
+    "vite": "^4.4.4"
   }
 }

@@ -1,73 +1,120 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+use std::sync::Mutex;
 use std::time::Duration;
-use zookeeper::recipes::cache::PathChildrenCache;
-use zookeeper::{Acl, CreateMode, WatchedEvent, Watcher, ZooKeeper};
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-struct LoggingWatcher;
-impl Watcher for LoggingWatcher {
-    fn handle(&self, e: WatchedEvent) {
-        println!("{:?}", e)
-    }
-}
-fn main() {
-    zookeeper();
+mod common_tools;
+mod sql_lite;
+mod vojo;
+use crate::common_tools::cmd::*;
+use log::LevelFilter;
+#[macro_use]
+extern crate anyhow;
+#[macro_use]
+extern crate log;
+use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use std::sync::RwLock;
+use tauri::Manager;
+use tauri::SystemTray;
+use tauri::{CustomMenuItem, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+use tokio::time::sleep;
+fn main() -> Result<(), anyhow::Error> {
+    let quit = CustomMenuItem::new("quit".to_string(), "退出");
+    let show = CustomMenuItem::new("show".to_string(), "显示");
+    let tray_menu = SystemTrayMenu::new()
+        .add_item(show)
+        .add_native_item(SystemTrayMenuItem::Separator)
+        .add_item(quit);
+    let system_tray = SystemTray::new().with_menu(tray_menu);
+    let sql_lite = SqlLite::new()?;
+    let sql_lite_state = SqlLiteState(Mutex::new(sql_lite));
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(sql_lite_state)
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(LevelFilter::Info)
+                .build(),
+        )
+        .on_window_event(|event| match event.event() {
+            tauri::WindowEvent::CloseRequested { api, .. } => {
+                event.window().hide().unwrap();
+                api.prevent_close();
+            }
+            _ => {}
+        })
+        .setup(|app| {
+            let main_window = app.get_window("main").unwrap();
+            // we perform the initialization code on a new task so the app doesn't freeze
+            tauri::async_runtime::spawn(async move {
+                // adapt sleeping time to be long enough
+                sleep(Duration::from_millis(500)).await;
+                main_window.show().unwrap();
+            });
+
+            Ok(())
+        })
+        .system_tray(system_tray)
+        .on_system_tray_event(|app, event| match event {
+            SystemTrayEvent::LeftClick {
+                position: _,
+                size: _,
+                ..
+            } => {
+                let window = app.get_window("main").unwrap();
+                window.show().unwrap();
+                info!("system tray received a left click");
+            }
+
+            SystemTrayEvent::DoubleClick {
+                position: _,
+                size: _,
+                ..
+            } => {
+                // let window = app.create_tao_window();
+                info!("system tray received a double click");
+            }
+            SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+                "quit" => {
+                    std::process::exit(0);
+                }
+                "show" => {
+                    let window = app.get_window("main").unwrap();
+                    window.show().unwrap();
+                }
+                _ => {}
+            },
+            _ => {}
+        })
+        .invoke_handler(tauri::generate_handler![
+            base64_encode,
+            base64_decode,
+            base64_encode_of_image,
+            base64_save_image,
+            to_cdb,
+            to_dbc,
+            url_encode,
+            url_decode,
+            get_current_timestamp,
+            format_datetime_to_timestamp,
+            format_timestamp_to_datetime,
+            digest_all,
+            get_sm2_keypair,
+            sm2_encrypt,
+            sm2_decrypt,
+            sm3_encrypt,
+            sm4_encrypt,
+            sm4_decrypt,
+            get_qrcode,
+            get_barcode,
+            export_qrcode,
+            export_barcode,
+            format_pretty_json,
+            format_pretty_yaml,
+            format_pretty_xml,
+            get_about_version,
+            get_menu_config,
+            set_menu_index
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
-}
-fn zookeeper() {
-    let zk_url = "localhost:2181";
-    let zk = ZooKeeper::connect(zk_url, Duration::from_secs(15), LoggingWatcher).unwrap();
-
-    zk.add_listener(|zk_state| println!("New ZkState is {:?}", zk_state));
-
-    let mut tmp = String::new();
-
-    let auth = zk.add_auth("digest", vec![1, 2, 3, 4]);
-
-    println!("authenticated -> {:?}", auth);
-
-    let path = zk.create(
-        "/test",
-        vec![1, 2],
-        Acl::open_unsafe().clone(),
-        CreateMode::Ephemeral,
-    );
-
-    println!("created -> {:?}", path);
-
-    let exists = zk.exists("/test", true);
-
-    println!("exists -> {:?}", exists);
-
-    let doesnt_exist = zk.exists("/blabla", true);
-
-    println!("don't exists path -> {:?}", doesnt_exist);
-
-    let get_acl = zk.get_acl("/test");
-
-    println!("get_acl -> {:?}", get_acl);
-
-    let set_acl = zk.set_acl("/test", Acl::open_unsafe().clone(), None);
-
-    println!("set_acl -> {:?}", set_acl);
-
-    let children = zk.get_children("/", true);
-
-    println!("children of / -> {:?}", children);
-
-    let set_data = zk.set_data("/test", vec![6, 5, 4, 3], None);
-
-    println!("set_data -> {:?}", set_data);
-
-    let get_data = zk.get_data("/test", true);
-
-    println!("get_data -> {:?}", get_data);
+    Ok(())
 }

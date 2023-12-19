@@ -3,6 +3,7 @@
 use std::sync::Mutex;
 use std::time::Duration;
 mod common_tools;
+mod mysql;
 mod sql_lite;
 mod vojo;
 use crate::common_tools::cmd::*;

@@ -402,39 +402,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "code_magic"
-version = "0.0.19"
-dependencies = [
- "aes",
- "anyhow",
- "barcoders",
- "base64 0.21.5",
- "chrono",
- "colorsys",
- "dirs",
- "gmsm",
- "hex 0.4.3",
- "image 0.24.7",
- "log",
- "md-5",
- "num",
- "percent-encoding",
- "qrcode-generator",
- "quick-xml",
- "rusqlite",
- "serde",
- "serde_json",
- "serde_repr",
- "serde_yaml",
- "sha2",
- "tauri",
- "tauri-build",
- "tauri-plugin-log",
- "tokio",
- "uuid",
-]
-
-[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -762,6 +729,39 @@ name = "dunce"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56ce8c6da7551ec6c462cbaf3bfbc75131ebbfa1c944aeaa9dab51ca1c5f0c3b"
+
+[[package]]
+name = "easy_viewer"
+version = "0.0.1"
+dependencies = [
+ "aes",
+ "anyhow",
+ "barcoders",
+ "base64 0.21.5",
+ "chrono",
+ "colorsys",
+ "dirs",
+ "gmsm",
+ "hex 0.4.3",
+ "image 0.24.7",
+ "log",
+ "md-5",
+ "num",
+ "percent-encoding",
+ "qrcode-generator",
+ "quick-xml",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "serde_yaml",
+ "sha2",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-log",
+ "tokio",
+ "uuid",
+]
 
 [[package]]
 name = "either"

@@ -10,7 +10,7 @@
 - 调色板
 - 文本对比工具
 - 国密算法(SM2,SM3,SM4)
-
+ss
 ## relase 下载地址
 https://github.com/lsk569937453/code-magic-public/releases
 ## 一些截图

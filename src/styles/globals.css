@@ -95,3 +95,8 @@
       "calt" 1;
   }
 }
+@layer components {
+  input,textarea {
+   @apply focus:border-transparent focus:ring-0
+  }
+}

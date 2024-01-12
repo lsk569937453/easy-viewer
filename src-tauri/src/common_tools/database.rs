@@ -81,7 +81,10 @@ pub async fn test_url_with_error(
         DateBaseType::Sqlite => SqliteConnection::connect(&source_url).await.map(|_| ()),
         DateBaseType::Postgresql => PgConnection::connect(&source_url).await.map(|_| ()),
     }
-    .map_err(|e| anyhow!("连接数据库失败:{}", e))
+    .map_err(|e| {
+        error!("{}", e);
+        anyhow!("连接数据库失败:{}", e)
+    })
 }
 #[test]
 fn test() -> Result<(), anyhow::Error> {

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "../components/spinner"
+import { da } from "date-fns/locale";
 const delay = (ms: number) => new Promise(
     resolve => setTimeout(resolve, ms)
 );
@@ -83,29 +84,31 @@ export function CreateLinkDialog() {
         console.log("req:" + JSON.stringify(testDatabaseRequest));
 
         setShowLoading(true);
-        const { response_code, response_msg } = JSON.parse(await invoke("test_url", { testDatabaseRequest: testDatabaseRequest }).then((res:any) => {
+        try {
+            const datass: any = await invoke("test_url", { testDatabaseRequest: testDatabaseRequest });
+            const { response_code, response_msg } = JSON.parse(datass);
             setShowLoading(false);
 
-            return res;
-        }).catch((e:any) => {
+            console.log(response_code);
+            console.log(response_msg);
+            if (response_code === 0) {
+                toast({
+                    title: "操作信息",
+                    description: "菜单项已经重置成功。",
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "操作信息",
+                    description: response_msg,
+                })
+            }
+        } catch (err:any) {
             setShowLoading(false);
-            console.error(e);
-            return e;
-        }));
-        setShowLoading(false);
-
-        console.log(response_code);
-        console.log(response_msg);
-        if (response_code === 0) {
-            toast({
-                title: "操作信息",
-                description: "菜单项已经重置成功。",
-            });
-        } else {
             toast({
                 variant: "destructive",
                 title: "操作信息",
-                description: response_msg,
+                description: err.toString(),
             })
         }
 
@@ -124,7 +127,7 @@ export function CreateLinkDialog() {
                     <div className="flex flex-row items-center gap-5">
                         <p className="basis-2/12 text-right">连接类型:</p>
                         <Select defaultValue={"mysql"} onValueChange={(e) => setCurrentLinkType(e)}>
-                            <SelectTrigger className="basis-10/12">
+                            <SelectTrigger className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0">
                                 <SelectValue />
 
                             </SelectTrigger>
@@ -139,7 +142,7 @@ export function CreateLinkDialog() {
                     <div className="flex flex-row items-center gap-5">
                         <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
                             <AlertDialogContent className="w-30 ">
-                                <LoadingSpinner size={48} color="indigo"/>
+                                <LoadingSpinner size={48} color="indigo" />
                             </AlertDialogContent>
                         </AlertDialog>
                         <p className="basis-2/12 text-right">连接方式:</p>
@@ -157,30 +160,30 @@ export function CreateLinkDialog() {
                     </div>
                     {connectType === "connectTypeUrl" && <div className="flex flex-row items-center gap-5">
                         <p className="basis-2/12 text-right">连接串:</p>
-                        <Input className="basis-10/12" placeholder="请输入连接串。" onChange={(e) => setCurrentUrl(e.target.value)} value={currentUrl}></Input>
+                        <Input className="basis-10/12 border-foreground/50 border" placeholder="请输入连接串。" onChange={(e) => setCurrentUrl(e.target.value)} value={currentUrl}></Input>
                     </div>
                     }
                     {connectType === "connectTypeHost" &&
                         <><div className="flex flex-row items-center gap-5">
                             <p className="basis-2/12 text-right">服务器地址:</p>
-                            <Input className="basis-6/12" placeholder="主机地址" onChange={(e) => setCurrentHost(e.target.value)} value={currentHost}></Input>
+                            <Input className="basis-6/12 border-foreground/50 border" placeholder="主机地址" onChange={(e) => setCurrentHost(e.target.value)} value={currentHost}></Input>
                             <p className="basis-1/12 text-right">端口:</p>
-                            <Input className="basis-1/12" placeholder="端口" onChange={(e) => setCurrentPort(e.target.value)} value={currentPort}></Input>
+                            <Input className="basis-1/12 border-foreground/50 border" placeholder="端口" onChange={(e) => setCurrentPort(e.target.value)} value={currentPort}></Input>
                         </div>
                             <div className="flex flex-row items-center gap-5">
                                 <p className="basis-2/12 text-right">数据库:</p>
-                                <Input className="basis-10/12" placeholder="数据库名" onChange={(e) => setCurrentDatabase(e.target.value)} value={currentDatabase}></Input>
+                                <Input className="basis-10/12 border-foreground/50 border" placeholder="数据库名" onChange={(e) => setCurrentDatabase(e.target.value)} value={currentDatabase}></Input>
 
                             </div>
                         </>
                     }
                     <div className="flex flex-row items-center gap-5">
                         <p className="basis-2/12 text-right">用户名:</p>
-                        <Input className="basis-10/12" placeholder="用户名" onChange={(e) => setCurrentUsername(e.target.value)} value={currentUsername}></Input>
+                        <Input className="basis-10/12 border-foreground/50 border" placeholder="用户名" onChange={(e) => setCurrentUsername(e.target.value)} value={currentUsername}></Input>
                     </div>
                     <div className="flex flex-row items-center gap-5">
                         <p className="basis-2/12 text-right">密码:</p>
-                        <Input className="basis-10/12" placeholder="密码" onChange={(e) => setCurrentPassword(e.target.value)} value={currentPassword}></Input>
+                        <Input className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0" placeholder="密码" onChange={(e) => setCurrentPassword(e.target.value)} value={currentPassword}></Input>
                     </div>
                     <div className="flex flex-row items-center gap-5">
                         <Button className="basis-6/12">创建连接</Button>

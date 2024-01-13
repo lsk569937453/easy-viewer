@@ -94,7 +94,7 @@ export function CreateLinkDialog() {
             if (response_code === 0) {
                 toast({
                     title: "操作信息",
-                    description: "菜单项已经重置成功。",
+                    description: "数据库连接成功。",
                 });
             } else {
                 toast({

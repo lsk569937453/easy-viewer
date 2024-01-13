@@ -18,6 +18,7 @@ pub enum DateBaseType {
     Sqlite = 1,
     Postgresql = 2,
 }
+
 #[derive(Deserialize, Serialize)]
 pub struct TestDatabaseRequest {
     pub database_type: DateBaseType,

@@ -1,4 +1,5 @@
 use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::vojo::base_config::BaseConfig;
 use crate::vojo::menu_config::MenuConfig;
 use rusqlite::{params, Connection, Result};
 use serde::Deserialize;
@@ -14,7 +15,8 @@ pub fn get_menu_config_with_error(
     state: State<SqlLiteState>,
     get_menu_config_reqs: Vec<GetMenuConfigReq>,
 ) -> Result<Vec<MenuConfig>, anyhow::Error> {
-    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+    let sql_lite: std::sync::MutexGuard<'_, SqlLite> =
+        state.0.lock().map_err(|e| anyhow!("lock error"))?;
 
     let connection = &sql_lite.connection;
     let mut statement = connection.prepare("SELECT id,menu_index,source_index FROM menu_config")?;
@@ -145,5 +147,20 @@ pub fn reset_menu_index_with_error(state: State<SqlLiteState>) -> Result<(), any
     let connection = &sql_lite.connection;
     let mut statement =
         connection.execute("update menu_config set menu_index=source_index", params![])?;
+    Ok(())
+}
+pub fn save_base_config_with_error(
+    state: State<SqlLiteState>,
+    base_config: BaseConfig,
+) -> Result<(), anyhow::Error> {
+    let sql_lite = state.0.lock().map_err(|e| anyhow!("lock error"))?;
+
+    let connection = &sql_lite.connection;
+    let database_type = base_config.base_config_kind.to_i32();
+    let json_str = serde_json::to_string(&base_config)?;
+    connection.execute(
+        "insert into base_config (config_type,connection_json) values (?1,?2)",
+        params![database_type, json_str],
+    )?;
     Ok(())
 }

@@ -35,7 +35,6 @@ uuid= {version="1.4.0",features = [
     "macro-diagnostics",
 ] }
 num = "0.4"
-rusqlite = { version = "0.30.0", features = ["bundled"] }
 serde_repr = "0.1.17"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "mysql", "sqlite", "postgres" ] }
 

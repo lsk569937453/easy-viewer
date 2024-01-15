@@ -11,13 +11,14 @@ use log::LevelFilter;
 extern crate anyhow;
 #[macro_use]
 extern crate log;
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::sql_lite::connection::SqlitePoolWrapper;
 use std::sync::RwLock;
 use tauri::Manager;
 use tauri::SystemTray;
 use tauri::{CustomMenuItem, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
 use tokio::time::sleep;
-fn main() -> Result<(), anyhow::Error> {
+#[tokio::main]
+async fn main() -> Result<(), anyhow::Error> {
     let quit = CustomMenuItem::new("quit".to_string(), "退出");
     let show = CustomMenuItem::new("show".to_string(), "显示");
     let tray_menu = SystemTrayMenu::new()
@@ -25,10 +26,9 @@ fn main() -> Result<(), anyhow::Error> {
         .add_native_item(SystemTrayMenuItem::Separator)
         .add_item(quit);
     let system_tray = SystemTray::new().with_menu(tray_menu);
-    let sql_lite = SqlLite::new()?;
-    let sql_lite_state = SqlLiteState(Mutex::new(sql_lite));
+    let sqlite_pool_wrapper = SqlitePoolWrapper::new().await?;
     tauri::Builder::default()
-        .manage(sql_lite_state)
+        .manage(sqlite_pool_wrapper)
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Info)
@@ -90,9 +90,6 @@ fn main() -> Result<(), anyhow::Error> {
             base64_encode_of_image,
             base64_save_image,
             get_about_version,
-            get_menu_config,
-            set_menu_index,
-            reset_menu_index,
             test_url,
             save_base_config
         ])

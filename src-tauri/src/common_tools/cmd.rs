@@ -7,11 +7,9 @@ use crate::common_tools::base_response::BaseResponse;
 
 use crate::common_tools::database::test_url_with_error;
 use crate::common_tools::database::TestDatabaseRequest;
-use crate::common_tools::sql_lite::get_menu_config_with_error;
 use crate::common_tools::sql_lite::reset_menu_index_with_error;
-use crate::common_tools::sql_lite::GetMenuConfigReq;
-use crate::common_tools::sql_lite::{save_base_config_with_error, set_menu_index_with_error};
-use crate::sql_lite::connection::{SqlLite, SqlLiteState};
+use crate::common_tools::sql_lite::save_base_config_with_error;
+use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;
 use tauri::State;
 #[tauri::command]
@@ -130,12 +128,13 @@ pub fn get_about_version() -> String {
         }
     }
 }
+
 #[tauri::command]
-pub fn get_menu_config(
-    state: State<SqlLiteState>,
-    get_menu_config_reqs: Vec<GetMenuConfigReq>,
-) -> String {
-    match get_menu_config_with_error(state, get_menu_config_reqs) {
+pub async fn save_base_config(
+    state: State<'_, SqlitePoolWrapper>,
+    base_config: BaseConfig,
+) -> Result<String, ()> {
+    let res = match save_base_config_with_error(state, base_config).await {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,
@@ -150,66 +149,6 @@ pub fn get_menu_config(
             };
             serde_json::to_string(&res).unwrap()
         }
-    }
-}
-#[tauri::command]
-pub fn reset_menu_index(state: State<SqlLiteState>) -> String {
-    match reset_menu_index_with_error(state) {
-        Ok(item) => {
-            let res = BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-        Err(e) => {
-            let res = BaseResponse {
-                response_code: 1,
-                response_msg: e.to_string(),
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-    }
-}
-#[tauri::command]
-pub fn set_menu_index(
-    state: State<SqlLiteState>,
-    source_index: i32,
-    dst_menu_index: i32,
-) -> String {
-    match set_menu_index_with_error(state, source_index, dst_menu_index) {
-        Ok(item) => {
-            let res = BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-        Err(e) => {
-            let res = BaseResponse {
-                response_code: 1,
-                response_msg: e.to_string(),
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-    }
-}
-#[tauri::command]
-pub fn save_base_config(state: State<SqlLiteState>, base_config: BaseConfig) -> String {
-    match save_base_config_with_error(state, base_config) {
-        Ok(item) => {
-            let res = BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-        Err(e) => {
-            let res = BaseResponse {
-                response_code: 1,
-                response_msg: e.to_string(),
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-    }
+    };
+    Ok(res)
 }

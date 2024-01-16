@@ -1,5 +1,7 @@
 use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::base_config::BaseConfigEnum;
+use crate::vojo::base_config::ConfigKind;
 use crate::vojo::common_constants::MYSQL_COMMON_URL;
 use crate::vojo::common_constants::POST_GRESQL_COMMON_URL;
 use crate::vojo::common_constants::SQLITE_COMMON_URL;
@@ -100,6 +102,11 @@ pub async fn list_database(
         .await?;
     let json_str: String = statement.try_get("connection_json")?;
     let base_config: BaseConfig = serde_json::from_str(&json_str)?;
+    ensure!(
+        base_config.base_config_kind == ConfigKind::Database,
+        "配置不是数据库配置"
+    );
+    ensure!(base_config.is_database(), "配置不是数据库配置");
 
     Ok(vec![])
 }

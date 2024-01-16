@@ -16,7 +16,16 @@ pub struct BaseConfig {
     pub base_config_enum: BaseConfigEnum,
     pub base_config_kind: ConfigKind,
 }
-#[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
+impl BaseConfig {
+    pub fn is_database(&self) -> bool {
+        let base_config_enum = &self.base_config_enum;
+        match base_config_enum {
+            BaseConfigEnum::Database(_) => true,
+            _ => false,
+        }
+    }
+}
+#[derive(Serialize_repr, Deserialize_repr, Clone, Default, PartialEq)]
 #[repr(u8)]
 pub enum ConfigKind {
     #[default]

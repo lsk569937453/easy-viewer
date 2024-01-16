@@ -3,6 +3,9 @@ use std::default;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use sqlx::Database;
+use sqlx::Pool;
+
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
 pub enum DateBaseType {
@@ -10,6 +13,15 @@ pub enum DateBaseType {
     Mysql = 0,
     Sqlite = 1,
     Postgresql = 2,
+}
+impl DateBaseType {
+    pub fn protocal(&self) -> String {
+        match self {
+            DateBaseType::Mysql => "mysql".to_string(),
+            DateBaseType::Sqlite => "sqlite".to_string(),
+            DateBaseType::Postgresql => "postgres".to_string(),
+        }
+    }
 }
 #[derive(Deserialize, Serialize, Default)]
 pub struct BaseConfig {
@@ -64,12 +76,37 @@ pub struct DatabaseConfig {
     pub database_type: DateBaseType,
     pub source: DatabaseSource,
 }
+impl DatabaseConfig {
+    pub fn create_pool(&self) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+}
 #[derive(Deserialize, Serialize, Clone)]
 pub enum DatabaseSource {
     #[serde(rename = "url")]
     Url(String),
     #[serde(rename = "host")]
     Host(DatabaseHostStruct),
+}
+impl DatabaseSource {
+    pub fn to_connection_url(&self, database_type: DateBaseType) -> Result<String, anyhow::Error> {
+        let url = match self {
+            DatabaseSource::Url(url) => url.clone(),
+            DatabaseSource::Host(host) => {
+                format!(
+                    "{}://{}:{}@{}:{}/{}",
+                    database_type.protocal(),
+                    host.user_name,
+                    host.password,
+                    host.host,
+                    host.port,
+                    host.database
+                )
+            }
+        };
+        println!("{}", url);
+        Ok(url)
+    }
 }
 impl Default for DatabaseSource {
     fn default() -> Self {

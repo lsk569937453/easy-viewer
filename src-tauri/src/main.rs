@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-use std::sync::Mutex;
 use std::time::Duration;
+use tokio::sync::Mutex;
 mod common_tools;
 mod sql_lite;
 mod vojo;
@@ -12,7 +12,10 @@ extern crate anyhow;
 #[macro_use]
 extern crate log;
 use crate::sql_lite::connection::SqlitePoolWrapper;
-use std::sync::RwLock;
+use crate::vojo::static_connections::Connections;
+use std::any::Any;
+use std::collections::HashMap;
+use std::sync::Arc;
 use tauri::Manager;
 use tauri::SystemTray;
 use tauri::{CustomMenuItem, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
@@ -27,8 +30,13 @@ async fn main() -> Result<(), anyhow::Error> {
         .add_item(quit);
     let system_tray = SystemTray::new().with_menu(tray_menu);
     let sqlite_pool_wrapper = SqlitePoolWrapper::new().await?;
+    let current_map: HashMap<i32, Box<dyn Any + Send>> = HashMap::new();
+    let connections = Connections {
+        map: Arc::new(Mutex::new(current_map)),
+    };
     tauri::Builder::default()
         .manage(sqlite_pool_wrapper)
+        .manage(connections)
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Info)

@@ -2,9 +2,11 @@ use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;
 use crate::vojo::base_config::BaseConfigEnum;
 use crate::vojo::base_config::ConfigKind;
+use crate::vojo::base_config::DateBaseType;
 use crate::vojo::common_constants::MYSQL_COMMON_URL;
 use crate::vojo::common_constants::POST_GRESQL_COMMON_URL;
 use crate::vojo::common_constants::SQLITE_COMMON_URL;
+use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -16,13 +18,6 @@ use sqlx::Row;
 use sqlx::SqliteConnection;
 use std::fmt::{Display, Formatter};
 use tauri::State;
-#[derive(Serialize_repr, Deserialize_repr, Clone)]
-#[repr(u8)]
-pub enum DateBaseType {
-    Mysql = 0,
-    Sqlite = 1,
-    Postgresql = 2,
-}
 
 #[derive(Deserialize, Serialize)]
 pub struct TestDatabaseRequest {
@@ -92,8 +87,9 @@ pub async fn test_url_with_error(
         anyhow!("连接数据库失败:{}", e)
     })
 }
-pub async fn list_database(
+pub async fn list_database_with_error(
     state: State<'_, SqlitePoolWrapper>,
+    state2: State<'_, Connections>,
     id: i32,
 ) -> Result<Vec<String>, anyhow::Error> {
     let statement = sqlx::query("select config_type,connection_json from base_config where id=?")
@@ -109,6 +105,14 @@ pub async fn list_database(
     ensure!(base_config.is_database(), "配置不是数据库配置");
 
     Ok(vec![])
+}
+async fn connection_with_database(
+    base_config: BaseConfig,
+    state2: State<'_, Connections>,
+) -> Result<(), anyhow::Error> {
+    let lock = state2.map.lock().await;
+
+    Ok(())
 }
 #[test]
 fn test() -> Result<(), anyhow::Error> {

@@ -35,9 +35,9 @@ pub async fn get_base_config_with_error(
         .await?;
 
     let mut base_config = BaseConfig::default();
-    if statement.len() > 0 {
+    if !statement.is_empty() {
         let json_str: String = statement
-            .get(0)
+            .first()
             .ok_or(anyhow!("get base config error"))?
             .try_get("connection_json")?;
         base_config = serde_json::from_str(&json_str)?;

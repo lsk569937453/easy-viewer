@@ -3,6 +3,7 @@ use crate::vojo::base_config::BaseConfig;
 use crate::vojo::menu_config::MenuConfig;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Row;
 use tauri::State;
 
 pub async fn reset_menu_index_with_error(
@@ -25,4 +26,21 @@ pub async fn save_base_config_with_error(
         .execute(&state.pool)
         .await?;
     Ok(())
+}
+pub async fn get_base_config_with_error(
+    state: State<'_, SqlitePoolWrapper>,
+) -> Result<BaseConfig, anyhow::Error> {
+    let statement = sqlx::query("select config_type,connection_json from base_config")
+        .fetch_all(&state.pool)
+        .await?;
+
+    let mut base_config = BaseConfig::default();
+    if statement.len() > 0 {
+        let json_str: String = statement
+            .get(0)
+            .ok_or(anyhow!("get base config error"))?
+            .try_get("connection_json")?;
+        base_config = serde_json::from_str(&json_str)?;
+    }
+    Ok(base_config)
 }

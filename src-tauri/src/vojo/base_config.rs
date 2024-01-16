@@ -1,21 +1,25 @@
+use std::default;
+
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-#[derive(Serialize_repr, Deserialize_repr, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
 pub enum DateBaseType {
+    #[default]
     Mysql = 0,
     Sqlite = 1,
     Postgresql = 2,
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Default)]
 pub struct BaseConfig {
     pub base_config_enum: BaseConfigEnum,
     pub base_config_kind: ConfigKind,
 }
-#[derive(Serialize_repr, Deserialize_repr, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
 pub enum ConfigKind {
+    #[default]
     Database = 0,
     Kafka = 1,
     Zookeeper = 2,
@@ -36,12 +40,17 @@ pub enum BaseConfigEnum {
     #[serde(rename = "kafka")]
     Kafka(KafkaConfig),
 }
+impl Default for BaseConfigEnum {
+    fn default() -> Self {
+        BaseConfigEnum::Database(DatabaseConfig::default())
+    }
+}
 #[derive(Deserialize, Serialize, Clone)]
 pub struct KafkaConfig {
     pub broker: String,
     pub topic: String,
 }
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Default, Clone)]
 pub struct DatabaseConfig {
     pub database_type: DateBaseType,
     pub source: DatabaseSource,
@@ -52,6 +61,11 @@ pub enum DatabaseSource {
     Url(String),
     #[serde(rename = "host")]
     Host(DatabaseHostStruct),
+}
+impl Default for DatabaseSource {
+    fn default() -> Self {
+        DatabaseSource::Url("".to_string())
+    }
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DatabaseHostStruct {

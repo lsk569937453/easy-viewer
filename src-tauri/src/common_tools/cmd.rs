@@ -7,6 +7,7 @@ use crate::common_tools::base_response::BaseResponse;
 
 use crate::common_tools::database::test_url_with_error;
 use crate::common_tools::database::TestDatabaseRequest;
+use crate::common_tools::sql_lite::get_base_config_with_error;
 use crate::common_tools::sql_lite::reset_menu_index_with_error;
 use crate::common_tools::sql_lite::save_base_config_with_error;
 use crate::sql_lite::connection::SqlitePoolWrapper;
@@ -135,6 +136,26 @@ pub async fn save_base_config(
     base_config: BaseConfig,
 ) -> Result<String, ()> {
     let res = match save_base_config_with_error(state, base_config).await {
+        Ok(item) => {
+            let res = BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+        Err(e) => {
+            let res = BaseResponse {
+                response_code: 1,
+                response_msg: e.to_string(),
+            };
+            serde_json::to_string(&res).unwrap()
+        }
+    };
+    Ok(res)
+}
+#[tauri::command]
+pub async fn get_base_config(state: State<'_, SqlitePoolWrapper>) -> Result<String, ()> {
+    let res = match get_base_config_with_error(state).await {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,

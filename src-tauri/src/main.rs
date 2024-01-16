@@ -91,7 +91,8 @@ async fn main() -> Result<(), anyhow::Error> {
             base64_save_image,
             get_about_version,
             test_url,
-            save_base_config
+            save_base_config,
+            get_base_config
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,3 +1,5 @@
+use crate::sql_lite::connection::SqlitePoolWrapper;
+use crate::vojo::base_config::BaseConfig;
 use crate::vojo::common_constants::MYSQL_COMMON_URL;
 use crate::vojo::common_constants::POST_GRESQL_COMMON_URL;
 use crate::vojo::common_constants::SQLITE_COMMON_URL;
@@ -8,9 +10,10 @@ use sqlx::mysql::MySqlConnection;
 use sqlx::postgres::PgConnection;
 use sqlx::Connection;
 use sqlx::Database;
+use sqlx::Row;
 use sqlx::SqliteConnection;
 use std::fmt::{Display, Formatter};
-
+use tauri::State;
 #[derive(Serialize_repr, Deserialize_repr, Clone)]
 #[repr(u8)]
 pub enum DateBaseType {
@@ -86,6 +89,19 @@ pub async fn test_url_with_error(
         error!("{}", e);
         anyhow!("连接数据库失败:{}", e)
     })
+}
+pub async fn list_database(
+    state: State<'_, SqlitePoolWrapper>,
+    id: i32,
+) -> Result<Vec<String>, anyhow::Error> {
+    let statement = sqlx::query("select config_type,connection_json from base_config where id=?")
+        .bind(id)
+        .fetch_one(&state.pool)
+        .await?;
+    let json_str: String = statement.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&json_str)?;
+
+    Ok(vec![])
 }
 #[test]
 fn test() -> Result<(), anyhow::Error> {

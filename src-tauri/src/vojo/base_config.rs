@@ -1,11 +1,12 @@
 use std::default;
 
+use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use sqlx::Database;
 use sqlx::Pool;
-
+use tauri::State;
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
 pub enum DateBaseType {
@@ -35,6 +36,19 @@ impl BaseConfig {
             BaseConfigEnum::Database(_) => true,
             _ => false,
         }
+    }
+    pub async fn create_database_pool(
+        &self,
+        id: i32,
+        state: &mut State<'_, Connections>,
+    ) -> Result<(), anyhow::Error> {
+        let config = &self.base_config_enum;
+        if let BaseConfigEnum::Database(config) = config {
+            let pool = config.create_pool().await;
+            let mut lock = state.map.lock().await;
+            lock.insert(id, Box::new(pool));
+        }
+        Ok(())
     }
 }
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default, PartialEq)]
@@ -77,8 +91,12 @@ pub struct DatabaseConfig {
     pub source: DatabaseSource,
 }
 impl DatabaseConfig {
-    pub fn create_pool(&self) -> Result<(), anyhow::Error> {
-        Ok(())
+    pub async fn create_pool(&self) -> Result<Pool<sqlx::Any>, anyhow::Error> {
+        let source = &self.source;
+        let url = source.to_connection_url(self.database_type.clone())?;
+        let pool: Pool<sqlx::Any> = Pool::connect(&url).await?;
+
+        Ok(pool)
     }
 }
 #[derive(Deserialize, Serialize, Clone)]

@@ -130,7 +130,7 @@ export default function DashboardPage() {
         source_index: item.sourceIndex
       }
     });
-    const { response_code, response_msg } = JSON.parse(await invoke("get_menu_config", { getMenuConfigReqs: getMenuConfigReqs }));
+    const { response_code, response_msg } = JSON.parse(await invoke("get_base_config"));
 
     console.log(response_code);
     console.log("get_menu_config:" + JSON.stringify(response_msg));

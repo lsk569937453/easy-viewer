@@ -56,6 +56,7 @@ export function CreateLinkDialog() {
     const { t, i18n } = useTranslation();
     const [currentLinkType, setCurrentLinkType] = useState<any>("mysql");
     const [currentUrl, setCurrentUrl] = useState<any>("");
+    const [currentLinkName, setCurrentLinkName] = useState<any>("");
     const [currentHost, setCurrentHost] = useState<any>("");
     const [currentPort, setCurrentPort] = useState<any>("");
     const [currentDatabase, setCurrentDatabase] = useState<any>("");
@@ -103,7 +104,7 @@ export function CreateLinkDialog() {
                     description: response_msg,
                 })
             }
-        } catch (err:any) {
+        } catch (err: any) {
             setShowLoading(false);
             toast({
                 variant: "destructive",
@@ -112,6 +113,30 @@ export function CreateLinkDialog() {
             })
         }
 
+    }
+    const handleCreateLinkButtonClick = async () => {
+        const source = {
+            host: {
+                host: currentHost,
+                port: parseInt(currentPort),
+                database: currentDatabase,
+                user_name: currentUsername,
+                password: currentPassword,
+            }
+        };
+        const database = {
+            database_type: 0,
+            source: source
+        };
+        const createDatabaseRequest = {
+            base_config_enum: {
+                database: database
+            },
+            base_config_kind: 0
+        }
+        const { response_code, response_msg } = JSON.parse(await invoke("save_base_config", { baseConfig: createDatabaseRequest }));
+        console.log(response_code);
+        console.log(response_msg);
     }
     return (
         <>
@@ -125,6 +150,11 @@ export function CreateLinkDialog() {
                 </DialogHeader>
                 <div className="flex flex-col gap-5">
                     <div className="flex flex-row items-center gap-5">
+                        <p className="basis-2/12 text-right">连接名称:</p>
+                        <Input className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0" placeholder="连接名称" onChange={(e) => setCurrentLinkName(e.target.value)} value={currentLinkName}></Input>
+                    </div>
+                    <div className="flex flex-row items-center gap-5">
+
                         <p className="basis-2/12 text-right">连接类型:</p>
                         <Select defaultValue={"mysql"} onValueChange={(e) => setCurrentLinkType(e)}>
                             <SelectTrigger className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0">
@@ -186,7 +216,7 @@ export function CreateLinkDialog() {
                         <Input className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0" placeholder="密码" onChange={(e) => setCurrentPassword(e.target.value)} value={currentPassword}></Input>
                     </div>
                     <div className="flex flex-row items-center gap-5">
-                        <Button className="basis-6/12">创建连接</Button>
+                        <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>创建连接</Button>
                         <Button className="basis-6/12" variant="outline" onClick={handleTestLinkButtonClick}>测试连接</Button>
                     </div>
 

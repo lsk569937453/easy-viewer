@@ -10,6 +10,7 @@ pub async fn save_base_config_with_error(
     state: State<'_, SqlitePoolWrapper>,
     base_config: BaseConfig,
 ) -> Result<(), anyhow::Error> {
+    info!("save base config: {}", base_config.is_database());
     let database_type = base_config.base_config_kind.to_i32();
     let json_str = serde_json::to_string(&base_config)?;
     sqlx::query("insert into base_config (config_type,connection_json) values (?,?)")

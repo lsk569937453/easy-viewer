@@ -6,14 +6,6 @@ use serde::Serialize;
 use sqlx::Row;
 use tauri::State;
 
-pub async fn reset_menu_index_with_error(
-    state: State<'_, SqlitePoolWrapper>,
-) -> Result<(), anyhow::Error> {
-    let mut statement = sqlx::query("update menu_config set menu_index=source_index")
-        .execute(&state.pool)
-        .await?;
-    Ok(())
-}
 pub async fn save_base_config_with_error(
     state: State<'_, SqlitePoolWrapper>,
     base_config: BaseConfig,

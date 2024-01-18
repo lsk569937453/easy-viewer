@@ -9,7 +9,6 @@ use crate::common_tools::database::list_database_with_error;
 use crate::common_tools::database::test_url_with_error;
 use crate::common_tools::database::TestDatabaseRequest;
 use crate::common_tools::sql_lite::get_base_config_with_error;
-use crate::common_tools::sql_lite::reset_menu_index_with_error;
 use crate::common_tools::sql_lite::save_base_config_with_error;
 use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;

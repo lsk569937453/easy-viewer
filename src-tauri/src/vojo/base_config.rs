@@ -40,7 +40,7 @@ impl BaseConfig {
     pub async fn create_database_pool(
         &self,
         id: i32,
-        state: &mut State<'_, Connections>,
+        state: State<'_, Connections>,
     ) -> Result<(), anyhow::Error> {
         let config = &self.base_config_enum;
         if let BaseConfigEnum::Database(config) = config {

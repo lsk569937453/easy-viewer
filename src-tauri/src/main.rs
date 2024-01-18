@@ -100,7 +100,8 @@ async fn main() -> Result<(), anyhow::Error> {
             get_about_version,
             test_url,
             save_base_config,
-            get_base_config
+            get_base_config,
+            list_database
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

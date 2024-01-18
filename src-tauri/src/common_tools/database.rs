@@ -90,7 +90,7 @@ pub async fn test_url_with_error(
 }
 pub async fn list_database_with_error(
     state: State<'_, SqlitePoolWrapper>,
-    state2: &mut State<'_, Connections>,
+    state2: State<'_, Connections>,
     id: i32,
 ) -> Result<Vec<String>, anyhow::Error> {
     let statement = sqlx::query("select config_type,connection_json from base_config where id=?")
@@ -104,7 +104,7 @@ pub async fn list_database_with_error(
         "配置不是数据库配置"
     );
     ensure!(base_config.is_database(), "配置不是数据库配置");
-    let _ = base_config.create_database_pool(id, state2).await?;
+    let _ = base_config.create_database_pool(id, state2.clone()).await?;
     let lock = state2.map.lock().await;
     let pool = (lock.get(&id).ok_or(anyhow!("没有找到数据库"))?)
         .downcast_ref::<Pool<sqlx::Any>>()

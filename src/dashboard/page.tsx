@@ -124,12 +124,7 @@ export default function DashboardPage() {
     ]
   };
   const loadData = async () => {
-    const getMenuConfigReqs = constMenulist().map(item => {
-      return {
-        menu_index: item.menuIndex,
-        source_index: item.sourceIndex
-      }
-    });
+  
     const { response_code, response_msg } = JSON.parse(await invoke("get_base_config"));
 
     console.log(response_code);

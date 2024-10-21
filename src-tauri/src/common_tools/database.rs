@@ -1,4 +1,4 @@
-use crate::sql_lite::connection::SqlitePoolWrapper;
+use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
 use crate::vojo::base_config::ConfigKind;
 use crate::vojo::base_config::DateBaseType;
@@ -83,7 +83,7 @@ pub async fn test_url_with_error(
     })
 }
 pub async fn list_database_with_error(
-    state: State<'_, SqlitePoolWrapper>,
+    state: State<'_, AppState>,
     state2: State<'_, Connections>,
     id: i32,
 ) -> Result<Vec<String>, anyhow::Error> {

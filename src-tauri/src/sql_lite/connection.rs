@@ -4,13 +4,13 @@ use sqlx::Executor;
 // pub struct SqlLite {
 //     pub connection: Connection,
 // }
-pub struct SqlitePoolWrapper {
+pub struct AppState {
     pub pool: SqlitePool,
 }
 // pub struct SqlLiteState(pub Mutex<SqlLite>);
 
-impl SqlitePoolWrapper {
-    pub async fn new() -> Result<SqlitePoolWrapper, anyhow::Error> {
+impl AppState {
+    pub async fn new() -> Result<AppState, anyhow::Error> {
         let home_dir = dirs::home_dir().ok_or(anyhow!("failed to get home directory"))?;
         let db_path = home_dir.join(".easyviewer.db");
         let pool = SqlitePool::connect(db_path.to_str().ok_or(anyhow!("invalid db path"))?).await?;
@@ -31,6 +31,6 @@ impl SqlitePoolWrapper {
         //     )",
         //     params![],
         // )?;
-        Ok(SqlitePoolWrapper { pool })
+        Ok(AppState { pool })
     }
 }

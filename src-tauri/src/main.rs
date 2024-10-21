@@ -10,7 +10,7 @@ use log::LevelFilter;
 extern crate anyhow;
 #[macro_use]
 extern crate log;
-use crate::sql_lite::connection::SqlitePoolWrapper;
+use crate::sql_lite::connection::AppState;
 use crate::vojo::static_connections::Connections;
 use std::any::Any;
 use std::collections::HashMap;
@@ -23,7 +23,7 @@ use tauri::tray::TrayIconEvent;
 use tauri::Manager;
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
-    let sqlite_pool_wrapper = SqlitePoolWrapper::new().await?;
+    let sqlite_pool_wrapper = AppState::new().await?;
     let current_map: HashMap<i32, Box<dyn Any + Send>> = HashMap::new();
     let connections = Connections {
         map: Arc::new(Mutex::new(current_map)),
@@ -83,15 +83,12 @@ async fn main() -> Result<(), anyhow::Error> {
                 .build(),
         )
         .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
-                window.hide().unwrap();
-                api.prevent_close();
-            }
+            // if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
+            //     window.hide().unwrap();
+            //     api.prevent_close();
+            // }
         })
         .invoke_handler(tauri::generate_handler![
-            base64_encode,
-            base64_decode,
-            base64_save_image,
             get_about_version,
             test_url,
             save_base_config,

@@ -1,6 +1,6 @@
 import { Input } from "@/components/ui/input"
 import { useState, useRef } from "react"
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 import { useTranslation, Trans } from "react-i18next";

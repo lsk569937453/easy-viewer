@@ -1,19 +1,13 @@
 use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;
-use crate::vojo::base_config::BaseConfigEnum;
 use crate::vojo::base_config::ConfigKind;
 use crate::vojo::base_config::DateBaseType;
-use crate::vojo::common_constants::MYSQL_COMMON_URL;
-use crate::vojo::common_constants::POST_GRESQL_COMMON_URL;
-use crate::vojo::common_constants::SQLITE_COMMON_URL;
 use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use sqlx::mysql::MySqlConnection;
 use sqlx::postgres::PgConnection;
 use sqlx::Connection;
-use sqlx::Database;
 use sqlx::Pool;
 use sqlx::Row;
 use sqlx::SqliteConnection;
@@ -104,7 +98,7 @@ pub async fn list_database_with_error(
         "配置不是数据库配置"
     );
     ensure!(base_config.is_database(), "配置不是数据库配置");
-    let _ = base_config.create_database_pool(id, state2.clone()).await?;
+    base_config.create_database_pool(id, state2.clone()).await?;
     let lock = state2.map.lock().await;
     let pool = (lock.get(&id).ok_or(anyhow!("没有找到数据库"))?)
         .downcast_ref::<Pool<sqlx::Any>>()

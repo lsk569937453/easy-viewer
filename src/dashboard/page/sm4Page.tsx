@@ -1,6 +1,6 @@
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";

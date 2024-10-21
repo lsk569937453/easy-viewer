@@ -1,10 +1,7 @@
-use std::default;
-
 use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use sqlx::Database;
 use sqlx::Pool;
 use tauri::State;
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default)]

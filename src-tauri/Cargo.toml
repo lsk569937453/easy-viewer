@@ -10,34 +10,43 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.4", features = [] }
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "1.4", features = [ "fs-all", "path-all", "protocol-all", "shell-open", "dialog-all", "system-tray"] }
+tauri = { version = "2", features = ["protocol-asset", "tray-icon"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_yaml = "0.9"
+serde_yaml = "0.9.34"
 
 log = "^0.4"
-base64 = "0.21.5"
-anyhow = "1.0"
+base64 = "0.22.1"
+anyhow = "1.0.90"
 percent-encoding = "2.3.0"
-chrono = "0.4.31"
-tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "dev" }
+chrono = "0.4.38"
+tauri-plugin-log = { version = "2" }
 
-image = "0.24.7"
-tokio = { version = "1.27.0",  features = ["full", "tracing"] }
+image = "0.25.4"
+tokio = { version = "1.40.0", features = ["full", "tracing"] }
 colorsys = { version = "*", default-features = false }
 dirs = "5.0"
-uuid= {version="1.4.0",features = [
-    "v4",               
-    "fast-rng",         
+uuid = { version = "1.11.0", features = [
+    "v4",
+    "fast-rng",
     "macro-diagnostics",
 ] }
-num = "0.4"
-serde_repr = "0.1.17"
-sqlx = { version = "0.7", features = [ "runtime-tokio", "tls-native-tls", "mysql", "sqlite", "postgres" ] }
-
+num = "0.4.3"
+serde_repr = "0.1.19"
+sqlx = { version = "0.8.2", features = [
+    "runtime-tokio",
+    "tls-native-tls",
+    "mysql",
+    "sqlite",
+    "postgres",
+] }
+time = "0.3.35"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-shell = "2"
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
@@ -56,4 +65,4 @@ debug = false
 
 
 [env]
-STATIC_VCRUNTIME=false
+STATIC_VCRUNTIME = false

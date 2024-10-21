@@ -1,6 +1,5 @@
 use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base64::base64_decode_with_error;
-use crate::common_tools::base64::base64_encode_of_image_with_error;
 use crate::common_tools::base64::base64_encode_with_error;
 use crate::common_tools::base64::base64_save_image_with_error;
 use crate::common_tools::base_response::BaseResponse;
@@ -72,25 +71,6 @@ pub fn base64_decode(source_string: String) -> String {
     }
 }
 
-#[tauri::command]
-pub fn base64_encode_of_image(source_string: String) -> String {
-    match base64_encode_of_image_with_error(source_string) {
-        Ok(item) => {
-            let res = BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-        Err(e) => {
-            let res = BaseResponse {
-                response_code: 1,
-                response_msg: e.to_string(),
-            };
-            serde_json::to_string(&res).unwrap()
-        }
-    }
-}
 #[tauri::command]
 pub fn base64_save_image(source_string: String) -> String {
     match base64_save_image_with_error(source_string) {

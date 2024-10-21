@@ -1,8 +1,5 @@
 use crate::sql_lite::connection::SqlitePoolWrapper;
 use crate::vojo::base_config::BaseConfig;
-use crate::vojo::menu_config::MenuConfig;
-use serde::Deserialize;
-use serde::Serialize;
 use sqlx::Row;
 use tauri::State;
 

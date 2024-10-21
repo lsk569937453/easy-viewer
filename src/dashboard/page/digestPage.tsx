@@ -1,9 +1,9 @@
 import { Textarea } from "@/components/ui/textarea"
 import { useState } from "react"
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { open } from '@tauri-apps/api/dialog';
+import { open } from '@tauri-apps/plugin-dialog';
 import { useToast } from "@/components/ui/use-toast"
 import { useTranslation, Trans } from "react-i18next";
 

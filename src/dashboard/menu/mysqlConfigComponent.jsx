@@ -79,6 +79,14 @@ export function MysqlConfigComponent({ connectionName }) {
         }
     };
     const handleCreateLinkButtonClick = async () => {
+        if (connectionName === undefined || connectionName === "") {
+            toast({
+                variant: "destructive",
+                title: "操作信息",
+                description: "连接名称不能为空",
+            });
+            return;
+        }
         const source = {
             host: {
                 host: currentHost,
@@ -102,7 +110,7 @@ export function MysqlConfigComponent({ connectionName }) {
         const { response_code, response_msg } = await JSON.parse(await invoke("save_base_config", { baseConfig: createDatabaseRequest }));
         console.log(response_code);
         console.log(response_msg);
-        // window.location.reload();
+        window.location.reload();
     };
     return (
         <div className="flex flex-col gap-5 border-dashed border-2 border-indigo-600  p-4">

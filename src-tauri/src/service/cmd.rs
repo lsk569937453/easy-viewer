@@ -4,16 +4,17 @@ use crate::common_tools::base_response::BaseResponse;
 
 use crate::common_tools::database::list_database_with_error;
 use crate::common_tools::database::test_url_with_error;
-use crate::common_tools::database::TestDatabaseRequest;
-use crate::common_tools::sql_lite::get_base_config_with_error;
-use crate::common_tools::sql_lite::save_base_config_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::static_connections::Connections;
 use tauri::State;
 
+use super::base_config_service::get_base_config_with_error;
+use super::base_config_service::save_base_config_with_error;
+
 #[tauri::command]
-pub async fn test_url(test_database_request: TestDatabaseRequest) -> String {
+pub async fn test_url(test_database_request: BaseConfig) -> String {
     match test_url_with_error(test_database_request).await {
         Ok(item) => {
             let res = BaseResponse {
@@ -23,6 +24,7 @@ pub async fn test_url(test_database_request: TestDatabaseRequest) -> String {
             serde_json::to_string(&res).unwrap()
         }
         Err(e) => {
+            error!("{}", e);
             let res = BaseResponse {
                 response_code: 1,
                 response_msg: e.to_string(),
@@ -55,9 +57,9 @@ pub fn get_about_version() -> String {
 #[tauri::command]
 pub async fn save_base_config(
     state: State<'_, AppState>,
-    base_config: BaseConfig,
+    save_connection_request: SaveConnectionRequest,
 ) -> Result<String, ()> {
-    let res = match save_base_config_with_error(state, base_config).await {
+    let res = match save_base_config_with_error(state, save_connection_request).await {
         Ok(item) => {
             let res = BaseResponse {
                 response_code: 0,

@@ -1,17 +1,18 @@
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::save_connection_req::SaveConnectionRequest;
 use sqlx::Row;
 use tauri::State;
 
 pub async fn save_base_config_with_error(
     state: State<'_, AppState>,
-    base_config: BaseConfig,
+    save_connection_request: SaveConnectionRequest,
 ) -> Result<(), anyhow::Error> {
-    info!("save base config: {}", base_config.is_database());
-    let database_type = base_config.base_config_kind.to_i32();
-    let json_str = serde_json::to_string(&base_config)?;
+    let json_str = serde_json::to_string(&save_connection_request.base_config)?;
+    info!("save base config: {}", json_str);
+
     sqlx::query("insert into base_config (config_type,connection_json) values (?,?)")
-        .bind(database_type)
+        .bind(save_connection_request.connection_name)
         .bind(json_str)
         .execute(&state.pool)
         .await?;

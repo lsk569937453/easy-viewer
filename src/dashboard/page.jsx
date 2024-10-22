@@ -83,7 +83,6 @@ export default function DashboardPage() {
                 return {
                     label: "111",
                     menuIndex: index,
-                    sourceIndex: index,
                     render: <CryptoPage />
                 };
             })

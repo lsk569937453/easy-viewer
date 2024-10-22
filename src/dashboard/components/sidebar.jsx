@@ -6,6 +6,29 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useTranslation } from "react-i18next";
+import { Tree } from "react-arborist";
+const data = [
+    { id: "1", name: "Unread" },
+    { id: "2", name: "Threads" },
+    {
+        id: "3",
+        name: "Chat Rooms",
+        children: [
+            { id: "c1", name: "General" },
+            { id: "c2", name: "Random" },
+            { id: "c3", name: "Open Source Projects" },
+        ],
+    },
+    {
+        id: "4",
+        name: "Direct Messages",
+        children: [
+            { id: "d1", name: "Alice" },
+            { id: "d2", name: "Bob" },
+            { id: "d3", name: "Charlie" },
+        ],
+    },
+];
 const Sidebar = ({ menuList, onButtonClick }) => {
     const [currentMenuList, setCurrentMenuList] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -13,7 +36,18 @@ const Sidebar = ({ menuList, onButtonClick }) => {
     const { t, i18n } = useTranslation();
     const { toast } = useToast();
     useEffect(() => {
-        setCurrentMenuList(menuList);
+        console.log(menuList);
+        const currentMenuList = menuList.map((item, index) => {
+            return {
+
+                key: index,
+                id: index.toString(),
+                name: item.label,
+            };
+        });
+        console.log(currentMenuList);
+
+        setCurrentMenuList(currentMenuList);
     }, [menuList]);
     const handleButtonClick = (index) => {
         onButtonClick(index);
@@ -21,22 +55,10 @@ const Sidebar = ({ menuList, onButtonClick }) => {
     };
 
     return (<div className={"pb-12 h-screen flex col-span-2 sticky top-0 overflow-auto"}>
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-1">
             <div className="px-3 py-2">
-                <div className="space-y-1">
-                    {(<>
-                        {menuList.map((item, index) =>
-                        (
-                            <div key={index}>
-                                <Button key={item.menuIndex} variant="ghost" className="aria-selected:bg-primary/80 hover:bg-primary/80 w-full justify-start" onContextMenu={(e) => handleRightClick(e, item.sourceIndex)} aria-selected={selectedIndex === item.menuIndex} onClick={() => handleButtonClick(item.menuIndex)}>
-                                    {t("menu." + item.sourceIndex)}
-                                </Button>
+                <Tree data={currentMenuList} />
 
-                            </div>)
-                        )}
-                    </>)}
-
-                </div>
             </div>
         </div>
     </div>);

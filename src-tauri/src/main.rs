@@ -2,9 +2,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use tokio::sync::Mutex;
 mod common_tools;
+mod service;
 mod sql_lite;
 mod vojo;
-use crate::common_tools::cmd::*;
+use crate::service::cmd::*;
 use log::LevelFilter;
 #[macro_use]
 extern crate anyhow;
@@ -29,9 +30,21 @@ async fn main() -> Result<(), anyhow::Error> {
         map: Arc::new(Mutex::new(current_map)),
     };
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("no main window")
+                .set_focus();
+        }))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("no main window")
+                .set_focus();
+        }))
         .manage(sqlite_pool_wrapper)
         .manage(connections)
         .setup(|app| {
@@ -83,10 +96,10 @@ async fn main() -> Result<(), anyhow::Error> {
                 .build(),
         )
         .on_window_event(|window, event| {
-            // if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
-            //     window.hide().unwrap();
-            //     api.prevent_close();
-            // }
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
+                window.hide().unwrap();
+                api.prevent_close();
+            }
         })
         .invoke_handler(tauri::generate_handler![
             get_about_version,

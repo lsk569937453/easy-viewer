@@ -11,12 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { AlertDialog, AlertDialogContent, } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "../components/spinner";
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-const formatMap = new Map([
-    ["mysql", 0],
-    ["sqlite", 1],
-    ["postgresql", 2]
-]);
+
 export function MysqlConfigComponent({ connectionName }) {
     const { toast } = useToast();
     const { t, i18n } = useTranslation();
@@ -30,21 +25,43 @@ export function MysqlConfigComponent({ connectionName }) {
     const [connectType, setConnectType] = useState("connectTypeHost");
     const [showLoading, setShowLoading] = useState(false);
     const handleTestLinkButtonClick = async () => {
-        const testHostStruct = {
-            TestHost: {
-                host: currentHost,
-                port: parseInt(currentPort),
-                database: currentDatabase,
-                user_name: currentUsername,
-                password: currentPassword,
+        let testHostStruct = null;
+        if (connectType == "connectTypeUrl") {
+            try {
+                const { ip, port, database, userName, password } = parseConnectionUrl(currentUrl);
+                testHostStruct = {
+                    mysql: {
+                        host: ip,
+                        port: parseInt(port),
+                        database: database,
+                        user_name: userName,
+                        password: password,
+                    }
+                };
+                console.log(JSON.stringify(testHostStruct));
+            } catch (err) {
+                toast({
+                    variant: "destructive",
+                    title: err.toString(),
+                    description: currentUrl,
+                });
+                return;
             }
-        };
-        const testUrl = {
-            TestUrl: currentUrl
-        };
+
+        } else {
+            testHostStruct = {
+                mysql: {
+                    host: currentHost,
+                    port: parseInt(currentPort),
+                    database: currentDatabase,
+                    user_name: currentUsername,
+                    password: currentPassword,
+                }
+            };
+        }
+
         const testDatabaseRequest = {
-            database_type: formatMap.get(currentLinkType),
-            source: connectType === "connectTypeHost" ? testHostStruct : testUrl,
+            base_config_enum: testHostStruct,
         };
         console.log("req:" + JSON.stringify(testDatabaseRequest));
         setShowLoading(true);
@@ -78,6 +95,27 @@ export function MysqlConfigComponent({ connectionName }) {
             });
         }
     };
+    const parseConnectionUrl = (connectionUrl) => {
+        const regex = /mysql:\/\/(?<userName>[^:]+):(?<password>[^@]+)@(?<ip>[^:]+):(?<port>\d+)\/(?<database>\w+)/;
+
+        const match = connectionUrl.match(regex);
+
+        // If the regex successfully matches the connection string
+        if (match && match.groups) {
+            const { userName, password, ip, port, database } = match.groups;
+            console.log(`userName: ${userName}`);
+            console.log(`password: ${password}`);
+            console.log(`ip: ${ip}`);
+            console.log(`port: ${port}`);
+            console.log(`database: ${database}`);
+            return { ip, port, database, userName, password };
+
+        } else {
+            throw new Error("Invalid connection string");
+
+            console.error("Failed to parse connection string");
+        }
+    }
     const handleCreateLinkButtonClick = async () => {
         if (connectionName === undefined || connectionName === "") {
             toast({

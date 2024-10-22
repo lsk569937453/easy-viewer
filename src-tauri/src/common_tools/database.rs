@@ -1,19 +1,31 @@
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
-use crate::vojo::base_config::ConfigKind;
-use crate::vojo::base_config::DateBaseType;
+
 use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
-use sqlx::mysql::MySqlConnection;
-use sqlx::postgres::PgConnection;
-use sqlx::Connection;
-use sqlx::Pool;
+use serde_repr::Deserialize_repr;
+use serde_repr::Serialize_repr;
 use sqlx::Row;
-use sqlx::SqliteConnection;
 use std::fmt::{Display, Formatter};
 use tauri::State;
-
+#[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
+#[repr(u8)]
+pub enum DateBaseType {
+    #[default]
+    Mysql = 0,
+    Sqlite = 1,
+    Postgresql = 2,
+}
+impl DateBaseType {
+    pub fn protocal(&self) -> String {
+        match self {
+            DateBaseType::Mysql => "mysql".to_string(),
+            DateBaseType::Sqlite => "sqlite".to_string(),
+            DateBaseType::Postgresql => "postgres".to_string(),
+        }
+    }
+}
 #[derive(Deserialize, Serialize)]
 pub struct TestDatabaseRequest {
     pub database_type: DateBaseType,
@@ -68,19 +80,18 @@ impl Display for TestDatabaseRequest {
     }
 }
 pub async fn test_url_with_error(
-    test_database_request: TestDatabaseRequest,
+    base_config: BaseConfig,
 ) -> core::result::Result<(), anyhow::Error> {
-    let source_url = test_database_request.to_string();
+    let source_url = serde_json::to_string(&base_config)?;
     info!("databse request url:{}", source_url);
-    match test_database_request.database_type {
-        DateBaseType::Mysql => MySqlConnection::connect(&source_url).await.map(|_| ()),
-        DateBaseType::Sqlite => SqliteConnection::connect(&source_url).await.map(|_| ()),
-        DateBaseType::Postgresql => PgConnection::connect(&source_url).await.map(|_| ()),
-    }
-    .map_err(|e| {
-        error!("{}", e);
-        anyhow!("连接数据库失败:{}", e)
-    })
+    base_config
+        .base_config_enum
+        .test_connection()
+        .await
+        .map_err(|e| {
+            error!("{}", e);
+            anyhow!("连接数据库失败:{}", e)
+        })
 }
 pub async fn list_database_with_error(
     state: State<'_, AppState>,
@@ -93,22 +104,8 @@ pub async fn list_database_with_error(
         .await?;
     let json_str: String = statement.try_get("connection_json")?;
     let base_config: BaseConfig = serde_json::from_str(&json_str)?;
-    ensure!(
-        base_config.base_config_kind == ConfigKind::Database,
-        "配置不是数据库配置"
-    );
-    ensure!(base_config.is_database(), "配置不是数据库配置");
-    base_config.create_database_pool(id, state2.clone()).await?;
-    let lock = state2.map.lock().await;
-    let pool = (lock.get(&id).ok_or(anyhow!("没有找到数据库"))?)
-        .downcast_ref::<Pool<sqlx::Any>>()
-        .ok_or(anyhow!("类型转换失败"))?;
-    let rows = sqlx::query("show databases").fetch_all(pool).await?;
-    let mut vec = vec![];
-    for row in rows {
-        let name: String = row.try_get(0)?;
-        vec.push(name);
-    }
+
+    let vec = Vec::new();
 
     Ok(vec)
 }

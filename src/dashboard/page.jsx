@@ -1,14 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/sidebar";
 import { useState, useEffect } from "react";
-import Base64TextPage from "./page/base64Page";
-import UrlEncodePage from "./page/urlencodePage";
-import DigestPage from "./page/digestPage";
-import TimestampPage from "./page/timestampPage";
-import QrcodePage from "./page/qrcodePage";
-import FormatPage from "./page/formatPage";
-import ColorPalettePage from "./page/colorPalettePage";
-import DiffViewerPage from "./page/diffViewerPage";
+import { uuid } from "../lib/utils";
 import CryptoPage from "./page/cryptoPage";
 import { useTranslation } from "react-i18next";
 export default function DashboardPage() {
@@ -30,10 +23,9 @@ export default function DashboardPage() {
 
                 return {
                     key: index,
-                    id: index.toString(),
+                    id: uuid(),
                     name: item.connection_name,
                     baseConfigId: item.base_config_id,
-                    menuIndex: index,
                     render: <CryptoPage />
                 };
             })

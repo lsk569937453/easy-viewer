@@ -69,21 +69,19 @@ async fn main() -> Result<(), anyhow::Error> {
                         info!("menu item {:?} not handled", event);
                     }
                 })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         button_state: MouseButtonState::Up,
                         ..
-                    } => {
+                    } = event
+                    {
                         info!("left click pressed and released");
                         let app = tray.app_handle();
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.show();
                             let _ = window.set_focus();
                         }
-                    }
-                    _ => {
-                        // info!("unhandled event {event:?}");
                     }
                 })
                 .build(app)?;

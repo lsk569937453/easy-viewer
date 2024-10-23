@@ -26,7 +26,7 @@ impl AppState {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS base_config (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            connection_name    TEXT NOT NULL, 
+            connection_name    TEXT NOT NULL UNIQUE, 
             connection_json  TEXT NOT NULL
             )",
         )

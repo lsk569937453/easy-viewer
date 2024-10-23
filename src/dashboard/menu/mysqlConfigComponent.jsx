@@ -31,11 +31,15 @@ export function MysqlConfigComponent({ connectionName }) {
                 const { ip, port, database, userName, password } = parseConnectionUrl(currentUrl);
                 testHostStruct = {
                     mysql: {
-                        host: ip,
-                        port: parseInt(port),
-                        database: database,
-                        user_name: userName,
-                        password: password,
+                        config:
+                        {
+                            host: ip,
+                            port: parseInt(port),
+                            database: database,
+                            user_name: userName,
+                            password: password,
+                        }
+
                     }
                 };
                 console.log(JSON.stringify(testHostStruct));
@@ -51,11 +55,13 @@ export function MysqlConfigComponent({ connectionName }) {
         } else {
             testHostStruct = {
                 mysql: {
-                    host: currentHost,
-                    port: parseInt(currentPort),
-                    database: currentDatabase,
-                    user_name: currentUsername,
-                    password: currentPassword,
+                    config: {
+                        host: currentHost,
+                        port: parseInt(currentPort),
+                        database: currentDatabase,
+                        user_name: currentUsername,
+                        password: currentPassword,
+                    }
                 }
             };
         }
@@ -131,11 +137,13 @@ export function MysqlConfigComponent({ connectionName }) {
                 const { ip, port, database, userName, password } = parseConnectionUrl(currentUrl);
                 testHostStruct = {
                     mysql: {
-                        host: ip,
-                        port: parseInt(port),
-                        database: database,
-                        user_name: userName,
-                        password: password,
+                        config: {
+                            host: ip,
+                            port: parseInt(port),
+                            database: database,
+                            user_name: userName,
+                            password: password,
+                        }
                     }
                 };
                 console.log(JSON.stringify(testHostStruct));
@@ -151,11 +159,13 @@ export function MysqlConfigComponent({ connectionName }) {
         } else {
             testHostStruct = {
                 mysql: {
-                    host: currentHost,
-                    port: parseInt(currentPort),
-                    database: currentDatabase,
-                    user_name: currentUsername,
-                    password: currentPassword,
+                    config: {
+                        host: currentHost,
+                        port: parseInt(currentPort),
+                        database: currentDatabase,
+                        user_name: currentUsername,
+                        password: currentPassword,
+                    }
                 }
             };
         }

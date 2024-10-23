@@ -3,11 +3,10 @@ use std::fs;
 use sqlx::sqlite::SqlitePool;
 use sqlx::Executor;
 use std::io::Write;
-
+#[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
 }
-
 impl AppState {
     pub async fn new() -> Result<AppState, anyhow::Error> {
         let home_dir = dirs::home_dir().ok_or(anyhow!("failed to get home directory"))?;

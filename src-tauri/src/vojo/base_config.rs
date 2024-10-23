@@ -1,13 +1,19 @@
+use crate::sql_lite::connection::AppState;
+use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Connection;
+use sqlx::Executor;
 use sqlx::MySqlConnection;
+use sqlx::Row;
+
+use super::list_node_info_req::ListNodeInfoReq;
 #[derive(Deserialize, Serialize)]
 pub enum BaseConfigEnum {
     #[serde(rename = "mysql")]
-    Mysql(DatabaseHostStruct),
+    Mysql(MysqlConfig),
     #[serde(rename = "postgresql")]
-    Postgresql(DatabaseHostStruct),
+    Postgresql(PostgresqlConfig),
     #[serde(rename = "kafka")]
     Kafka(KafkaConfig),
 }
@@ -15,17 +21,27 @@ impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         match self {
             BaseConfigEnum::Mysql(config) => {
-                let test_url = config.to_url("mysql".to_string());
-                MySqlConnection::connect(&test_url).await.map(|_| ())?
+                config.test_connection().await?;
             }
-            BaseConfigEnum::Postgresql(config) => {
-                let test_url = config.to_url("postgresql".to_string());
-                MySqlConnection::connect(&test_url).await.map(|_| ())?
-            }
+            BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
             _ => {}
         }
 
         Ok(())
+    }
+    pub async fn list_node_info(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let vec = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
+            _ => vec!["".to_string()],
+        };
+        Ok(vec)
     }
 }
 
@@ -33,6 +49,83 @@ impl BaseConfigEnum {
 pub struct KafkaConfig {
     pub broker: String,
     pub topic: String,
+}
+#[derive(Deserialize, Serialize, Clone)]
+pub struct MysqlConfig {
+    pub config: DatabaseHostStruct,
+}
+impl MysqlConfig {
+    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+        let test_url = self.config.to_url("mysql".to_string());
+        MySqlConnection::connect(&test_url).await.map(|_| ())?;
+        Ok(())
+    }
+    pub async fn list_node_info(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let mut vec = vec![];
+        let connection_url = self.config.to_url("mysql".to_string());
+
+        let level_infos = list_node_info_req.level_infos;
+        match level_infos.len() {
+            1 => {
+                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+                let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                let rows = sqlx::query("SHOW DATABASES").fetch_all(&mut conn).await?;
+
+                for item in rows {
+                    let buf: &[u8] = item.try_get("Database")?;
+                    vec.push(String::from_utf8_lossy(buf).to_string());
+                }
+                info!("list_node_info: {:?}", vec);
+                return Ok(vec);
+            }
+            2 => {
+                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+                let database_name = level_infos[1].config_value.clone();
+                let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                let sql = format!("use {}", database_name);
+                info!("sql: {}", sql);
+                conn.execute(&*sql).await?;
+
+                let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
+                for item in rows {
+                    let buf: &[u8] = item.try_get(0)?;
+                    vec.push(String::from_utf8_lossy(buf).to_string());
+                }
+                info!("list_node_info: {:?}", vec);
+                return Ok(vec);
+            }
+            3 => {}
+            _ => {}
+        }
+
+        Ok(vec)
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone)]
+pub struct PostgresqlConfig {
+    pub config: DatabaseHostStruct,
+}
+impl PostgresqlConfig {
+    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+        let test_url = self.config.to_url("mysql".to_string());
+        MySqlConnection::connect(&test_url).await.map(|_| ())?;
+        Ok(())
+    }
+    pub async fn list_node_info(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let vec = vec![];
+        let test_url = self.config.to_url("mysql".to_string());
+        Ok(vec)
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -58,18 +151,5 @@ pub struct BaseConfig {
 
 #[test]
 fn test_host() -> Result<(), anyhow::Error> {
-    let test_database_request = BaseConfigEnum::Mysql(DatabaseHostStruct {
-        host: "localhost".to_string(),
-        database: "test".to_string(),
-        user_name: "root".to_string(),
-        password: "123456".to_string(),
-        port: 3306,
-    });
-    let ss = BaseConfig {
-        base_config_enum: test_database_request,
-    };
-    let json_str = serde_json::to_string(&ss)?;
-    println!("{}", json_str);
-
     Ok(())
 }

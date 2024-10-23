@@ -2,15 +2,15 @@ use crate::common_tools::about::get_about_version_with_error;
 
 use crate::common_tools::base_response::BaseResponse;
 
-use crate::common_tools::database::list_database_with_error;
 use crate::common_tools::database::test_url_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
-use crate::vojo::static_connections::Connections;
 use tauri::State;
 
 use super::base_config_service::get_base_config_with_error;
+use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
 macro_rules! handle_response {
     ($result:expr) => {
@@ -57,12 +57,13 @@ pub async fn get_base_config(state: State<'_, AppState>) -> Result<String, ()> {
 
     Ok(res)
 }
+
 #[tauri::command]
-pub async fn list_database(
+
+pub async fn list_node_info(
     state: State<'_, AppState>,
-    state2: State<'_, Connections>,
-    id: i32,
+    list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
-    let res = handle_response!(list_database_with_error(state, state2, id).await);
+    let res = handle_response!(list_node_info_with_error(state, list_node_info_req).await);
     Ok(res)
 }

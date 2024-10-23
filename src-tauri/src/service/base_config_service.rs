@@ -24,7 +24,7 @@ pub async fn save_base_config_with_error(
 pub async fn get_base_config_with_error(
     state: State<'_, AppState>,
 ) -> Result<GetBaseConnectionResponse, anyhow::Error> {
-    let row_list = sqlx::query("select connection_name,id from base_config")
+    let row_list = sqlx::query("select connection_name,id,connection_json from base_config")
         .fetch_all(&state.pool)
         .await?;
 
@@ -35,9 +35,13 @@ pub async fn get_base_config_with_error(
             .map(
                 |item| -> Result<GetBaseConnectionResponseItem, anyhow::Error> {
                     let id: i32 = item.try_get("id")?;
+                    let connection_json_str: String = item.try_get("connection_json")?;
+                    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+                    let connection_type = base_config.base_config_enum.get_connection_type();
                     Ok(GetBaseConnectionResponseItem {
                         base_config_id: id,
                         connection_name: item.try_get("connection_name")?,
+                        connection_type,
                     })
                 },
             )
@@ -50,7 +54,7 @@ pub async fn get_base_config_with_error(
 pub async fn list_node_info_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-) -> Result<Vec<String>, anyhow::Error> {
+) -> Result<Vec<(String, String)>, anyhow::Error> {
     let value = list_node_info_req.level_infos[0]
         .config_value
         .parse::<i32>()?;

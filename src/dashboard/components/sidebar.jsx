@@ -1,10 +1,11 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useTranslation } from "react-i18next";
 import { Tree } from "react-arborist";
 import { invoke } from "@tauri-apps/api/core";
 import { uuid } from "../../lib/utils";
+import { getIcon } from "../../lib/iconUtils";
 const data = [
     { id: "1", name: "Unread" },
     { id: "2", name: "Threads" },
@@ -27,9 +28,30 @@ const data = [
         ],
     },
 ];
-
+const mysqlDatabaseData = [{
+    name: "Query",
+    iconName: "query",
+}, {
+    name: "Tables",
+    iconName: "tables",
+},
+{
+    name: "Views",
+    iconName: "views",
+},
+{
+    name: "Functions",
+    iconName: "functions",
+},
+{
+    name: "Procedures",
+    iconName: "procedures",
+}
+]
 
 const Sidebar = ({ menuList, onButtonClick }) => {
+    const treeRef = useRef();
+
     const [currentMenuList, setCurrentMenuList] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -54,6 +76,20 @@ const Sidebar = ({ menuList, onButtonClick }) => {
 
     }
     const clickNode = async (node) => {
+        //if the parent node is mysql
+        if (node.level == 1 && node.parent.data.connectionType == 0) {
+            const newChildren = mysqlDatabaseData.map((item, index) => {
+                return {
+                    id: uuid(),
+                    name: item.name,
+                    iconName: item.iconName
+                }
+            });
+            findAndReplaceChildren(currentMenuList, node.data.id, newChildren);
+            setCurrentMenuList([...currentMenuList]);
+            return;
+
+        }
         console.log(node);
         const listNodeInfoReq = {
             level_infos: getLevelInfos(node),
@@ -65,7 +101,8 @@ const Sidebar = ({ menuList, onButtonClick }) => {
         const newChildren = response_msg.map((item, index) => {
             return {
                 id: uuid(),
-                name: item
+                name: item[0],
+                iconName: item[1]
             }
         })
         findAndReplaceChildren(currentMenuList, node.data.id, newChildren);
@@ -92,38 +129,36 @@ const Sidebar = ({ menuList, onButtonClick }) => {
         return false; // Return false if the target id is not found
     }
     const handleClickIcon = (node) => {
-        if (node.children.length > 0) {
+        console.log(treeRef.current.root);
+        if (node.children && node.children.length > 0) {
             node.isInternal && node.toggle()
         } else {
             clickNode(node);
         }
 
     };
+
     const treeNode = ({ node, style, dragHandle }) => {
         return (
-            <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2"  >
-                {node.isOpen && <svg onClick={() => handleClickIcon(node)} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 9l6 6l6 -6" /></svg>}
-                {!node.isOpen && < svg onClick={() => handleClickIcon(node)} xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>}
-                <svg xmlns="http://www.w3.org/2000/svg"
-                    width={16} height={16} viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0}
-                    strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-brand-mysql fill-slate-50">
-                    <path stroke="none" d="M0 0h24v24H0z" className={`${node.isOpen ? 'fill-lime-500' : 'fill-slate-500'}`} />
-                    <path d="M13 21c-1.427 -1.026 -3.59 -3.854 -4 -6c-.486 .77 -1.501 2 -2 2c-1.499 -.888 -.574 -3.973 0 -6c-1.596 -1.433 -2.468 -2.458 -2.5 -4c-3.35 -3.44 -.444 -5.27 2.5 -3h1c8.482 .5 6.421 8.07 9 11.5c2.295 .522 3.665 2.254 5 3.5c-2.086 -.2 -2.784 -.344 -3.5 0c.478 1.64 2.123 2.2 3.5 3" />
-                    <path d="M9 7h.01" />
-                </svg>
-                <p className="text-sm" onClick={() => clickNode(node)} >{node.data.name}</p>
+            <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2 content-center items-center justify-items-center px-2 hover:bg-slate-200 group/item " onClick={() => handleClickIcon(node)} >
+                {node.isOpen && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 9l6 6l6 -6" /></svg>}
+                {!node.isOpen && < svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>}
+                {getIcon(node.data.iconName, node)}
+                <p className="text-sm"  >{node.data.name}</p>
+
+                <div className="flex flex-row ml-auto ">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" /><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" /></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible hover:bg-slate-200 group-hover/item:visible "><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
+                </div>
             </div >
         );
     }
-    return (<div className={"pb-12 h-screen flex col-span-2 sticky top-0 overflow-auto"}>
-        <div className="space-y-4 py-1">
-            <div className="px-3 py-2">
-                <Tree data={currentMenuList}>
-                    {treeNode}
-                </Tree>
+    return (
+        <div className={"h-screen flex  sticky top-0 overflow-auto col-span-2 "}>
+            <Tree data={currentMenuList} ref={treeRef} width={"100%"} >
+                {treeNode}
+            </Tree>
 
-            </div>
-        </div>
-    </div>);
+        </div >);
 };
 export default Sidebar;

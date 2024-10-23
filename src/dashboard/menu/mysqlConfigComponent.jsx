@@ -125,30 +125,64 @@ export function MysqlConfigComponent({ connectionName }) {
             });
             return;
         }
-        const source = {
-            host: {
-                host: currentHost,
-                port: parseInt(currentPort),
-                database: currentDatabase,
-                user_name: currentUsername,
-                password: currentPassword,
+        let testHostStruct = null;
+        if (connectType == "connectTypeUrl") {
+            try {
+                const { ip, port, database, userName, password } = parseConnectionUrl(currentUrl);
+                testHostStruct = {
+                    mysql: {
+                        host: ip,
+                        port: parseInt(port),
+                        database: database,
+                        user_name: userName,
+                        password: password,
+                    }
+                };
+                console.log(JSON.stringify(testHostStruct));
+            } catch (err) {
+                toast({
+                    variant: "destructive",
+                    title: err.toString(),
+                    description: currentUrl,
+                });
+                return;
             }
-        };
-        const database = {
-            database_type: 0,
-            source: source
-        };
-        const createDatabaseRequest = {
-            base_config_enum: {
-                database: database
-            },
-            base_config_kind: 0
+
+        } else {
+            testHostStruct = {
+                mysql: {
+                    host: currentHost,
+                    port: parseInt(currentPort),
+                    database: currentDatabase,
+                    user_name: currentUsername,
+                    password: currentPassword,
+                }
+            };
+        }
+
+        const SaveConnectionRequest = {
+            base_config: { base_config_enum: testHostStruct },
+            connection_name: connectionName
         };
         console.log(connectionName);
-        const { response_code, response_msg } = await JSON.parse(await invoke("save_base_config", { baseConfig: createDatabaseRequest }));
+        const { response_code, response_msg } = await JSON.parse(await invoke("save_base_config", { saveConnectionRequest: SaveConnectionRequest }));
         console.log(response_code);
         console.log(response_msg);
-        window.location.reload();
+        if (response_code === 0) {
+            toast({
+                title: "操作信息",
+                description: "保存成功。",
+            });
+            window.location.reload();
+
+        }
+        else {
+            toast({
+                variant: "destructive",
+                title: "操作信息",
+                description: response_msg,
+            });
+        }
     };
     return (
         <div className="flex flex-col gap-5 border-dashed border-2 border-indigo-600  p-4">

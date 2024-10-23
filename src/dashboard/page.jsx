@@ -18,70 +18,21 @@ export default function DashboardPage() {
     useEffect(() => {
         loadData();
     }, []);
-    const constMenulist = () => {
-        return [
-            {
-                label: "转换工具",
-                menuIndex: 0,
-                sourceIndex: 0,
-                render: <Base64TextPage />
-            },
-            {
-                label: "格式化",
-                menuIndex: 1,
-                sourceIndex: 1,
-                render: <FormatPage />
-            }, {
-                label: "UrlEncode/UrlDecode",
-                menuIndex: 2,
-                sourceIndex: 2,
-                render: <UrlEncodePage />
-            },
-            {
-                label: "摘要算法(MD5,SHA)",
-                menuIndex: 3,
-                sourceIndex: 3,
-                render: <DigestPage />
-            },
-            {
-                label: " 时间戳",
-                menuIndex: 4,
-                sourceIndex: 4,
-                render: <TimestampPage />
-            },
-            {
-                label: "二维码",
-                menuIndex: 5,
-                sourceIndex: 5,
-                render: <QrcodePage />
-            },
-            {
-                label: "调色器",
-                menuIndex: 6,
-                sourceIndex: 6,
-                render: <ColorPalettePage />
-            }, {
-                label: "文本对比",
-                menuIndex: 7,
-                sourceIndex: 7,
-                render: <DiffViewerPage />
-            },
-            {
-                label: "加密算法",
-                menuIndex: 8,
-                sourceIndex: 8,
-                render: <CryptoPage />
-            }
-        ];
-    };
+
     const loadData = async () => {
         const { response_code, response_msg } = JSON.parse(await invoke("get_base_config"));
         console.log(response_code);
         console.log("get_menu_config:" + JSON.stringify(response_msg));
         if (response_code == 0) {
-            const newMenulist = response_msg.map((index, item) => {
+            const newMenulist = response_msg.base_config_list.map((item, index) => {
+                console.log(item);
+                console.log(index);
+
                 return {
-                    label: "111",
+                    key: index,
+                    id: index.toString(),
+                    name: item.connection_name,
+                    baseConfigId: item.base_config_id,
                     menuIndex: index,
                     render: <CryptoPage />
                 };

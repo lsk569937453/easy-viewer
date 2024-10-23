@@ -29,17 +29,24 @@ impl BaseConfigEnum {
 
         Ok(())
     }
+    pub fn get_connection_type(&self) -> i32 {
+        match self {
+            BaseConfigEnum::Mysql(_) => 0,
+            BaseConfigEnum::Postgresql(_) => 1,
+            BaseConfigEnum::Kafka(_) => 2,
+        }
+    }
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<String>, anyhow::Error> {
+    ) -> Result<Vec<(String, String)>, anyhow::Error> {
         let vec = match self {
             BaseConfigEnum::Mysql(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
-            _ => vec!["".to_string()],
+            _ => vec![("".to_string(), "".to_string())],
         };
         Ok(vec)
     }
@@ -64,7 +71,7 @@ impl MysqlConfig {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<String>, anyhow::Error> {
+    ) -> Result<Vec<(String, String)>, anyhow::Error> {
         let mut vec = vec![];
         let connection_url = self.config.to_url("mysql".to_string());
 
@@ -74,11 +81,25 @@ impl MysqlConfig {
                 let base_config_id = level_infos[0].config_value.parse::<i32>()?;
                 let mut conn = MySqlConnection::connect(&connection_url).await?;
 
-                let rows = sqlx::query("SHOW DATABASES").fetch_all(&mut conn).await?;
+                let rows = sqlx::query(
+                    "SELECT `schema_name`
+from INFORMATION_SCHEMA.SCHEMATA
+WHERE
+    `schema_name` NOT IN(
+        'information_schema',
+        'mysql',
+        'performance_schema'
+    );",
+                )
+                .fetch_all(&mut conn)
+                .await?;
 
                 for item in rows {
-                    let buf: &[u8] = item.try_get("Database")?;
-                    vec.push(String::from_utf8_lossy(buf).to_string());
+                    let buf: &[u8] = item.try_get(0)?;
+                    vec.push((
+                        String::from_utf8_lossy(buf).to_string(),
+                        "database".to_string(),
+                    ));
                 }
                 info!("list_node_info: {:?}", vec);
                 return Ok(vec);
@@ -95,7 +116,10 @@ impl MysqlConfig {
                 let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
                 for item in rows {
                     let buf: &[u8] = item.try_get(0)?;
-                    vec.push(String::from_utf8_lossy(buf).to_string());
+                    vec.push((
+                        String::from_utf8_lossy(buf).to_string(),
+                        "sgingleTable".to_string(),
+                    ));
                 }
                 info!("list_node_info: {:?}", vec);
                 return Ok(vec);
@@ -121,7 +145,7 @@ impl PostgresqlConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
-    ) -> Result<Vec<String>, anyhow::Error> {
+    ) -> Result<Vec<(String, String)>, anyhow::Error> {
         let vec = vec![];
         let test_url = self.config.to_url("mysql".to_string());
         Ok(vec)

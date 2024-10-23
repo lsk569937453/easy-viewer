@@ -22,6 +22,8 @@ export default function DashboardPage() {
                 console.log(index);
 
                 return {
+                    connectionType: item.connection_type,
+                    iconName: "mysql",
                     key: index,
                     id: uuid(),
                     name: item.connection_name,
@@ -41,7 +43,7 @@ export default function DashboardPage() {
         return selectedMenu ? selectedMenu.render : null;
     };
     return (<>
-        <div className="max-h-full grid grid-cols-10 relative h-screen overflow-hidden divide-x divide-foreground/30">
+        <div className="max-h-full grid grid-cols-10 relative h-screen overflow-hidden divide-x divide-foreground/30 py-2">
             <Sidebar menuList={menulist} onButtonClick={handleMenuClick} />
             <div className="col-span-8">{renderComponent(selectedIndex)}</div>
         </div>

@@ -31,12 +31,6 @@ async fn main() -> Result<(), anyhow::Error> {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            let _ = app
-                .get_webview_window("main")
-                .expect("no main window")
-                .set_focus();
-        }))
         .manage(appstate)
         .setup(|app| {
             let quit = MenuItem::with_id(app, "quit".to_string(), "Quit", true, None::<&str>)?;
@@ -82,6 +76,10 @@ async fn main() -> Result<(), anyhow::Error> {
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(LevelFilter::Info)
+                .level_for(
+                    "tao::platform_impl::platform::event_loop::runner",
+                    log::LevelFilter::Error,
+                )
                 .build(),
         )
         .on_window_event(|window, event| {

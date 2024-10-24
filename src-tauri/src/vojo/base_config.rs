@@ -136,10 +136,19 @@ WHERE
 
                 if node_name == "Columns" {
                     let mut conn = MySqlConnection::connect(&connection_url).await?;
-
-                    let sql = format!("use {}", database_name);
+                    let mut sql = format!("use {}", database_name);
                     info!("sql: {}", sql);
                     conn.execute(&*sql).await?;
+                    sql = format!("describe {};", table_name);
+                    info!("sql: {}", sql);
+                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    for item in rows {
+                        let buf: &[u8] = item.try_get(0)?;
+                        vec.push((
+                            String::from_utf8_lossy(buf).to_string(),
+                            "singleTable".to_string(),
+                        ));
+                    }
                 }
             }
 

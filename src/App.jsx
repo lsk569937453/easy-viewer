@@ -6,13 +6,13 @@ import DashboardPage from "./dashboard/page";
 import { cn } from "./lib/utils";
 function App() {
     return (<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="h-screen overflow-clip">
-        <Menu />
-        <div className={cn("h-screen  border-t bg-background pb-8 border-foreground/30", "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md")}>
-          <DashboardPage />
+        <div className="h-full overflow-clip">
+            <Menu />
+            <div className={cn("h-full border-t bg-background pb-8 border-foreground/30", "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md")}>
+                <DashboardPage />
+            </div>
         </div>
-      </div>
-      <TailwindIndicator />
+        <TailwindIndicator />
     </ThemeProvider>);
 }
 export default App;

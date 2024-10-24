@@ -78,7 +78,6 @@ impl MysqlConfig {
         let level_infos = list_node_info_req.level_infos;
         match level_infos.len() {
             1 => {
-                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
                 let mut conn = MySqlConnection::connect(&connection_url).await?;
 
                 let rows = sqlx::query(
@@ -104,27 +103,46 @@ WHERE
                 info!("list_node_info: {:?}", vec);
                 return Ok(vec);
             }
-            2 => {
+            2 => {}
+            3 => {
                 let base_config_id = level_infos[0].config_value.parse::<i32>()?;
                 let database_name = level_infos[1].config_value.clone();
-                let mut conn = MySqlConnection::connect(&connection_url).await?;
+                let node_name = level_infos[2].config_value.clone();
+                if node_name == "Tables" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
 
-                let sql = format!("use {}", database_name);
-                info!("sql: {}", sql);
-                conn.execute(&*sql).await?;
+                    let sql = format!("use {}", database_name);
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
 
-                let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
-                for item in rows {
-                    let buf: &[u8] = item.try_get(0)?;
-                    vec.push((
-                        String::from_utf8_lossy(buf).to_string(),
-                        "sgingleTable".to_string(),
-                    ));
+                    let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
+                    for item in rows {
+                        let buf: &[u8] = item.try_get(0)?;
+                        vec.push((
+                            String::from_utf8_lossy(buf).to_string(),
+                            "singleTable".to_string(),
+                        ));
+                    }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(vec);
                 }
-                info!("list_node_info: {:?}", vec);
-                return Ok(vec);
             }
-            3 => {}
+            4 => {}
+            5 => {
+                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+                let database_name = level_infos[1].config_value.clone();
+                let table_name = level_infos[3].config_value.clone();
+                let node_name = level_infos[4].config_value.clone();
+
+                if node_name == "Columns" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                    let sql = format!("use {}", database_name);
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                }
+            }
+
             _ => {}
         }
 

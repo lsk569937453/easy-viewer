@@ -4,12 +4,26 @@ import { useState, useEffect } from "react";
 import { uuid } from "../lib/utils";
 import CryptoPage from "./page/cryptoPage";
 import { useTranslation } from "react-i18next";
-import { Menu, MenuItem, IconMenuItem } from '@tauri-apps/api/menu';
+import { Menu, MenuItem, IconMenuItem } from '@tauri-apps/api/menu'; import { Button } from "@/components/ui/button"
 
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
+const initData = [{
+    name: "account",
+    render: <p>aassssaa</p>
+}, {
+    name: "paassword",
+    render: <p>Password</p>
+}];
 export default function DashboardPage() {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { t, i18n } = useTranslation();
     const [menulist, setMenulist] = useState([]);
+    const [testData, setTestData] = useState(initData);
     useEffect(() => {
         loadData();
     }, []);
@@ -62,9 +76,47 @@ export default function DashboardPage() {
     const handleMenuClick = (index) => {
         setSelectedIndex(index);
     };
+    const handleRemoveButton = (index) => {
+        testData.splice(index, 1);
+        setTestData([...testData]);
+    };
+
     const renderComponent = (menuIndex) => {
-        const selectedMenu = menulist.find((item) => item.menuIndex === menuIndex);
-        return selectedMenu ? selectedMenu.render : null;
+        return (
+            <Tabs defaultValue="account" className="w-full h-full">
+                <TabsList className="grid w-full grid-cols-8">
+                    {/* <TabsTrigger value="account">
+                        <div className="flex flex-row justify-center items-center gap-1">
+                            <div>Account</div>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                        </div>
+                    </TabsTrigger>
+                    <TabsTrigger value="password">Password</TabsTrigger> */}
+                    {testData.map((item, index) => {
+                        return (
+                            <TabsTrigger value={item.name}>
+                                <div className="flex flex-row justify-center items-center gap-1">
+                                    <div>{item.name}</div>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" onClick={() => { handleRemoveButton(index) }} height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
+                                </div>
+                            </TabsTrigger>
+                        );
+                    })}
+                </TabsList>
+                {
+                    testData.map((item, index) => {
+                        return (<TabsContent key={index} value={item.name}>{item.render}</TabsContent>);
+                    })
+                }
+                {/* <TabsContent value="account">
+                    <p>aassssaa</p>
+
+                </TabsContent>
+                <TabsContent value="password">
+                    <p>aaaa</p>
+                </TabsContent> */}
+            </Tabs>
+        )
     };
     return (<>
         <div className="max-h-full grid grid-cols-10  h-full overflow-y-auto overscroll-x-none  divide-x divide-foreground/30 "

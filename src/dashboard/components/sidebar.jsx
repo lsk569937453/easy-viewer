@@ -155,7 +155,7 @@ const Sidebar = ({ menuList, onButtonClick }) => {
                     id: uuid(),
                     name: item[0],
                     iconName: item[1],
-                    showFirstIcon: true,
+                    showFirstIcon: node.level == 4 ? false : true,
                     showSecondIcon: true,
                 }
             })

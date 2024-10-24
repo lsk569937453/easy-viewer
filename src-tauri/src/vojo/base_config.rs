@@ -144,10 +144,19 @@ WHERE
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
-                        vec.push((
-                            String::from_utf8_lossy(buf).to_string(),
-                            "singleTable".to_string(),
-                        ));
+                        let key: &[u8] = item.try_get(3)?;
+                        info!("key: {}", String::from_utf8_lossy(key).to_string());
+                        if key == b"PRI" {
+                            vec.push((
+                                String::from_utf8_lossy(buf).to_string(),
+                                "primary".to_string(),
+                            ));
+                        } else {
+                            vec.push((
+                                String::from_utf8_lossy(buf).to_string(),
+                                "column".to_string(),
+                            ));
+                        }
                     }
                 }
             }

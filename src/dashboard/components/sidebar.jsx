@@ -48,7 +48,17 @@ const mysqlDatabaseData = [{
     iconName: "procedures",
 }
 ]
-
+const mysqlTableData = [{
+    name: "Columns",
+    iconName: "columns",
+}, {
+    name: "Index",
+    iconName: "index",
+},
+{
+    name: "Partitions",
+    iconName: "partitions",
+},]
 const Sidebar = ({ menuList, onButtonClick }) => {
     const treeRef = useRef();
 
@@ -75,7 +85,16 @@ const Sidebar = ({ menuList, onButtonClick }) => {
         return levelInfos;
 
     }
+    const findParentNode = (node) => {
+        let temNode = node;
+        while (temNode.level !== 0) {
+            temNode = temNode.parent;
+        }
+        return temNode;
+
+    }
     const clickNode = async (node) => {
+        console.log(node);
         //if the parent node is mysql
         if (node.level == 1 && node.parent.data.connectionType == 0) {
             const newChildren = mysqlDatabaseData.map((item, index) => {
@@ -91,7 +110,21 @@ const Sidebar = ({ menuList, onButtonClick }) => {
             setCurrentMenuList([...currentMenuList]);
             return;
 
+        } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
+            const newChildren = mysqlTableData.map((item, index) => {
+                return {
+                    id: uuid(),
+                    name: item.name,
+                    iconName: item.iconName,
+                    showFirstIcon: true,
+                    showSecondIcon: true,
+                }
+            });
+            findAndReplaceChildren(currentMenuList, node.data.id, newChildren);
+            setCurrentMenuList([...currentMenuList]);
+            return;
         }
+
         console.log(node);
         const listNodeInfoReq = {
             level_infos: getLevelInfos(node),
@@ -172,8 +205,9 @@ const Sidebar = ({ menuList, onButtonClick }) => {
         );
     }
     return (
-        <div className={"h-screen flex  top-0 overflow-auto col-span-2 relative z-10"}>
-            <Tree data={currentMenuList} ref={treeRef} width={"100%"}>
+        <div className={"h-screen flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"}>
+            <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10}
+            >
                 {treeNode}
             </Tree>
 

@@ -6,6 +6,9 @@ import { Tree } from "react-arborist";
 import { invoke } from "@tauri-apps/api/core";
 import { uuid } from "../../lib/utils";
 import { getIcon } from "../../lib/iconUtils";
+import useResizeObserver from "use-resize-observer";
+
+
 const data = [
     { id: "1", name: "Unread" },
     { id: "2", name: "Threads" },
@@ -61,6 +64,7 @@ const mysqlTableData = [{
 },]
 const Sidebar = ({ menuList, onButtonClick }) => {
     const treeRef = useRef();
+    const { ref, width, height } = useResizeObserver();
 
     const [currentMenuList, setCurrentMenuList] = useState([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -191,7 +195,7 @@ const Sidebar = ({ menuList, onButtonClick }) => {
 
     const treeNode = ({ node, style, dragHandle }) => {
         return (
-            <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2 content-center items-center justify-items-center px-2 hover:bg-slate-200 group/item " onClick={() => node.data.showFirstIcon ? handleClickIcon(node) : null} >
+            <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2 content-center items-center justify-items-center  hover:bg-slate-200 group/item p-1" onClick={() => node.data.showFirstIcon ? handleClickIcon(node) : null} >
                 {node.data.showFirstIcon && node.isOpen && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 9l6 6l6 -6" /></svg>}
                 {node.data.showFirstIcon && !node.isOpen && < svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>}
                 {getIcon(node)}
@@ -205,8 +209,8 @@ const Sidebar = ({ menuList, onButtonClick }) => {
         );
     }
     return (
-        <div className={"h-screen flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"}>
-            <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10}
+        <div className={"h-screen flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"} ref={ref}>
+            <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10} height={height}
             >
                 {treeNode}
             </Tree>

@@ -67,7 +67,7 @@ export default function DashboardPage() {
         return selectedMenu ? selectedMenu.render : null;
     };
     return (<>
-        <div className="max-h-full grid grid-cols-10  h-full overflow-y-auto overscroll-x-none  divide-x divide-foreground/30 py-2 "
+        <div className="max-h-full grid grid-cols-10  h-full overflow-y-auto overscroll-x-none  divide-x divide-foreground/30 "
         // onContextMenu={handleContextMenu}
         >
             <Sidebar menuList={menulist} onButtonClick={handleMenuClick} />

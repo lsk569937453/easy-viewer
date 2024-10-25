@@ -2,9 +2,9 @@ import { invoke } from "@tauri-apps/api/core";
 import Sidebar from "./components/sidebar";
 import { useState, useEffect } from "react";
 import { uuid } from "../lib/utils";
-import CryptoPage from "./page/cryptoPage";
 import { useTranslation } from "react-i18next";
-import { Menu, MenuItem, IconMenuItem } from '@tauri-apps/api/menu'; import { Button } from "@/components/ui/button"
+import { Menu, MenuItem, IconMenuItem } from '@tauri-apps/api/menu';
+import { Button } from "@/components/ui/button"
 
 import {
     Tabs,
@@ -12,18 +12,13 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs"
-const initData = [{
-    name: "account",
-    render: <p>aassssaa</p>
-}, {
-    name: "paassword",
-    render: <p>Password</p>
-}];
+
 export default function DashboardPage() {
     const [selectedIndex, setSelectedIndex] = useState(0);
     const { t, i18n } = useTranslation();
     const [menulist, setMenulist] = useState([]);
-    const [testData, setTestData] = useState(initData);
+    const [pageDataArray, setPageDataArray] = useState([]);
+    const [tabValue, setTabValue] = useState(null);
     useEffect(() => {
         loadData();
     }, []);
@@ -66,37 +61,40 @@ export default function DashboardPage() {
                     id: uuid(),
                     name: item.connection_name,
                     baseConfigId: item.base_config_id,
-                    render: <CryptoPage />
                 };
             })
             console.log("convert to:" + JSON.stringify(newMenulist));
             setMenulist(newMenulist);
         }
     };
-    const handleMenuClick = (index) => {
-        setSelectedIndex(index);
+    const handleAddPageClick = (item) => {
+        const itemIndex = pageDataArray.findIndex((existingItem) => existingItem.name === item.name);
+
+        if (itemIndex > -1) {
+            pageDataArray[itemIndex] = item;
+        } else {
+            pageDataArray.push(item);
+        }
+        setTabValue(item.name);
+        setPageDataArray([...pageDataArray]);
     };
     const handleRemoveButton = (index) => {
-        testData.splice(index, 1);
-        setTestData([...testData]);
+        pageDataArray.splice(index, 1);
+        setPageDataArray([...pageDataArray]);
     };
 
-    const renderComponent = (menuIndex) => {
+    const renderComponent = () => {
         return (
-            <Tabs defaultValue="account" className="w-full h-full">
+            <Tabs value={tabValue} className="w-full h-full" onValueChange={setTabValue}>
                 <TabsList className="grid w-full grid-cols-8">
-                    {/* <TabsTrigger value="account">
-                        <div className="flex flex-row justify-center items-center gap-1">
-                            <div>Account</div>
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
-                        </div>
-                    </TabsTrigger>
-                    <TabsTrigger value="password">Password</TabsTrigger> */}
-                    {testData.map((item, index) => {
+                    {pageDataArray.map((item, index) => {
                         return (
-                            <TabsTrigger value={item.name}>
+                            <TabsTrigger value={item.name} key={index}>
                                 <div className="flex flex-row justify-center items-center gap-1">
-                                    <div>{item.name}</div>
+                                    <div className="flex flex-row justify-center items-center gap-1">
+                                        {item.icon}
+                                        <p>    {item.name}</p>
+                                    </div>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" onClick={() => { handleRemoveButton(index) }} height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M18 6l-12 12" /><path d="M6 6l12 12" /></svg>
                                 </div>
                             </TabsTrigger>
@@ -104,26 +102,23 @@ export default function DashboardPage() {
                     })}
                 </TabsList>
                 {
-                    testData.map((item, index) => {
-                        return (<TabsContent key={index} value={item.name}>{item.render}</TabsContent>);
+                    pageDataArray.map((item, index) => {
+                        return (
+                            <TabsContent key={index} value={item.name}>
+                                {item.render}
+                            </TabsContent>
+                        );
                     })
                 }
-                {/* <TabsContent value="account">
-                    <p>aassssaa</p>
 
-                </TabsContent>
-                <TabsContent value="password">
-                    <p>aaaa</p>
-                </TabsContent> */}
             </Tabs>
         )
     };
     return (<>
         <div className="max-h-full grid grid-cols-10  h-full overflow-y-auto overscroll-x-none  divide-x divide-foreground/30 "
-        // onContextMenu={handleContextMenu}
         >
-            <Sidebar menuList={menulist} onButtonClick={handleMenuClick} />
-            <div className="col-span-8">{renderComponent(selectedIndex)}</div>
+            <Sidebar menuList={menulist} handleAddPageClick={handleAddPageClick} />
+            <div className="col-span-8">{renderComponent()}</div>
         </div>
     </>);
 }

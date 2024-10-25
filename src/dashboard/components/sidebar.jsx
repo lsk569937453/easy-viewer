@@ -62,7 +62,7 @@ const mysqlTableData = [{
     name: "Partitions",
     iconName: "partitions",
 },]
-const Sidebar = ({ menuList, onButtonClick }) => {
+const Sidebar = ({ menuList, handleAddPageClick }) => {
     const treeRef = useRef();
     const { ref, width, height } = useResizeObserver();
 
@@ -167,13 +167,10 @@ const Sidebar = ({ menuList, onButtonClick }) => {
 
     const findAndReplaceChildren = (data, targetId, newChildren) => {
         for (let item of data) {
-            // Check if the current item has the target id
             if (item.id === targetId) {
-                // Replace the children with the new array
                 item.children = newChildren;
-                return true; // Return true after replacing children
+                return true;
             }
-            // If the current item has children, search recursively
             if (item.children) {
                 const found = findAndReplaceChildren(item.children, targetId, newChildren);
                 if (found) {
@@ -181,7 +178,7 @@ const Sidebar = ({ menuList, onButtonClick }) => {
                 }
             }
         }
-        return false; // Return false if the target id is not found
+        return false;
     }
     const handleClickIcon = (node) => {
         console.log(treeRef.current.root);
@@ -198,7 +195,7 @@ const Sidebar = ({ menuList, onButtonClick }) => {
             <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2 content-center items-center justify-items-center  hover:bg-slate-200 group/item p-1" onClick={() => node.data.showFirstIcon ? handleClickIcon(node) : null} >
                 {node.data.showFirstIcon && node.isOpen && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 9l6 6l6 -6" /></svg>}
                 {node.data.showFirstIcon && !node.isOpen && < svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>}
-                {getIcon(node)}
+                {getIcon(node, handleAddPageClick)}
                 {/* <p className="text-sm"  >{node.data.name}</p>
 
                 <div className="flex flex-row ml-auto ">
@@ -210,8 +207,7 @@ const Sidebar = ({ menuList, onButtonClick }) => {
     }
     return (
         <div className={"h-screen flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"} ref={ref}>
-            <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10} height={height}
-            >
+            <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10} height={height}>
                 {treeNode}
             </Tree>
 

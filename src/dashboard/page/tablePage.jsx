@@ -1,5 +1,6 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import DataPage from "./dataPage";
+
 export default function TablePage({ tableName }) {
 
     return (

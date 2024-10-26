@@ -20,3 +20,15 @@ export function uuid() {
         return v.toString(16);
     });
 }
+export function highlightSQL(sql) {
+    const keywords = /\b(SELECT|FROM|WHERE|INSERT|INTO|VALUES|DELETE|UPDATE|JOIN|ON|AND|OR|NOT|NULL|AS|LIKE|GROUP BY|ORDER BY|LIMIT|OFFSET|HAVING|COUNT|SUM|AVG|MIN|MAX|DISTINCT|UNION|ALL|CREATE|TABLE|PRIMARY|KEY|FOREIGN|CONSTRAINT|ALTER|ADD|DROP|DEFAULT|CHECK)\b/gi;
+    const strings = /('[^']*'|"[^"]*")/g;
+    const numbers = /\b\d+(\.\d+)?\b/g;
+    const operators = /(\*|=|<>|<|>|\+|-|\/|%)/g;
+
+    return sql
+        .replace(keywords, '<span class="text-blue-400 font-bold">$&</span>')
+        .replace(strings, '<span class="text-pink-400">$&</span>')
+        .replace(numbers, '<span class="text-green-400">$&</span>')
+        .replace(operators, '<span class="text-purple-400">$&</span>');
+}

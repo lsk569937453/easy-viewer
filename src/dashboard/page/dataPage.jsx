@@ -63,12 +63,14 @@ export default function DataPage() {
                 />
             </div>
             <div className="flex flex-row h-8 gap-1">
-                <input className=" h-full basis-16 flex w-full  
+                <div className="flex align-center relative align-text-center ">
+                    <input className=" h-full basis-16 flex 
                 border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground
                 focus:outline-none focus:border-muted
-                
-                disabled:cursor-not-allowed disabled:opacity-50" />
-
+                pl-10
+                disabled:cursor-not-allowed disabled:opacity-50" placeholder="Search results" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-search absolute left-3 mt-1"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
+                </div>
                 <Button variant="outline" size="icon" className="border-none h-full w-7">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
                 </Button>

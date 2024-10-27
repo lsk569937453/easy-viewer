@@ -21,7 +21,7 @@
         --background: 0 0% 100%;
         --foreground: 222.2 47.4% 11.2%;
 
-        --muted: 224, 25%, 61%;
+        --muted: 224 25%, 61%;
         --muted-foreground: 215.4 16.3% 46.9%;
 
         --popover: 0 0% 100%;
@@ -100,6 +100,35 @@
     }
 }
 
+@layer utilities {
+    .scrollbar::-webkit-scrollbar {
+        width: 20px;
+        height: 20px;
+    }
+
+    .scrollbar::-webkit-scrollbar-track {
+        /* border-radius: 100vh; */
+        background: hsl(var(--background));
+    }
+
+    .scrollbar::-webkit-scrollbar-thumb {
+        background: hsl(var(--border));
+        /* border-radius: 100vh; */
+        border: 3px solid hsl(var(--border));
+    }
+
+    .scrollbar::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--border));
+    }
+
+    /* .scrollbar::-webkit-scrollbar-button:vertical:decrement {
+        background-color: red;
+    }
+
+    .scrollbar::-webkit-scrollbar-button:vertical:increment {
+        background-color: red;
+    } */
+}
 
 html {
     @apply font-sans;

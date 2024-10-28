@@ -3,6 +3,7 @@
 mod common_tools;
 mod service;
 mod sql_lite;
+mod util;
 mod vojo;
 use crate::service::cmd::*;
 use log::LevelFilter;
@@ -93,7 +94,8 @@ async fn main() -> Result<(), anyhow::Error> {
             test_url,
             save_base_config,
             get_base_config,
-            list_node_info
+            list_node_info,
+            exe_sql,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

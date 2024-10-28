@@ -9,6 +9,7 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use tauri::State;
 
+use super::base_config_service::exe_sql_with_error;
 use super::base_config_service::get_base_config_with_error;
 use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
@@ -65,5 +66,15 @@ pub async fn list_node_info(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let res = handle_response!(list_node_info_with_error(state, list_node_info_req).await);
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn exe_sql(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    sql: String,
+) -> Result<String, ()> {
+    let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
     Ok(res)
 }

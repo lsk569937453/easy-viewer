@@ -1,7 +1,7 @@
 import * as Tabs from "@radix-ui/react-tabs";
 import DataPage from "./dataPage";
 
-export default function TablePage({ tableName }) {
+export default function TablePage({ node }) {
 
     return (
         <Tabs.Root defaultValue="data" className="h-full w-full"
@@ -34,7 +34,7 @@ export default function TablePage({ tableName }) {
             </Tabs.Content>
 
             <Tabs.Content value="data" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                <DataPage />
+                <DataPage node={node} />
             </Tabs.Content>
 
             <Tabs.Content value="diagram" className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">

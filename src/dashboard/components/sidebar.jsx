@@ -4,10 +4,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useTranslation } from "react-i18next";
 import { Tree } from "react-arborist";
 import { invoke } from "@tauri-apps/api/core";
-import { uuid } from "../../lib/utils";
+import { uuid, getLevelInfos } from "../../lib/utils";
 import { getIcon } from "../../lib/iconUtils";
 import useResizeObserver from "use-resize-observer";
-
 
 const data = [
     { id: "1", name: "Unread" },
@@ -76,19 +75,7 @@ const Sidebar = ({ menuList, handleAddPageClick }) => {
         setCurrentMenuList(menuList);
     }, [menuList]);
 
-    const getLevelInfos = (node) => {
-        const levelInfos = [];
-        let tempNode = node;
-        for (let i = node.level; i > 0; i--) {
-            levelInfos.push({ level: i, config_value: tempNode.data.name });
-            tempNode = tempNode.parent;
-        }
-        levelInfos.push({ level: 0, config_value: tempNode.data.baseConfigId.toString() });
 
-        levelInfos.reverse();
-        return levelInfos;
-
-    }
     const findParentNode = (node) => {
         let temNode = node;
         while (temNode.level !== 0) {

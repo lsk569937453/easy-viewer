@@ -32,3 +32,16 @@ export function highlightSQL(sql) {
         .replace(numbers, '<span class="text-green-400">$&</span>')
         .replace(operators, '<span class="text-purple-400">$&</span>');
 }
+export function getLevelInfos(node) {
+    const levelInfos = [];
+    let tempNode = node;
+    for (let i = node.level; i > 0; i--) {
+        levelInfos.push({ level: i, config_value: tempNode.data.name });
+        tempNode = tempNode.parent;
+    }
+    levelInfos.push({ level: 0, config_value: tempNode.data.baseConfigId.toString() });
+
+    levelInfos.reverse();
+    return levelInfos;
+
+}

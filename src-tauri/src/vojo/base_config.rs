@@ -1,13 +1,15 @@
+use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
+use crate::util::sql_utils::mysql_row_to_json;
 use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Column;
 use sqlx::Connection;
 use sqlx::Executor;
 use sqlx::MySqlConnection;
 use sqlx::Row;
-
-use super::list_node_info_req::ListNodeInfoReq;
+use sqlx::TypeInfo;
 #[derive(Deserialize, Serialize)]
 pub enum BaseConfigEnum {
     #[serde(rename = "mysql")]
@@ -49,6 +51,24 @@ impl BaseConfigEnum {
             _ => vec![("".to_string(), "".to_string())],
         };
         Ok(vec)
+    }
+
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sql: String,
+    ) -> Result<Vec<(String, String)>, anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            _ => (),
+        };
+        Ok([("1".to_string(), "1".to_string())].to_vec())
     }
 }
 
@@ -166,6 +186,39 @@ WHERE
 
         Ok(vec)
     }
+
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sql: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        info!("sql: {}", sql);
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        info!("rows: {:?}", rows);
+        for item in rows.iter() {
+            let columns = item.columns();
+            let len = columns.len();
+            for i in 0..len {
+                let type_name = columns[i].type_info().name();
+                info!("{},{}", columns[i].name(), columns[i].type_info().name());
+                let val = mysql_row_to_json(item, type_name, i)?;
+                info!("val: {}", val);
+            }
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -185,6 +238,20 @@ impl PostgresqlConfig {
         let vec = vec![];
         let test_url = self.config.to_url("mysql".to_string());
         Ok(vec)
+    }
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sql: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let node_name = level_infos[2].config_value.clone();
+        Ok(())
     }
 }
 

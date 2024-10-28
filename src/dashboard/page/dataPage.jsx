@@ -12,20 +12,21 @@ import {
 import AceEditor from "react-ace";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { invoke } from "@tauri-apps/api/core";
 
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/mode-sql";
 
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/theme-iplastic";
-import { ChevronRightIcon } from "@radix-ui/react-icons"
 import useResizeObserver from "use-resize-observer";
 
 import "ace-builds/src-noconflict/ext-language_tools";
 
+import { uuid, getLevelInfos } from "../../lib/utils";
 
-export default function DataPage() {
-    const [sql, setSql] = useState("SELECT * FROM all_types_table LIMIT 100");
+export default function DataPage({ node }) {
+    const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`);
 
     const [tableHeight, setTableHeight] = useState(10);
     const { ref } = useResizeObserver({
@@ -34,6 +35,19 @@ export default function DataPage() {
         },
     });
 
+
+    useEffect(() => {
+        exeSql();
+    }, []);
+
+    const exeSql = async () => {
+        const listNodeInfoReq = {
+            level_infos: getLevelInfos(node),
+        };
+        console.log(listNodeInfoReq);
+        const { response_code, response_msg } = JSON.parse(await invoke("exe_sql", { listNodeInfoReq: listNodeInfoReq, sql: sql }));
+        console.log(response_code, response_msg);
+    }
 
     useEffect(() => {
         setTableHeight(window.innerHeight - 200);
@@ -48,7 +62,7 @@ export default function DataPage() {
                 value={sql} onChange={(e) => setSql(e.target.value)} /> */}
             <div className="flex flex-row " ref={ref}>
                 <AceEditor
-                    className=" resize-y flex min-h-[20px] max-h-[200px] basis-11/12	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                    className=" resize-y flex min-h-[22px] max-h-[200px] basis-11/12	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
                     mode="sql"
                     height="100%"
                     width="100%"

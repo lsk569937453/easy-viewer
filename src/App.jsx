@@ -5,14 +5,15 @@ import { ThemeProvider } from "./dashboard/menu/theme-provider";
 import DashboardPage from "./dashboard/page";
 import { cn } from "./lib/utils";
 function App() {
-    return (<ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-        <div className="h-full overflow-clip">
-            <Menu />
-            <div className={cn("h-full border-t bg-background pb-8 border-foreground/30", "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md")}>
-                <DashboardPage />
+    return (
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <div className="h-full overflow-clip">
+                <Menu />
+                <div className={cn("h-full border-t bg-background pb-8 border-foreground/30", "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md")}>
+                    <DashboardPage />
+                </div>
             </div>
-        </div>
-        <TailwindIndicator />
-    </ThemeProvider>);
+            <TailwindIndicator />
+        </ThemeProvider>);
 }
 export default App;

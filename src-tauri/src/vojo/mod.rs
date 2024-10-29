@@ -5,3 +5,4 @@ pub mod list_node_info_req;
 pub mod menu_config;
 pub mod save_connection_req;
 pub mod static_connections;
+pub mod exe_sql_response;

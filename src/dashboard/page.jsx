@@ -68,6 +68,7 @@ export default function DashboardPage() {
         }
     };
     const handleAddPageClick = (item) => {
+        console.log(item);
         const itemIndex = pageDataArray.findIndex((existingItem) => existingItem.name === item.name);
 
         if (itemIndex > -1) {

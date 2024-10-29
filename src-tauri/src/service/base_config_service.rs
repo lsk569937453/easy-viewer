@@ -1,5 +1,6 @@
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -77,7 +78,7 @@ pub async fn exe_sql_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     sql: String,
-) -> Result<Vec<(String, String)>, anyhow::Error> {
+) -> Result<ExeSqlResponse, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
     let value = list_node_info_req.level_infos[0]
         .config_value

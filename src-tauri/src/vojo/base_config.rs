@@ -1,6 +1,8 @@
+use super::exe_sql_response::ExeSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
 use crate::util::sql_utils::mysql_row_to_json;
+use crate::vojo::exe_sql_response::Header;
 use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
@@ -58,17 +60,17 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
         sql: String,
-    ) -> Result<Vec<(String, String)>, anyhow::Error> {
-        match self {
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        let data = match self {
             BaseConfigEnum::Mysql(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Postgresql(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
-            _ => (),
+            _ => ExeSqlResponse::new(),
         };
-        Ok([("1".to_string(), "1".to_string())].to_vec())
+        Ok(data)
     }
 }
 
@@ -192,7 +194,7 @@ WHERE
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
         sql: String,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
 
         let level_infos = list_node_info_req.level_infos;
@@ -205,19 +207,37 @@ WHERE
         conn.execute(&*use_database_sql).await?;
         info!("sql: {}", sql);
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
-        info!("rows: {:?}", rows);
+        if rows.is_empty() {
+            return Ok(ExeSqlResponse::new());
+        }
+        let first_item = rows.first().ok_or(anyhow!(""))?;
+        let mut headers = vec![];
+        for item in first_item.columns() {
+            let type_name = item.type_info().name();
+            let column_name = item.name();
+            headers.push(Header {
+                name: column_name.to_string(),
+                type_name: type_name.to_string(),
+            });
+        }
+        let mut response_rows = vec![];
+        // info!("rows: {:?}", rows);
         for item in rows.iter() {
             let columns = item.columns();
             let len = columns.len();
+            let mut row = vec![];
             for i in 0..len {
                 let type_name = columns[i].type_info().name();
-                info!("{},{}", columns[i].name(), columns[i].type_info().name());
+                // info!("{},{}", columns[i].name(), columns[i].type_info().name());
                 let val = mysql_row_to_json(item, type_name, i)?;
-                info!("val: {}", val);
+                // info!("val: {}", val);
+                row.push(val.to_string());
             }
+            response_rows.push(row);
         }
+        let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
 
-        Ok(())
+        Ok(exe_sql_response)
     }
 }
 
@@ -244,14 +264,14 @@ impl PostgresqlConfig {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
         sql: String,
-    ) -> Result<(), anyhow::Error> {
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
 
         let level_infos = list_node_info_req.level_infos;
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let node_name = level_infos[2].config_value.clone();
-        Ok(())
+        Ok(ExeSqlResponse::new())
     }
 }
 

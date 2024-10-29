@@ -2,7 +2,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import DataPage from "./dataPage";
 
 export default function TablePage({ node }) {
-
+    
     return (
         <Tabs.Root defaultValue="data" className="h-full w-full"
         >

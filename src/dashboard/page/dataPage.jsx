@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Table,
     TableBody,
@@ -9,6 +9,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
+import * as AlertDialog from "@radix-ui/react-alert-dialog";
+
 import AceEditor from "react-ace";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +26,7 @@ import useResizeObserver from "use-resize-observer";
 import "ace-builds/src-noconflict/ext-language_tools";
 
 import { uuid, getLevelInfos } from "../../lib/utils";
+import { tr } from "date-fns/locale";
 const pageCount = 100;
 export default function DataPage({ node }) {
     const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`);
@@ -33,6 +36,9 @@ export default function DataPage({ node }) {
     const [currentRows, setCurrentRows] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [tableHeight, setTableHeight] = useState(10);
+    const [showLoading, setShowLoading] = useState(false);
+    const containerRef = useRef(null);
+
     const { ref } = useResizeObserver({
         onResize: ({ width, height }) => {
             setTableHeight(window.innerHeight - 160 - height);
@@ -82,6 +88,7 @@ export default function DataPage({ node }) {
     }
     return (
         <div className="w-full  flex flex-col h-full	">
+
             {/* <textarea className="flex min-h-[40px] w-full  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
                 value={sql} onChange={(e) => setSql(e.target.value)} /> */}
             <div className="flex flex-row " ref={ref}>
@@ -123,16 +130,29 @@ export default function DataPage({ node }) {
                 <Button className=" h-full" onClick={() => currentPage != rows.length / pageCount && setCurrentPage(currentPage + 1)}>next</Button>
 
             </div>
-            <div class="overflow-x-scroll overflow-y-scroll scrollbar" style={{ height: tableHeight }}>
+            <div class="overflow-x-scroll overflow-y-scroll scrollbar " style={{ height: tableHeight }} ref={containerRef}>
+                <AlertDialog.Root open={showLoading} onOpenChange={setShowLoading}>
+                    <AlertDialog.Portal container={containerRef.current}>
 
+                        <AlertDialog.Overlay className="fixed inset-0 z-20 bg-red backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                        <AlertDialog.Content className="fixed left-[50%] top-[50%] z-20 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+                            sssss
+
+                        </AlertDialog.Content>
+
+
+
+                    </AlertDialog.Portal>
+                </AlertDialog.Root>
                 <table className="text-sm  overflow-scroll	">
                     <TableHeader className="sticky top-0 bg-accent">
                         <TableRow>
                             {header.map((item, index) => (
-                                <TableHead className="w-6" key={index}>
-                                    <div className="flex flex-col">
+                                <TableHead className="w-6 border resize" key={index}>
+                                    <div className="flex flex-col relative " >
                                         <p className="text-foreground">{item.name}</p>
                                         <p className="text-muted-foreground text-xs">{item.type_name}</p>
+                                        <div className="absolute top-0 right-0 cursor-col-resize w-px h-full bg-gray-800 hover:bg-gray-700 hover:w-2" ></div>
                                     </div>
                                 </TableHead>
                             ))}
@@ -143,7 +163,7 @@ export default function DataPage({ node }) {
                         {currentRows.map((item, index) => (
                             <TableRow key={index}>
                                 {item.map((data, index) => (
-                                    <TableCell key={index} className="w-3">{data}</TableCell>
+                                    <TableCell key={index} className="w-6 resize border">{data}</TableCell>
                                 ))}
                             </TableRow>
                         ))}

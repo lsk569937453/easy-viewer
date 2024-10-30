@@ -217,7 +217,7 @@ WHERE
             let column_name = item.name();
             headers.push(Header {
                 name: column_name.to_string(),
-                type_name: type_name.to_string(),
+                type_name: type_name.to_string().to_lowercase(),
             });
         }
         let mut response_rows = vec![];

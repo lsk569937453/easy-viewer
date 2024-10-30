@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::common_tools::about::get_about_version_with_error;
 
 use crate::common_tools::base_response::BaseResponse;
@@ -75,6 +77,8 @@ pub async fn exe_sql(
     list_node_info_req: ListNodeInfoReq,
     sql: String,
 ) -> Result<String, ()> {
+    let time = Instant::now();
     let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
     Ok(res)
 }

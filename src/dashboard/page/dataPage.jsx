@@ -109,13 +109,13 @@ export default function DataPage({ node }) {
                 disabled:cursor-not-allowed disabled:opacity-50" placeholder="Search results" />
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-search absolute left-3 mt-1"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" /><path d="M21 21l-6 -6" /></svg>
                 </div>
-                <Button variant="outline" size="icon" className="border-none h-full w-7">
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor ">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-plus"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M12 5l0 14" /><path d="M5 12l14 0" /></svg>
                 </Button>
-                <Button variant="outline" size="icon" className="border-none h-full w-7">
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor">
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-trash"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg>
                 </Button>
-                <Button variant="outline" size="icon" className="border-none h-full w-7" onClick={() => exeSql()}>
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => exeSql()}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A.998.998 0 0 0 5 3v18a1 1 0 0 0 .536.886zM7 4.909 17.243 12 7 19.091V4.909z" /></svg>                </Button>
                 <p className="py-1 text-lg	">Cost:{timeCost} ms</p>
                 <p className="py-1">Page 9 of 13</p>
@@ -129,7 +129,12 @@ export default function DataPage({ node }) {
                     <TableHeader className="sticky top-0 bg-accent">
                         <TableRow>
                             {header.map((item, index) => (
-                                <TableHead className="w-6">{item.name}</TableHead>
+                                <TableHead className="w-6">
+                                    <div className="flex flex-col">
+                                        <p className="text-foreground">{item.name}</p>
+                                        <p className="text-muted-foreground text-xs">{item.type_name}</p>
+                                    </div>
+                                </TableHead>
                             ))}
 
                         </TableRow>

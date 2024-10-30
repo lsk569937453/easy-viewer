@@ -1,7 +1,8 @@
 import IconDiv from "./iconDiv.jsx";
 import React, { useEffect, useState, useRef } from "react";
 import { uuid, getLevelInfos } from "../../lib/utils";
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core"; import TablePage from "../page/tablePage.jsx";
+
 const mysqlDatabaseData = [{
     name: "Query",
     iconName: "query",
@@ -36,7 +37,7 @@ const mysqlTableData = [{
 const TreeNode = ({ node, style, dragHandle, handleAddPageClick, setCurrentMenuList, currentMenuList }) => {
 
     //it is used to trggger the child event
-    const [trigger, setTrigger] = useState(false);
+    // const [trigger, setTrigger] = useState(false);
     const findParentNode = (node) => {
         let temNode = node;
         while (temNode.level !== 0) {
@@ -128,7 +129,7 @@ const TreeNode = ({ node, style, dragHandle, handleAddPageClick, setCurrentMenuL
 
     }
     const handleClickIcon = (node) => {
-        setTrigger(!trigger);
+        addTab();
         if (node.children && node.children.length > 0) {
             node.isInternal && node.toggle()
         } else {
@@ -136,11 +137,21 @@ const TreeNode = ({ node, style, dragHandle, handleAddPageClick, setCurrentMenuL
         }
 
     };
+    const addTab = () => {
+        console.log(node.data.iconName === "singleTable");
+        if (node.data.iconName === "singleTable") {
+            handleAddPageClick({
+                name: "table",
+                icon: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-border-all"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 4m0 2a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2z" /><path d="M4 12l16 0" /><path d="M12 4l0 16" /></svg>,
+                render: <TablePage node={node} />
+            })
+        }
+    }
     return (
         <div style={style} ref={dragHandle} className="flex flex-row cursor-pointer gap-2 content-center items-center justify-items-center  hover:bg-slate-200 group/item p-1" onClick={() => node.data.showFirstIcon ? handleClickIcon(node) : null} >
             {node.data.showFirstIcon && node.isOpen && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M6 9l6 6l6 -6" /></svg>}
             {node.data.showFirstIcon && !node.isOpen && < svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>}
-            <IconDiv node={node} handleAddPageClick={handleAddPageClick} trigger={trigger} />
+            <IconDiv node={node} handleAddPageClick={handleAddPageClick} />
         </div>
     );
 }

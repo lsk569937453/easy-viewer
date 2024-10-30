@@ -13,7 +13,6 @@ function App() {
                     <DashboardPage />
                 </div>
             </div>
-            <TailwindIndicator />
         </ThemeProvider>);
 }
 export default App;

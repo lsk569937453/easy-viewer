@@ -129,7 +129,7 @@ export default function DataPage({ node }) {
                     <TableHeader className="sticky top-0 bg-accent">
                         <TableRow>
                             {header.map((item, index) => (
-                                <TableHead className="w-6">
+                                <TableHead className="w-6" key={index}>
                                     <div className="flex flex-col">
                                         <p className="text-foreground">{item.name}</p>
                                         <p className="text-muted-foreground text-xs">{item.type_name}</p>

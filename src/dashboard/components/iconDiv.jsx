@@ -4,16 +4,17 @@ import { uuid } from "../../lib/utils.js";
 import React, { useEffect, useState, useRef } from "react";
 
 const IconDiv = ({ node, handleAddPageClick, trigger }) => {
-    const hasMounted = useRef(false);
+    // const hasMounted = useRef(false);
 
-    useEffect(() => {
-        if (hasMounted.current) {
-            console.log(node.data.iconName, trigger);
-            handleClick();
-        } else {
-            hasMounted.current = true;
-        }
-    }, [trigger]);
+    // useEffect(() => {
+    //     console.log(node.data.iconName, trigger, hasMounted);
+    //     if (hasMounted.current) {
+    //         console.log(node.data.iconName, trigger);
+    //         handleClick();
+    //     } else {
+    //         hasMounted.current = true;
+    //     }
+    // }, [trigger]);
 
     const handleClick = () => {
         console.log(node.data.iconName === "singleTable");

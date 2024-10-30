@@ -73,6 +73,7 @@ export default function DashboardPage() {
 
         if (itemIndex > -1) {
             pageDataArray[itemIndex] = item;
+            console.log("aaaaa");
         } else {
             pageDataArray.push(item);
         }
@@ -105,7 +106,7 @@ export default function DashboardPage() {
                 {
                     pageDataArray.map((item, index) => {
                         return (
-                            <TabsContent key={index} value={item.name}>
+                            <TabsContent key={item.service} value={item.name}>
                                 {item.render}
                             </TabsContent>
                         );

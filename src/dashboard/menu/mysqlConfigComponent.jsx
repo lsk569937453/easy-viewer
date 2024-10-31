@@ -102,24 +102,14 @@ export function MysqlConfigComponent({ connectionName }) {
         }
     };
     const parseConnectionUrl = (connectionUrl) => {
-        const regex = /mysql:\/\/(?<userName>[^:]+):(?<password>[^@]+)@(?<ip>[^:]+):(?<port>\d+)\/(?<database>\w+)/;
-
+        const regex = /mysql:\/\/(?<userName>[^:]+):(?<password>[^@]+)@(?<ip>[^:]+):(?<port>\d+)(?:\/(?<database>[^?]+))?/;
         const match = connectionUrl.match(regex);
 
-        // If the regex successfully matches the connection string
-        if (match && match.groups) {
+        if (match) {
             const { userName, password, ip, port, database } = match.groups;
-            console.log(`userName: ${userName}`);
-            console.log(`password: ${password}`);
-            console.log(`ip: ${ip}`);
-            console.log(`port: ${port}`);
-            console.log(`database: ${database}`);
-            return { ip, port, database, userName, password };
-
+            return { userName, password, ip, port, database: database || null };
         } else {
-            throw new Error("Invalid connection string");
-
-            console.error("Failed to parse connection string");
+            throw new Error("Invalid MySQL URL format");
         }
     }
     const handleCreateLinkButtonClick = async () => {
@@ -230,11 +220,7 @@ export function MysqlConfigComponent({ connectionName }) {
                     <p className="basis-1/12 text-right">端口:</p>
                     <Input className="basis-1/12 border-foreground/50 border" placeholder="端口" onChange={(e) => setCurrentPort(e.target.value)} value={currentPort}></Input>
                 </div>
-                    <div className="flex flex-row items-center gap-5">
-                        <p className="basis-2/12 text-right">数据库:</p>
-                        <Input className="basis-10/12 border-foreground/50 border" placeholder="数据库名" onChange={(e) => setCurrentDatabase(e.target.value)} value={currentDatabase}></Input>
 
-                    </div>
 
 
                     <div className="flex flex-row items-center gap-5">
@@ -244,6 +230,11 @@ export function MysqlConfigComponent({ connectionName }) {
                     <div className="flex flex-row items-center gap-5">
                         <p className="basis-2/12 text-right">密码:</p>
                         <Input className="basis-10/12 border-foreground/50 border focus:border-transparent focus:ring-0" placeholder="密码" onChange={(e) => setCurrentPassword(e.target.value)} value={currentPassword}></Input>
+                    </div>
+                    <div className="flex flex-row items-center gap-5">
+                        <p className="basis-2/12 text-right">数据库:</p>
+                        <Input className="basis-10/12 border-foreground/50 border" placeholder="数据库名" onChange={(e) => setCurrentDatabase(e.target.value)} value={currentDatabase}></Input>
+
                     </div>
                 </>
             }

@@ -3,7 +3,8 @@ import {
     ColumnSizingState,
     flexRender,
     getCoreRowModel,
-    useReactTable,
+    useReactTable, PaginationState,
+    getPaginationRowModel
 } from "@tanstack/react-table";
 import {
     Table,
@@ -23,6 +24,10 @@ export const DataTable = <TValue,>({
     columns: ColumnDef<any, TValue>[];
     data: [];
 }) => {
+    const [pagination, setPagination] = useState<PaginationState>({
+        pageIndex: 0,
+        pageSize: 100,
+    })
     const [colSizing, setColSizing] = useState<ColumnSizingState>({});
 
     const table = useReactTable({
@@ -32,8 +37,12 @@ export const DataTable = <TValue,>({
         columnResizeMode: "onChange",
         getCoreRowModel: getCoreRowModel(),
         onColumnSizingChange: setColSizing,
+        onPaginationChange: setPagination,
+        getPaginationRowModel: getPaginationRowModel(),
+
         state: {
             columnSizing: colSizing,
+            pagination: pagination,
         },
     });
 
@@ -78,6 +87,8 @@ export const DataTable = <TValue,>({
                                         width: cell.column.getSize(),
                                         minWidth: cell.column.columnDef.minSize,
                                     }}
+                                    className="border"
+
                                 >
                                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                 </TableCell>
@@ -86,7 +97,7 @@ export const DataTable = <TValue,>({
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={columns.length} className="h-24 text-center">
+                        <TableCell colSpan={columns.length} className="h-24 w-full text-center">
                             No results.
                         </TableCell>
                     </TableRow>

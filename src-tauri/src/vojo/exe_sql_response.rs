@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize)]
 pub struct ExeSqlResponse {
     pub header: Vec<Header>,
-    pub rows: Vec<Vec<String>>,
+    pub rows: Vec<Vec<Option<String>>>,
 }
 impl ExeSqlResponse {
     pub fn new() -> ExeSqlResponse {
@@ -12,7 +12,7 @@ impl ExeSqlResponse {
             rows: vec![],
         }
     }
-    pub fn from(header: Vec<Header>, rows: Vec<Vec<String>>) -> ExeSqlResponse {
+    pub fn from(header: Vec<Header>, rows: Vec<Vec<Option<String>>>) -> ExeSqlResponse {
         ExeSqlResponse { header, rows }
     }
 }

@@ -37,7 +37,7 @@ const Sidebar = ({ menuList, handleAddPageClick }) => {
         );
     }
     return (
-        <div className={"h-screen flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"} ref={ref}>
+        <div className={"h-full flex  top-0  overflow-y-auto overscroll-x-none  col-span-2"} ref={ref}>
             <Tree data={currentMenuList} ref={treeRef} width={"100%"} className="overflow-y-auto overscroll-x-none " indent={10} height={height}>
                 {treeNode}
             </Tree>

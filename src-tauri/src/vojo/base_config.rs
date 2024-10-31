@@ -228,10 +228,14 @@ WHERE
             let mut row = vec![];
             for i in 0..len {
                 let type_name = columns[i].type_info().name();
-                // info!("{},{}", columns[i].name(), columns[i].type_info().name());
                 let val = mysql_row_to_json(item, type_name, i)?;
-                // info!("val: {}", val);
-                row.push(val.to_string());
+                if val.is_string() {
+                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
+                } else if val.is_null() {
+                    row.push(None);
+                } else {
+                    row.push(Some(val.to_string()));
+                }
             }
             response_rows.push(row);
         }
@@ -278,17 +282,24 @@ impl PostgresqlConfig {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DatabaseHostStruct {
     pub host: String,
-    pub database: String,
+    pub database: Option<String>,
     pub user_name: String,
     pub password: String,
     pub port: i32,
 }
 impl DatabaseHostStruct {
     pub fn to_url(&self, protocol_name: String) -> String {
-        format!(
-            "{}://{}:{}@{}:{}/{}",
-            protocol_name, self.user_name, self.password, self.host, self.port, self.database
-        )
+        if let Some(database) = &self.database {
+            format!(
+                "{}://{}:{}@{}:{}/{}",
+                protocol_name, self.user_name, self.password, self.host, self.port, database
+            )
+        } else {
+            format!(
+                "{}://{}:{}@{}:{}",
+                protocol_name, self.user_name, self.password, self.host, self.port
+            )
+        }
     }
 }
 #[derive(Deserialize, Serialize)]

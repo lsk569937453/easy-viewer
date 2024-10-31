@@ -15,10 +15,9 @@ import AceEditor from "react-ace";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { invoke } from "@tauri-apps/api/core";
-
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/mode-sql";
-
+import { DataTable } from "../../dashboard/components/table";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/theme-iplastic";
 import useResizeObserver from "use-resize-observer";
@@ -37,7 +36,7 @@ export default function DataPage({ node }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [tableHeight, setTableHeight] = useState(10);
     const [showLoading, setShowLoading] = useState(false);
-    const containerRef = useRef(null);
+    const [container, setContainer] = useState(null);
 
     const { ref } = useResizeObserver({
         onResize: ({ width, height }) => {
@@ -64,10 +63,38 @@ export default function DataPage({ node }) {
         console.log(response_code, response_msg);
         if (response_code == 0) {
             const { header, rows } = response_msg;
-            setHeader(header);
-            setRows(rows);
-            let currentRows = rows.slice((currentPage - 1) * pageCount, currentPage * pageCount);
-            setCurrentRows(currentRows);
+
+            const columns = header.map((item, index) => ({
+                accessorKey: String(index), // Use the index as the accessor key
+                header: () => (
+                    <div>
+                        <p className="text-foreground">{item.name}</p>
+                        <p className="text-muted-foreground text-xs">{item.type_name}</p>
+                    </div>
+                ),
+                cell: ({ row }) => {
+                    const currentData = row.getValue(String(index));
+                    return (
+                        <div >
+                            {currentData ? (
+                                <p>{currentData}</p>
+                            ) : (
+                                <p className="text-muted-foreground">NULL</p>
+                            )}
+                        </div>
+                    );
+                },
+            }));
+            const transformedData = rows.map((row) =>
+                row.reduce((obj, value, index) => {
+                    obj[String(index)] = value; // Use the index as the key
+                    return obj;
+                }, {})
+            );
+            setHeader(columns);
+            setRows(transformedData);
+            // let currentRows = rows.slice((currentPage - 1) * pageCount, currentPage * pageCount);
+            // setCurrentRows(currentRows);
         }
         var endTime = new Date();
         var timeDiff = endTime - startTime; //in ms
@@ -107,7 +134,7 @@ export default function DataPage({ node }) {
                     value={sql}
                 />
             </div>
-            <div className="flex flex-row h-8 gap-1">
+            <div className="flex flex-row h-8 bg-background">
                 <div className="flex align-center relative align-text-center ">
                     <input className=" h-full basis-16 flex 
                 border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground
@@ -130,45 +157,26 @@ export default function DataPage({ node }) {
                 <Button className=" h-full" onClick={() => currentPage != rows.length / pageCount && setCurrentPage(currentPage + 1)}>next</Button>
 
             </div>
-            <div class="overflow-x-scroll overflow-y-scroll scrollbar " style={{ height: tableHeight }} ref={containerRef}>
+            <div class="overflow-x-scroll overflow-y-scroll scrollbar relative" style={{ height: tableHeight }} ref={setContainer}>
                 <AlertDialog.Root open={showLoading} onOpenChange={setShowLoading}>
-                    <AlertDialog.Portal container={containerRef.current}>
 
-                        <AlertDialog.Overlay className="fixed inset-0 z-20 bg-red backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                        <AlertDialog.Content className="fixed left-[50%] top-[50%] z-20 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
-                            sssss
+                    <AlertDialog.Overlay asChild={false} className="absolute pointer-events-none inset-0 z-20 bg-red backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <AlertDialog.Content asChild={true} className="absolute pointer-events-none left-[50%] top-[50%] z-20 flex flex-row translate-x-[-50%] translate-y-[-50%]  border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+                        <div className="bg-ring pointer-events-none">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="background" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <p>Loading</p>
+                        </div>
+                    </AlertDialog.Content>
 
-                        </AlertDialog.Content>
 
 
-
-                    </AlertDialog.Portal>
                 </AlertDialog.Root>
-                <table className="text-sm  overflow-scroll	">
-                    <TableHeader className="sticky top-0 bg-accent">
-                        <TableRow>
-                            {header.map((item, index) => (
-                                <TableHead className="w-6 border resize" key={index}>
-                                    <div className="flex flex-col relative " >
-                                        <p className="text-foreground">{item.name}</p>
-                                        <p className="text-muted-foreground text-xs">{item.type_name}</p>
-                                        <div className="absolute top-0 right-0 cursor-col-resize w-px h-full bg-gray-800 hover:bg-gray-700 hover:w-2" ></div>
-                                    </div>
-                                </TableHead>
-                            ))}
 
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {currentRows.map((item, index) => (
-                            <TableRow key={index}>
-                                {item.map((data, index) => (
-                                    <TableCell key={index} className="w-6 resize border">{data}</TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </table>
+                <DataTable columns={header} data={rows} />
+
             </div>
 
         </div >

@@ -14,7 +14,7 @@ pub fn mysql_row_to_json(
             "FLOAT" => row
                 .try_get::<Option<f32>, usize>(key)
                 .map(|item| json!(item))?,
-            "BIT" => row
+            "BIT" | "BOOLEAN" => row
                 .try_get::<Option<bool>, usize>(key)
                 .map(|item| json!(item))?,
 
@@ -27,8 +27,14 @@ pub fn mysql_row_to_json(
             "INT" | "TINYINT" | "SMALLINT" | "MEDIUMINT" => row
                 .try_get::<Option<i32>, usize>(key)
                 .map(|item| json!(item))?,
+            "INT UNSIGNED" | "TINYINT UNSIGNED" | "SMALLINT UNSIGNED" | "MEDIUMINT UNSIGNED" => row
+                .try_get::<Option<u32>, usize>(key)
+                .map(|item| json!(item))?,
             "BIGINT" => row
                 .try_get::<Option<i64>, usize>(key)
+                .map(|item| json!(item))?,
+            "BIGINT UNSIGNED" => row
+                .try_get::<Option<u64>, usize>(key)
                 .map(|item| json!(item))?,
             "YEAR" => row
                 .try_get::<Option<u16>, usize>(key)

@@ -96,7 +96,7 @@ dependencies:
     specifier: ^1.0.6
     version: 1.0.6(@types/react-dom@18.2.7)(@types/react@18.2.18)(react-dom@18.2.0)(react@18.2.0)
   '@tanstack/react-table':
-    specifier: ^8.20.5
+    specifier: ^8.13.2
     version: 8.20.5(react-dom@18.2.0)(react@18.2.0)
   '@tauri-apps/api':
     specifier: ^2.0.0

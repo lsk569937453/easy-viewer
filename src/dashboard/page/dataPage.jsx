@@ -15,10 +15,9 @@ import AceEditor from "react-ace";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { invoke } from "@tauri-apps/api/core";
-
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/mode-sql";
-
+import { DataTable } from "../../dashboard/components/table";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/theme-iplastic";
 import useResizeObserver from "use-resize-observer";
@@ -36,7 +35,7 @@ export default function DataPage({ node }) {
     const [currentRows, setCurrentRows] = useState([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [tableHeight, setTableHeight] = useState(10);
-    const [showLoading, setShowLoading] = useState(false);
+    const [showLoading, setShowLoading] = useState(true);
     const containerRef = useRef(null);
 
     const { ref } = useResizeObserver({
@@ -64,10 +63,21 @@ export default function DataPage({ node }) {
         console.log(response_code, response_msg);
         if (response_code == 0) {
             const { header, rows } = response_msg;
-            setHeader(header);
-            setRows(rows);
-            let currentRows = rows.slice((currentPage - 1) * pageCount, currentPage * pageCount);
-            setCurrentRows(currentRows);
+
+            const columns = header.map((header, index) => ({
+                accessorKey: String(index), // Use the index as the accessor key
+                header: header.name,
+            }));
+            const transformedData = rows.map((row) =>
+                row.reduce((obj, value, index) => {
+                    obj[String(index)] = value; // Use the index as the key
+                    return obj;
+                }, {})
+            );
+            setHeader(columns);
+            setRows(transformedData);
+            // let currentRows = rows.slice((currentPage - 1) * pageCount, currentPage * pageCount);
+            // setCurrentRows(currentRows);
         }
         var endTime = new Date();
         var timeDiff = endTime - startTime; //in ms
@@ -144,31 +154,9 @@ export default function DataPage({ node }) {
 
                     </AlertDialog.Portal>
                 </AlertDialog.Root>
-                <table className="text-sm  overflow-scroll	">
-                    <TableHeader className="sticky top-0 bg-accent">
-                        <TableRow>
-                            {header.map((item, index) => (
-                                <TableHead className="w-6 border resize" key={index}>
-                                    <div className="flex flex-col relative " >
-                                        <p className="text-foreground">{item.name}</p>
-                                        <p className="text-muted-foreground text-xs">{item.type_name}</p>
-                                        <div className="absolute top-0 right-0 cursor-col-resize w-px h-full bg-gray-800 hover:bg-gray-700 hover:w-2" ></div>
-                                    </div>
-                                </TableHead>
-                            ))}
 
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {currentRows.map((item, index) => (
-                            <TableRow key={index}>
-                                {item.map((data, index) => (
-                                    <TableCell key={index} className="w-6 resize border">{data}</TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </table>
+                <DataTable columns={header} data={rows} />
+
             </div>
 
         </div >

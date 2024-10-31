@@ -36,7 +36,7 @@ export default function DataPage({ node }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [tableHeight, setTableHeight] = useState(10);
     const [showLoading, setShowLoading] = useState(true);
-    const containerRef = useRef(null);
+    const [container, setContainer] = useState(null);
 
     const { ref } = useResizeObserver({
         onResize: ({ width, height }) => {
@@ -140,19 +140,17 @@ export default function DataPage({ node }) {
                 <Button className=" h-full" onClick={() => currentPage != rows.length / pageCount && setCurrentPage(currentPage + 1)}>next</Button>
 
             </div>
-            <div class="overflow-x-scroll overflow-y-scroll scrollbar " style={{ height: tableHeight }} ref={containerRef}>
+            <div class="overflow-x-scroll overflow-y-scroll scrollbar relative pointer-events-none" style={{ height: tableHeight }} ref={setContainer}>
                 <AlertDialog.Root open={showLoading} onOpenChange={setShowLoading}>
-                    <AlertDialog.Portal container={containerRef.current}>
 
-                        <AlertDialog.Overlay className="fixed inset-0 z-20 bg-red backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                        <AlertDialog.Content className="fixed left-[50%] top-[50%] z-20 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
-                            sssss
+                    <AlertDialog.Overlay asChild={false} className="absolute pointer-events-none inset-0 z-20 bg-red backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+                    <AlertDialog.Content asChild={true} className="absolute pointer-events-none left-[50%] top-[50%] z-20 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+                        sssss
 
-                        </AlertDialog.Content>
-
+                    </AlertDialog.Content>
 
 
-                    </AlertDialog.Portal>
+
                 </AlertDialog.Root>
 
                 <DataTable columns={header} data={rows} />

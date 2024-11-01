@@ -1,7 +1,7 @@
 import {
     ColumnDef,
     ColumnSizingState,
-    flexRender,
+    flexRender, Column, Table as Table2,
     getCoreRowModel,
     useReactTable, PaginationState,
     getPaginationRowModel
@@ -27,7 +27,30 @@ export const DataTable = <TValue,>({
     table: any;
 }) => {
 
+    const Filter = ({
+        column,
+        table,
+    }: {
+        column: Column<any, any>
+        table: Table2<any>
+    }) => {
+        const firstValue = table
+            .getPreFilteredRowModel()
+            .flatRows[0]?.getValue(column.id)
 
+        const columnFilterValue = column.getFilterValue()
+
+        return (
+            <input
+                className="w-36 border shadow rounded"
+                onChange={e => column.setFilterValue(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder={`Search...`}
+                type="text"
+                value={(columnFilterValue ?? '') as string}
+            />
+        )
+    }
     return (
         <Table style={{ width: table.getTotalSize() }}>
             <TableHeader className="sticky top-0 bg-accent">
@@ -48,6 +71,11 @@ export const DataTable = <TValue,>({
                                             header.column.columnDef.header,
                                             header.getContext()
                                         )}
+                                    {header.column.getCanFilter() ? (
+                                        <div className="p-1">
+                                            <Filter column={header.column} table={table} />
+                                        </div>
+                                    ) : null}
                                     <ColumnResizer header={header} />
                                 </TableHead>
                             );

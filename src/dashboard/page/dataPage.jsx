@@ -24,7 +24,7 @@ import useResizeObserver from "use-resize-observer";
 import {
 
     getCoreRowModel,
-    useReactTable,
+    useReactTable, getFilteredRowModel,
     getPaginationRowModel
 } from "@tanstack/react-table";
 import "ace-builds/src-noconflict/ext-language_tools";
@@ -133,6 +133,7 @@ export default function DataPage({ node }) {
         onColumnSizingChange: setColSizing,
         onPaginationChange: setPagination,
         getPaginationRowModel: getPaginationRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
 
         state: {
             columnSizing: colSizing,
@@ -178,15 +179,27 @@ export default function DataPage({ node }) {
                 <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => exeSql()}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A.998.998 0 0 0 5 3v18a1 1 0 0 0 .536.886zM7 4.909 17.243 12 7 19.091V4.909z" /></svg>                </Button>
                 <span className="flex items-center">Cost:{timeCost} ms</span>
+
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => table.firstPage()}
+                    disabled={!table.getCanPreviousPage()}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevrons-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M11 7l-5 5l5 5" /><path d="M17 7l-5 5l5 5" /></svg>
+                </Button>
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-left"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M15 6l-6 6l6 6" /></svg>
+                </Button>
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M9 6l6 6l-6 6" /></svg>                </Button>
+                <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => table.lastPage()}
+                    disabled={!table.getCanNextPage()}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-tabler icons-tabler-outline icon-tabler-chevrons-right"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M7 7l5 5l-5 5" /><path d="M13 7l5 5l-5 5" /></svg>                </Button>
                 <span className="flex items-center gap-1">
                     <div>Page</div>
                     <strong>
                         {table.getState().pagination.pageIndex + 1} of{' '}
                         {table.getPageCount().toLocaleString()}
                     </strong>
-                </span>                <Button className=" h-full " onClick={() => table.previousPage()}>previous</Button>
-                <Button className=" h-full" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}
-                >next</Button>
+                </span>
 
             </div>
             <div class="overflow-x-scroll overflow-y-scroll scrollbar relative" style={{ height: tableHeight }} ref={setContainer}>

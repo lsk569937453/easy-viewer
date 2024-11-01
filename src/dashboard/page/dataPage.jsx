@@ -31,6 +31,7 @@ import "ace-builds/src-noconflict/ext-language_tools";
 
 import { uuid, getLevelInfos } from "../../lib/utils";
 import { tr } from "date-fns/locale";
+import { Filter } from "lucide-react";
 const pageCount = 100;
 export default function DataPage({ node }) {
     const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`);
@@ -56,7 +57,24 @@ export default function DataPage({ node }) {
     useEffect(() => {
         exeSql();
     }, []);
+    // const Filter = ({
+    //     column
+    // }) => {
 
+
+    //     const columnFilterValue = column.getFilterValue()
+
+    //     return (
+    //         <input
+    //             className="w-36 border shadow rounded"
+    //             onChange={e => column.setFilterValue(e.target.value)}
+    //             onClick={e => e.stopPropagation()}
+    //             placeholder={`Search...`}
+    //             type="text"
+    //             value={(columnFilterValue ?? '')}
+    //         />
+    //     )
+    // }
     const exeSql = async () => {
         var startTime = new Date();
 
@@ -72,8 +90,8 @@ export default function DataPage({ node }) {
             const columns = header.map((item, index) => ({
                 accessorKey: String(index), // Use the index as the accessor key
                 header: () => (
-                    <div>
-                        <p className="text-foreground">{item.name}</p>
+                    <div className="flex flex-col justify-center items-center gap-1" key={index}>
+                        <p className="text-foreground font-bold">{item.name}</p>
                         <p className="text-muted-foreground text-xs">{item.type_name}</p>
                     </div>
                 ),
@@ -89,6 +107,7 @@ export default function DataPage({ node }) {
                         </div>
                     );
                 },
+                Filter: ({ column }) => <Filter column={column} />,
             }));
             const transformedData = rows.map((row) =>
                 row.reduce((obj, value, index) => {
@@ -215,8 +234,6 @@ export default function DataPage({ node }) {
                             <p>Loading</p>
                         </div>
                     </AlertDialog.Content>
-
-
 
                 </AlertDialog.Root>
 

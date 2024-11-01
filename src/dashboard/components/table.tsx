@@ -28,16 +28,10 @@ export const DataTable = <TValue,>({
 }) => {
 
     const Filter = ({
-        column,
-        table,
+        column
     }: {
         column: Column<any, any>
-        table: Table2<any>
     }) => {
-        const firstValue = table
-            .getPreFilteredRowModel()
-            .flatRows[0]?.getValue(column.id)
-
         const columnFilterValue = column.getFilterValue()
 
         return (
@@ -73,7 +67,7 @@ export const DataTable = <TValue,>({
                                         )}
                                     {header.column.getCanFilter() ? (
                                         <div className="p-1">
-                                            <Filter column={header.column} table={table} />
+                                            <Filter column={header.column} />
                                         </div>
                                     ) : null}
                                     <ColumnResizer header={header} />

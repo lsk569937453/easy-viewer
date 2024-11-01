@@ -1,11 +1,8 @@
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
-  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-
     container: {
       center: true,
       padding: "2rem",
@@ -49,7 +46,7 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
         searchMarkerColor: {
-          DEFAULT: "hsl(var(--searchMarkerColor))"
+          DEFAULT: "hsl(var(--searchMarkerColor))",
         },
       },
       borderRadius: {
@@ -78,9 +75,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require("tailwindcss-animate"),
-
-
-  ],
+  plugins: [require("tailwindcss-animate")],
 }

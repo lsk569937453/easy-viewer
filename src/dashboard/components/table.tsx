@@ -20,38 +20,20 @@ import { useState } from "react";
 export const DataTable = <TValue,>({
     columns,
     data,
+    table,
 }: {
     columns: ColumnDef<any, TValue>[];
     data: [];
+    table: any;
 }) => {
-    const [pagination, setPagination] = useState<PaginationState>({
-        pageIndex: 0,
-        pageSize: 100,
-    })
-    const [colSizing, setColSizing] = useState<ColumnSizingState>({});
 
-    const table = useReactTable({
-        data,
-        columns,
-        enableColumnResizing: true,
-        columnResizeMode: "onChange",
-        getCoreRowModel: getCoreRowModel(),
-        onColumnSizingChange: setColSizing,
-        onPaginationChange: setPagination,
-        getPaginationRowModel: getPaginationRowModel(),
-
-        state: {
-            columnSizing: colSizing,
-            pagination: pagination,
-        },
-    });
 
     return (
         <Table style={{ width: table.getTotalSize() }}>
             <TableHeader className="sticky top-0 bg-accent">
-                {table.getHeaderGroups().map((headerGroup) => (
+                {table.getHeaderGroups().map((headerGroup: any) => (
                     <TableRow key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => {
+                        {headerGroup.headers.map((header: any) => {
                             return (
                                 <TableHead
                                     key={header.id}
@@ -75,12 +57,12 @@ export const DataTable = <TValue,>({
             </TableHeader>
             <TableBody>
                 {table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row) => (
+                    table.getRowModel().rows.map((row: any) => (
                         <TableRow
                             key={row.id}
                             data-state={row.getIsSelected() && "selected"}
                         >
-                            {row.getVisibleCells().map((cell) => (
+                            {row.getVisibleCells().map((cell: any) => (
                                 <TableCell
                                     key={cell.id}
                                     style={{

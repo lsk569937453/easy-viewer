@@ -21,7 +21,12 @@ import { DataTable } from "../../dashboard/components/table";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/theme-iplastic";
 import useResizeObserver from "use-resize-observer";
+import {
 
+    getCoreRowModel,
+    useReactTable,
+    getPaginationRowModel
+} from "@tanstack/react-table";
 import "ace-builds/src-noconflict/ext-language_tools";
 
 import { uuid, getLevelInfos } from "../../lib/utils";
@@ -113,6 +118,27 @@ export default function DataPage({ node }) {
     const handleOnChange = (sql) => {
         setSql(sql);
     }
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 100,
+    })
+    const [colSizing, setColSizing] = useState({});
+
+    const table = useReactTable({
+        data: rows,
+        columns: header,
+        enableColumnResizing: true,
+        columnResizeMode: "onChange",
+        getCoreRowModel: getCoreRowModel(),
+        onColumnSizingChange: setColSizing,
+        onPaginationChange: setPagination,
+        getPaginationRowModel: getPaginationRowModel(),
+
+        state: {
+            columnSizing: colSizing,
+            pagination: pagination,
+        },
+    });
     return (
         <div className="w-full  flex flex-col h-full	">
 
@@ -151,10 +177,16 @@ export default function DataPage({ node }) {
                 </Button>
                 <Button variant="outline" size="icon" className="border-none h-full w-7 hover:bg-searchMarkerColor" onClick={() => exeSql()}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A.998.998 0 0 0 5 3v18a1 1 0 0 0 .536.886zM7 4.909 17.243 12 7 19.091V4.909z" /></svg>                </Button>
-                <p className="py-1 text-lg	">Cost:{timeCost} ms</p>
-                <p className="py-1">Page 9 of 13</p>
-                <Button className=" h-full " onClick={() => currentPage != 1 && setCurrentPage(currentPage - 1)}>previous</Button>
-                <Button className=" h-full" onClick={() => currentPage != rows.length / pageCount && setCurrentPage(currentPage + 1)}>next</Button>
+                <span className="flex items-center">Cost:{timeCost} ms</span>
+                <span className="flex items-center gap-1">
+                    <div>Page</div>
+                    <strong>
+                        {table.getState().pagination.pageIndex + 1} of{' '}
+                        {table.getPageCount().toLocaleString()}
+                    </strong>
+                </span>                <Button className=" h-full " onClick={() => table.previousPage()}>previous</Button>
+                <Button className=" h-full" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}
+                >next</Button>
 
             </div>
             <div class="overflow-x-scroll overflow-y-scroll scrollbar relative" style={{ height: tableHeight }} ref={setContainer}>
@@ -175,7 +207,7 @@ export default function DataPage({ node }) {
 
                 </AlertDialog.Root>
 
-                <DataTable columns={header} data={rows} />
+                <DataTable columns={header} data={rows} table={table} />
 
             </div>
 

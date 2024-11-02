@@ -10,7 +10,7 @@ import { cn } from "./lib/utils"
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="h-full overflow-clip">
+      <div className="h-screen overflow-clip">
         <Menu />
         <div
           className={cn(

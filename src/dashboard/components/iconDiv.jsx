@@ -4,19 +4,19 @@ import * as Tooltip from "@radix-ui/react-tooltip"
 import { uuid } from "../../lib/utils.js"
 import TablePage from "../page/tablePage.jsx"
 
-const IconDiv = ({ node, handleAddPageClick, trigger }) => {
-  // const hasMounted = useRef(false);
+const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
+  const getQueryName = () => {
+    const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "")
+    const queryName = `New_Query_${timestamp}`
+    return queryName
+  }
+  const handleNewQueryClick = (e) => {
+    e.stopPropagation()
 
-  // useEffect(() => {
-  //     console.log(node.data.iconName, trigger, hasMounted);
-  //     if (hasMounted.current) {
-  //         console.log(node.data.iconName, trigger);
-  //         handleClick();
-  //     } else {
-  //         hasMounted.current = true;
-  //     }
-  // }, [trigger]);
-
+    console.log("handleNewQueryClick")
+    setQueryName(getQueryName())
+    setShowQueryLoading(true)
+  }
   return (
     <>
       {node.data.iconName === "mysql" ? (
@@ -175,7 +175,7 @@ const IconDiv = ({ node, handleAddPageClick, trigger }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible group-hover/item:visible group-hover/item:hover:bg-muted "
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -194,7 +194,8 @@ const IconDiv = ({ node, handleAddPageClick, trigger }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  hover:bg-slate-200 group-hover/item:visible "
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-muted "
+                    onClick={handleNewQueryClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M12 5l0 14" />
@@ -206,7 +207,7 @@ const IconDiv = ({ node, handleAddPageClick, trigger }) => {
                     className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
                     sideOffset={5}
                   >
-                    <p>Add to library</p>
+                    <p>Crate Query</p>
                     <Tooltip.Arrow className="fill-white" />
                   </Tooltip.Content>
                 </Tooltip.Portal>

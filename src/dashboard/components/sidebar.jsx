@@ -10,12 +10,39 @@ import { getLevelInfos, uuid } from "../../lib/utils"
 import IconDiv from "./iconDiv"
 import TreeNode from "./treeNode"
 
-const Sidebar = ({ menuList, handleAddPageClick }) => {
+const treeNode = ({
+  node,
+  style,
+  dragHandle,
+  handleAddPageClick,
+  setCurrentMenuList,
+  currentMenuList,
+  setShowQueryLoading,
+  setQueryName,
+}) => {
+  return (
+    <TreeNode
+      node={node}
+      style={style}
+      dragHandle={dragHandle}
+      handleAddPageClick={handleAddPageClick}
+      setCurrentMenuList={setCurrentMenuList}
+      currentMenuList={currentMenuList}
+      setShowQueryLoading={setShowQueryLoading}
+      setQueryName={setQueryName}
+    />
+  )
+}
+const Sidebar = ({
+  menuList,
+  handleAddPageClick,
+  setShowQueryLoading,
+  setQueryName,
+}) => {
   const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
 
   const [currentMenuList, setCurrentMenuList] = useState([])
-  const [selectedIndex, setSelectedIndex] = useState(0)
 
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
@@ -24,18 +51,6 @@ const Sidebar = ({ menuList, handleAddPageClick }) => {
     setCurrentMenuList(menuList)
   }, [menuList])
 
-  const treeNode = ({ node, style, dragHandle }) => {
-    return (
-      <TreeNode
-        node={node}
-        style={style}
-        dragHandle={dragHandle}
-        handleAddPageClick={handleAddPageClick}
-        setCurrentMenuList={setCurrentMenuList}
-        currentMenuList={currentMenuList}
-      />
-    )
-  }
   return (
     <div
       className={
@@ -51,7 +66,16 @@ const Sidebar = ({ menuList, handleAddPageClick }) => {
         indent={10}
         height={height}
       >
-        {treeNode}
+        {(props) =>
+          treeNode({
+            ...props,
+            handleAddPageClick,
+            setCurrentMenuList,
+            currentMenuList,
+            setShowQueryLoading,
+            setQueryName,
+          })
+        }
       </Tree>
     </div>
   )

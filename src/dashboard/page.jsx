@@ -1,20 +1,32 @@
 import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { IconMenuItem, Menu, MenuItem } from "@tauri-apps/api/menu"
+import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { uuid } from "../lib/utils"
 import Sidebar from "./components/sidebar"
 
 export default function DashboardPage() {
-  const [selectedIndex, setSelectedIndex] = useState(0)
   const { t, i18n } = useTranslation()
   const [menulist, setMenulist] = useState([])
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
+  const [showQueryLoading, setShowQueryLoading] = useState(false)
+  const [queryName, setQueryName] = useState("")
   useEffect(() => {
     loadData()
   }, [])
@@ -84,7 +96,18 @@ export default function DashboardPage() {
     pageDataArray.splice(index, 1)
     setPageDataArray([...pageDataArray])
   }
-
+  const handleQuerySaveClick = async () => {
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("save_query", {
+        connectionId: 1,
+        queryName: "a",
+        sql: null,
+      })
+    )
+    if (response_code == 0) {
+      console.log("保存成功")
+    }
+  }
   const renderComponent = () => {
     return (
       <Tabs
@@ -138,7 +161,28 @@ export default function DashboardPage() {
   return (
     <>
       <div className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-y-auto overscroll-x-none ">
-        <Sidebar menuList={menulist} handleAddPageClick={handleAddPageClick} />
+        <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
+          <DialogContent className="w-30 bg-slate-200">
+            <DialogTitle>创建新的Query</DialogTitle>
+            <div className="flex flex-col gap-4 p-4">
+              <div className="flex flex-row items-center justify-center">
+                <p className="flex-[1]">Name:</p>
+                <input
+                  className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                  value={queryName}
+                  onChange={(e) => setQueryName(e.target.value)}
+                />
+              </div>
+              <Button onClick={handleQuerySaveClick}> Save</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Sidebar
+          menuList={menulist}
+          handleAddPageClick={handleAddPageClick}
+          setShowQueryLoading={setShowQueryLoading}
+          setQueryName={setQueryName}
+        />
         <div className="col-span-8">{renderComponent()}</div>
       </div>
     </>

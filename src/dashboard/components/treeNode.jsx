@@ -48,6 +48,8 @@ const TreeNode = ({
   handleAddPageClick,
   setCurrentMenuList,
   currentMenuList,
+  setShowQueryLoading,
+  setQueryName,
 }) => {
   //it is used to trggger the child event
   // const [trigger, setTrigger] = useState(false);
@@ -226,7 +228,11 @@ const TreeNode = ({
           <path d="M9 6l6 6l-6 6" />
         </svg>
       )}
-      <IconDiv node={node} handleAddPageClick={handleAddPageClick} />
+      <IconDiv
+        node={node}
+        setShowQueryLoading={setShowQueryLoading}
+        setQueryName={setQueryName}
+      />
     </div>
   )
 }

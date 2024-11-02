@@ -46,7 +46,7 @@ export default function DataPage({ node }) {
   const [currentRows, setCurrentRows] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [tableHeight, setTableHeight] = useState(10)
-  const [showLoading, setShowLoading] = useState(true)
+  const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
 
   const { ref } = useResizeObserver({

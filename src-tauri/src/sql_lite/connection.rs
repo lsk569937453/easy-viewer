@@ -12,9 +12,8 @@ impl AppState {
         let home_dir = dirs::home_dir().ok_or(anyhow!("failed to get home directory"))?;
         let db_path = home_dir.join(".easyviewer.db");
         if !db_path.exists() {
-            // Create the file if it does not exist
             let mut file = fs::File::create(&db_path)?;
-            file.write_all(b"")?; // Write empty content if necessary
+            file.write_all(b"")?;
             println!("File created: {:?}", db_path);
         } else {
             println!("File already exists: {:?}", db_path);
@@ -27,6 +26,17 @@ impl AppState {
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 
             connection_name    TEXT NOT NULL UNIQUE, 
             connection_json  TEXT NOT NULL
+            )",
+        )
+        .await?;
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS sql_query (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            connection_id    INTEGER NOT NULL, 
+            query_name  TEXT NOT NULL, 
+            query  TEXT,
+            UNIQUE (connection_id, query_name)  
+
             )",
         )
         .await?;

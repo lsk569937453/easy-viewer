@@ -3,8 +3,8 @@ use std::time::Instant;
 use crate::common_tools::about::get_about_version_with_error;
 
 use crate::common_tools::base_response::BaseResponse;
-
 use crate::common_tools::database::test_url_with_error;
+use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -79,6 +79,19 @@ pub async fn exe_sql(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn save_query(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    query_name: String,
+    sql: Option<String>,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
     info!("exe_sql: {:?}", time.elapsed());
     Ok(res)
 }

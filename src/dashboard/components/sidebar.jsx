@@ -21,6 +21,7 @@ const treeNode = ({
   setQueryName,
   setBaseConfigId,
   setNodeForUpdate,
+  setShowDeleteConnectionDialog,
 }) => {
   return (
     <TreeNode
@@ -34,6 +35,7 @@ const treeNode = ({
       setQueryName={setQueryName}
       setBaseConfigId={setBaseConfigId}
       setNodeForUpdate={setNodeForUpdate}
+      setShowDeleteConnectionDialog={setShowDeleteConnectionDialog}
     />
   )
 }
@@ -44,6 +46,7 @@ const Sidebar = ({
   setQueryName,
   setBaseConfigId,
   setNodeForUpdate,
+  setShowDeleteConnectionDialog,
 }) => {
   const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
@@ -77,6 +80,7 @@ const Sidebar = ({
             setQueryName,
             setBaseConfigId,
             setNodeForUpdate,
+            setShowDeleteConnectionDialog,
           })
         }
       </Tree>

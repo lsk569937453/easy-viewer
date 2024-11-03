@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -27,6 +28,8 @@ export default function DashboardPage() {
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
   const [showQueryLoading, setShowQueryLoading] = useState(false)
+  const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
+    useState(false)
   const [queryName, setQueryName] = useState("")
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
@@ -84,7 +87,7 @@ export default function DashboardPage() {
   const handleAddPageClick = (item) => {
     console.log(item)
     const itemIndex = pageDataArray.findIndex(
-      (existingItem) => existingItem.type === item.type
+      (existingItem) => existingItem.service === item.service
     )
 
     if (itemIndex > -1) {
@@ -93,15 +96,19 @@ export default function DashboardPage() {
     } else {
       pageDataArray.push(item)
     }
-    setTabValue(item.type)
+    setTabValue(item.service)
     setPageDataArray([...pageDataArray])
   }
   const handleRemoveButton = (index) => {
     pageDataArray.splice(index, 1)
-    const firstType =
-      pageDataArray.length > 0 ? pageDataArray[0].type : undefined
-    setTabValue(firstType)
+    const nextType =
+      pageDataArray.length > index
+        ? pageDataArray[index].service
+        : pageDataArray.length > 0
+          ? pageDataArray[pageDataArray.length - 1].service
+          : undefined
 
+    setTabValue(nextType)
     setPageDataArray([...pageDataArray])
   }
   const handleQuerySaveClick = async () => {
@@ -119,7 +126,21 @@ export default function DashboardPage() {
     }
     setShowQueryLoading(false)
   }
-
+  const handleDeleteConnectionClick = async () => {
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("delete_base_config", {
+        baseConfigId: Number(baseConfigId),
+      })
+    )
+    if (response_code == 0) {
+      console.log("删除成功")
+      setShowDeleteConnectionDialog(false)
+      const updatedData = menulist.filter(
+        (item) => item.baseConfigId !== baseConfigId
+      )
+      setMenulist(updatedData)
+    }
+  }
   const renderComponent = () => {
     return (
       <Tabs
@@ -127,16 +148,16 @@ export default function DashboardPage() {
         className="flex flex-col"
         onValueChange={setTabValue}
       >
-        <TabsList className="flex w-full  flex-row items-start justify-start">
+        <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
           {pageDataArray.map((item, index) => {
             return (
               <TabsTrigger
-                value={item.type}
+                value={item.service}
                 key={index}
-                className="justify-start"
+                className="w-auto justify-start"
               >
-                <div className="relative flex flex-row items-center justify-center gap-1 p-10">
-                  <div className="flex flex-row items-center justify-center gap-1">
+                <div className="relative flex flex-row items-center justify-center gap-1 px-10">
+                  <div className="flex flex-row items-start justify-start gap-1">
                     <div className="flex-none"> {item.icon}</div>
                     <p className="grow"> {item.service}</p>
                   </div>
@@ -166,7 +187,11 @@ export default function DashboardPage() {
         </TabsList>
         {pageDataArray.map((item, index) => {
           return (
-            <TabsContent key={item.service} value={item.type} className="grow">
+            <TabsContent
+              key={item.service}
+              value={item.service}
+              className="grow"
+            >
               {item.render}
             </TabsContent>
           )
@@ -193,6 +218,36 @@ export default function DashboardPage() {
             </div>
           </DialogContent>
         </Dialog>
+        <Dialog
+          open={showDeleteConnectionDialog}
+          onOpenChange={setShowDeleteConnectionDialog}
+        >
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to delete this connection?
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="sm:justify-end">
+              <DialogClose asChild>
+                <div className="flex flex-row items-center justify-center gap-2">
+                  <Button type="button" variant="secondary">
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={handleDeleteConnectionClick}
+                  >
+                    Delete
+                  </Button>
+                </div>
+              </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
         <Sidebar
           menuList={menulist}
           handleAddPageClick={handleAddPageClick}
@@ -200,6 +255,7 @@ export default function DashboardPage() {
           setQueryName={setQueryName}
           setBaseConfigId={setBaseConfigId}
           setNodeForUpdate={setNodeForUpdate}
+          setShowDeleteConnectionDialog={setShowDeleteConnectionDialog}
         />
         <div className="col-span-8">{renderComponent()}</div>
       </div>

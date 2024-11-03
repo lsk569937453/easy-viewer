@@ -10,11 +10,11 @@ import { cn } from "./lib/utils"
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="h-screen overflow-clip">
-        <Menu />
+      <div className="flex h-screen flex-col overflow-clip">
+        <Menu className="flex-none" />
         <div
           className={cn(
-            "h-full border-t border-foreground/30 bg-background pb-8",
+            "grow border-t border-foreground/30 bg-background pb-8",
             "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md"
           )}
         >

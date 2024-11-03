@@ -50,3 +50,10 @@ export function getLevelInfos(node) {
   levelInfos.reverse()
   return levelInfos
 }
+export function getRootNode(node) {
+  let tempNode = node
+  while (tempNode.level > 0) {
+    tempNode = tempNode.parent
+  }
+  return tempNode
+}

@@ -42,6 +42,7 @@ impl BaseConfigEnum {
     }
     pub async fn list_node_info(
         &self,
+
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<Vec<(String, String)>, anyhow::Error> {
@@ -91,6 +92,7 @@ impl MysqlConfig {
     }
     pub async fn list_node_info(
         &self,
+
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<Vec<(String, String)>, anyhow::Error> {
@@ -145,6 +147,20 @@ WHERE
                             "singleTable".to_string(),
                         ));
                     }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(vec);
+                } else if node_name == "Query" {
+                    let rows =
+                        sqlx::query("select query_name from sql_query where connection_id=?1")
+                            .bind(base_config_id)
+                            .fetch_all(&appstate.pool)
+                            .await?;
+                    let mut vec = vec![];
+                    for row in rows {
+                        let row_str: String = row.try_get(0)?;
+                        vec.push((row_str, "singleQuery".to_string()));
+                    }
+
                     info!("list_node_info: {:?}", vec);
                     return Ok(vec);
                 }

@@ -1,21 +1,31 @@
 import React, { useEffect, useRef, useState } from "react"
 import * as Tooltip from "@radix-ui/react-tooltip"
 
-import { uuid } from "../../lib/utils.js"
+import { getRootNode, uuid } from "../../lib/utils.js"
 import TablePage from "../page/tablePage.jsx"
 
-const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
+const IconDiv = ({
+  node,
+  setShowQueryLoading,
+  setQueryName,
+  setBaseConfigId,
+  setNodeForUpdate,
+}) => {
   const getQueryName = () => {
     const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "")
     const queryName = `New_Query_${timestamp}`
     return queryName
   }
+
   const handleNewQueryClick = (e) => {
     e.stopPropagation()
 
     console.log("handleNewQueryClick")
     setQueryName(getQueryName())
     setShowQueryLoading(true)
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    setNodeForUpdate(node)
   }
   return (
     <>
@@ -215,6 +225,84 @@ const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
             </Tooltip.Provider>
           </div>
         </>
+      ) : node.data.iconName === "singleQuery" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql ml-7 flex-none stroke-orange-400"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+              <path d="M5 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+              <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+              <path d="M18 15v6h2" />
+              <path d="M13 15a2 2 0 0 1 2 2v2a2 2 0 1 1 -4 0v-2a2 2 0 0 1 2 -2z" />
+              <path d="M14 20l1.5 1.5" />
+            </svg>
+          )}
+          <p className="flex-grow text-sm ">{node.data.name}</p>
+
+          <div className="ml-auto flex flex-row ">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible  group-hover/item:hover:bg-muted"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+            </svg>
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-muted "
+                    onClick={handleNewQueryClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Crate Query</p>
+                    <Tooltip.Arrow className="fill-white" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
       ) : node.data.iconName === "tables" ? (
         <>
           {node.data.showSecondIcon && (
@@ -228,7 +316,7 @@ const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-table stroke-blue-600"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-table flex-none stroke-blue-600"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z" />
@@ -236,7 +324,7 @@ const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
               <path d="M10 3v18" />
             </svg>
           )}
-          <p className="text-sm">{node.data.name}</p>
+          <p className="flex-grow text-sm">{node.data.name}</p>
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -467,7 +555,7 @@ const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-table "
+              class="icon icon-tabler icons-tabler-outline icon-tabler-table  flex-none"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 5a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v14a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-14z" />
@@ -475,7 +563,7 @@ const IconDiv = ({ node, setShowQueryLoading, setQueryName }) => {
               <path d="M10 3v18" />
             </svg>
           )}
-          <p className="text-sm">{node.data.name}</p>
+          <p className="flex-grow text-sm">{node.data.name}</p>
 
           <div className="absolute right-0 z-50 flex flex-row p-2">
             <svg

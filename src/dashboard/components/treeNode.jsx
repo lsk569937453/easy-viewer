@@ -18,6 +18,7 @@ const TreeNode = ({
   setQueryName,
   setBaseConfigId,
   setNodeForUpdate,
+  setShowDeleteConnectionDialog,
 }) => {
   const handleClickIcon = (node) => {
     addTab()
@@ -93,7 +94,7 @@ const TreeNode = ({
     <div
       style={style}
       ref={dragHandle}
-      className="group/item flex cursor-pointer flex-row content-center items-center justify-items-center  gap-2 p-1 hover:bg-slate-200"
+      className="group/item mt-1 flex cursor-pointer flex-row content-center items-center  justify-items-center gap-2 hover:bg-slate-200"
       onClick={() => handleClickIcon(node)}
     >
       {node.data.showFirstIcon && node.isOpen && (
@@ -136,6 +137,7 @@ const TreeNode = ({
         setQueryName={setQueryName}
         setBaseConfigId={setBaseConfigId}
         setNodeForUpdate={setNodeForUpdate}
+        setShowDeleteConnectionDialog={setShowDeleteConnectionDialog}
       />
     </div>
   )

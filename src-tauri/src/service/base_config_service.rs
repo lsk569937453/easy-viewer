@@ -22,6 +22,16 @@ pub async fn save_base_config_with_error(
         .await?;
     Ok(())
 }
+pub async fn delete_base_config_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<(), anyhow::Error> {
+    sqlx::query("DELETE FROM base_config WHERE id = ?")
+        .bind(base_config_id)
+        .execute(&state.pool)
+        .await?;
+    Ok(())
+}
 pub async fn get_base_config_with_error(
     state: State<'_, AppState>,
 ) -> Result<GetBaseConnectionResponse, anyhow::Error> {

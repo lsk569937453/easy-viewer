@@ -10,6 +10,7 @@ const IconDiv = ({
   setQueryName,
   setBaseConfigId,
   setNodeForUpdate,
+  setShowDeleteConnectionDialog,
 }) => {
   const getQueryName = () => {
     const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "")
@@ -26,6 +27,13 @@ const IconDiv = ({
     let rootNode = getRootNode(node)
     setBaseConfigId(rootNode.data.baseConfigId)
     setNodeForUpdate(node)
+  }
+  const handleConnectionRemoveClick = (e) => {
+    e.stopPropagation()
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    setShowDeleteConnectionDialog(true)
+    console.log("handleNewQueryClick")
   }
   return (
     <>
@@ -58,7 +66,7 @@ const IconDiv = ({
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row ">
+          <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-searchMarkerColor ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -69,12 +77,49 @@ const IconDiv = ({
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-muted"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
               <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
             </svg>
+
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-muted"
+                    onClick={handleConnectionRemoveClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" />
+                    <path d="M14 11l0 6" />
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Delete Connection</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -85,7 +130,7 @@ const IconDiv = ({
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-muted"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M12 5l0 14" />
@@ -174,7 +219,7 @@ const IconDiv = ({
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row ">
+          <div className="ml-auto flex flex-row group-hover/item:bg-searchMarkerColor">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -252,7 +297,7 @@ const IconDiv = ({
           )}
           <p className="flex-grow text-sm ">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row ">
+          <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-searchMarkerColor ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="20"
@@ -263,7 +308,7 @@ const IconDiv = ({
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible  group-hover/item:hover:bg-muted"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-muted"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />

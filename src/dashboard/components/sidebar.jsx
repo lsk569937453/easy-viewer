@@ -19,6 +19,8 @@ const treeNode = ({
   currentMenuList,
   setShowQueryLoading,
   setQueryName,
+  setBaseConfigId,
+  setNodeForUpdate,
 }) => {
   return (
     <TreeNode
@@ -30,6 +32,8 @@ const treeNode = ({
       currentMenuList={currentMenuList}
       setShowQueryLoading={setShowQueryLoading}
       setQueryName={setQueryName}
+      setBaseConfigId={setBaseConfigId}
+      setNodeForUpdate={setNodeForUpdate}
     />
   )
 }
@@ -38,6 +42,8 @@ const Sidebar = ({
   handleAddPageClick,
   setShowQueryLoading,
   setQueryName,
+  setBaseConfigId,
+  setNodeForUpdate,
 }) => {
   const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
@@ -52,12 +58,7 @@ const Sidebar = ({
   }, [menuList])
 
   return (
-    <div
-      className={
-        "top-0 col-span-2  flex  h-full overflow-y-auto  overscroll-x-none"
-      }
-      ref={ref}
-    >
+    <div className={"top-0 col-span-2  flex  h-full "} ref={ref}>
       <Tree
         data={currentMenuList}
         ref={treeRef}
@@ -74,6 +75,8 @@ const Sidebar = ({
             currentMenuList,
             setShowQueryLoading,
             setQueryName,
+            setBaseConfigId,
+            setNodeForUpdate,
           })
         }
       </Tree>

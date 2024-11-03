@@ -17,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { clickNode } from "../lib/node"
 import { uuid } from "../lib/utils"
 import Sidebar from "./components/sidebar"
 
@@ -27,6 +28,9 @@ export default function DashboardPage() {
   const [tabValue, setTabValue] = useState(null)
   const [showQueryLoading, setShowQueryLoading] = useState(false)
   const [queryName, setQueryName] = useState("")
+  const [baseConfigId, setBaseConfigId] = useState(null)
+  const [nodeForUpdate, setNodeForUpdate] = useState(null)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -80,7 +84,7 @@ export default function DashboardPage() {
   const handleAddPageClick = (item) => {
     console.log(item)
     const itemIndex = pageDataArray.findIndex(
-      (existingItem) => existingItem.name === item.name
+      (existingItem) => existingItem.type === item.type
     )
 
     if (itemIndex > -1) {
@@ -89,40 +93,52 @@ export default function DashboardPage() {
     } else {
       pageDataArray.push(item)
     }
-    setTabValue(item.name)
+    setTabValue(item.type)
     setPageDataArray([...pageDataArray])
   }
   const handleRemoveButton = (index) => {
     pageDataArray.splice(index, 1)
+    const firstType =
+      pageDataArray.length > 0 ? pageDataArray[0].type : undefined
+    setTabValue(firstType)
+
     setPageDataArray([...pageDataArray])
   }
   const handleQuerySaveClick = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("save_query", {
-        connectionId: 1,
-        queryName: "a",
+        connectionId: baseConfigId,
+        queryName: queryName,
         sql: null,
       })
     )
     if (response_code == 0) {
       console.log("保存成功")
+      setShowQueryLoading(false)
+      clickNode(nodeForUpdate, menulist, setMenulist)
     }
+    setShowQueryLoading(false)
   }
+
   const renderComponent = () => {
     return (
       <Tabs
         value={tabValue}
-        className="h-full w-full"
+        className="flex flex-col"
         onValueChange={setTabValue}
       >
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="flex w-full  flex-row items-start justify-start">
           {pageDataArray.map((item, index) => {
             return (
-              <TabsTrigger value={item.name} key={index}>
-                <div className="flex flex-row items-center justify-center gap-1">
+              <TabsTrigger
+                value={item.type}
+                key={index}
+                className="justify-start"
+              >
+                <div className="relative flex flex-row items-center justify-center gap-1 p-10">
                   <div className="flex flex-row items-center justify-center gap-1">
-                    {item.icon}
-                    <p> {item.name}</p>
+                    <div className="flex-none"> {item.icon}</div>
+                    <p className="grow"> {item.service}</p>
                   </div>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -150,7 +166,7 @@ export default function DashboardPage() {
         </TabsList>
         {pageDataArray.map((item, index) => {
           return (
-            <TabsContent key={item.service} value={item.name}>
+            <TabsContent key={item.service} value={item.type} className="grow">
               {item.render}
             </TabsContent>
           )
@@ -160,7 +176,7 @@ export default function DashboardPage() {
   }
   return (
     <>
-      <div className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-y-auto overscroll-x-none ">
+      <div className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-x-auto  overflow-y-auto ">
         <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
           <DialogContent className="w-30 bg-slate-200">
             <DialogTitle>创建新的Query</DialogTitle>
@@ -182,6 +198,8 @@ export default function DashboardPage() {
           handleAddPageClick={handleAddPageClick}
           setShowQueryLoading={setShowQueryLoading}
           setQueryName={setQueryName}
+          setBaseConfigId={setBaseConfigId}
+          setNodeForUpdate={setNodeForUpdate}
         />
         <div className="col-span-8">{renderComponent()}</div>
       </div>

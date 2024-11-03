@@ -113,16 +113,11 @@ export default function DataPage({ node }) {
       setHeader(columns)
       setRows(transformedData)
       setShowLoading(false)
-      // let currentRows = rows.slice((currentPage - 1) * pageCount, currentPage * pageCount);
-      // setCurrentRows(currentRows);
     }
     setShowLoading(false)
     var endTime = new Date()
     var timeDiff = endTime - startTime //in ms
-    // strip the ms
-    // timeDiff /= 1000;
 
-    // get seconds
     var seconds = Math.round(timeDiff)
     setTimeCost(seconds)
   }
@@ -157,8 +152,6 @@ export default function DataPage({ node }) {
   })
   return (
     <div className="flex  h-full w-full flex-col	">
-      {/* <textarea className="flex min-h-[40px] w-full  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-                value={sql} onChange={(e) => setSql(e.target.value)} /> */}
       <div className="flex flex-row " ref={ref}>
         <AceEditor
           className=" flex max-h-[200px] min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
@@ -265,7 +258,7 @@ export default function DataPage({ node }) {
             fill="currentColor"
           >
             <path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A.998.998 0 0 0 5 3v18a1 1 0 0 0 .536.886zM7 4.909 17.243 12 7 19.091V4.909z" />
-          </svg>{" "}
+          </svg>
         </Button>
         <p className="py-1 text-lg	">Cost:{timeCost} ms</p>
         <Button

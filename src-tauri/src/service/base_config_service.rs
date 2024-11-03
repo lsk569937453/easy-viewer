@@ -57,6 +57,7 @@ pub async fn list_node_info_with_error(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<Vec<(String, String)>, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
+
     let value = list_node_info_req.level_infos[0]
         .config_value
         .parse::<i32>()?;

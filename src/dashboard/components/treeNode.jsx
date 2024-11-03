@@ -1,46 +1,12 @@
 import React, { useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 
+import { clickNode } from "../../lib/node.jsx"
 import { getLevelInfos, uuid } from "../../lib/utils"
+import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 import IconDiv from "./iconDiv.jsx"
 
-const mysqlDatabaseData = [
-  {
-    name: "Query",
-    iconName: "query",
-  },
-  {
-    name: "Tables",
-    iconName: "tables",
-  },
-  {
-    name: "Views",
-    iconName: "views",
-  },
-  {
-    name: "Functions",
-    iconName: "functions",
-  },
-  {
-    name: "Procedures",
-    iconName: "procedures",
-  },
-]
-const mysqlTableData = [
-  {
-    name: "Columns",
-    iconName: "columns",
-  },
-  {
-    name: "Index",
-    iconName: "index",
-  },
-  {
-    name: "Partitions",
-    iconName: "partitions",
-  },
-]
 const TreeNode = ({
   node,
   style,
@@ -50,119 +16,23 @@ const TreeNode = ({
   currentMenuList,
   setShowQueryLoading,
   setQueryName,
+  setBaseConfigId,
+  setNodeForUpdate,
 }) => {
-  //it is used to trggger the child event
-  // const [trigger, setTrigger] = useState(false);
-  const findParentNode = (node) => {
-    let temNode = node
-    while (temNode.level !== 0) {
-      temNode = temNode.parent
-    }
-    return temNode
-  }
-  const findAndReplaceChildren = (data, targetId, newChildren) => {
-    for (let item of data) {
-      if (item.id === targetId) {
-        item.children = newChildren
-        return true
-      }
-      if (item.children) {
-        const found = findAndReplaceChildren(
-          item.children,
-          targetId,
-          newChildren
-        )
-        if (found) {
-          return true
-        }
-      }
-    }
-    return false
-  }
-  const clickNode = async (node) => {
-    console.log(node)
-    //if the parent node is mysql
-    if (node.level == 1 && node.parent.data.connectionType == 0) {
-      const newChildren = mysqlDatabaseData.map((item, index) => {
-        return {
-          id: uuid(),
-          name: item.name,
-          iconName: item.iconName,
-          showFirstIcon: true,
-          showSecondIcon: true,
-        }
-      })
-      findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-      setCurrentMenuList([...currentMenuList])
-      return
-    } else if (
-      node.level == 3 &&
-      findParentNode(node).data.connectionType == 0
-    ) {
-      const newChildren = mysqlTableData.map((item, index) => {
-        return {
-          id: uuid(),
-          name: item.name,
-          iconName: item.iconName,
-          showFirstIcon: true,
-          showSecondIcon: true,
-        }
-      })
-      findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-      setCurrentMenuList([...currentMenuList])
-      return
-    }
-
-    console.log(node)
-    const listNodeInfoReq = {
-      level_infos: getLevelInfos(node),
-    }
-    console.log(listNodeInfoReq)
-    const { response_code, response_msg } = JSON.parse(
-      await invoke("list_node_info", { listNodeInfoReq: listNodeInfoReq })
-    )
-
-    console.log(response_code)
-    console.log(response_msg)
-
-    let newChildren
-    if (response_msg.length == 0) {
-      newChildren = [
-        {
-          id: uuid(),
-          name: "No Data",
-          iconName: "",
-          showFirstIcon: false,
-          showSecondIcon: false,
-        },
-      ]
-    } else {
-      newChildren = response_msg.map((item, index) => {
-        return {
-          id: uuid(),
-          name: item[0],
-          iconName: item[1],
-          showFirstIcon: node.level == 4 ? false : true,
-          showSecondIcon: true,
-        }
-      })
-    }
-    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-    setCurrentMenuList([...currentMenuList])
-  }
   const handleClickIcon = (node) => {
     addTab()
+    if (!node.data.showFirstIcon) return
     if (node.children && node.children.length > 0) {
       node.isInternal && node.toggle()
     } else {
-      clickNode(node)
+      clickNode(node, currentMenuList, setCurrentMenuList)
     }
   }
   const addTab = () => {
     console.log(node.data.iconName === "singleTable")
     if (node.data.iconName === "singleTable") {
       handleAddPageClick({
-        name: "table",
+        type: "table",
         icon: (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -186,13 +56,45 @@ const TreeNode = ({
         service: node.data.name,
       })
     }
+    console.log(node.data.iconName === "singleQuery")
+
+    if (node.data.iconName === "singleQuery") {
+      handleAddPageClick({
+        type: "query",
+        icon: (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql stroke-orange-400"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+            <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+            <path d="M5 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+            <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+            <path d="M18 15v6h2" />
+            <path d="M13 15a2 2 0 0 1 2 2v2a2 2 0 1 1 -4 0v-2a2 2 0 0 1 2 -2z" />
+            <path d="M14 20l1.5 1.5" />
+          </svg>
+        ),
+        render: <QueryPage />,
+        service: node.data.name,
+      })
+    }
   }
   return (
     <div
       style={style}
       ref={dragHandle}
       className="group/item flex cursor-pointer flex-row content-center items-center justify-items-center  gap-2 p-1 hover:bg-slate-200"
-      onClick={() => (node.data.showFirstIcon ? handleClickIcon(node) : null)}
+      onClick={() => handleClickIcon(node)}
     >
       {node.data.showFirstIcon && node.isOpen && (
         <svg
@@ -205,7 +107,7 @@ const TreeNode = ({
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-down flex-none"
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M6 9l6 6l6 -6" />
@@ -222,7 +124,7 @@ const TreeNode = ({
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
-          class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-chevron-right flex-none"
         >
           <path stroke="none" d="M0 0h24v24H0z" fill="none" />
           <path d="M9 6l6 6l-6 6" />
@@ -232,6 +134,8 @@ const TreeNode = ({
         node={node}
         setShowQueryLoading={setShowQueryLoading}
         setQueryName={setQueryName}
+        setBaseConfigId={setBaseConfigId}
+        setNodeForUpdate={setNodeForUpdate}
       />
     </div>
   )

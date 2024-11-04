@@ -1,6 +1,8 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
+
+import { SidebarContext } from "../page.jsx"
 
 import "@szhsin/react-menu/dist/index.css"
 
@@ -16,18 +18,13 @@ const TreeNode = ({
   node,
   style,
   dragHandle,
-  handleAddPageClick,
   setCurrentMenuList,
   currentMenuList,
-  setShowQueryLoading,
-  setQueryName,
-  setBaseConfigId,
-  setNodeForUpdate,
-  setShowDeleteConnectionDialog,
 }) => {
   const { toast } = useToast()
   const [isOpen, setOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+  const { count, setCount } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
     addTab()
@@ -141,7 +138,7 @@ const TreeNode = ({
         direction="right"
         onClose={() => setOpen(false)}
       >
-        <MenuItem >Edit Connection</MenuItem>
+        <MenuItem>Edit Connection</MenuItem>
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (
         <svg

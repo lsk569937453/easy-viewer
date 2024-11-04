@@ -14,40 +14,20 @@ const treeNode = ({
   node,
   style,
   dragHandle,
-  handleAddPageClick,
   setCurrentMenuList,
   currentMenuList,
-  setShowQueryLoading,
-  setQueryName,
-  setBaseConfigId,
-  setNodeForUpdate,
-  setShowDeleteConnectionDialog,
 }) => {
   return (
     <TreeNode
       node={node}
       style={style}
       dragHandle={dragHandle}
-      handleAddPageClick={handleAddPageClick}
       setCurrentMenuList={setCurrentMenuList}
       currentMenuList={currentMenuList}
-      setShowQueryLoading={setShowQueryLoading}
-      setQueryName={setQueryName}
-      setBaseConfigId={setBaseConfigId}
-      setNodeForUpdate={setNodeForUpdate}
-      setShowDeleteConnectionDialog={setShowDeleteConnectionDialog}
     />
   )
 }
-const Sidebar = ({
-  menuList,
-  handleAddPageClick,
-  setShowQueryLoading,
-  setQueryName,
-  setBaseConfigId,
-  setNodeForUpdate,
-  setShowDeleteConnectionDialog,
-}) => {
+const Sidebar = ({ menuList }) => {
   const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
 
@@ -73,14 +53,8 @@ const Sidebar = ({
         {(props) =>
           treeNode({
             ...props,
-            handleAddPageClick,
             setCurrentMenuList,
             currentMenuList,
-            setShowQueryLoading,
-            setQueryName,
-            setBaseConfigId,
-            setNodeForUpdate,
-            setShowDeleteConnectionDialog,
           })
         }
       </Tree>

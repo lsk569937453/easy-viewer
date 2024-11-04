@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from "react"
+import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
+
+import "@szhsin/react-menu/dist/index.css"
+
+import { useToast } from "@/components/ui/use-toast"
 
 import { clickNode } from "../../lib/node.jsx"
 import { getLevelInfos, uuid } from "../../lib/utils"
@@ -20,13 +25,32 @@ const TreeNode = ({
   setNodeForUpdate,
   setShowDeleteConnectionDialog,
 }) => {
-  const handleClickIcon = (node) => {
+  const { toast } = useToast()
+  const [isOpen, setOpen] = useState(false)
+  const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+
+  const handleClickIcon = async (node) => {
     addTab()
     if (!node.data.showFirstIcon) return
     if (node.children && node.children.length > 0) {
       node.isInternal && node.toggle()
     } else {
-      clickNode(node, currentMenuList, setCurrentMenuList)
+      const { response_code, response_msg } = await clickNode(
+        node,
+        currentMenuList,
+        setCurrentMenuList
+      )
+      console.log(response_code)
+      console.log(response_msg)
+      if (response_code !== 0) {
+        toast({
+          variant: "destructive",
+          title: "操作信息",
+          description: response_msg,
+        })
+
+        return
+      }
     }
   }
   const addTab = () => {
@@ -90,13 +114,35 @@ const TreeNode = ({
       })
     }
   }
+  const handleContextMenuClick = (e) => {
+    console.log(e)
+    if (node.data.iconName != "mysql") {
+      return
+    }
+    if (typeof document.hasFocus === "function" && !document.hasFocus()) return
+
+    e.preventDefault()
+    setAnchorPoint({ x: e.clientX, y: e.clientY })
+    setOpen(true)
+    e.stopPropagation()
+  }
   return (
     <div
       style={style}
       ref={dragHandle}
       className="group/item mt-1 flex cursor-pointer flex-row content-center items-center  justify-items-center gap-2 hover:bg-slate-200"
       onClick={() => handleClickIcon(node)}
+      onContextMenu={handleContextMenuClick}
     >
+      {" "}
+      <ControlledMenu
+        anchorPoint={anchorPoint}
+        state={isOpen ? "open" : "closed"}
+        direction="right"
+        onClose={() => setOpen(false)}
+      >
+        <MenuItem >Edit Connection</MenuItem>
+      </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (
         <svg
           xmlns="http://www.w3.org/2000/svg"

@@ -125,7 +125,7 @@ fn test() -> Result<(), anyhow::Error> {
         source: TestSource::TestUrl("mysql://root:123456@localhost:3306/test".to_string()),
     };
     let json_str = serde_json::to_string(&test_database_request)?;
-    println!("{}", json_str);
+    info!("{}", json_str);
 
     Ok(())
 }
@@ -142,7 +142,7 @@ fn test_host() -> Result<(), anyhow::Error> {
         }),
     };
     let json_str = serde_json::to_string(&test_database_request)?;
-    println!("{}", json_str);
+    info!("{}", json_str);
 
     Ok(())
 }

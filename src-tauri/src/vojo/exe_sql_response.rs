@@ -17,7 +17,6 @@ impl ExeSqlResponse {
     }
 }
 #[derive(Deserialize, Serialize)]
-
 pub struct Header {
     pub name: String,
     pub type_name: String,

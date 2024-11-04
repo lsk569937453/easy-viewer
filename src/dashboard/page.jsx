@@ -1,10 +1,19 @@
 import { useEffect, useState } from "react"
+import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
-import { IconMenuItem, Menu, MenuItem } from "@tauri-apps/api/menu"
+// import { IconMenuItem, Menu, MenuItem } from "@tauri-apps/api/menu"
 import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
+import "@szhsin/react-menu/dist/index.css"
+
 import { Button } from "@/components/ui/button"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import {
   Dialog,
   DialogClose,
@@ -24,6 +33,8 @@ import Sidebar from "./components/sidebar"
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation()
+  const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+
   const [menulist, setMenulist] = useState([])
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
@@ -33,31 +44,31 @@ export default function DashboardPage() {
   const [queryName, setQueryName] = useState("")
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
-
+  const [isOpen, setOpen] = useState(false)
   useEffect(() => {
     loadData()
   }, [])
-  const handleContextMenu = async (event) => {
-    event.preventDefault()
+  //   const handleContextMenu = async (event) => {
+  //     event.preventDefault()
 
-    const menu = await Menu.new()
-    const openItem = await MenuItem.new({
-      text: "Open",
-      action: async () => {
-        console.log("Open clicked")
-      },
-    })
-    const refresh = await MenuItem.new({
-      text: "刷新",
-      action: async () => {
-        console.log("Open clicked")
-        window.location.reload()
-      },
-    })
-    menu.append(refresh)
-    menu.append(openItem)
-    await menu.popup()
-  }
+  //     const menu = await Menu.new()
+  //     const openItem = await MenuItem.new({
+  //       text: "Open",
+  //       action: async () => {
+  //         console.log("Open clicked")
+  //       },
+  //     })
+  //     const refresh = await MenuItem.new({
+  //       text: "刷新",
+  //       action: async () => {
+  //         console.log("Open clicked")
+  //         window.location.reload()
+  //       },
+  //     })
+  //     menu.append(refresh)
+  //     menu.append(openItem)
+  //     await menu.popup()
+  //   }
   const loadData = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("get_base_config")
@@ -201,7 +212,25 @@ export default function DashboardPage() {
   }
   return (
     <>
-      <div className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-x-auto  overflow-y-auto ">
+      <div
+        className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-x-auto  overflow-y-auto "
+        onContextMenu={(e) => {
+          console.log(e)
+          if (typeof document.hasFocus === "function" && !document.hasFocus())
+            return
+          e.preventDefault()
+          setAnchorPoint({ x: e.clientX, y: e.clientY })
+          setOpen(true)
+        }}
+      >
+        <ControlledMenu
+          anchorPoint={anchorPoint}
+          state={isOpen ? "open" : "closed"}
+          direction="right"
+          onClose={() => setOpen(false)}
+        >
+          <MenuItem onClick={() => window.location.reload()}>Refresh</MenuItem>
+        </ControlledMenu>
         <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
           <DialogContent className="w-30 bg-slate-200">
             <DialogTitle>创建新的Query</DialogTitle>

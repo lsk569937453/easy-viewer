@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core"
 
+import { useToast } from "@/components/ui/use-toast"
+
 import { getLevelInfos, uuid } from "./utils"
 
 const mysqlDatabaseData = [
@@ -102,27 +104,30 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
   console.log(response_code)
   console.log(response_msg)
 
-  let newChildren
-  if (response_msg.length === 0) {
-    newChildren = [
-      {
+  if (response_code === 0) {
+    let newChildren
+    if (response_msg.length === 0) {
+      newChildren = [
+        {
+          id: uuid(),
+          name: "No Data",
+          iconName: "",
+          showFirstIcon: false,
+          showSecondIcon: false,
+        },
+      ]
+    } else {
+      newChildren = response_msg.map((item) => ({
         id: uuid(),
-        name: "No Data",
-        iconName: "",
-        showFirstIcon: false,
-        showSecondIcon: false,
-      },
-    ]
-  } else {
-    newChildren = response_msg.map((item) => ({
-      id: uuid(),
-      name: item[0],
-      iconName: item[1],
-      showFirstIcon: !(node.level === 4 || item[1] === "singleQuery"),
-      showSecondIcon: true,
-    }))
-  }
+        name: item[0],
+        iconName: item[1],
+        showFirstIcon: !(node.level === 4 || item[1] === "singleQuery"),
+        showSecondIcon: true,
+      }))
+    }
 
-  findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-  setCurrentMenuList([...currentMenuList])
+    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
+    setCurrentMenuList([...currentMenuList])
+  }
+  return { response_code, response_msg }
 }

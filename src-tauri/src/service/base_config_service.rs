@@ -1,6 +1,7 @@
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
+use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -60,6 +61,25 @@ pub async fn get_base_config_with_error(
     }
     Ok(GetBaseConnectionResponse {
         base_config_list: base_configs,
+    })
+}
+pub async fn get_base_config_by_id_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<GetBaseConnectionByIdResponse, anyhow::Error> {
+    let row =
+        sqlx::query("select connection_name,id,connection_json from base_config where id = ?")
+            .bind(base_config_id)
+            .fetch_optional(&state.pool)
+            .await?
+            .ok_or(anyhow!("not found"))?;
+
+    let id: i32 = row.try_get("id")?;
+    let connection_json_str: String = row.try_get("connection_json")?;
+    Ok(GetBaseConnectionByIdResponse {
+        base_config_id: id,
+        connection_name: row.try_get("connection_name")?,
+        connection_json: connection_json_str,
     })
 }
 pub async fn list_node_info_with_error(

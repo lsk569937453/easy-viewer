@@ -94,6 +94,7 @@ async fn main() -> Result<(), anyhow::Error> {
             test_url,
             save_base_config,
             get_base_config,
+            get_base_config_by_id,
             list_node_info,
             exe_sql,
             save_query,

@@ -14,9 +14,9 @@ impl AppState {
         if !db_path.exists() {
             let mut file = fs::File::create(&db_path)?;
             file.write_all(b"")?;
-            println!("File created: {:?}", db_path);
+            info!("File created: {:?}", db_path);
         } else {
-            println!("File already exists: {:?}", db_path);
+            info!("File already exists: {:?}", db_path);
         }
         let pool = SqlitePool::connect(db_path.to_str().ok_or(anyhow!("invalid db path"))?).await?;
 
@@ -36,7 +36,6 @@ impl AppState {
             query_name  TEXT NOT NULL, 
             query  TEXT,
             UNIQUE (connection_id, query_name)  
-
             )",
         )
         .await?;

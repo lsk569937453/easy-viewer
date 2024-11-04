@@ -77,7 +77,7 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
     }))
     findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
     setCurrentMenuList([...currentMenuList])
-    return
+    return { response_code: 0, response_msg: "success" }
   } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
     const newChildren = mysqlTableData.map((item) => ({
       id: uuid(),
@@ -88,7 +88,7 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
     }))
     findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
     setCurrentMenuList([...currentMenuList])
-    return
+    return { response_code: 0, response_msg: "success" }
   }
 
   console.log(node)

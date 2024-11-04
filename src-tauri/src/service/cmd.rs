@@ -13,6 +13,7 @@ use tauri::State;
 
 use super::base_config_service::delete_base_config_with_error;
 use super::base_config_service::exe_sql_with_error;
+use super::base_config_service::get_base_config_by_id_with_error;
 use super::base_config_service::get_base_config_with_error;
 use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
@@ -69,7 +70,15 @@ pub async fn get_base_config(state: State<'_, AppState>) -> Result<String, ()> {
 
     Ok(res)
 }
+#[tauri::command]
+pub async fn get_base_config_by_id(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, ()> {
+    let res = handle_response!(get_base_config_by_id_with_error(state, base_config_id).await);
 
+    Ok(res)
+}
 #[tauri::command]
 
 pub async fn list_node_info(

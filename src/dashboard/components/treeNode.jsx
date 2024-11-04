@@ -1,13 +1,15 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
+
+import { SidebarContext } from "../page.jsx"
 
 import "@szhsin/react-menu/dist/index.css"
 
 import { useToast } from "@/components/ui/use-toast"
 
 import { clickNode } from "../../lib/node.jsx"
-import { getLevelInfos, uuid } from "../../lib/utils"
+import { getLevelInfos, getRootNode, uuid } from "../../lib/utils"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 import IconDiv from "./iconDiv.jsx"
@@ -16,18 +18,21 @@ const TreeNode = ({
   node,
   style,
   dragHandle,
-  handleAddPageClick,
   setCurrentMenuList,
   currentMenuList,
-  setShowQueryLoading,
-  setQueryName,
-  setBaseConfigId,
-  setNodeForUpdate,
-  setShowDeleteConnectionDialog,
 }) => {
   const { toast } = useToast()
   const [isOpen, setOpen] = useState(false)
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+  const {
+    handleAddPageClick,
+    setShowQueryLoading,
+    setQueryName,
+    setBaseConfigId,
+    setNodeForUpdate,
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+  } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
     addTab()
@@ -126,6 +131,14 @@ const TreeNode = ({
     setOpen(true)
     e.stopPropagation()
   }
+  const handleEditConnectionClick = (e) => {
+    console.log(e)
+    setNodeForUpdate(node)
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    setShowEditConnectionDialog(true)
+    e.syntheticEvent.stopPropagation()
+  }
   return (
     <div
       style={style}
@@ -141,7 +154,9 @@ const TreeNode = ({
         direction="right"
         onClose={() => setOpen(false)}
       >
-        <MenuItem >Edit Connection</MenuItem>
+        <MenuItem onClick={(e) => handleEditConnectionClick(e)}>
+          Edit Connection
+        </MenuItem>
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (
         <svg
@@ -177,14 +192,7 @@ const TreeNode = ({
           <path d="M9 6l6 6l-6 6" />
         </svg>
       )}
-      <IconDiv
-        node={node}
-        setShowQueryLoading={setShowQueryLoading}
-        setQueryName={setQueryName}
-        setBaseConfigId={setBaseConfigId}
-        setNodeForUpdate={setNodeForUpdate}
-        setShowDeleteConnectionDialog={setShowDeleteConnectionDialog}
-      />
+      <IconDiv node={node} />
     </div>
   )
 }

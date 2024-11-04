@@ -36,7 +36,6 @@ impl AppState {
             query_name  TEXT NOT NULL, 
             query  TEXT,
             UNIQUE (connection_id, query_name)  
-
             )",
         )
         .await?;

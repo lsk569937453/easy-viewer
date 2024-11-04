@@ -1,17 +1,20 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useContext, useEffect, useRef, useState } from "react"
 import * as Tooltip from "@radix-ui/react-tooltip"
 
 import { getRootNode, uuid } from "../../lib/utils.js"
+import { SidebarContext } from "../page.jsx"
 import TablePage from "../page/tablePage.jsx"
 
-const IconDiv = ({
-  node,
-  setShowQueryLoading,
-  setQueryName,
-  setBaseConfigId,
-  setNodeForUpdate,
-  setShowDeleteConnectionDialog,
-}) => {
+const IconDiv = ({ node }) => {
+  const {
+    handleAddPageClick,
+    setShowQueryLoading,
+    setQueryName,
+    setBaseConfigId,
+    setNodeForUpdate,
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+  } = useContext(SidebarContext)
   const getQueryName = () => {
     const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "")
     const queryName = `New_Query_${timestamp}`

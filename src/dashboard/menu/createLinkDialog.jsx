@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog"
@@ -31,12 +32,61 @@ const formatMap = new Map([
   ["sqlite", 1],
   ["postgresql", 2],
 ])
-export function CreateLinkDialog() {
+
+const baseConfigSchema = {
+  base_config_enum: {
+    mysql: {
+      config: {
+        host: "",
+        database: "",
+        user_name: "",
+        password: "",
+        port: 0,
+      },
+    },
+    postgresql: {
+      config: {
+        host: "",
+        database: "",
+        user_name: "",
+        password: "",
+        port: 0,
+      },
+    },
+  },
+}
+const CreateLinkDialog = ({ baseCongfigId = null, isSave = false }) => {
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
 
   const [currentLinkName, setCurrentLinkName] = useState("")
+  const [connectionData, setConnectionData] = useState(null)
+
+  useEffect(() => {
+    console.log(baseCongfigId)
+    if (baseCongfigId) {
+      initData()
+    }
+  }, [baseCongfigId])
+
+  const initData = async () => {
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_base_config_by_id", { baseConfigId: baseCongfigId })
+    )
+    console.log(response_code)
+    console.log(response_msg)
+    if (response_code === 0) {
+      const { connection_name, connection_json } = response_msg
+      setCurrentLinkName(connection_name)
+      const parsedData = JSON.parse(connection_json)
+      if (parsedData.base_config_enum.mysql) {
+        setCurrentLinkType("mysql")
+        console.log("MySQL Config:", parsedData.base_config_enum.mysql.config)
+      }
+      setConnectionData(parsedData)
+    }
+  }
 
   return (
     <>
@@ -75,9 +125,32 @@ export function CreateLinkDialog() {
             </Select>
           </div>
 
-          <MysqlConfigComponent connectionName={currentLinkName} />
+          <MysqlConfigComponent
+            connectionName={currentLinkName}
+            initialHost={
+              connectionData?.base_config_enum?.mysql?.config?.host ||
+              "localhost"
+            }
+            initialPort={
+              connectionData?.base_config_enum?.mysql?.config?.port || "3306"
+            }
+            initialDatabase={
+              connectionData?.base_config_enum?.mysql?.config?.database ||
+              "mydb"
+            }
+            initialUsername={
+              connectionData?.base_config_enum?.mysql?.config?.username ||
+              "user"
+            }
+            initialPassword={
+              connectionData?.base_config_enum?.mysql?.config?.password ||
+              "password"
+            }
+            isSave={isSave}
+          />
         </div>
       </DialogContent>
     </>
   )
 }
+export { CreateLinkDialog }

@@ -5,6 +5,8 @@ import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
+import { CreateLinkDialog } from "./menu/createLinkDialog"
+
 import "@szhsin/react-menu/dist/index.css"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +40,7 @@ export const SidebarContext = createContext({
   setBaseConfigId: () => {},
   setNodeForUpdate: () => {},
   setShowDeleteConnectionDialog: () => {},
+  setShowEditConnectionDialog: () => {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -53,30 +56,11 @@ const DashboardPage = () => {
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
   const [isOpen, setOpen] = useState(false)
+  const [showEditConnectionDialog, setShowEditConnectionDialog] =
+    useState(false)
   useEffect(() => {
     loadData()
   }, [])
-  //   const handleContextMenu = async (event) => {
-  //     event.preventDefault()
-
-  //     const menu = await Menu.new()
-  //     const openItem = await MenuItem.new({
-  //       text: "Open",
-  //       action: async () => {
-  //         console.log("Open clicked")
-  //       },
-  //     })
-  //     const refresh = await MenuItem.new({
-  //       text: "刷新",
-  //       action: async () => {
-  //         console.log("Open clicked")
-  //         window.location.reload()
-  //       },
-  //     })
-  //     menu.append(refresh)
-  //     menu.append(openItem)
-  //     await menu.popup()
-  //   }
   const loadData = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("get_base_config")
@@ -228,6 +212,7 @@ const DashboardPage = () => {
           setBaseConfigId,
           setNodeForUpdate,
           setShowDeleteConnectionDialog,
+          setShowEditConnectionDialog,
         }}
       >
         <div
@@ -251,6 +236,12 @@ const DashboardPage = () => {
               Refresh
             </MenuItem>
           </ControlledMenu>
+          <Dialog
+            open={showEditConnectionDialog}
+            onOpenChange={setShowEditConnectionDialog}
+          >
+            <CreateLinkDialog baseCongfigId={baseConfigId} isSave={true} />
+          </Dialog>
           <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
             <DialogContent className="w-30 bg-slate-200">
               <DialogTitle>创建新的Query</DialogTitle>

@@ -24,18 +24,26 @@ import {
 } from "../../components/ui/dialog"
 import { LoadingSpinner } from "../components/spinner"
 
-export function MysqlConfigComponent({ connectionName }) {
+export function MysqlConfigComponent({
+  connectionName,
+  initialHost = "localhost",
+  initialPort = "3306",
+  initialDatabase = "mydb",
+  initialUsername = "user",
+  initialPassword = "password",
+  isSave = false,
+}) {
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
   const [currentUrl, setCurrentUrl] = useState(
-    "mysql://user:password@localhost:3306/mydb"
+    `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
   )
-  const [currentHost, setCurrentHost] = useState("localhost")
-  const [currentPort, setCurrentPort] = useState("3306")
-  const [currentDatabase, setCurrentDatabase] = useState("mydb")
-  const [currentUsername, setCurrentUsername] = useState("user")
-  const [currentPassword, setCurrentPassword] = useState("password")
+  const [currentHost, setCurrentHost] = useState(initialHost)
+  const [currentPort, setCurrentPort] = useState(initialPort)
+  const [currentDatabase, setCurrentDatabase] = useState(initialDatabase)
+  const [currentUsername, setCurrentUsername] = useState(initialUsername)
+  const [currentPassword, setCurrentPassword] = useState(initialPassword)
   const [connectType, setConnectType] = useState("connectTypeHost")
   const [showLoading, setShowLoading] = useState(false)
   const handleTestLinkButtonClick = async () => {
@@ -198,6 +206,7 @@ export function MysqlConfigComponent({ connectionName }) {
       })
     }
   }
+  const handleSaveButtonOnClick = async () => {}
   return (
     <div className="flex flex-col gap-5 border-2 border-dashed border-indigo-600  p-4">
       <AlertDialog open={showLoading} onOpenChange={setShowLoading}>
@@ -284,9 +293,16 @@ export function MysqlConfigComponent({ connectionName }) {
       )}
 
       <div className="flex flex-row items-center gap-5">
-        <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
-          创建连接
-        </Button>
+        {!isSave && (
+          <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
+            创建连接
+          </Button>
+        )}
+        {isSave && (
+          <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
+            保存连接
+          </Button>
+        )}
         <Button
           className="basis-6/12"
           variant="outline"

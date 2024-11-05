@@ -39,9 +39,9 @@ import { Input } from "@/components/ui/input"
 
 import { getLevelInfos, uuid } from "../../lib/utils"
 
-const PropertiesPage = () => {
+const PropertiesPage = ({ node }) => {
   return (
-    <div className="flex flex-col gap-2 p-4">
+    <div className="flex h-full flex-col gap-2 ">
       <div className="flex w-1/2 flex-row">
         <div className="flex basis-1/2 flex-row items-center justify-center gap-2">
           <span>Name</span>
@@ -58,8 +58,8 @@ const PropertiesPage = () => {
           />
         </div>
       </div>
-      <Button className="w-1/12">Update</Button>
-      <PropertiesTabsPage />
+      <Button className="ml-1 w-1/12">Update</Button>
+      <PropertiesTabsPage node={node} />
     </div>
   )
 }

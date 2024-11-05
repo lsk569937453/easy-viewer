@@ -5,13 +5,13 @@ import PropertiesPage from "./propertiesPage"
 
 export default function TablePage({ node }) {
   return (
-    <Tabs.Root defaultValue="data" className="h-full w-full">
-      <Tabs.List className="inline-flex h-10 items-center justify-center rounded-md  p-1 text-muted-foreground">
+    <Tabs.Root defaultValue="data" className="flex h-full w-full flex-col">
+      <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
         <Tabs.Trigger
           value="properties"
           className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -35,7 +35,7 @@ export default function TablePage({ node }) {
           value="data"
           className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -60,7 +60,7 @@ export default function TablePage({ node }) {
           value="diagram"
           className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground "
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -89,9 +89,9 @@ export default function TablePage({ node }) {
 
       <Tabs.Content
         value="properties"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="w-full grow ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <PropertiesPage />
+        <PropertiesPage node={node} />
       </Tabs.Content>
 
       <Tabs.Content

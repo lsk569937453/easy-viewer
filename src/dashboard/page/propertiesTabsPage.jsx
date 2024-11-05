@@ -1,25 +1,53 @@
 import * as Tabs from "@radix-ui/react-tabs"
+import AceEditor from "react-ace"
 
+import "ace-builds/src-noconflict/mode-sql"
+import "ace-builds/src-noconflict/theme-github"
+import "ace-builds/src-noconflict/theme-iplastic"
+
+import { useEffect, useRef, useState } from "react"
+import { invoke } from "@tauri-apps/api/core"
+import { set } from "date-fns"
+
+import { getLevelInfos, uuid } from "../../lib/utils"
 import DataPage from "./dataPage"
 import PropertiesColumnPage from "./propertiesColumnPage"
 import PropertiesPage from "./propertiesPage"
 
 const PropertiesTabsPage = ({ node }) => {
+  const [sql, setSql] = useState("select *from test limit 100")
+
+  useEffect(() => {
+    loadDDl()
+  }, [])
+  const loadDDl = async () => {
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    console.log(listNodeInfoReq)
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_ddl", { listNodeInfoReq: listNodeInfoReq, sql: sql })
+    )
+    console.log(response_code, response_msg)
+    if (response_code == 0) {
+      setSql(response_msg)
+    }
+  }
   return (
-    <Tabs.Root defaultValue="column" className="h-full w-full">
-      <Tabs.List className="inline-flex h-10 items-center justify-center rounded-md  p-1 text-muted-foreground">
+    <Tabs.Root defaultValue="column" className="flex h-full w-full flex-col">
+      <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
         <Tabs.Trigger
           value="ddl"
           className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
               height="18"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="currentColor"
+              stroke="green"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
@@ -36,7 +64,7 @@ const PropertiesTabsPage = ({ node }) => {
           value="column"
           className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -61,7 +89,7 @@ const PropertiesTabsPage = ({ node }) => {
           value="foreignKey"
           className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground "
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -90,7 +118,7 @@ const PropertiesTabsPage = ({ node }) => {
           value="index"
           className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground "
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="18"
@@ -119,16 +147,31 @@ const PropertiesTabsPage = ({ node }) => {
 
       <Tabs.Content
         value="ddl"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-2 h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <PropertiesPage />
+        <AceEditor
+          className=" flex  min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+          mode="sql"
+          height="100%"
+          width="100%"
+          showGutter={false}
+          enableBasicAutocompletion={true}
+          enableSnippets={true}
+          readOnly={true}
+          enableLiveAutocompletion={true}
+          showPrintMargin={false}
+          theme="iplastic"
+          name="UNIQUE_ID_OF_DIV"
+          fontSize={16}
+          value={sql}
+        />
       </Tabs.Content>
 
       <Tabs.Content
         value="column"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="scorllbar mt-2 flex h-full w-full grow flex-col  overflow-auto ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <PropertiesColumnPage />
+        <PropertiesColumnPage node={node} />
       </Tabs.Content>
       <Tabs.Content
         value="foreignKey"

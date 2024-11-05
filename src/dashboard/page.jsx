@@ -150,7 +150,7 @@ const DashboardPage = () => {
     return (
       <Tabs
         value={tabValue}
-        className="flex flex-col"
+        className="flex h-full w-full flex-col"
         onValueChange={setTabValue}
       >
         <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
@@ -224,7 +224,7 @@ const DashboardPage = () => {
         }}
       >
         <div
-          className="grid h-full max-h-full  grid-cols-10 divide-x divide-foreground/30  overflow-x-auto  overflow-y-auto "
+          className="grid h-full grid-cols-10 divide-x divide-foreground/30  overflow-hidden"
           onContextMenu={(e) => {
             console.log(e)
             if (typeof document.hasFocus === "function" && !document.hasFocus())
@@ -304,7 +304,10 @@ const DashboardPage = () => {
             </DialogContent>
           </Dialog>
           <Sidebar menuList={menulist} />
-          <div className="col-span-8">{renderComponent()}</div>
+
+          <div className="col-span-8 h-full w-full">
+            {pageDataArray.length > 0 ? renderComponent() : ""}
+          </div>
         </div>
       </SidebarContext.Provider>
     </>

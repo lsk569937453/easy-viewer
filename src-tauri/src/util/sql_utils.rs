@@ -83,8 +83,6 @@ pub fn sqlite_row_to_json(
     type_name: &str,
     key: usize,
 ) -> Result<Value, anyhow::Error> {
-    info!("type_name: {}|{}", type_name, key);
-
     let data =
         match type_name {
             "FLOAT" => row

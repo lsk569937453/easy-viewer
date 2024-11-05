@@ -38,6 +38,97 @@ import { tr } from "date-fns/locale"
 import { getLevelInfos, uuid } from "../../lib/utils"
 
 const PropertiesColumnPage = ({ node }) => {
-  return <div>sss</div>
+  const [header, setHeader] = useState([])
+  const [rows, setRows] = useState([])
+  const [tableHeight, setTableHeight] = useState(window.innerHeight - 160)
+
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 100,
+  })
+  const [colSizing, setColSizing] = useState({})
+  const table = useReactTable({
+    data: rows,
+    columns: header,
+    enableColumnResizing: true,
+    columnResizeMode: "onChange",
+    getCoreRowModel: getCoreRowModel(),
+    onColumnSizingChange: setColSizing,
+    onPaginationChange: setPagination,
+    getPaginationRowModel: getPaginationRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      columnSizing: colSizing,
+      pagination: pagination,
+    },
+  })
+
+  useEffect(() => {
+    exeSql()
+  }, [])
+
+  const exeSql = async () => {
+    // const timer = setTimeout(() => setShowLoading(true), 500)
+    var startTime = new Date()
+
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    console.log(listNodeInfoReq)
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("show_columns", { listNodeInfoReq: listNodeInfoReq })
+    )
+
+    console.log(response_code, response_msg)
+    if (response_code == 0) {
+      const { header, rows } = response_msg
+
+      const columns = header.map((item, index) => ({
+        accessorKey: String(index), // Use the index as the accessor key
+        header: () => (
+          <div className="flex flex-col items-center justify-center gap-1">
+            <p className="font-bold text-foreground">{item.name}</p>
+            <p className="text-xs text-muted-foreground">{item.type_name}</p>
+          </div>
+        ),
+        cell: ({ row }) => {
+          const currentData = row.getValue(String(index))
+          return (
+            <div>
+              {currentData ? (
+                <p>{currentData}</p>
+              ) : (
+                <p className="text-muted-foreground">NULL</p>
+              )}
+            </div>
+          )
+        },
+      }))
+      const transformedData = rows.map((row) =>
+        row.reduce((obj, value, index) => {
+          obj[String(index)] = value // Use the index as the key
+          return obj
+        }, {})
+      )
+      setHeader(columns)
+      setRows(transformedData)
+    }
+    var endTime = new Date()
+    var timeDiff = endTime - startTime //in ms
+
+    var seconds = Math.round(timeDiff)
+  }
+
+  return (
+    <div
+      class="scrollbar overflow-a  relative flex w-full"
+      style={{
+        height: tableHeight,
+        overflow: "scroll",
+      }}
+    >
+      <DataTable columns={header} data={rows} table={table} />
+    </div>
+  )
 }
 export default PropertiesColumnPage

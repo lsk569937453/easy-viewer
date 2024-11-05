@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { clickNode } from "../lib/node"
-import { uuid } from "../lib/utils"
+import { getIconNameByType, uuid } from "../lib/utils"
 import Sidebar from "./components/sidebar"
 
 export const SidebarContext = createContext({
@@ -41,6 +41,7 @@ export const SidebarContext = createContext({
   setNodeForUpdate: () => {},
   setShowDeleteConnectionDialog: () => {},
   setShowEditConnectionDialog: () => {},
+  setIsSave: () => {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -58,6 +59,7 @@ const DashboardPage = () => {
   const [isOpen, setOpen] = useState(false)
   const [showEditConnectionDialog, setShowEditConnectionDialog] =
     useState(false)
+  const [isSave, setIsSave] = useState(true)
   useEffect(() => {
     loadData()
   }, [])
@@ -74,7 +76,7 @@ const DashboardPage = () => {
 
         return {
           connectionType: item.connection_type,
-          iconName: "mysql",
+          iconName: getIconNameByType(item.connection_type),
           showFirstIcon: true,
           showSecondIcon: true,
           key: index,
@@ -202,6 +204,11 @@ const DashboardPage = () => {
       </Tabs>
     )
   }
+  const handleNewConnectionButtonClick = () => {
+    setShowEditConnectionDialog(true)
+    setBaseConfigId(null)
+    setIsSave(false)
+  }
   return (
     <>
       <SidebarContext.Provider
@@ -213,6 +220,7 @@ const DashboardPage = () => {
           setNodeForUpdate,
           setShowDeleteConnectionDialog,
           setShowEditConnectionDialog,
+          setIsSave,
         }}
       >
         <div
@@ -232,6 +240,9 @@ const DashboardPage = () => {
             direction="right"
             onClose={() => setOpen(false)}
           >
+            <MenuItem onClick={handleNewConnectionButtonClick}>
+              New Connection
+            </MenuItem>
             <MenuItem onClick={() => window.location.reload()}>
               Refresh
             </MenuItem>
@@ -240,7 +251,11 @@ const DashboardPage = () => {
             open={showEditConnectionDialog}
             onOpenChange={setShowEditConnectionDialog}
           >
-            <CreateLinkDialog baseCongfigId={baseConfigId} isSave={true} />
+            <CreateLinkDialog
+              baseCongfigId={baseConfigId}
+              isSave={isSave}
+              isOpen={showEditConnectionDialog}
+            />
           </Dialog>
           <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
             <DialogContent className="w-30 bg-slate-200">

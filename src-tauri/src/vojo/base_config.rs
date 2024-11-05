@@ -1,5 +1,6 @@
 use super::exe_sql_response::ExeSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
+use super::sqlite_config::SqliteConfig;
 use crate::sql_lite::connection::AppState;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::exe_sql_response::Header;
@@ -18,6 +19,8 @@ pub enum BaseConfigEnum {
     Mysql(MysqlConfig),
     #[serde(rename = "postgresql")]
     Postgresql(PostgresqlConfig),
+    #[serde(rename = "sqlite")]
+    Sqlite(SqliteConfig),
     #[serde(rename = "kafka")]
     Kafka(KafkaConfig),
 }
@@ -28,6 +31,8 @@ impl BaseConfigEnum {
                 config.test_connection().await?;
             }
             BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
+            BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
+
             _ => {}
         }
 
@@ -38,6 +43,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mysql(_) => 0,
             BaseConfigEnum::Postgresql(_) => 1,
             BaseConfigEnum::Kafka(_) => 2,
+            BaseConfigEnum::Sqlite(_) => 3,
         }
     }
     pub async fn list_node_info(
@@ -51,6 +57,8 @@ impl BaseConfigEnum {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
+
+            BaseConfigEnum::Sqlite(config) => config.list_node_info(list_node_info_req).await?,
             _ => vec![("".to_string(), "".to_string())],
         };
         Ok(vec)
@@ -67,6 +75,9 @@ impl BaseConfigEnum {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Postgresql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),

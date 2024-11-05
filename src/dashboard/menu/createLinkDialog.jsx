@@ -23,15 +23,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog"
+import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
 import { LoadingSpinner } from "../components/spinner"
-import { MysqlConfigComponent } from "./mysqlConfigComponent"
+import SqliteConfigComponent from "../components/sqliteConfigComponent"
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
-const formatMap = new Map([
-  ["mysql", 0],
-  ["sqlite", 1],
-  ["postgresql", 2],
-])
 
 const baseConfigSchema = {
   base_config_enum: {
@@ -55,7 +51,11 @@ const baseConfigSchema = {
     },
   },
 }
-const CreateLinkDialog = ({ baseCongfigId = null, isSave = false }) => {
+const CreateLinkDialog = ({
+  baseCongfigId = null,
+  isSave = false,
+  isOpen = false,
+}) => {
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
@@ -67,8 +67,11 @@ const CreateLinkDialog = ({ baseCongfigId = null, isSave = false }) => {
     console.log(baseCongfigId)
     if (baseCongfigId) {
       initData()
+    } else {
+      setConnectionData(null)
+      setCurrentLinkName("")
     }
-  }, [baseCongfigId])
+  }, [isOpen])
 
   const initData = async () => {
     const { response_code, response_msg } = JSON.parse(
@@ -125,29 +128,34 @@ const CreateLinkDialog = ({ baseCongfigId = null, isSave = false }) => {
             </Select>
           </div>
 
-          <MysqlConfigComponent
-            connectionName={currentLinkName}
-            initialHost={
-              connectionData?.base_config_enum?.mysql?.config?.host ||
-              "localhost"
-            }
-            initialPort={
-              connectionData?.base_config_enum?.mysql?.config?.port || "3306"
-            }
-            initialDatabase={
-              connectionData?.base_config_enum?.mysql?.config?.database ||
-              "mydb"
-            }
-            initialUsername={
-              connectionData?.base_config_enum?.mysql?.config?.username ||
-              "user"
-            }
-            initialPassword={
-              connectionData?.base_config_enum?.mysql?.config?.password ||
-              "password"
-            }
-            isSave={isSave}
-          />
+          {currentLinkType === "mysql" && (
+            <MysqlConfigComponent
+              connectionName={currentLinkName}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "3306"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ||
+                "mydb"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "user"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "password"
+              }
+              isSave={isSave}
+            />
+          )}
+          {currentLinkType === "sqlite" && (
+            <SqliteConfigComponent connectionName={currentLinkName} />
+          )}
         </div>
       </DialogContent>
     </>

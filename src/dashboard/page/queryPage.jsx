@@ -39,7 +39,7 @@ const QueryPage = () => {
         className=" resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
         mode="sql"
         width="100%"
-        height={tableHeight}
+        height={tableHeight.toString() + "px"}
         // height="100%"
         showGutter={false}
         enableBasicAutocompletion={true}

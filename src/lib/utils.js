@@ -57,3 +57,11 @@ export function getRootNode(node) {
   }
   return tempNode
 }
+const formatMap = new Map([
+  [0, "mysql"],
+  [3, "sqlite"],
+  [2, "postgresql"],
+])
+export function getIconNameByType(params) {
+  return formatMap.get(params)
+}

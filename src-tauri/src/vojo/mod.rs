@@ -6,3 +6,4 @@ pub mod menu_config;
 pub mod save_connection_req;
 pub mod static_connections;
 pub mod exe_sql_response;
+pub mod sqlite_config;

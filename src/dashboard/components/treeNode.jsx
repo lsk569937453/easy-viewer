@@ -32,6 +32,7 @@ const TreeNode = ({
     setNodeForUpdate,
     setShowDeleteConnectionDialog,
     setShowEditConnectionDialog,
+    setIsSave,
   } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
@@ -132,12 +133,21 @@ const TreeNode = ({
     e.stopPropagation()
   }
   const handleEditConnectionClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
     console.log(e)
     setNodeForUpdate(node)
     let rootNode = getRootNode(node)
     setBaseConfigId(rootNode.data.baseConfigId)
     setShowEditConnectionDialog(true)
+    setIsSave(true)
+  }
+  const handleDeleteConnectionClick = (e) => {
     e.syntheticEvent.stopPropagation()
+
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    setShowDeleteConnectionDialog(true)
   }
   return (
     <div
@@ -156,6 +166,9 @@ const TreeNode = ({
       >
         <MenuItem onClick={(e) => handleEditConnectionClick(e)}>
           Edit Connection
+        </MenuItem>
+        <MenuItem onClick={(e) => handleDeleteConnectionClick(e)}>
+          Delete Connection
         </MenuItem>
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (

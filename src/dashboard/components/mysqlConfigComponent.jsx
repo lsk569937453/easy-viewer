@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { useTranslation } from "react-i18next"
 
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog"
-import { LoadingSpinner } from "../components/spinner"
+import { LoadingSpinner } from "./spinner"
 
 export function MysqlConfigComponent({
   connectionName,
@@ -33,6 +33,9 @@ export function MysqlConfigComponent({
   initialPassword = "password",
   isSave = false,
 }) {
+  console.log(initialPassword)
+  console.log(initialUsername)
+
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
@@ -46,6 +49,21 @@ export function MysqlConfigComponent({
   const [currentPassword, setCurrentPassword] = useState(initialPassword)
   const [connectType, setConnectType] = useState("connectTypeHost")
   const [showLoading, setShowLoading] = useState(false)
+
+  useEffect(() => {
+    setCurrentHost(initialHost)
+    setCurrentPort(initialPort)
+    setCurrentDatabase(initialDatabase)
+    setCurrentUsername(initialUsername)
+    setCurrentPassword(initialPassword)
+  }, [
+    initialHost,
+    initialPort,
+    initialDatabase,
+    initialUsername,
+    initialPassword,
+  ])
+
   const handleTestLinkButtonClick = async () => {
     let testHostStruct = null
     if (connectType == "connectTypeUrl") {
@@ -248,14 +266,14 @@ export function MysqlConfigComponent({
           <div className="flex flex-row items-center gap-5">
             <p className="basis-2/12 text-right">服务器地址:</p>
             <Input
-              className="basis-6/12 border border-foreground/50"
+              className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="主机地址"
               onChange={(e) => setCurrentHost(e.target.value)}
               value={currentHost}
             ></Input>
             <p className="basis-1/12 text-right">端口:</p>
             <Input
-              className="basis-1/12 border border-foreground/50"
+              className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="端口"
               onChange={(e) => setCurrentPort(e.target.value)}
               value={currentPort}
@@ -265,7 +283,7 @@ export function MysqlConfigComponent({
           <div className="flex flex-row items-center gap-5">
             <p className="basis-2/12 text-right">用户名:</p>
             <Input
-              className="basis-10/12 border border-foreground/50"
+              className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="用户名"
               onChange={(e) => setCurrentUsername(e.target.value)}
               value={currentUsername}
@@ -283,7 +301,7 @@ export function MysqlConfigComponent({
           <div className="flex flex-row items-center gap-5">
             <p className="basis-2/12 text-right">数据库:</p>
             <Input
-              className="basis-10/12 border border-foreground/50"
+              className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="数据库名"
               onChange={(e) => setCurrentDatabase(e.target.value)}
               value={currentDatabase}

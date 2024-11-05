@@ -26,6 +26,34 @@ const mysqlDatabaseData = [
     iconName: "procedures",
   },
 ]
+const sqliteRootData = [
+  {
+    name: "Query",
+    iconName: "query",
+  },
+  {
+    name: "Tables",
+    iconName: "tables",
+  },
+  {
+    name: "Views",
+    iconName: "views",
+  },
+]
+const sqliteTableData = [
+  {
+    name: "Columns",
+    iconName: "columns",
+  },
+  {
+    name: "Index",
+    iconName: "index",
+  },
+  {
+    name: "Partitions",
+    iconName: "partitions",
+  },
+]
 const mysqlTableData = [
   {
     name: "Columns",
@@ -62,7 +90,17 @@ const findAndReplaceChildren = (data, targetId, newChildren) => {
   }
   return false
 }
-
+const showFirstIcon = (node, item) => {
+  let flag = true
+  if (node.level === 4) {
+    flag = false
+  } else if (item[1] === "singleQuery") {
+    flag = false
+  } else if (item[1] === "column" || item[1] === "primary") {
+    flag = false
+  }
+  return flag
+}
 export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
   console.log(node)
 
@@ -80,6 +118,29 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
     return { response_code: 0, response_msg: "success" }
   } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
     const newChildren = mysqlTableData.map((item) => ({
+      id: uuid(),
+      name: item.name,
+      iconName: item.iconName,
+      showFirstIcon: true,
+      showSecondIcon: true,
+    }))
+    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
+    setCurrentMenuList([...currentMenuList])
+    return { response_code: 0, response_msg: "success" }
+    // Check if the node is SQLite
+  } else if (node.level == 0 && node.data.connectionType == 3) {
+    const newChildren = sqliteRootData.map((item) => ({
+      id: uuid(),
+      name: item.name,
+      iconName: item.iconName,
+      showFirstIcon: true,
+      showSecondIcon: true,
+    }))
+    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
+    setCurrentMenuList([...currentMenuList])
+    return { response_code: 0, response_msg: "success" }
+  } else if (node.level == 2 && findParentNode(node).data.connectionType == 3) {
+    const newChildren = sqliteTableData.map((item) => ({
       id: uuid(),
       name: item.name,
       iconName: item.iconName,
@@ -121,7 +182,7 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
         id: uuid(),
         name: item[0],
         iconName: item[1],
-        showFirstIcon: !(node.level === 4 || item[1] === "singleQuery"),
+        showFirstIcon: showFirstIcon(node, item),
         showSecondIcon: true,
       }))
     }

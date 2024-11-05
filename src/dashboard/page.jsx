@@ -229,7 +229,7 @@ const DashboardPage = () => {
             console.log(e)
             if (typeof document.hasFocus === "function" && !document.hasFocus())
               return
-            e.preventDefault()
+            // e.preventDefault()
             setAnchorPoint({ x: e.clientX, y: e.clientY })
             setOpen(true)
           }}

@@ -40,7 +40,7 @@ import { getLevelInfos, uuid } from "../../lib/utils"
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
   const [rows, setRows] = useState([])
-  const [tableHeight, setTableHeight] = useState(window.innerHeight - 160)
+  const [tableHeight, setTableHeight] = useState(window.innerHeight - 400)
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -121,7 +121,7 @@ const PropertiesColumnPage = ({ node }) => {
 
   return (
     <div
-      class="scrollbar overflow-a  relative flex w-full"
+      class="scrollbar relative  flex flex-col overflow-auto"
       style={{
         height: tableHeight,
         overflow: "scroll",

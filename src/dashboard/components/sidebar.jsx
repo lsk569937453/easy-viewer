@@ -30,6 +30,9 @@ const treeNode = ({
 const Sidebar = ({ menuList }) => {
   const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
+  const [containerHeight, setContainerHeight] = useState(
+    window.innerHeight - 40
+  )
 
   const [currentMenuList, setCurrentMenuList] = useState([])
 
@@ -46,9 +49,9 @@ const Sidebar = ({ menuList }) => {
         data={currentMenuList}
         ref={treeRef}
         width={"100%"}
-        className="overflow-y-auto overscroll-x-none "
+        className="h-[calc(100vh-40px)] overflow-y-auto overscroll-x-none "
         indent={10}
-        height={height}
+        height={containerHeight}
       >
         {(props) =>
           treeNode({

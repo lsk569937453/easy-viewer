@@ -11,6 +11,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Column;
 use sqlx::Connection;
+use sqlx::Executor;
 use sqlx::Row;
 use sqlx::SqliteConnection;
 use sqlx::TypeInfo;
@@ -127,5 +128,35 @@ impl SqliteConfig {
         let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
 
         Ok(exe_sql_response)
+    }
+    pub async fn get_ddl(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[2].config_value.clone();
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+
+        let sql: String = format!(
+            r#"SELECT sql FROM sqlite_master where name='{}'"#,
+            table_name
+        );
+        let row = sqlx::query(&sql)
+            .fetch_optional(&mut conn)
+            .await?
+            .ok_or(anyhow!("Not found table"))?;
+        let ddl: String = row.try_get(0)?;
+        Ok(ddl)
+    }
+    pub async fn show_columns(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        let data = ExeSqlResponse::new();
+        Ok(data)
     }
 }

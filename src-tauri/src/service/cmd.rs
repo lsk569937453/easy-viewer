@@ -4,6 +4,8 @@ use crate::common_tools::about::get_about_version_with_error;
 
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
+use crate::service::base_config_service::get_ddl_with_error;
+use crate::service::base_config_service::show_columns_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
@@ -97,6 +99,28 @@ pub async fn exe_sql(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn show_columns(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(show_columns_with_error(state, list_node_info_req).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn get_ddl(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_ddl_with_error(state, list_node_info_req).await);
     info!("exe_sql: {:?}", time.elapsed());
     Ok(res)
 }

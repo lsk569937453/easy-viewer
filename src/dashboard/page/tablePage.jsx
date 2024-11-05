@@ -1,6 +1,7 @@
 import * as Tabs from "@radix-ui/react-tabs"
 
 import DataPage from "./dataPage"
+import PropertiesPage from "./propertiesPage"
 
 export default function TablePage({ node }) {
   return (
@@ -90,7 +91,7 @@ export default function TablePage({ node }) {
         value="properties"
         className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <p>sss1</p>
+        <PropertiesPage />
       </Tabs.Content>
 
       <Tabs.Content

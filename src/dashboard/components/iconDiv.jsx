@@ -5,6 +5,8 @@ import { getRootNode, uuid } from "../../lib/utils.js"
 import { SidebarContext } from "../page.jsx"
 import TablePage from "../page/tablePage.jsx"
 
+const iconWidth = 16
+const iconHeight = 16
 const IconDiv = ({ node }) => {
   const {
     handleAddPageClick,
@@ -45,8 +47,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width={16}
-              height={16}
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={0}
@@ -72,8 +74,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-searchMarkerColor ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -92,8 +94,8 @@ const IconDiv = ({ node }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -125,8 +127,8 @@ const IconDiv = ({ node }) => {
 
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -147,8 +149,8 @@ const IconDiv = ({ node }) => {
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
-              width="16"
-              height="16"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               version="1.1"
             >
@@ -168,8 +170,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-searchMarkerColor ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -188,8 +190,8 @@ const IconDiv = ({ node }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -221,8 +223,8 @@ const IconDiv = ({ node }) => {
 
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -242,8 +244,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               className={`${
                 node.children && node.children.length > 0
                   ? "fill-emerald-500"
@@ -259,8 +261,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -296,8 +298,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -321,8 +323,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row group-hover/item:bg-searchMarkerColor">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -340,8 +342,8 @@ const IconDiv = ({ node }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -374,8 +376,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -399,8 +401,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-searchMarkerColor ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -418,8 +420,8 @@ const IconDiv = ({ node }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -452,8 +454,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -472,8 +474,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -488,8 +490,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -509,8 +511,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -530,8 +532,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -546,8 +548,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -567,8 +569,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -588,8 +590,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -604,8 +606,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -625,8 +627,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -654,8 +656,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -670,8 +672,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -691,8 +693,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -712,8 +714,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 z-50 flex flex-row p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -728,8 +730,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -749,8 +751,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -770,8 +772,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -786,8 +788,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -807,8 +809,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -827,8 +829,8 @@ const IconDiv = ({ node }) => {
           <div className="ml-auto flex flex-row ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -843,8 +845,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -864,8 +866,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -886,8 +888,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 z-50 flex flex-row p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -902,8 +904,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -923,8 +925,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -943,8 +945,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 z-50 flex flex-row p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -959,8 +961,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -980,8 +982,8 @@ const IconDiv = ({ node }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1002,8 +1004,8 @@ const IconDiv = ({ node }) => {
           <div className="absolute right-0 z-50 flex flex-row p-2">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -1018,8 +1020,8 @@ const IconDiv = ({ node }) => {
             </svg>
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

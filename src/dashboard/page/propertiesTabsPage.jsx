@@ -7,6 +7,7 @@ import "ace-builds/src-noconflict/theme-iplastic"
 
 import { useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import beautify from "ace-builds/src-noconflict/ext-beautify"
 import { set } from "date-fns"
 
 import { getLevelInfos, uuid } from "../../lib/utils"
@@ -16,10 +17,16 @@ import PropertiesPage from "./propertiesPage"
 
 const PropertiesTabsPage = ({ node }) => {
   const [sql, setSql] = useState("select *from test limit 100")
+  const editorRef = useRef()
 
   useEffect(() => {
     loadDDl()
   }, [])
+  useEffect(() => {
+    if (editorRef.current) {
+      beautify.beautify(editorRef.current.editor.session)
+    }
+  }, [sql])
   const loadDDl = async () => {
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
@@ -151,6 +158,8 @@ const PropertiesTabsPage = ({ node }) => {
       >
         <AceEditor
           className="   min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+          ref={editorRef}
+          commands={beautify.commands}
           mode="sql"
           height="100%"
           width="100%"

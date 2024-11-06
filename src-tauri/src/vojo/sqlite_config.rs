@@ -179,14 +179,17 @@ impl SqliteConfig {
         info!("headers: {:?}", headers);
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
-        for item in first_item.columns() {
-            let type_name = item.type_info().name();
-            let column_name = item.name();
+        for i in 0..first_item.columns().len() {
+            let raw = first_item.try_get_raw(i)?;
+            let type_info = raw.type_info();
+            let type_name = type_info.name();
+            let column_name = first_item.columns()[i].name();
             headers.push(Header {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_lowercase(),
             });
         }
+
         info!("headers: {:?}", headers);
         let mut response_rows = vec![];
         // info!("rows: {:?}", rows);

@@ -2,8 +2,11 @@ use super::exe_sql_response::ExeSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use super::sqlite_config::SqliteConfig;
 use crate::sql_lite::connection::AppState;
+use crate::util::sql_utils::is_simple_select;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::show_column_response::ShowColumnHeader;
+use crate::vojo::show_column_response::ShowColumnsResponse;
 use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
@@ -88,7 +91,7 @@ impl BaseConfigEnum {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
+    ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let data = match self {
             BaseConfigEnum::Mysql(config) => {
                 config.show_columns(list_node_info_req, appstate).await?
@@ -99,7 +102,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.show_columns(list_node_info_req, appstate).await?
             }
-            _ => ExeSqlResponse::new(),
+            _ => ShowColumnsResponse::new(),
         };
         Ok(data)
     }
@@ -258,11 +261,28 @@ WHERE
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
+
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
         conn.execute(&*use_database_sql).await?;
         info!("sql: {}", sql);
+
+        //check the sql is singleSelect
+        let is_simple_select_option = is_simple_select(&sql)?;
+        let primary_column_option = if let Some(table_name) = &is_simple_select_option {
+            let sql = format!(r#"show columns from {}  where `Key` = "PRI""#, table_name);
+            let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
+            if let Some(row) = option_row {
+                let primary_column: String = row.try_get(0)?;
+                Some(primary_column)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
@@ -272,9 +292,15 @@ WHERE
         for item in first_item.columns() {
             let type_name = item.type_info().name();
             let column_name = item.name();
+            let is_primary = if let Some(primary_column) = &primary_column_option {
+                column_name == primary_column
+            } else {
+                false
+            };
             headers.push(Header {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_uppercase(),
+                is_primary_key: is_primary,
             });
         }
         let mut response_rows = vec![];
@@ -296,7 +322,8 @@ WHERE
             }
             response_rows.push(row);
         }
-        let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
+        let exe_sql_response =
+            ExeSqlResponse::from(headers, response_rows, is_simple_select_option);
 
         Ok(exe_sql_response)
     }
@@ -328,7 +355,7 @@ WHERE
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
+    ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
@@ -342,14 +369,14 @@ WHERE
         info!("sql: {}", sql);
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
         if rows.is_empty() {
-            return Ok(ExeSqlResponse::new());
+            return Ok(ShowColumnsResponse::new());
         }
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
         for item in first_item.columns() {
             let type_name = item.type_info().name();
             let column_name = item.name();
-            headers.push(Header {
+            headers.push(ShowColumnHeader {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_lowercase(),
             });
@@ -373,7 +400,7 @@ WHERE
             }
             response_rows.push(row);
         }
-        let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
+        let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
 
         Ok(exe_sql_response)
     }
@@ -415,8 +442,8 @@ impl PostgresqlConfig {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
-        Ok(ExeSqlResponse::new())
+    ) -> Result<ShowColumnsResponse, anyhow::Error> {
+        Ok(ShowColumnsResponse::new())
     }
 }
 

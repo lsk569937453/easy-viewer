@@ -2,9 +2,12 @@ use std::path::Path;
 use std::vec;
 
 use super::list_node_info_req::ListNodeInfoReq;
+use crate::util::sql_utils::is_simple_select;
 use crate::util::sql_utils::sqlite_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::show_column_response::ShowColumnHeader;
+use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::AppState;
 use anyhow::Ok;
 use serde::Deserialize;
@@ -82,6 +85,23 @@ impl SqliteConfig {
         }
         Ok(vec)
     }
+    async fn get_primary_column(
+        conn: &mut sqlx::SqliteConnection,
+        table_name: &str,
+    ) -> Option<String> {
+        let sql = format!(r#"PRAGMA table_info({})"#, table_name);
+        let rows = sqlx::query(&sql).fetch_all(conn).await.ok()?;
+
+        for row in rows {
+            let primary_column: i32 = row.try_get("pk").ok()?;
+            if primary_column > 0 {
+                let name: String = row.try_get("name").ok()?;
+                return Some(name); // Return the column name as soon as a primary key is found
+            }
+        }
+
+        None // Return None if no primary key is found
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -90,7 +110,12 @@ impl SqliteConfig {
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         let data = ExeSqlResponse::new();
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
-
+        let is_simple_select_option = is_simple_select(&sql)?;
+        let primary_column_option = if let Some(table_name) = &is_simple_select_option {
+            SqliteConfig::get_primary_column(&mut conn, table_name).await
+        } else {
+            None
+        };
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
@@ -101,9 +126,15 @@ impl SqliteConfig {
         for item in first_item.columns() {
             let type_name = item.type_info().name();
             let column_name = item.name();
+            let is_primary = if let Some(primary_column) = &primary_column_option {
+                column_name == primary_column
+            } else {
+                false
+            };
             headers.push(Header {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_uppercase(),
+                is_primary_key: is_primary,
             });
         }
         info!("headers: {:?}", headers);
@@ -126,7 +157,8 @@ impl SqliteConfig {
             }
             response_rows.push(row);
         }
-        let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
+        let exe_sql_response =
+            ExeSqlResponse::from(headers, response_rows, is_simple_select_option);
 
         Ok(exe_sql_response)
     }
@@ -156,7 +188,7 @@ impl SqliteConfig {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
+    ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
@@ -171,7 +203,7 @@ impl SqliteConfig {
         for item in first_item.columns() {
             let type_name = item.type_info().name();
             let column_name = item.name();
-            headers.push(Header {
+            headers.push(ShowColumnHeader {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_uppercase(),
             });
@@ -184,7 +216,7 @@ impl SqliteConfig {
             let type_info = raw.type_info();
             let type_name = type_info.name();
             let column_name = first_item.columns()[i].name();
-            headers.push(Header {
+            headers.push(ShowColumnHeader {
                 name: column_name.to_string(),
                 type_name: type_name.to_string().to_lowercase(),
             });
@@ -213,7 +245,7 @@ impl SqliteConfig {
             }
             response_rows.push(row);
         }
-        let exe_sql_response = ExeSqlResponse::from(headers, response_rows);
+        let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
         Ok(exe_sql_response)
     }
 }

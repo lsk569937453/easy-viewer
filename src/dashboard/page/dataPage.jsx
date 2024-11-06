@@ -41,7 +41,12 @@ const pageCount = 100
 export default function DataPage({ node }) {
   const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`)
   const [timeCost, setTimeCost] = useState(0)
+  //渲染用
   const [header, setHeader] = useState([])
+  //组装update用
+  const [sourceHeader, setSourceHeader] = useState([])
+  //组装update用
+  const [sourceRows, setSourceRows] = useState([])
   const [rows, setRows] = useState([])
   const [currentRows, setCurrentRows] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
@@ -49,7 +54,7 @@ export default function DataPage({ node }) {
   const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
   const [editState, setEditState] = useState([])
-
+  const [tableNameFromSql, setTableNameFromSql] = useState("")
   const { ref } = useResizeObserver({
     onResize: ({ width, height }) => {
       setTableHeight(window.innerHeight - 160 - height)
@@ -68,7 +73,44 @@ export default function DataPage({ node }) {
   }, [])
   const handleOnSaveButtonClick = () => {
     console.log(editState)
+    const sqlStatements = generateUpdateSQL(
+      editState,
+      sourceHeader,
+      tableNameFromSql
+    )
+    console.log(sqlStatements)
   }
+
+  const generateUpdateSQL = (array, headers, tableName) => {
+    // Assuming tableName is provided
+    let sqlStatements = []
+
+    array.forEach((item) => {
+      const primaryKeyHeader = headers.find((header) => header.is_primary_key)
+      const primaryKeyIndex = headers.findIndex(
+        (header) => header.is_primary_key
+      )
+
+      const primaryKeyValue = sourceRows[item.index][primaryKeyIndex]
+      const setClauses = []
+
+      for (const [key, value] of Object.entries(item.valueMap)) {
+        const header = headers[key]
+        console.log(header, key, value)
+        setClauses.push(`${header.name} = '${value}'`)
+      }
+      console.log(setClauses, primaryKeyHeader)
+      if (primaryKeyHeader) {
+        const sql = `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE ${
+          primaryKeyHeader.name
+        } = ${primaryKeyValue};`
+        sqlStatements.push(sql)
+      }
+    })
+
+    return sqlStatements.join("\n")
+  }
+
   const exeSql = async () => {
     const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
@@ -84,8 +126,11 @@ export default function DataPage({ node }) {
 
     console.log(response_code, response_msg)
     if (response_code == 0) {
-      const { header, rows } = response_msg
-
+      const { header, rows, table_name } = response_msg
+      console.log(table_name)
+      setTableNameFromSql(table_name)
+      setSourceHeader(header)
+      setSourceRows(rows)
       const columns = header.map((item, index) => ({
         accessorKey: String(index), // Use the index as the accessor key
         header: () => (
@@ -280,28 +325,31 @@ export default function DataPage({ node }) {
             <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
           </svg>
         </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
-          onClick={handleOnSaveButtonClick}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-corner-down-right"
+        {editState.length > 0 && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-full w-7 border-none hover:bg-searchMarkerColor"
+            onClick={handleOnSaveButtonClick}
           >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M6 6v6a3 3 0 0 0 3 3h10l-4 -4m0 8l4 -4" />
-          </svg>
-        </Button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-check"
+              className="stroke-teal-400"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M5 12l5 5l10 -10" />
+            </svg>
+          </Button>
+        )}
 
         <Button
           variant="outline"

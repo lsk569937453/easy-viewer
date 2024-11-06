@@ -6,6 +6,7 @@ use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
+use crate::vojo::show_column_response::ShowColumnsResponse;
 use sqlx::Row;
 use tauri::State;
 
@@ -131,7 +132,7 @@ pub async fn exe_sql_with_error(
 pub async fn show_columns_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-) -> Result<ExeSqlResponse, anyhow::Error> {
+) -> Result<ShowColumnsResponse, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
     let value = list_node_info_req.level_infos[0]
         .config_value

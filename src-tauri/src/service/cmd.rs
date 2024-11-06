@@ -104,6 +104,18 @@ pub async fn exe_sql(
 }
 #[tauri::command]
 
+pub async fn update_sql(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    sql: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
 pub async fn show_columns(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

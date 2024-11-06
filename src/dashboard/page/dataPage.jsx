@@ -48,6 +48,7 @@ export default function DataPage({ node }) {
   const [tableHeight, setTableHeight] = useState(10)
   const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
+  const [editState, setEditState] = useState([])
 
   const { ref } = useResizeObserver({
     onResize: ({ width, height }) => {
@@ -65,7 +66,9 @@ export default function DataPage({ node }) {
   useEffect(() => {
     exeSql()
   }, [])
-
+  const handleOnSaveButtonClick = () => {
+    console.log(editState)
+  }
   const exeSql = async () => {
     const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
@@ -91,16 +94,49 @@ export default function DataPage({ node }) {
             <p className="text-xs text-muted-foreground">{item.type_name}</p>
           </div>
         ),
-        cell: ({ row }) => {
-          const currentData = row.getValue(String(index))
+        cell: ({ getValue, row: { index }, column: { id }, table }) => {
+          const initialValue = getValue()
+          const [value, setValue] = useState(initialValue)
+          const [isEditing, setIsEditing] = useState(false)
+          const onBlur = () => {
+            table.options.meta?.updateData(index, id, value)
+
+            console.log(index, id, value)
+            setEditState((prevEditState) => {
+              // Find the entry by `index`
+              const entry = prevEditState.find((item) => item.index === index)
+              console.log(entry)
+              if (entry) {
+                return prevEditState.map((item) =>
+                  item.index === index
+                    ? { ...item, valueMap: { ...item.valueMap, [id]: value } }
+                    : item
+                )
+              } else {
+                return [
+                  ...prevEditState,
+                  { index: index, valueMap: { [id]: value } },
+                ]
+              }
+            })
+            console.log(editState)
+          }
+          const handleOnChange = (e) => {
+            setIsEditing(true)
+            setValue(e.target.value)
+          }
+          useEffect(() => {
+            setValue(initialValue)
+          }, [initialValue])
+
           return (
-            <div>
-              {currentData ? (
-                <p>{currentData}</p>
-              ) : (
-                <p className="text-muted-foreground">NULL</p>
-              )}
-            </div>
+            <input
+              className={`${isEditing ? "bg-indigo-400" : ""} w-full`}
+              type="text"
+              value={value}
+              onChange={handleOnChange}
+              onBlur={onBlur}
+            />
           )
         },
       }))
@@ -244,6 +280,29 @@ export default function DataPage({ node }) {
             <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
           </svg>
         </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          onClick={handleOnSaveButtonClick}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="icon icon-tabler icons-tabler-outline icon-tabler-corner-down-right"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M6 6v6a3 3 0 0 0 3 3h10l-4 -4m0 8l4 -4" />
+          </svg>
+        </Button>
+
         <Button
           variant="outline"
           size="icon"

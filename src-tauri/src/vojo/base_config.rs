@@ -54,7 +54,7 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
 
-            BaseConfigEnum::Sqlite(config) => config.list_node_info(list_node_info_req).await?,
+            BaseConfigEnum::Sqlite(config) => config.list_node_info(list_node_info_req,appstate).await?,
             _ => vec![("".to_string(), "".to_string())],
         };
         Ok(vec)

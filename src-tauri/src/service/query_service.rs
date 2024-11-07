@@ -9,7 +9,7 @@ pub async fn save_query_with_error(
     sql: Option<String>,
 ) -> Result<String, anyhow::Error> {
     info!(
-        "{},{},{}",
+        "save_query_with_error:{},{},{}",
         connection_id,
         query_name,
         sql.clone().unwrap_or_default()

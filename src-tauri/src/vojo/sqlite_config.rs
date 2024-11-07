@@ -39,13 +39,19 @@ impl SqliteConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+
     ) -> Result<Vec<(String, String)>, anyhow::Error> {
         let mut vec = vec![];
 
-        info!("list_node_info_req: {:?}", list_node_info_req);
+        info!("sqlite list_node_info_req: {:?}", list_node_info_req);
         let level_infos = list_node_info_req.level_infos;
         if level_infos.len() == 2 {
+            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+
             let node_name = level_infos[1].config_value.clone();
+
+            info!("node_name: {},base_config_id:{}", node_name,base_config_id);
             if node_name == "Tables" {
                 let mut conn = SqliteConnection::connect(&self.file_path).await?;
                 let rows = sqlx::query(r#"SELECT name FROM sqlite_master WHERE type='table' and name!='sqlite_sequence'"#)
@@ -55,6 +61,18 @@ impl SqliteConfig {
                     let row_str: String = row.try_get(0)?;
                     vec.push((row_str, "singleTable".to_string()));
                 }
+            }else if node_name == "Query" {
+                let rows =
+                        sqlx::query("select query_name from sql_query where connection_id=?1")
+                            .bind(base_config_id)
+                            .fetch_all(&appstate.pool)
+                            .await?;
+                        info!("row length:{}",rows.len());
+                    for row in rows {
+                        let row_str: String = row.try_get(0)?;
+                        vec.push((row_str, "singleQuery".to_string()));
+                    }
+                    info!("vec: {:?}", vec);
             }
         } else if level_infos.len() == 4 {
             let base_config_id = level_infos[0].config_value.parse::<i32>()?;

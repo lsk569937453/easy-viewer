@@ -33,6 +33,8 @@
     --card-foreground: 222.2 47.4% 11.2%;
 
     --primary: 224 33% 39%;
+    --primary-light: 224 33% 67%;
+
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -71,6 +73,7 @@
     --card-foreground: 213 31% 91%;
 
     --primary: 229 27% 40%;
+    --primary-light: 224 10% 37%;
     --primary-foreground: 213 31% 91%;
 
     --secondary: 222.2 47.4% 11.2%;

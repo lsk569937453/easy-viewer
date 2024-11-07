@@ -141,9 +141,11 @@ impl SqliteConfig {
         info!("rows: {:?}", rows[0].column(0));
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
-        for item in first_item.columns() {
-            let type_name = item.type_info().name();
-            let column_name = item.name();
+        for i in 0..first_item.columns().len() {
+            let raw = first_item.try_get_raw(i)?;
+            let type_info = raw.type_info();
+            let type_name = type_info.name();
+            let column_name = first_item.column(i).name();
             let is_primary = if let Some(primary_column) = &primary_column_option {
                 column_name == primary_column
             } else {
@@ -163,8 +165,9 @@ impl SqliteConfig {
             let len = columns.len();
             let mut row = vec![];
             for i in 0..len {
-                let type_name = columns[i].type_info().name();
-                let val = sqlite_row_to_json(item, type_name, i)?;
+                let raw= item.try_get_raw(i)?;
+                let type_info = raw.type_info();
+                let type_name = type_info.name();                let val = sqlite_row_to_json(item, type_name, i)?;
                 if val.is_string() {
                     row.push(Some(val.as_str().unwrap_or_default().to_string()));
                 } else if val.is_null() {
@@ -271,7 +274,7 @@ impl SqliteConfig {
             let len = columns.len();
             let mut row = vec![];
             for i in 0..len {
-                let raw: sqlx::sqlite::SqliteValueRef<'_> = item.try_get_raw(i)?;
+                let raw= item.try_get_raw(i)?;
                 let type_info = raw.type_info();
                 let type_name = type_info.name();
 

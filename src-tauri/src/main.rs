@@ -100,7 +100,8 @@ async fn main() -> Result<(), anyhow::Error> {
             save_query,
             delete_base_config,
             get_ddl,
-            show_columns
+            show_columns,
+            update_sql
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

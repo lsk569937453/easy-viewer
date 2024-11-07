@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import {
   getCoreRowModel,
@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useToast } from "@/components/ui/use-toast"
 
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
@@ -38,17 +39,29 @@ import { tr } from "date-fns/locale"
 import { getLevelInfos, uuid } from "../../lib/utils"
 
 const pageCount = 100
+
+const TableContext = createContext()
+
 export default function DataPage({ node }) {
+  const { toast } = useToast()
+
   const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`)
   const [timeCost, setTimeCost] = useState(0)
+  //渲染用
   const [header, setHeader] = useState([])
+  //组装update用
+  const [sourceHeader, setSourceHeader] = useState([])
+  //组装update用
+  const [sourceRows, setSourceRows] = useState([])
   const [rows, setRows] = useState([])
   const [currentRows, setCurrentRows] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
   const [tableHeight, setTableHeight] = useState(10)
   const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
-
+  //将所有的表的修改都存储到editState中
+  const [editState, setEditState] = useState([])
+  const [tableNameFromSql, setTableNameFromSql] = useState("")
   const { ref } = useResizeObserver({
     onResize: ({ width, height }) => {
       setTableHeight(window.innerHeight - 160 - height)
@@ -65,8 +78,67 @@ export default function DataPage({ node }) {
   useEffect(() => {
     exeSql()
   }, [])
+  const handleOnSaveButtonClick = async () => {
+    console.log(editState)
+    const sqlStatements = generateUpdateSQL(
+      editState,
+      sourceHeader,
+      tableNameFromSql
+    )
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    console.log(sqlStatements)
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("update_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+        sqls: sqlStatements,
+      })
+    )
+    console.log(response_code, response_msg)
+    if (response_code !== 0) {
+      toast({
+        variant: "destructive",
+        title: "Update Sql Error",
+        description: response_msg,
+      })
+    } else {
+      setEditState([])
+    }
+  }
+
+  const generateUpdateSQL = (array, headers, tableName) => {
+    // Assuming tableName is provided
+    let sqlStatements = []
+
+    array.forEach((item) => {
+      const primaryKeyHeader = headers.find((header) => header.is_primary_key)
+      const primaryKeyIndex = headers.findIndex(
+        (header) => header.is_primary_key
+      )
+
+      const primaryKeyValue = sourceRows[item.index][primaryKeyIndex]
+      const setClauses = []
+
+      for (const [key, value] of Object.entries(item.valueMap)) {
+        const header = headers[key]
+        console.log(header, key, value)
+        setClauses.push(`${header.name} = '${value}'`)
+      }
+      console.log(setClauses, primaryKeyHeader)
+      if (primaryKeyHeader) {
+        const sql = `UPDATE ${tableName} SET ${setClauses.join(", ")} WHERE ${
+          primaryKeyHeader.name
+        } = ${primaryKeyValue};`
+        sqlStatements.push(sql)
+      }
+    })
+
+    return sqlStatements
+  }
 
   const exeSql = async () => {
+    setEditState([])
     const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
 
@@ -81,8 +153,11 @@ export default function DataPage({ node }) {
 
     console.log(response_code, response_msg)
     if (response_code == 0) {
-      const { header, rows } = response_msg
-
+      const { header, rows, table_name } = response_msg
+      console.log(table_name)
+      setTableNameFromSql(table_name)
+      setSourceHeader(header)
+      setSourceRows(rows)
       const columns = header.map((item, index) => ({
         accessorKey: String(index), // Use the index as the accessor key
         header: () => (
@@ -91,16 +166,57 @@ export default function DataPage({ node }) {
             <p className="text-xs text-muted-foreground">{item.type_name}</p>
           </div>
         ),
-        cell: ({ row }) => {
-          const currentData = row.getValue(String(index))
+        cell: ({ getValue, row: { index }, column: { id }, table }) => {
+          const initialValue = getValue()
+          const [value, setValue] = useState(initialValue)
+          const [isEditing, setIsEditing] = useState(false)
+          const { editState } = useContext(TableContext)
+
+          const onBlur = () => {
+            table.options.meta?.updateData(index, id, value)
+          }
+
+          const handleOnChange = (e) => {
+            setIsEditing(true)
+            setValue(e.target.value)
+            setEditState((prevEditState) => {
+              // Find the entry by `index`
+              const entry = prevEditState.find((item) => item.index === index)
+              console.log(entry)
+              if (entry) {
+                return prevEditState.map((item) =>
+                  item.index === index
+                    ? {
+                        ...item,
+                        valueMap: { ...item.valueMap, [id]: e.target.value },
+                      }
+                    : item
+                )
+              } else {
+                return [
+                  ...prevEditState,
+                  { index: index, valueMap: { [id]: value } },
+                ]
+              }
+            })
+          }
+          useEffect(() => {
+            setValue(initialValue)
+          }, [initialValue])
+          //界面上清除了编辑状态后，修改局部的状态为false
+          useEffect(() => {
+            if (editState.length === 0) {
+              setIsEditing(false)
+            }
+          }, [editState])
           return (
-            <div>
-              {currentData ? (
-                <p>{currentData}</p>
-              ) : (
-                <p className="text-muted-foreground">NULL</p>
-              )}
-            </div>
+            <input
+              className={`${isEditing ? "bg-indigo-400" : ""} w-full`}
+              type="text"
+              value={value}
+              onChange={handleOnChange}
+              onBlur={onBlur}
+            />
           )
         },
       }))
@@ -244,6 +360,32 @@ export default function DataPage({ node }) {
             <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
           </svg>
         </Button>
+        {editState.length > 0 && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-full w-7 border-none hover:bg-searchMarkerColor"
+            onClick={handleOnSaveButtonClick}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-check"
+              className="stroke-teal-400"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M5 12l5 5l10 -10" />
+            </svg>
+          </Button>
+        )}
+
         <Button
           variant="outline"
           size="icon"
@@ -371,8 +513,10 @@ export default function DataPage({ node }) {
         }}
         ref={setContainer}
       >
-        <DataTable columns={header} data={rows} table={table} />
-
+        {" "}
+        <TableContext.Provider value={{ editState }}>
+          <DataTable columns={header} data={rows} table={table} />
+        </TableContext.Provider>
         <div
           className="absolute inset-0 h-full w-full"
           style={{ display: showLoading ? "block" : "none" }}

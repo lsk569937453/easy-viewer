@@ -239,7 +239,7 @@ export default function DataPage({ node }) {
   }
 
   useEffect(() => {
-    setTableHeight(window.innerHeight - 200)
+    setTableHeight(window.innerHeight - 220)
   }, [])
 
   const handleOnChange = (sql) => {
@@ -268,9 +268,9 @@ export default function DataPage({ node }) {
   })
   return (
     <div className="flex  h-full w-full flex-col	">
-      <div className="flex flex-row " ref={ref}>
+      <div className="flex " ref={ref}>
         <AceEditor
-          className=" flex max-h-[200px] min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+          className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
           mode="sql"
           height="100%"
           width="100%"

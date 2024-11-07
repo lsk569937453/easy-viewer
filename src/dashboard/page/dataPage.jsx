@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import {
   getCoreRowModel,
@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useToast } from "@/components/ui/use-toast"
 
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
@@ -38,7 +39,12 @@ import { tr } from "date-fns/locale"
 import { getLevelInfos, uuid } from "../../lib/utils"
 
 const pageCount = 100
+
+const TableContext = createContext()
+
 export default function DataPage({ node }) {
+  const { toast } = useToast()
+
   const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`)
   const [timeCost, setTimeCost] = useState(0)
   //渲染用
@@ -53,6 +59,7 @@ export default function DataPage({ node }) {
   const [tableHeight, setTableHeight] = useState(10)
   const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
+  //将所有的表的修改都存储到editState中
   const [editState, setEditState] = useState([])
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const { ref } = useResizeObserver({
@@ -71,14 +78,33 @@ export default function DataPage({ node }) {
   useEffect(() => {
     exeSql()
   }, [])
-  const handleOnSaveButtonClick = () => {
+  const handleOnSaveButtonClick = async () => {
     console.log(editState)
     const sqlStatements = generateUpdateSQL(
       editState,
       sourceHeader,
       tableNameFromSql
     )
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
     console.log(sqlStatements)
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("update_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+        sqls: sqlStatements,
+      })
+    )
+    console.log(response_code, response_msg)
+    if (response_code !== 0) {
+      toast({
+        variant: "destructive",
+        title: "Update Sql Error",
+        description: response_msg,
+      })
+    } else {
+      setEditState([])
+    }
   }
 
   const generateUpdateSQL = (array, headers, tableName) => {
@@ -108,10 +134,11 @@ export default function DataPage({ node }) {
       }
     })
 
-    return sqlStatements.join("\n")
+    return sqlStatements
   }
 
   const exeSql = async () => {
+    setEditState([])
     const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
 
@@ -143,10 +170,15 @@ export default function DataPage({ node }) {
           const initialValue = getValue()
           const [value, setValue] = useState(initialValue)
           const [isEditing, setIsEditing] = useState(false)
+          const { editState } = useContext(TableContext)
+
           const onBlur = () => {
             table.options.meta?.updateData(index, id, value)
+          }
 
-            console.log(index, id, value)
+          const handleOnChange = (e) => {
+            setIsEditing(true)
+            setValue(e.target.value)
             setEditState((prevEditState) => {
               // Find the entry by `index`
               const entry = prevEditState.find((item) => item.index === index)
@@ -154,7 +186,10 @@ export default function DataPage({ node }) {
               if (entry) {
                 return prevEditState.map((item) =>
                   item.index === index
-                    ? { ...item, valueMap: { ...item.valueMap, [id]: value } }
+                    ? {
+                        ...item,
+                        valueMap: { ...item.valueMap, [id]: e.target.value },
+                      }
                     : item
                 )
               } else {
@@ -164,16 +199,16 @@ export default function DataPage({ node }) {
                 ]
               }
             })
-            console.log(editState)
-          }
-          const handleOnChange = (e) => {
-            setIsEditing(true)
-            setValue(e.target.value)
           }
           useEffect(() => {
             setValue(initialValue)
           }, [initialValue])
-
+          //界面上清除了编辑状态后，修改局部的状态为false
+          useEffect(() => {
+            if (editState.length === 0) {
+              setIsEditing(false)
+            }
+          }, [editState])
           return (
             <input
               className={`${isEditing ? "bg-indigo-400" : ""} w-full`}
@@ -478,8 +513,10 @@ export default function DataPage({ node }) {
         }}
         ref={setContainer}
       >
-        <DataTable columns={header} data={rows} table={table} />
-
+        {" "}
+        <TableContext.Provider value={{ editState }}>
+          <DataTable columns={header} data={rows} table={table} />
+        </TableContext.Provider>
         <div
           className="absolute inset-0 h-full w-full"
           style={{ display: showLoading ? "block" : "none" }}

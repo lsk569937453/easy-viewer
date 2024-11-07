@@ -162,6 +162,29 @@ impl SqliteConfig {
 
         Ok(exe_sql_response)
     }
+    pub async fn update_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sqls: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
+        let data = ExeSqlResponse::new();
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let mut vec = vec![];
+        for sql in sqls {
+            info!("sql: {}", sql);
+            let result = conn.execute(&*sql).await.map_err(|e| anyhow!(e));
+            if let Err(err) = result {
+                vec.push(err.to_string())
+            }
+        }
+        if !vec.is_empty() {
+            let error_mes = vec.join(";");
+            return Err(anyhow!(error_mes));
+        }
+
+        Ok(())
+    }
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,

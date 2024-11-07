@@ -20,6 +20,7 @@ module.exports = {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          light: "hsl(var(--primary-light))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -48,6 +49,7 @@ module.exports = {
         searchMarkerColor: {
           DEFAULT: "hsl(var(--searchMarkerColor))",
         },
+        
       },
       borderRadius: {
         lg: `var(--radius)`,

@@ -229,6 +229,12 @@ export default function DataPage({ node }) {
       setHeader(columns)
       setRows(transformedData)
       setShowLoading(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Execute Sql Error",
+        description: response_msg,
+      })
     }
     setShowLoading(false)
     var endTime = new Date()
@@ -268,9 +274,9 @@ export default function DataPage({ node }) {
   })
   return (
     <div className="flex  h-full w-full flex-col	">
-      <div className="flex " ref={ref}>
+      <div className=" w-full " ref={ref}>
         <AceEditor
-          className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+          className=" flex max-h-[200px] min-h-[40px] w-full basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
           mode="sql"
           height="100%"
           width="100%"

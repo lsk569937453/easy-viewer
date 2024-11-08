@@ -53,7 +53,7 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
 
   return (
     <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={25}>
+      <ResizablePanel defaultSize={25} className="min-h-[200px]">
         <div className="flex h-full flex-col items-start justify-start">
           <div
             className="flex cursor-pointer flex-row items-start p-2 text-muted"

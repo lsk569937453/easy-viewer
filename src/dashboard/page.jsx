@@ -5,6 +5,12 @@ import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+
 import { CreateLinkDialog } from "./menu/createLinkDialog"
 
 import "@szhsin/react-menu/dist/index.css"
@@ -245,92 +251,99 @@ const DashboardPage = () => {
           setIsSave,
         }}
       >
-        <div
-          className="grid h-full grid-cols-10 divide-x divide-foreground/30  overflow-hidden"
-          onContextMenu={(e) => {
-            console.log(e)
-            if (typeof document.hasFocus === "function" && !document.hasFocus())
-              return
-            // e.preventDefault()
-            setAnchorPoint({ x: e.clientX, y: e.clientY })
-            setOpen(true)
-          }}
-        >
-          <ControlledMenu
-            anchorPoint={anchorPoint}
-            state={isOpen ? "open" : "closed"}
-            direction="right"
-            onClose={() => setOpen(false)}
-          >
-            <MenuItem onClick={handleNewConnectionButtonClick}>
-              New Connection
-            </MenuItem>
-            <MenuItem onClick={() => window.location.reload()}>
-              Refresh
-            </MenuItem>
-          </ControlledMenu>
-          <Dialog
-            open={showEditConnectionDialog}
-            onOpenChange={setShowEditConnectionDialog}
-          >
-            <CreateLinkDialog
-              baseCongfigId={baseConfigId}
-              isSave={isSave}
-              isOpen={showEditConnectionDialog}
-            />
-          </Dialog>
-          <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
-            <DialogContent className="w-30 bg-slate-200">
-              <DialogTitle>创建新的Query</DialogTitle>
-              <div className="flex flex-col gap-4 p-4">
-                <div className="flex flex-row items-center justify-center">
-                  <p className="flex-[1]">Name:</p>
-                  <input
-                    className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-                    value={queryName}
-                    onChange={(e) => setQueryName(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleQuerySaveClick}> Save</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={showDeleteConnectionDialog}
-            onOpenChange={setShowDeleteConnectionDialog}
-          >
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Delete</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete this connection?
-                </DialogDescription>
-              </DialogHeader>
-
-              <DialogFooter className="sm:justify-end">
-                <DialogClose asChild>
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <Button type="button" variant="secondary">
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDeleteConnectionClick}
-                    >
-                      Delete
-                    </Button>
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel defaultSize={25} className="min-w-[200px]">
+            <ControlledMenu
+              anchorPoint={anchorPoint}
+              state={isOpen ? "open" : "closed"}
+              direction="right"
+              onClose={() => setOpen(false)}
+            >
+              <MenuItem onClick={handleNewConnectionButtonClick}>
+                New Connection
+              </MenuItem>
+              <MenuItem onClick={() => window.location.reload()}>
+                Refresh
+              </MenuItem>
+            </ControlledMenu>
+            <Dialog
+              open={showEditConnectionDialog}
+              onOpenChange={setShowEditConnectionDialog}
+            >
+              <CreateLinkDialog
+                baseCongfigId={baseConfigId}
+                isSave={isSave}
+                isOpen={showEditConnectionDialog}
+              />
+            </Dialog>
+            <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
+              <DialogContent className="w-30 bg-slate-200">
+                <DialogTitle>创建新的Query</DialogTitle>
+                <div className="flex flex-col gap-4 p-4">
+                  <div className="flex flex-row items-center justify-center">
+                    <p className="flex-[1]">Name:</p>
+                    <input
+                      className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                      value={queryName}
+                      onChange={(e) => setQueryName(e.target.value)}
+                    />
                   </div>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Sidebar menuList={menulist} />
+                  <Button onClick={handleQuerySaveClick}> Save</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={showDeleteConnectionDialog}
+              onOpenChange={setShowDeleteConnectionDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Delete</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this connection?
+                  </DialogDescription>
+                </DialogHeader>
 
-          <div className="col-span-8 h-full w-full">
-            {pageDataArray.length > 0 ? renderComponent() : ""}
-          </div>
-        </div>
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDeleteConnectionClick}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Sidebar
+              menuList={menulist}
+              onContextMenu={(e) => {
+                console.log(e)
+                if (
+                  typeof document.hasFocus === "function" &&
+                  !document.hasFocus()
+                )
+                  return
+                // e.preventDefault()
+                setAnchorPoint({ x: e.clientX, y: e.clientY })
+                setOpen(true)
+              }}
+            />
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={75} className="min-w-[200px]">
+            <div className="col-span-8 h-full w-full">
+              {pageDataArray.length > 0 ? renderComponent() : ""}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </SidebarContext.Provider>
     </>
   )

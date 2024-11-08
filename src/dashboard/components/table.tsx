@@ -81,7 +81,8 @@ export const DataTable = <TValue,>({
           table.getRowModel().rows.map((row: any) => (
             <TableRow
               key={row.id}
-              data-state={row.getIsSelected() && "selected"}
+              //   data-state={row.getIsSelected() && "selected"}
+              //   className="data-[state=selected]:none"
             >
               {row.getVisibleCells().map((cell: any) => (
                 <TableCell

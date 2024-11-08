@@ -1,13 +1,17 @@
+use std::collections::HashSet;
+
 use super::exe_sql_response::ExeSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
-use crate::util::sql_utils::is_simple_select;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
+use crate::vojo::sql_parse_result::SqlParseResult;
 use anyhow::Ok;
+use chrono::DateTime;
+use chrono::Local;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Column;
@@ -158,8 +162,8 @@ WHERE
         conn.execute(&*use_database_sql).await?;
         info!("sql: {}", sql);
 
-        //check the sql is singleSelect
-        let is_simple_select_option = is_simple_select(&sql)?;
+        let sql_parse_result = SqlParseResult::new(sql.clone())?;
+        let is_simple_select_option = sql_parse_result.is_simple_select()?;
         let primary_column_option = if let Some(table_name) = &is_simple_select_option {
             let sql = format!(r#"show columns from {}  where `Key` = "PRI""#, table_name);
             let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
@@ -172,7 +176,31 @@ WHERE
         } else {
             None
         };
-
+        let has_multi_rows = sql_parse_result.has_multiple_rows()?;
+        if !has_multi_rows {
+            let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
+            let headers = vec![
+                Header {
+                    name: "affected_rows".to_string(),
+                    type_name: "u64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+                Header {
+                    name: "last_insert_id".to_string(),
+                    type_name: "u64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+            ];
+            let rows = vec![vec![
+                Some(mysql_query_result.rows_affected().to_string()),
+                Some(mysql_query_result.last_insert_id().to_string()),
+            ]];
+            return Ok(ExeSqlResponse {
+                header: headers,
+                rows,
+                table_name: is_simple_select_option,
+            });
+        }
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
@@ -299,7 +327,7 @@ WHERE
             let column_name = item.name();
             headers.push(ShowColumnHeader {
                 name: column_name.to_string(),
-                type_name: type_name.to_string().to_lowercase(),
+                type_name: type_name.to_string().to_uppercase(),
             });
         }
         let mut response_rows = vec![];
@@ -324,5 +352,59 @@ WHERE
         let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
 
         Ok(exe_sql_response)
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+
+        let row_option =
+            sqlx::query("select words,datatime from complete_words where connection_id=?1")
+                .bind(base_config_id)
+                .fetch_optional(&appstate.pool)
+                .await?;
+        if let Some(row) = row_option {
+            let words: String = row.try_get(0)?;
+            let datatime: DateTime<Local> = row.try_get(1)?;
+            let word_list = words.split(",").map(|item| item.to_string()).collect();
+            return Ok(word_list);
+        }
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let database_rows = sqlx::query(
+            "SHOW DATABASES
+WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
+        )
+        .fetch_all(&mut conn)
+        .await?;
+        let mut set = HashSet::new();
+        for database in database_rows {
+            let database_byte: Vec<u8> = database.try_get(0)?;
+            let database: String = String::from_utf8(database_byte)?;
+            let use_database_sql = format!("use {}", database);
+            conn.execute(&*use_database_sql).await?;
+            set.insert(database.clone());
+            let table_rows = sqlx::query("show tables").fetch_all(&mut conn).await?;
+            for table in table_rows {
+                let table_bytes: Vec<u8> = table.try_get(0)?;
+                let table = String::from_utf8(table_bytes)?;
+                set.insert(table.clone());
+
+                let sql = format!("SHOW COLUMNS FROM `{}` ", table);
+
+                let column_row = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                for item in column_row {
+                    let columns: String = item.try_get(0)?;
+                    set.insert(columns.clone());
+                }
+            }
+        }
+        let vec: Vec<String> = set.into_iter().collect();
+        Ok(vec)
     }
 }

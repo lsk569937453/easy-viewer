@@ -54,7 +54,9 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
 
-            BaseConfigEnum::Sqlite(config) => config.list_node_info(list_node_info_req,appstate).await?,
+            BaseConfigEnum::Sqlite(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
             _ => vec![("".to_string(), "".to_string())],
         };
         Ok(vec)
@@ -77,6 +79,31 @@ impl BaseConfigEnum {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),
+        };
+        Ok(data)
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            _ => vec![],
         };
         Ok(data)
     }
@@ -190,6 +217,13 @@ impl PostgresqlConfig {
         appstate: &AppState,
     ) -> Result<ShowColumnsResponse, anyhow::Error> {
         Ok(ShowColumnsResponse::new())
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        Ok(vec![])
     }
 }
 

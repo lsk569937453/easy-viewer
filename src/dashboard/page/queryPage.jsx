@@ -17,19 +17,48 @@ import DataPage from "./dataPage"
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
 
-const QueryPage = ({ node }) => {
+import { useHotkeys } from "react-hotkeys-hook"
+
+const QueryPage = ({ node, setTabsState, tabIndex }) => {
   const [sqlOfQuqery, setSqlOfQuery] = useState("")
+  const textAreaRef = useRef(null)
+
+  //it is used to communicate with the child of datapage
   const [clickFlag, setClickFlag] = useState(false)
+  useHotkeys("ctrl+s", () => handleOnSave(), {})
+  const handleEditorLoad = (editor) => {
+    // Add the custom save command
+    editor.commands.addCommand({
+      name: "save",
+      bindKey: { win: "Ctrl-S", mac: "Cmd-S" },
+      exec: (editor) => handleOnSave(),
+    })
+  }
+  const handleOnSave = () => {
+    console.log("ctrl+s")
+    setTabsState((prevTabsState) =>
+      prevTabsState.filter((tab) => tab !== tabIndex)
+    )
+  }
   const handleOnChange = (sql) => {
-    console.log(sql)
     setSqlOfQuery(sql)
+    setTabsState((prevState) => {
+      // Check if tabIndex is already in the array
+      if (!prevState.includes(tabIndex)) {
+        return [...prevState, tabIndex]
+      }
+      return prevState
+    })
   }
 
   return (
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={25}>
         <div className="flex h-full flex-col items-start justify-start">
-          <div className="flex cursor-pointer flex-row items-start p-2 text-muted">
+          <div
+            className="flex cursor-pointer flex-row items-start p-2 text-muted"
+            onClick={() => setClickFlag(!clickFlag)}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -39,17 +68,18 @@ const QueryPage = ({ node }) => {
             >
               <path d="M5.536 21.886a1.004 1.004 0 0 0 1.033-.064l13-9a1 1 0 0 0 0-1.644l-13-9A.998.998 0 0 0 5 3v18a1 1 0 0 0 .536.886zM7 4.909 17.243 12 7 19.091V4.909z" />
             </svg>
-            <a onClick={() => setClickFlag(!clickFlag)}>Run</a>
+            <span className="select-none"> Run</span>
           </div>
           <AceEditor
             className=" resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
             width="100%"
-            // height={tableHeight.toString() + "px"}
+            ref={textAreaRef}
             height="100%"
             showGutter={false}
             enableBasicAutocompletion={true}
             enableSnippets={true}
+            onLoad={handleEditorLoad}
             enableLiveAutocompletion={true}
             showPrintMargin={false}
             theme="iplastic"

@@ -62,6 +62,7 @@
     "react-day-picker": "^8.8.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.2",
+    "react-hotkeys-hook": "^4.6.1",
     "react-i18next": "^13.5.0",
     "react-resizable-panels": "^2.1.6",
     "recharts": "^2.7.2",

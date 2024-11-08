@@ -70,7 +70,6 @@ export default function DataPage({
   clickFlag,
 }) {
   const { toast } = useToast()
-  console.log(readOnly)
   const [sql, setSql] = useState(
     inputSql || `SELECT * FROM ${node.data.name} LIMIT 100`
   )
@@ -299,32 +298,36 @@ export default function DataPage({
           )
         },
       }))
-      const newColumns = [
-        {
-          id: "select",
-          header: ({ table }) => (
-            <IndeterminateCheckbox
-              {...{
-                checked: table.getIsAllRowsSelected(),
-                indeterminate: table.getIsSomeRowsSelected(),
-                onChange: table.getToggleAllRowsSelectedHandler(),
-              }}
-            />
-          ),
-          cell: ({ row }) => (
-            <div>
-              <IndeterminateCheckbox
-                {...{
-                  checked: row.getIsSelected(),
-                  disabled: !row.getCanSelect(),
-                  indeterminate: row.getIsSomeSelected(),
-                  onChange: row.getToggleSelectedHandler(),
-                }}
-              />
-            </div>
-          ),
-        },
-      ].concat(columns)
+      const newColumns =
+        columns.length > 0
+          ? [
+              {
+                id: "select",
+                header: ({ table }) => (
+                  <IndeterminateCheckbox
+                    {...{
+                      checked: table.getIsAllRowsSelected(),
+                      indeterminate: table.getIsSomeRowsSelected(),
+                      onChange: table.getToggleAllRowsSelectedHandler(),
+                    }}
+                  />
+                ),
+                cell: ({ row }) => (
+                  <div>
+                    <IndeterminateCheckbox
+                      {...{
+                        checked: row.getIsSelected(),
+                        disabled: !row.getCanSelect(),
+                        indeterminate: row.getIsSomeSelected(),
+                        onChange: row.getToggleSelectedHandler(),
+                      }}
+                    />
+                  </div>
+                ),
+              },
+              ...columns,
+            ]
+          : []
 
       const transformedData = rows.map((row) =>
         row.reduce((obj, value, index) => {
@@ -332,6 +335,7 @@ export default function DataPage({
           return obj
         }, {})
       )
+
       setHeader(newColumns)
       setRows(transformedData)
       setShowLoading(false)

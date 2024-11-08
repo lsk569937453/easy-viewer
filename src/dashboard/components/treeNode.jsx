@@ -83,7 +83,7 @@ const TreeNode = ({
             <path d="M12 4l0 16" />
           </svg>
         ),
-        render: <TablePage node={node} />,
+        render: (setTabsState) => <TablePage node={node} />,
         service: node.data.name,
       })
     }
@@ -115,7 +115,13 @@ const TreeNode = ({
             <path d="M14 20l1.5 1.5" />
           </svg>
         ),
-        render: <QueryPage node={node} />,
+        render: (setTabsState, tabIndex) => (
+          <QueryPage
+            node={node}
+            setTabsState={setTabsState}
+            tabIndex={tabIndex}
+          />
+        ),
         service: node.data.name,
       })
     }

@@ -153,7 +153,7 @@ const TreeNode = ({
     <div
       style={style}
       ref={dragHandle}
-      className="group/item mt-1 flex cursor-pointer flex-row content-center items-center  justify-items-center gap-2 hover:bg-primary-light"
+      className="group/item mb-1 flex cursor-pointer flex-row content-center items-center  justify-items-center gap-2 hover:bg-primary-light"
       onClick={() => handleClickIcon(node)}
       onContextMenu={handleContextMenuClick}
     >

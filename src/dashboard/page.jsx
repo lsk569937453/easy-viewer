@@ -152,6 +152,7 @@ const DashboardPage = () => {
         value={tabValue}
         className="flex h-full w-full flex-col"
         onValueChange={setTabValue}
+  
       >
         <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
           {pageDataArray.map((item, index) => {
@@ -190,17 +191,21 @@ const DashboardPage = () => {
             )
           })}
         </TabsList>
-        {pageDataArray.map((item, index) => {
+        {
+        pageDataArray.map((item, index) => {
           return (
             <TabsContent
               key={item.service}
               value={item.service}
               className="grow"
+              forceMount={true}
+              hidden={item.service !== tabValue}
             >
               {item.render}
             </TabsContent>
           )
-        })}
+        })
+        }
       </Tabs>
     )
   }

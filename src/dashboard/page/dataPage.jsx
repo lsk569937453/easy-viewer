@@ -29,19 +29,40 @@ import { DataTable } from "../../dashboard/components/table"
 
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
+import "ace-builds/src-noconflict/theme-xcode"
+import "ace-builds/src-noconflict/ext-language_tools"
 
+import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools"
 import useResizeObserver from "use-resize-observer"
 
 import "ace-builds/src-noconflict/ext-language_tools"
 
 import { tr } from "date-fns/locale"
+import { use } from "i18next"
 
 import { getLevelInfos, uuid } from "../../lib/utils"
 
 const pageCount = 100
 
 const TableContext = createContext()
+const IndeterminateCheckbox = ({ indeterminate, className = "", ...rest }) => {
+  const ref = useRef()
 
+  useEffect(() => {
+    if (typeof indeterminate === "boolean") {
+      ref.current.indeterminate = !rest.checked && indeterminate
+    }
+  }, [ref, indeterminate])
+
+  return (
+    <input
+      type="checkbox"
+      ref={ref}
+      className={className + " cursor-pointer"}
+      {...rest}
+    />
+  )
+}
 export default function DataPage({ node }) {
   const { toast } = useToast()
 
@@ -62,6 +83,8 @@ export default function DataPage({ node }) {
   //将所有的表的修改都存储到editState中
   const [editState, setEditState] = useState([])
   const [tableNameFromSql, setTableNameFromSql] = useState("")
+  const [rowSelection, setRowSelection] = useState({})
+
   const { ref } = useResizeObserver({
     onResize: ({ width, height }) => {
       setTableHeight(window.innerHeight - 160 - height)
@@ -74,9 +97,12 @@ export default function DataPage({ node }) {
     )
     setCurrentRows(currentRows)
   }, [currentPage])
-
   useEffect(() => {
     exeSql()
+  }, [])
+
+  useEffect(() => {
+    fetchCompleteWords()
   }, [])
   const handleOnSaveButtonClick = async () => {
     console.log(editState)
@@ -136,9 +162,37 @@ export default function DataPage({ node }) {
 
     return sqlStatements
   }
-
+  const fetchCompleteWords = async () => {
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_complete_words", { listNodeInfoReq: listNodeInfoReq })
+    )
+    console.log(response_code, response_msg)
+    if (response_code == 0) {
+      let completeArray = response_msg.map((item) => {
+        return {
+          name: item,
+          value: item,
+          caption: item,
+          meta: "SQL",
+          score: 1000,
+        }
+      })
+      console.log(words)
+      addCompleter({
+        getCompletions: function (editor, session, pos, prefix, callback) {
+          callback(null, completeArray)
+        },
+      })
+    } else {
+      return []
+    }
+  }
   const exeSql = async () => {
     setEditState([])
+    setRowSelection({})
     const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
 
@@ -188,7 +242,10 @@ export default function DataPage({ node }) {
                   item.index === index
                     ? {
                         ...item,
-                        valueMap: { ...item.valueMap, [id]: e.target.value },
+                        valueMap: {
+                          ...item.valueMap,
+                          [id]: e.target.value,
+                        },
                       }
                     : item
                 )
@@ -211,7 +268,7 @@ export default function DataPage({ node }) {
           }, [editState])
           return (
             <input
-              className={`${isEditing ? "bg-indigo-400" : ""} w-full`}
+              className={`${isEditing ? "bg-indigo-400" : ""} w-full `}
               type="text"
               value={value}
               onChange={handleOnChange}
@@ -220,15 +277,48 @@ export default function DataPage({ node }) {
           )
         },
       }))
+      const newColumns = [
+        {
+          id: "select",
+          header: ({ table }) => (
+            <IndeterminateCheckbox
+              {...{
+                checked: table.getIsAllRowsSelected(),
+                indeterminate: table.getIsSomeRowsSelected(),
+                onChange: table.getToggleAllRowsSelectedHandler(),
+              }}
+            />
+          ),
+          cell: ({ row }) => (
+            <div>
+              <IndeterminateCheckbox
+                {...{
+                  checked: row.getIsSelected(),
+                  disabled: !row.getCanSelect(),
+                  indeterminate: row.getIsSomeSelected(),
+                  onChange: row.getToggleSelectedHandler(),
+                }}
+              />
+            </div>
+          ),
+        },
+      ].concat(columns)
+
       const transformedData = rows.map((row) =>
         row.reduce((obj, value, index) => {
           obj[String(index)] = value // Use the index as the key
           return obj
         }, {})
       )
-      setHeader(columns)
+      setHeader(newColumns)
       setRows(transformedData)
       setShowLoading(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Execute Sql Error",
+        description: response_msg,
+      })
     }
     setShowLoading(false)
     var endTime = new Date()
@@ -261,11 +351,19 @@ export default function DataPage({ node }) {
     onPaginationChange: setPagination,
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+
+    enableRowSelection: true, //enable row selection for all rows
+    onRowSelectionChange: setRowSelection,
+
     state: {
       columnSizing: colSizing,
       pagination: pagination,
+      rowSelection: rowSelection,
     },
   })
+  const handleOnDeleteClick = () => {
+    console.log(rowSelection)
+  }
   return (
     <div className="flex  h-full w-full flex-col	">
       <div className="flex " ref={ref}>
@@ -278,9 +376,8 @@ export default function DataPage({ node }) {
           enableBasicAutocompletion={true}
           enableSnippets={true}
           enableLiveAutocompletion={true}
-          
           showPrintMargin={false}
-          theme="iplastic"
+          theme="xcode"
           onChange={handleOnChange}
           name="UNIQUE_ID_OF_DIV"
           fontSize={16}
@@ -339,6 +436,8 @@ export default function DataPage({ node }) {
         <Button
           variant="outline"
           size="icon"
+          disabled={Object.keys(rowSelection).length === 0}
+          onClick={handleOnDeleteClick}
           className="h-full w-7 border-none hover:bg-searchMarkerColor"
         >
           <svg
@@ -347,11 +446,10 @@ export default function DataPage({ node }) {
             height="30"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="currentColor"
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-trash"
+            class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-rose-500"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M4 7l16 0" />

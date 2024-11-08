@@ -7,6 +7,7 @@ pub mod menu_config;
 pub mod mysql_config;
 pub mod save_connection_req;
 pub mod show_column_response;
+pub mod sql_parse_result;
 pub mod sqlite_config;
 pub mod static_connections;
 pub mod update_sql_response;

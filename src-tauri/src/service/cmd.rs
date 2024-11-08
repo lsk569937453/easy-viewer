@@ -10,6 +10,7 @@ use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
+use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
@@ -100,6 +101,17 @@ pub async fn exe_sql(
     let time = Instant::now();
     let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
     info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn get_complete_words(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_complete_words_with_error(state, list_node_info_req).await);
+    info!("get_complete_words: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

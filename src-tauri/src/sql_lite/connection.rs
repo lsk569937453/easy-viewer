@@ -39,6 +39,16 @@ impl AppState {
             )",
         )
         .await?;
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS complete_words (
+            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
+            connection_id    INTEGER NOT NULL, 
+            words  TEXT,
+            'datatime' DATETIME NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%f', 'now', 'localtime')),
+            UNIQUE (connection_id)  
+            )",
+        )
+        .await?;
 
         Ok(AppState { pool })
     }

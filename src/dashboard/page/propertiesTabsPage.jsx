@@ -4,6 +4,7 @@ import AceEditor from "react-ace"
 import "ace-builds/src-noconflict/mode-sql"
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
+import "ace-builds/src-noconflict/theme-xcode"
 
 import { useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
@@ -169,7 +170,7 @@ const PropertiesTabsPage = ({ node }) => {
           readOnly={true}
           enableLiveAutocompletion={true}
           showPrintMargin={false}
-          theme="iplastic"
+          theme="xcode"
           name="UNIQUE_ID_OF_DIV"
           fontSize={16}
           value={sql}

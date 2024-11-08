@@ -2,12 +2,12 @@ use std::path::Path;
 use std::vec;
 
 use super::list_node_info_req::ListNodeInfoReq;
-use crate::util::sql_utils::is_simple_select;
 use crate::util::sql_utils::sqlite_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
+use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use anyhow::Ok;
 use serde::Deserialize;
@@ -40,7 +40,6 @@ impl SqliteConfig {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-
     ) -> Result<Vec<(String, String)>, anyhow::Error> {
         let mut vec = vec![];
 
@@ -51,7 +50,7 @@ impl SqliteConfig {
 
             let node_name = level_infos[1].config_value.clone();
 
-            info!("node_name: {},base_config_id:{}", node_name,base_config_id);
+            info!("node_name: {},base_config_id:{}", node_name, base_config_id);
             if node_name == "Tables" {
                 let mut conn = SqliteConnection::connect(&self.file_path).await?;
                 let rows = sqlx::query(r#"SELECT name FROM sqlite_master WHERE type='table' and name!='sqlite_sequence'"#)
@@ -61,18 +60,17 @@ impl SqliteConfig {
                     let row_str: String = row.try_get(0)?;
                     vec.push((row_str, "singleTable".to_string()));
                 }
-            }else if node_name == "Query" {
-                let rows =
-                        sqlx::query("select query_name from sql_query where connection_id=?1")
-                            .bind(base_config_id)
-                            .fetch_all(&appstate.pool)
-                            .await?;
-                        info!("row length:{}",rows.len());
-                    for row in rows {
-                        let row_str: String = row.try_get(0)?;
-                        vec.push((row_str, "singleQuery".to_string()));
-                    }
-                    info!("vec: {:?}", vec);
+            } else if node_name == "Query" {
+                let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
+                    .bind(base_config_id)
+                    .fetch_all(&appstate.pool)
+                    .await?;
+                info!("row length:{}", rows.len());
+                for row in rows {
+                    let row_str: String = row.try_get(0)?;
+                    vec.push((row_str, "singleQuery".to_string()));
+                }
+                info!("vec: {:?}", vec);
             }
         } else if level_infos.len() == 4 {
             let base_config_id = level_infos[0].config_value.parse::<i32>()?;
@@ -126,15 +124,44 @@ impl SqliteConfig {
         appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
+        info!("sql: {}", sql);
         let data = ExeSqlResponse::new();
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
-        let is_simple_select_option = is_simple_select(&sql)?;
+        let sql_parse_result = SqlParseResult::new(sql.clone())?;
+        let is_simple_select_option = sql_parse_result.is_simple_select()?;
         let primary_column_option = if let Some(table_name) = &is_simple_select_option {
             SqliteConfig::get_primary_column(&mut conn, table_name).await
         } else {
             None
         };
+        let has_multi_rows = sql_parse_result.has_multiple_rows()?;
+        if !has_multi_rows {
+            let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
+            let headers = vec![
+                Header {
+                    name: "affected_rows".to_string(),
+                    type_name: "u64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+                Header {
+                    name: "last_insert_id".to_string(),
+                    type_name: "i64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+            ];
+            let rows = vec![vec![
+                Some(mysql_query_result.rows_affected().to_string()),
+                Some(mysql_query_result.last_insert_rowid().to_string()),
+            ]];
+            return Ok(ExeSqlResponse {
+                header: headers,
+                rows,
+                table_name: is_simple_select_option,
+            });
+        }
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+
+        info!("rows: {}", rows.len());
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
         }
@@ -165,9 +192,10 @@ impl SqliteConfig {
             let len = columns.len();
             let mut row = vec![];
             for i in 0..len {
-                let raw= item.try_get_raw(i)?;
+                let raw = item.try_get_raw(i)?;
                 let type_info = raw.type_info();
-                let type_name = type_info.name();                let val = sqlite_row_to_json(item, type_name, i)?;
+                let type_name = type_info.name();
+                let val = sqlite_row_to_json(item, type_name, i)?;
                 if val.is_string() {
                     row.push(Some(val.as_str().unwrap_or_default().to_string()));
                 } else if val.is_null() {
@@ -274,7 +302,7 @@ impl SqliteConfig {
             let len = columns.len();
             let mut row = vec![];
             for i in 0..len {
-                let raw= item.try_get_raw(i)?;
+                let raw = item.try_get_raw(i)?;
                 let type_info = raw.type_info();
                 let type_name = type_info.name();
 
@@ -291,5 +319,12 @@ impl SqliteConfig {
         }
         let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
         Ok(exe_sql_response)
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        Ok(vec![])
     }
 }

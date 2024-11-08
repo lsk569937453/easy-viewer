@@ -180,7 +180,6 @@ export default function DataPage({ node }) {
           score: 1000,
         }
       })
-      console.log(words)
       addCompleter({
         getCompletions: function (editor, session, pos, prefix, callback) {
           callback(null, completeArray)

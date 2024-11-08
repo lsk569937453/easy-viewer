@@ -29,8 +29,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
-import { getIconNameByType, uuid } from "../lib/utils"
 import Sidebar from "./components/sidebar"
 
 export const SidebarContext = createContext({
@@ -60,6 +60,8 @@ const DashboardPage = () => {
   const [showEditConnectionDialog, setShowEditConnectionDialog] =
     useState(false)
   const [isSave, setIsSave] = useState(true)
+  const [tabsState, setTabsState] = useState([])
+
   useEffect(() => {
     loadData()
   }, [])
@@ -152,7 +154,6 @@ const DashboardPage = () => {
         value={tabValue}
         className="flex h-full w-full flex-col"
         onValueChange={setTabValue}
-  
       >
         <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
           {pageDataArray.map((item, index) => {
@@ -167,32 +168,49 @@ const DashboardPage = () => {
                     <div className="flex-none"> {item.icon}</div>
                     <p className="grow"> {item.service}</p>
                   </div>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    onClick={() => {
-                      handleRemoveButton(index)
-                    }}
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M18 6l-12 12" />
-                    <path d="M6 6l12 12" />
-                  </svg>
+                  {tabsState.includes(index) && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      onClick={() => {
+                        handleRemoveButton(index)
+                      }}
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                    </svg>
+                  )}
+                  {!tabsState.includes(index) && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      onClick={() => {
+                        handleRemoveButton(index)
+                      }}
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
+                    >
+                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                      <path d="M18 6l-12 12" />
+                      <path d="M6 6l12 12" />
+                    </svg>
+                  )}
                 </div>
               </TabsTrigger>
             )
           })}
         </TabsList>
-        {
-        pageDataArray.map((item, index) => {
+        {pageDataArray.map((item, index) => {
           return (
             <TabsContent
               key={item.service}
@@ -201,11 +219,10 @@ const DashboardPage = () => {
               forceMount={true}
               hidden={item.service !== tabValue}
             >
-              {item.render}
+              {item.render(setTabsState, index)}
             </TabsContent>
           )
-        })
-        }
+        })}
       </Tabs>
     )
   }

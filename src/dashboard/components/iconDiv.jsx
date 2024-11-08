@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import * as Tooltip from "@radix-ui/react-tooltip"
 
-import { getRootNode, uuid } from "../../lib/utils.js"
+import { getRootNode, uuid } from "../../lib/jsx-utils.js"
 import { SidebarContext } from "../page.jsx"
 import TablePage from "../page/tablePage.jsx"
 

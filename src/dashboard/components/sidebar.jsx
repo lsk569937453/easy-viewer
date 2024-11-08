@@ -6,7 +6,6 @@ import useResizeObserver from "use-resize-observer"
 
 import { useToast } from "@/components/ui/use-toast"
 
-import { getLevelInfos, uuid } from "../../lib/utils"
 import IconDiv from "./iconDiv"
 import TreeNode from "./treeNode"
 

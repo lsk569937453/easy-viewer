@@ -100,10 +100,7 @@ export const DataTable = <TValue,>({
           ))
         ) : (
           <TableRow>
-            <TableCell
-              colSpan={columns.length}
-              className="h-24 w-full text-center"
-            >
+            <TableCell colSpan={columns.length} className=" w-full text-center">
               No results.
             </TableCell>
           </TableRow>

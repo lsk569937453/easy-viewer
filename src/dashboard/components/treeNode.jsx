@@ -8,8 +8,8 @@ import "@szhsin/react-menu/dist/index.css"
 
 import { useToast } from "@/components/ui/use-toast"
 
+import { getLevelInfos, getRootNode, uuid } from "../../lib/jsx-utils"
 import { clickNode } from "../../lib/node.jsx"
-import { getLevelInfos, getRootNode, uuid } from "../../lib/utils"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 import IconDiv from "./iconDiv.jsx"
@@ -83,7 +83,7 @@ const TreeNode = ({
             <path d="M12 4l0 16" />
           </svg>
         ),
-        render: <TablePage node={node} />,
+        render: (setTabsState) => <TablePage node={node} />,
         service: node.data.name,
       })
     }
@@ -115,7 +115,13 @@ const TreeNode = ({
             <path d="M14 20l1.5 1.5" />
           </svg>
         ),
-        render: <QueryPage />,
+        render: (setTabsState, tabIndex) => (
+          <QueryPage
+            node={node}
+            setTabsState={setTabsState}
+            tabIndex={tabIndex}
+          />
+        ),
         service: node.data.name,
       })
     }

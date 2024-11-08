@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::vec;
 
@@ -10,6 +11,8 @@ use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use anyhow::Ok;
+use chrono::DateTime;
+use chrono::Local;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Column;
@@ -325,6 +328,40 @@ impl SqliteConfig {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<Vec<String>, anyhow::Error> {
-        Ok(vec![])
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+
+        let row_option =
+            sqlx::query("select words,datatime from complete_words where connection_id=?1")
+                .bind(base_config_id)
+                .fetch_optional(&appstate.pool)
+                .await?;
+        if let Some(row) = row_option {
+            let words: String = row.try_get(0)?;
+            let datatime: DateTime<Local> = row.try_get(1)?;
+            let word_list = words.split(",").map(|item| item.to_string()).collect();
+            return Ok(word_list);
+        }
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+
+        let table_rows = sqlx::query("SELECT distinct tbl_name from sqlite_master order by 1")
+            .fetch_all(&mut conn)
+            .await?;
+        let mut set = HashSet::new();
+        for table_row in table_rows {
+            let table_byes: Vec<u8> = table_row.try_get(0)?;
+            let table: String = String::from_utf8(table_byes)?;
+            let use_database_sql = format!(r#"PRAGMA table_info('{}')"#, table);
+            set.insert(table.clone());
+            let column_rows = sqlx::query(&use_database_sql).fetch_all(&mut conn).await?;
+            for column_row in column_rows {
+                let column_bytes: Vec<u8> = column_row.try_get(1)?;
+                let column = String::from_utf8(column_bytes)?;
+                set.insert(column.clone());
+            }
+        }
+        let vec: Vec<String> = set.into_iter().collect();
+        Ok(vec)
     }
 }

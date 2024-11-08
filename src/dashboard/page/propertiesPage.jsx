@@ -37,8 +37,6 @@ import { tr } from "date-fns/locale"
 
 import { Input } from "@/components/ui/input"
 
-import { getLevelInfos, uuid } from "../../lib/utils"
-
 const PropertiesPage = ({ node }) => {
   return (
     <div className="flex h-full flex-col gap-2 ">

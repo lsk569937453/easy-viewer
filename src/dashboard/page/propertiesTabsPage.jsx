@@ -11,7 +11,7 @@ import { invoke } from "@tauri-apps/api/core"
 import beautify from "ace-builds/src-noconflict/ext-beautify"
 import { set } from "date-fns"
 
-import { getLevelInfos, uuid } from "../../lib/utils"
+import { getLevelInfos, uuid } from "../../lib/jsx-utils"
 import DataPage from "./dataPage"
 import PropertiesColumnPage from "./propertiesColumnPage"
 import PropertiesPage from "./propertiesPage"

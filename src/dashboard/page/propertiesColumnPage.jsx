@@ -35,7 +35,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 
 import { tr } from "date-fns/locale"
 
-import { getLevelInfos, uuid } from "../../lib/utils"
+import { getLevelInfos, uuid } from "../../lib/jsx-utils"
 
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])

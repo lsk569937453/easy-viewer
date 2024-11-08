@@ -40,7 +40,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { tr } from "date-fns/locale"
 import { use } from "i18next"
 
-import { getLevelInfos, uuid } from "../../lib/utils"
+import { getLevelInfos, uuid } from "../../lib/jsx-utils"
 
 const pageCount = 100
 
@@ -63,10 +63,17 @@ const IndeterminateCheckbox = ({ indeterminate, className = "", ...rest }) => {
     />
   )
 }
-export default function DataPage({ node }) {
+export default function DataPage({
+  node,
+  inputSql,
+  readOnly = false,
+  clickFlag,
+}) {
   const { toast } = useToast()
-
-  const [sql, setSql] = useState(`SELECT * FROM ${node.data.name} LIMIT 100`)
+  console.log(readOnly)
+  const [sql, setSql] = useState(
+    inputSql || `SELECT * FROM ${node.data.name} LIMIT 100`
+  )
   const [timeCost, setTimeCost] = useState(0)
   //渲染用
   const [header, setHeader] = useState([])
@@ -84,6 +91,7 @@ export default function DataPage({ node }) {
   const [editState, setEditState] = useState([])
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const [rowSelection, setRowSelection] = useState({})
+  const hasMounted = useRef(false)
 
   const { ref } = useResizeObserver({
     onResize: ({ width, height }) => {
@@ -91,14 +99,29 @@ export default function DataPage({ node }) {
     },
   })
   useEffect(() => {
+    setSql(inputSql)
+  }, [inputSql])
+
+  useEffect(() => {
+    console.log(hasMounted.current)
+    if (hasMounted.current) {
+      exeSql()
+    } else {
+      hasMounted.current = true
+    }
+  }, [clickFlag])
+  useEffect(() => {
     let currentRows = rows.slice(
       (currentPage - 1) * pageCount,
       currentPage * pageCount
     )
     setCurrentRows(currentRows)
   }, [currentPage])
+
   useEffect(() => {
-    exeSql()
+    if (!readOnly) {
+      exeSql()
+    }
   }, [])
 
   useEffect(() => {
@@ -365,24 +388,27 @@ export default function DataPage({ node }) {
   }
   return (
     <div className="flex  h-full w-full flex-col	">
-      <div className="flex " ref={ref}>
-        <AceEditor
-          className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-          mode="sql"
-          height="100%"
-          width="100%"
-          showGutter={false}
-          enableBasicAutocompletion={true}
-          enableSnippets={true}
-          enableLiveAutocompletion={true}
-          showPrintMargin={false}
-          theme="xcode"
-          onChange={handleOnChange}
-          name="UNIQUE_ID_OF_DIV"
-          fontSize={16}
-          value={sql}
-        />
-      </div>
+      {!readOnly && (
+        <div className="flex " ref={ref}>
+          <AceEditor
+            className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            mode="sql"
+            height="100%"
+            width="100%"
+            showGutter={false}
+            enableBasicAutocompletion={true}
+            enableSnippets={true}
+            readOnly={readOnly}
+            enableLiveAutocompletion={true}
+            showPrintMargin={false}
+            theme="xcode"
+            onChange={handleOnChange}
+            name="UNIQUE_ID_OF_DIV"
+            fontSize={16}
+            value={sql}
+          />
+        </div>
+      )}
       <div className="flex h-8 flex-row bg-background">
         <div className="align-center align-text-center relative flex ">
           <input

@@ -29,8 +29,8 @@ import {
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
-import { getIconNameByType, uuid } from "../lib/utils"
 import Sidebar from "./components/sidebar"
 
 export const SidebarContext = createContext({
@@ -152,7 +152,6 @@ const DashboardPage = () => {
         value={tabValue}
         className="flex h-full w-full flex-col"
         onValueChange={setTabValue}
-  
       >
         <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
           {pageDataArray.map((item, index) => {
@@ -191,8 +190,7 @@ const DashboardPage = () => {
             )
           })}
         </TabsList>
-        {
-        pageDataArray.map((item, index) => {
+        {pageDataArray.map((item, index) => {
           return (
             <TabsContent
               key={item.service}
@@ -204,8 +202,7 @@ const DashboardPage = () => {
               {item.render}
             </TabsContent>
           )
-        })
-        }
+        })}
       </Tabs>
     )
   }

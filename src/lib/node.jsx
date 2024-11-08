@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core"
 
 import { useToast } from "@/components/ui/use-toast"
 
-import { getLevelInfos, uuid } from "./utils"
+import { getLevelInfos, uuid } from "./jsx-utils"
 
 const mysqlDatabaseData = [
   {

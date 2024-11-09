@@ -63,7 +63,6 @@ const TreeNode = ({
     console.log(node.data.iconName === "singleTable")
     if (node.data.iconName === "singleTable") {
       handleAddPageClick({
-        type: "table",
         icon: (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -83,7 +82,7 @@ const TreeNode = ({
             <path d="M12 4l0 16" />
           </svg>
         ),
-        render: (setTabsState) => <TablePage node={node} />,
+        render: () => <TablePage node={node} />,
         service: node.data.name,
       })
     }
@@ -91,7 +90,6 @@ const TreeNode = ({
 
     if (node.data.iconName === "singleQuery") {
       handleAddPageClick({
-        type: "query",
         icon: (
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -115,11 +113,12 @@ const TreeNode = ({
             <path d="M14 20l1.5 1.5" />
           </svg>
         ),
-        render: (setTabsState, tabIndex) => (
+        render: (tabIndex) => (
           <QueryPage
             node={node}
-            setTabsState={setTabsState}
             tabIndex={tabIndex}
+            queryName={node.data.name}
+            firstCreate={false}
           />
         ),
         service: node.data.name,
@@ -159,7 +158,7 @@ const TreeNode = ({
     <div
       style={style}
       ref={dragHandle}
-      className="group/item mb-1 flex cursor-pointer flex-row content-center items-center  justify-items-center gap-2 hover:bg-primary-light"
+      className="group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 hover:bg-primary-light"
       onClick={() => handleClickIcon(node)}
       onContextMenu={handleContextMenuClick}
     >

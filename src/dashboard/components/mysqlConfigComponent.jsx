@@ -32,9 +32,11 @@ export function MysqlConfigComponent({
   initialUsername = "user",
   initialPassword = "password",
   isSave = false,
+  baseCongfigId = null,
 }) {
   console.log(initialPassword)
   console.log(initialUsername)
+  console.log(baseCongfigId)
 
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
@@ -224,7 +226,81 @@ export function MysqlConfigComponent({
       })
     }
   }
-  const handleSaveButtonOnClick = async () => {}
+  const handleSaveButtonOnClick = async () => {
+    if (connectionName === undefined || connectionName === "") {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: "连接名称不能为空",
+      })
+      return
+    }
+    let testHostStruct = null
+    if (connectType == "connectTypeUrl") {
+      try {
+        const { ip, port, database, userName, password } =
+          parseConnectionUrl(currentUrl)
+        testHostStruct = {
+          mysql: {
+            config: {
+              host: ip,
+              port: parseInt(port),
+              database: database,
+              user_name: userName,
+              password: password,
+            },
+          },
+        }
+        console.log(JSON.stringify(testHostStruct))
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: err.toString(),
+          description: currentUrl,
+        })
+        return
+      }
+    } else {
+      testHostStruct = {
+        mysql: {
+          config: {
+            host: currentHost,
+            port: parseInt(currentPort),
+            database: currentDatabase,
+            user_name: currentUsername,
+            password: currentPassword,
+          },
+        },
+      }
+    }
+
+    const SaveConnectionRequest = {
+      base_config: { base_config_enum: testHostStruct },
+      connection_name: connectionName,
+      connection_id: Number(baseCongfigId),
+    }
+    console.log(connectionName)
+    const { response_code, response_msg } = await JSON.parse(
+      await invoke("update_base_config", {
+        saveConnectionRequest: SaveConnectionRequest,
+      })
+    )
+    console.log(response_code)
+    console.log(response_msg)
+    if (response_code === 0) {
+      toast({
+        title: "操作信息",
+        description: "保存成功。",
+      })
+      window.location.reload()
+    } else {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: response_msg,
+      })
+    }
+  }
   return (
     <div className="flex flex-col gap-5 border-2 border-dashed border-indigo-600  p-4">
       <AlertDialog open={showLoading} onOpenChange={setShowLoading}>

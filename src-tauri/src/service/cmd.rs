@@ -1,6 +1,7 @@
 use std::time::Instant;
 
 use crate::common_tools::about::get_about_version_with_error;
+use crate::vojo::update_connection_req::UpdateConnectionRequest;
 
 use super::base_config_service::delete_base_config_with_error;
 use super::base_config_service::exe_sql_with_error;
@@ -8,12 +9,14 @@ use super::base_config_service::get_base_config_by_id_with_error;
 use super::base_config_service::get_base_config_with_error;
 use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
+use super::base_config_service::update_base_config_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
+use crate::service::query_service::get_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
@@ -57,6 +60,14 @@ pub async fn save_base_config(
     save_connection_request: SaveConnectionRequest,
 ) -> Result<String, ()> {
     let res = handle_response!(save_base_config_with_error(state, save_connection_request).await);
+    Ok(res)
+}
+#[tauri::command]
+pub async fn update_base_config(
+    state: State<'_, AppState>,
+    save_connection_request: UpdateConnectionRequest,
+) -> Result<String, ()> {
+    let res = handle_response!(update_base_config_with_error(state, save_connection_request).await);
     Ok(res)
 }
 #[tauri::command]
@@ -158,6 +169,18 @@ pub async fn save_query(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn get_query(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    query_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_query_with_error(state, connection_id, query_name).await);
     info!("exe_sql: {:?}", time.elapsed());
     Ok(res)
 }

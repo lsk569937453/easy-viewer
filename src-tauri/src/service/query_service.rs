@@ -1,7 +1,7 @@
 use tauri::State;
 
 use crate::sql_lite::connection::AppState;
-
+use sqlx::Row;
 pub async fn save_query_with_error(
     state: State<'_, AppState>,
     connection_id: i32,
@@ -25,4 +25,21 @@ pub async fn save_query_with_error(
     .await?;
 
     Ok("".to_string())
+}
+
+pub async fn get_query_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    query_name: String,
+) -> Result<String, anyhow::Error> {
+    let row =
+        sqlx::query(r#"select query from sql_query where connection_id=?1 and query_name=?2"#)
+            .bind(connection_id)
+            .bind(query_name)
+            .fetch_optional(&state.pool)
+            .await?
+            .ok_or(anyhow!("Not found"))?;
+    let sql: String = row.try_get(0)?;
+
+    Ok(sql)
 }

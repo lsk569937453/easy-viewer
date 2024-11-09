@@ -7,6 +7,7 @@ use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::show_column_response::ShowColumnsResponse;
+use crate::vojo::update_connection_req::UpdateConnectionRequest;
 use sqlx::Row;
 use tauri::State;
 
@@ -22,6 +23,31 @@ pub async fn save_base_config_with_error(
         .bind(json_str)
         .execute(&state.pool)
         .await?;
+    Ok(())
+}
+
+pub async fn update_base_config_with_error(
+    state: State<'_, AppState>,
+    update_connection_request: UpdateConnectionRequest,
+) -> Result<(), anyhow::Error> {
+    let json_str = serde_json::to_string(&update_connection_request.base_config)?;
+    info!(
+        "name:{},id:{},update base config: {}",
+        update_connection_request.connection_name,
+        update_connection_request.connection_id,
+        json_str,
+    );
+
+    sqlx::query(
+        "UPDATE base_config 
+SET connection_name = ?, connection_json = ? 
+WHERE id = ?",
+    )
+    .bind(update_connection_request.connection_name)
+    .bind(json_str)
+    .bind(update_connection_request.connection_id)
+    .execute(&state.pool)
+    .await?;
     Ok(())
 }
 pub async fn delete_base_config_with_error(

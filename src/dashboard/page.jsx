@@ -52,6 +52,8 @@ export const SidebarContext = createContext({
   setIsSave: () => {},
   setShowSaveQueryDialog: () => {},
   handleRemoveButton: () => {},
+  setTabsState: () => {},
+
   event: {},
 })
 const DashboardPage = () => {
@@ -172,6 +174,12 @@ const DashboardPage = () => {
       index: saveQueryTabIndex,
     })
   }
+  const handleCancelQueryButtonClick = () => {
+    setEvent({
+      type: 1,
+      index: saveQueryTabIndex,
+    })
+  }
   const renderComponent = () => {
     return (
       <Tabs
@@ -261,7 +269,7 @@ const DashboardPage = () => {
               forceMount={true}
               hidden={item.service !== tabValue}
             >
-              {item.render(setTabsState, index)}
+              {item.render(index)}
             </TabsContent>
           )
         })}
@@ -288,6 +296,7 @@ const DashboardPage = () => {
           event,
           setShowSaveQueryDialog,
           handleRemoveButton,
+          setTabsState,
         }}
       >
         <ResizablePanelGroup
@@ -312,13 +321,6 @@ const DashboardPage = () => {
             </MenuItem>
             <MenuItem onClick={() => window.location.reload()}>
               Refresh
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                debugger
-              }}
-            >
-              Open Console
             </MenuItem>
           </ControlledMenu>
           <ResizablePanel defaultSize={25} className="min-w-[200px]">
@@ -393,7 +395,11 @@ const DashboardPage = () => {
                 <DialogFooter className="sm:justify-end">
                   <DialogClose asChild>
                     <div className="flex flex-row items-center justify-center gap-2">
-                      <Button type="button" variant="secondary">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={handleCancelQueryButtonClick}
+                      >
                         Cancel
                       </Button>
                       <Button

@@ -396,7 +396,7 @@ export default function DataPage({
   return (
     <div className="flex  h-full w-full flex-col	">
       {!readOnly && (
-        <div className="flex " ref={ref}>
+        <div ref={ref}>
           <AceEditor
             className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
@@ -654,7 +654,7 @@ export default function DataPage({
         >
           <div className="bg-red absolute inset-0 z-20 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"></div>
 
-          <div className="absolute left-[50%] top-[50%] z-20 flex translate-x-[-50%] translate-y-[-50%] flex-row border  bg-background bg-ring p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
+          <div className="absolute left-[50%] top-[50%] z-20 flex translate-x-[-50%] translate-y-[-50%] flex-row border  bg-background  p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg">
             <svg
               class="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
               xmlns="http://www.w3.org/2000/svg"

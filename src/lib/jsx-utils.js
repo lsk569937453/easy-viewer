@@ -59,3 +59,8 @@ const formatMap = new Map([
 export function getIconNameByType(params) {
   return formatMap.get(params)
 }
+export function getQueryName() {
+  const timestamp = new Date().toISOString().replace(/[-:.TZ]/g, "")
+  const queryName = `New_Query_${timestamp}`
+  return queryName
+}

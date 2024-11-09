@@ -98,7 +98,9 @@ export default function DataPage({
     },
   })
   useEffect(() => {
-    setSql(inputSql)
+    if (readOnly) {
+      setSql(inputSql)
+    }
   }, [inputSql])
 
   useEffect(() => {
@@ -220,7 +222,7 @@ export default function DataPage({
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    console.log(listNodeInfoReq)
+    console.log(listNodeInfoReq, sql)
     const { response_code, response_msg } = JSON.parse(
       await invoke("exe_sql", { listNodeInfoReq: listNodeInfoReq, sql: sql })
     )
@@ -359,6 +361,7 @@ export default function DataPage({
   }, [])
 
   const handleOnChange = (sql) => {
+    console.log(sql)
     setSql(sql)
   }
   const [pagination, setPagination] = useState({

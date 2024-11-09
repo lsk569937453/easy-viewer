@@ -15,6 +15,8 @@ import { CreateLinkDialog } from "./menu/createLinkDialog"
 
 import "@szhsin/react-menu/dist/index.css"
 
+import { event } from "@tauri-apps/api"
+
 import { Button } from "@/components/ui/button"
 import {
   ContextMenu,
@@ -48,6 +50,9 @@ export const SidebarContext = createContext({
   setShowDeleteConnectionDialog: () => {},
   setShowEditConnectionDialog: () => {},
   setIsSave: () => {},
+  setShowSaveQueryDialog: () => {},
+  handleRemoveButton: () => {},
+  event: {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -59,6 +64,9 @@ const DashboardPage = () => {
   const [showQueryLoading, setShowQueryLoading] = useState(false)
   const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
     useState(false)
+  const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
+  const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
+  const [event, setEvent] = useState({})
   const [queryName, setQueryName] = useState("")
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
@@ -124,6 +132,10 @@ const DashboardPage = () => {
     setTabValue(nextType)
     setPageDataArray([...pageDataArray])
   }
+  const handleRemoveWithoutSaveButtonClick = (index) => {
+    setShowSaveQueryDialog(true)
+    setSaveQueryTabIndex(index)
+  }
   const handleQuerySaveClick = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("save_query", {
@@ -154,6 +166,12 @@ const DashboardPage = () => {
       setMenulist(updatedData)
     }
   }
+  const handleSaveQueryButtonClick = async () => {
+    setEvent({
+      type: 0,
+      index: saveQueryTabIndex,
+    })
+  }
   const renderComponent = () => {
     return (
       <Tabs
@@ -175,20 +193,38 @@ const DashboardPage = () => {
                     <p className="grow"> {item.service}</p>
                   </div>
                   {tabsState.includes(index) && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      onClick={() => {
-                        handleRemoveButton(index)
-                      }}
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-                    </svg>
+                    <div class="group absolute  right-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                      </svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        onClick={() => {
+                          handleRemoveWithoutSaveButtonClick(index)
+                        }}
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M18 6l-12 12" />
+                        <path d="M6 6l12 12" />
+                      </svg>
+                    </div>
                   )}
                   {!tabsState.includes(index) && (
                     <svg
@@ -249,23 +285,43 @@ const DashboardPage = () => {
           setShowDeleteConnectionDialog,
           setShowEditConnectionDialog,
           setIsSave,
+          event,
+          setShowSaveQueryDialog,
+          handleRemoveButton,
         }}
       >
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={25} className="min-w-[200px]">
-            <ControlledMenu
-              anchorPoint={anchorPoint}
-              state={isOpen ? "open" : "closed"}
-              direction="right"
-              onClose={() => setOpen(false)}
+        <ResizablePanelGroup
+          direction="horizontal"
+          onContextMenu={(e) => {
+            console.log(e)
+            if (typeof document.hasFocus === "function" && !document.hasFocus())
+              return
+            e.preventDefault()
+            setAnchorPoint({ x: e.clientX, y: e.clientY })
+            setOpen(true)
+          }}
+        >
+          <ControlledMenu
+            anchorPoint={anchorPoint}
+            state={isOpen ? "open" : "closed"}
+            direction="right"
+            onClose={() => setOpen(false)}
+          >
+            <MenuItem onClick={handleNewConnectionButtonClick}>
+              New Connection
+            </MenuItem>
+            <MenuItem onClick={() => window.location.reload()}>
+              Refresh
+            </MenuItem>
+            <MenuItem
+              onClick={() => {
+                debugger
+              }}
             >
-              <MenuItem onClick={handleNewConnectionButtonClick}>
-                New Connection
-              </MenuItem>
-              <MenuItem onClick={() => window.location.reload()}>
-                Refresh
-              </MenuItem>
-            </ControlledMenu>
+              Open Console
+            </MenuItem>
+          </ControlledMenu>
+          <ResizablePanel defaultSize={25} className="min-w-[200px]">
             <Dialog
               open={showEditConnectionDialog}
               onOpenChange={setShowEditConnectionDialog}
@@ -322,20 +378,36 @@ const DashboardPage = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Sidebar
-              menuList={menulist}
-              onContextMenu={(e) => {
-                console.log(e)
-                if (
-                  typeof document.hasFocus === "function" &&
-                  !document.hasFocus()
-                )
-                  return
-                // e.preventDefault()
-                setAnchorPoint({ x: e.clientX, y: e.clientY })
-                setOpen(true)
-              }}
-            />
+            <Dialog
+              open={showSaveQueryDialog}
+              onOpenChange={setShowSaveQueryDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Save Query</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to save the query?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSaveQueryButtonClick}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Sidebar menuList={menulist} />
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize={75} className="min-w-[200px]">

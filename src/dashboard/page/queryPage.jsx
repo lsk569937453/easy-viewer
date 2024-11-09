@@ -3,7 +3,7 @@ import AceEditor from "react-ace"
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
 
-import { useEffect, useRef, useState } from "react"
+import { useContext, useEffect, useRef, useState } from "react"
 
 import {
   ResizableHandle,
@@ -12,19 +12,39 @@ import {
 } from "@/components/ui/resizable"
 
 import { DataTable } from "../../dashboard/components/table"
+import { SidebarContext } from "../page.jsx"
 import DataPage from "./dataPage"
 
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
 
+import { ta } from "date-fns/locale"
 import { useHotkeys } from "react-hotkeys-hook"
 
 const QueryPage = ({ node, setTabsState, tabIndex }) => {
   const [sqlOfQuqery, setSqlOfQuery] = useState("")
   const textAreaRef = useRef(null)
-
+  const { event, setShowSaveQueryDialog, handleRemoveButton } =
+    useContext(SidebarContext)
   //it is used to communicate with the child of datapage
   const [clickFlag, setClickFlag] = useState(false)
+  const hasMounted = useRef(false)
+
+  useEffect(() => {
+    if (hasMounted.current) {
+      const { type, index } = event
+      if (index == tabIndex) {
+        const saveSync = async () => {
+          await handleOnSave()
+          setShowSaveQueryDialog(false)
+          handleRemoveButton(index)
+        }
+        saveSync()
+      }
+    } else {
+      hasMounted.current = true
+    }
+  }, [event])
   useHotkeys("ctrl+s", () => handleOnSave(), {})
   const handleEditorLoad = (editor) => {
     // Add the custom save command
@@ -34,7 +54,7 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
       exec: (editor) => handleOnSave(),
     })
   }
-  const handleOnSave = () => {
+  const handleOnSave = async () => {
     console.log("ctrl+s")
     setTabsState((prevTabsState) =>
       prevTabsState.filter((tab) => tab !== tabIndex)
@@ -53,7 +73,7 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
 
   return (
     <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={25}>
+      <ResizablePanel defaultSize={25} className="min-h-[200px]">
         <div className="flex h-full flex-col items-start justify-start">
           <div
             className="flex cursor-pointer flex-row items-start p-2 text-muted"

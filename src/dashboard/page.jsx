@@ -5,9 +5,17 @@ import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
 import { useTranslation } from "react-i18next"
 
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"
+
 import { CreateLinkDialog } from "./menu/createLinkDialog"
 
 import "@szhsin/react-menu/dist/index.css"
+
+import { event } from "@tauri-apps/api"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -42,6 +50,9 @@ export const SidebarContext = createContext({
   setShowDeleteConnectionDialog: () => {},
   setShowEditConnectionDialog: () => {},
   setIsSave: () => {},
+  setShowSaveQueryDialog: () => {},
+  handleRemoveButton: () => {},
+  event: {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -53,6 +64,9 @@ const DashboardPage = () => {
   const [showQueryLoading, setShowQueryLoading] = useState(false)
   const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
     useState(false)
+  const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
+  const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
+  const [event, setEvent] = useState({})
   const [queryName, setQueryName] = useState("")
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
@@ -118,6 +132,10 @@ const DashboardPage = () => {
     setTabValue(nextType)
     setPageDataArray([...pageDataArray])
   }
+  const handleRemoveWithoutSaveButtonClick = (index) => {
+    setShowSaveQueryDialog(true)
+    setSaveQueryTabIndex(index)
+  }
   const handleQuerySaveClick = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("save_query", {
@@ -148,6 +166,12 @@ const DashboardPage = () => {
       setMenulist(updatedData)
     }
   }
+  const handleSaveQueryButtonClick = async () => {
+    setEvent({
+      type: 0,
+      index: saveQueryTabIndex,
+    })
+  }
   const renderComponent = () => {
     return (
       <Tabs
@@ -169,20 +193,38 @@ const DashboardPage = () => {
                     <p className="grow"> {item.service}</p>
                   </div>
                   {tabsState.includes(index) && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      onClick={() => {
-                        handleRemoveButton(index)
-                      }}
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-                    </svg>
+                    <div class="group absolute  right-2">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                      </svg>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        onClick={() => {
+                          handleRemoveWithoutSaveButtonClick(index)
+                        }}
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M18 6l-12 12" />
+                        <path d="M6 6l12 12" />
+                      </svg>
+                    </div>
                   )}
                   {!tabsState.includes(index) && (
                     <svg
@@ -243,15 +285,18 @@ const DashboardPage = () => {
           setShowDeleteConnectionDialog,
           setShowEditConnectionDialog,
           setIsSave,
+          event,
+          setShowSaveQueryDialog,
+          handleRemoveButton,
         }}
       >
-        <div
-          className="grid h-full grid-cols-10 divide-x divide-foreground/30  overflow-hidden"
+        <ResizablePanelGroup
+          direction="horizontal"
           onContextMenu={(e) => {
             console.log(e)
             if (typeof document.hasFocus === "function" && !document.hasFocus())
               return
-            // e.preventDefault()
+            e.preventDefault()
             setAnchorPoint({ x: e.clientX, y: e.clientY })
             setOpen(true)
           }}
@@ -268,69 +313,109 @@ const DashboardPage = () => {
             <MenuItem onClick={() => window.location.reload()}>
               Refresh
             </MenuItem>
+            <MenuItem
+              onClick={() => {
+                debugger
+              }}
+            >
+              Open Console
+            </MenuItem>
           </ControlledMenu>
-          <Dialog
-            open={showEditConnectionDialog}
-            onOpenChange={setShowEditConnectionDialog}
-          >
-            <CreateLinkDialog
-              baseCongfigId={baseConfigId}
-              isSave={isSave}
-              isOpen={showEditConnectionDialog}
-            />
-          </Dialog>
-          <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
-            <DialogContent className="w-30 bg-slate-200">
-              <DialogTitle>创建新的Query</DialogTitle>
-              <div className="flex flex-col gap-4 p-4">
-                <div className="flex flex-row items-center justify-center">
-                  <p className="flex-[1]">Name:</p>
-                  <input
-                    className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-                    value={queryName}
-                    onChange={(e) => setQueryName(e.target.value)}
-                  />
-                </div>
-                <Button onClick={handleQuerySaveClick}> Save</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Dialog
-            open={showDeleteConnectionDialog}
-            onOpenChange={setShowDeleteConnectionDialog}
-          >
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Delete</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to delete this connection?
-                </DialogDescription>
-              </DialogHeader>
-
-              <DialogFooter className="sm:justify-end">
-                <DialogClose asChild>
-                  <div className="flex flex-row items-center justify-center gap-2">
-                    <Button type="button" variant="secondary">
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={handleDeleteConnectionClick}
-                    >
-                      Delete
-                    </Button>
+          <ResizablePanel defaultSize={25} className="min-w-[200px]">
+            <Dialog
+              open={showEditConnectionDialog}
+              onOpenChange={setShowEditConnectionDialog}
+            >
+              <CreateLinkDialog
+                baseCongfigId={baseConfigId}
+                isSave={isSave}
+                isOpen={showEditConnectionDialog}
+              />
+            </Dialog>
+            <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>
+              <DialogContent className="w-30 bg-slate-200">
+                <DialogTitle>创建新的Query</DialogTitle>
+                <div className="flex flex-col gap-4 p-4">
+                  <div className="flex flex-row items-center justify-center">
+                    <p className="flex-[1]">Name:</p>
+                    <input
+                      className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                      value={queryName}
+                      onChange={(e) => setQueryName(e.target.value)}
+                    />
                   </div>
-                </DialogClose>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Sidebar menuList={menulist} />
+                  <Button onClick={handleQuerySaveClick}> Save</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={showDeleteConnectionDialog}
+              onOpenChange={setShowDeleteConnectionDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Delete</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this connection?
+                  </DialogDescription>
+                </DialogHeader>
 
-          <div className="col-span-8 h-full w-full">
-            {pageDataArray.length > 0 ? renderComponent() : ""}
-          </div>
-        </div>
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDeleteConnectionClick}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={showSaveQueryDialog}
+              onOpenChange={setShowSaveQueryDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Save Query</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to save the query?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSaveQueryButtonClick}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Sidebar menuList={menulist} />
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel defaultSize={75} className="min-w-[200px]">
+            <div className="col-span-8 h-full w-full">
+              {pageDataArray.length > 0 ? renderComponent() : ""}
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </SidebarContext.Provider>
     </>
   )

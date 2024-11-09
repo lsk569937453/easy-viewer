@@ -11,6 +11,9 @@ impl SqlParseResult {
     pub fn new(sql: String) -> Result<SqlParseResult, anyhow::Error> {
         let dialect = GenericDialect {};
         let ast = Parser::parse_sql(&dialect, &sql)?;
+        if ast.is_empty() {
+            return Err(anyhow::anyhow!("Invalid SQL"));
+        }
         Ok(SqlParseResult { ast })
     }
     pub fn is_simple_select(&self) -> Result<Option<String>, anyhow::Error> {

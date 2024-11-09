@@ -18,28 +18,50 @@ import DataPage from "./dataPage"
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
 
-import { ta } from "date-fns/locale"
+import { invoke } from "@tauri-apps/api/core"
+import { sq, ta } from "date-fns/locale"
 import { useHotkeys } from "react-hotkeys-hook"
 
-const QueryPage = ({ node, setTabsState, tabIndex }) => {
-  const [sqlOfQuqery, setSqlOfQuery] = useState("")
+import { getRootNode } from "../../lib/jsx-utils.js"
+
+const QueryPage = ({
+  node,
+  tabIndex,
+  defaltSql = "",
+  queryName,
+  firstCreate = true,
+}) => {
+  const [sqlOfQuqery, setSqlOfQuery] = useState(defaltSql)
   const textAreaRef = useRef(null)
-  const { event, setShowSaveQueryDialog, handleRemoveButton } =
+  const { event, setShowSaveQueryDialog, handleRemoveButton, setTabsState } =
     useContext(SidebarContext)
-  //it is used to communicate with the child of datapage
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
+  useEffect(() => {
+    if (!firstCreate) {
+      loadQuery()
+    }
+  }, [firstCreate])
 
   useEffect(() => {
     if (hasMounted.current) {
       const { type, index } = event
       if (index == tabIndex) {
-        const saveSync = async () => {
-          await handleOnSave()
+        //save the query
+        if (type == 0) {
+          const saveSync = async () => {
+            await handleOnSave()
+            setShowSaveQueryDialog(false)
+            handleRemoveButton(index)
+          }
+          saveSync()
+        } else {
+          setTabsState((prevTabsState) =>
+            prevTabsState.filter((tab) => tab !== tabIndex)
+          )
           setShowSaveQueryDialog(false)
           handleRemoveButton(index)
         }
-        saveSync()
       }
     } else {
       hasMounted.current = true
@@ -51,16 +73,47 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
     editor.commands.addCommand({
       name: "save",
       bindKey: { win: "Ctrl-S", mac: "Cmd-S" },
-      exec: (editor) => handleOnSave(),
+      exec: (editor) => handleOnEditorSave(editor),
     })
   }
+  const handleOnEditorSave = async (editor) => {
+    let baseConfigId = getRootNode(node).data.baseConfigId
+    await invoke("save_query", {
+      connectionId: baseConfigId,
+      queryName: queryName,
+      sql: editor.getValue(),
+    })
+    setTabsState((prevTabsState) =>
+      prevTabsState.filter((tab) => tab !== tabIndex)
+    )
+  }
+  const loadQuery = async () => {
+    let baseConfigId = getRootNode(node).data.baseConfigId
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_query", {
+        connectionId: baseConfigId,
+        queryName: queryName,
+      })
+    )
+    if (response_code == 0) {
+      setSqlOfQuery(response_msg)
+    }
+  }
   const handleOnSave = async () => {
-    console.log("ctrl+s")
+    console.log("ctrl+s", sqlOfQuqery, node)
+    let baseConfigId = getRootNode(node).data.baseConfigId
+    await invoke("save_query", {
+      connectionId: baseConfigId,
+      queryName: queryName,
+      sql: sqlOfQuqery,
+    })
     setTabsState((prevTabsState) =>
       prevTabsState.filter((tab) => tab !== tabIndex)
     )
   }
   const handleOnChange = (sql) => {
+    console.log(sql)
     setSqlOfQuery(sql)
     setTabsState((prevState) => {
       // Check if tabIndex is already in the array

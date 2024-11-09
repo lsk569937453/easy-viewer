@@ -131,6 +131,7 @@ const CreateLinkDialog = ({
           {currentLinkType === "mysql" && (
             <MysqlConfigComponent
               connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
               initialHost={
                 connectionData?.base_config_enum?.mysql?.config?.host ||
                 "localhost"

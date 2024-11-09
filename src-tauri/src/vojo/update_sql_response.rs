@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-
 #[derive(Deserialize, Serialize)]
 pub struct UpdateSqlResponse {
     pub response_list: Vec<UpdateSqlResponseItem>,

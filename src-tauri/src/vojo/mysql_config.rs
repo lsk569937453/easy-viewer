@@ -153,17 +153,26 @@ WHERE
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-        let database_name = level_infos[1].config_value.clone();
-        let table_name = level_infos[3].config_value.clone();
-
         let mut conn = MySqlConnection::connect(&connection_url).await?;
-        let use_database_sql = format!("use {}", database_name);
-        info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
-        info!("sql: {}", sql);
 
-        let sql_parse_result = SqlParseResult::new(sql.clone())?;
-        let is_simple_select_option = sql_parse_result.is_simple_select()?;
+        if level_infos.len() >= 2 {
+            let database_name = level_infos[1].config_value.clone();
+
+            let use_database_sql = format!("use {}", database_name);
+            info!("use_database_sql: {}", use_database_sql);
+            conn.execute(&*use_database_sql).await?;
+        }
+        info!("sql: {}", sql);
+        let should_parse_sql = !sql.contains("CREATE DATABASE");
+        let (is_simple_select_option, has_multi_rows) = if should_parse_sql {
+            let sql_parse_result = SqlParseResult::new(sql.clone())?;
+            (
+                sql_parse_result.is_simple_select()?,
+                sql_parse_result.has_multiple_rows()?,
+            )
+        } else {
+            (None, false)
+        };
         let primary_column_option = if let Some(table_name) = &is_simple_select_option {
             let sql = format!(r#"show columns from {}  where `Key` = "PRI""#, table_name);
             let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
@@ -176,7 +185,8 @@ WHERE
         } else {
             None
         };
-        let has_multi_rows = sql_parse_result.has_multiple_rows()?;
+
+        info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
             let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
             let headers = vec![
@@ -361,8 +371,6 @@ WHERE
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-        let database_name = level_infos[1].config_value.clone();
-        let table_name = level_infos[3].config_value.clone();
 
         let row_option =
             sqlx::query("select words,datatime from complete_words where connection_id=?1")

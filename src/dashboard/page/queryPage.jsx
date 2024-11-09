@@ -73,7 +73,7 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
 
   return (
     <ResizablePanelGroup direction="vertical">
-      <ResizablePanel defaultSize={25} className="min-h-[200px]">
+      <ResizablePanel defaultSize={50} className="min-h-[200px]">
         <div className="flex h-full flex-col items-start justify-start">
           <div
             className="flex cursor-pointer flex-row items-start p-2 text-muted"
@@ -111,7 +111,7 @@ const QueryPage = ({ node, setTabsState, tabIndex }) => {
         </div>
       </ResizablePanel>
       <ResizableHandle />
-      <ResizablePanel defaultSize={75}>
+      <ResizablePanel defaultSize={50} className="min-h-[200px]">
         <div className=" h-full w-full items-center justify-center">
           <DataPage
             node={node}

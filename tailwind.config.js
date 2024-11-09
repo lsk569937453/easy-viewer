@@ -49,7 +49,6 @@ module.exports = {
         searchMarkerColor: {
           DEFAULT: "hsl(var(--searchMarkerColor))",
         },
-        
       },
       borderRadius: {
         lg: `var(--radius)`,

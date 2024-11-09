@@ -54,7 +54,7 @@ const IconDiv = ({ node }) => {
               strokeWidth={0}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="icon icon-tabler icons-tabler-outline icon-tabler-brand-mysql fill-slate-50 flex-none"
+              className="icon icon-tabler icons-tabler-outline icon-tabler-brand-mysql flex-none fill-slate-50"
             >
               <path
                 stroke="none"
@@ -69,7 +69,7 @@ const IconDiv = ({ node }) => {
               <path d="M9 7h.01" />
             </svg>
           )}
-          <p className="text-sm flex-none">{node.data.name}</p>
+          <p className="flex-none text-sm">{node.data.name}</p>
 
           <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-primary-light ">
             <svg
@@ -82,7 +82,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -102,7 +102,7 @@ const IconDiv = ({ node }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
                     onClick={handleConnectionRemoveClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -135,7 +135,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M12 5l0 14" />
@@ -168,7 +168,7 @@ const IconDiv = ({ node }) => {
               />
             </svg>
           )}
-          <p className="text-sm flex-none">{node.data.name}</p>
+          <p className="flex-none text-sm">{node.data.name}</p>
 
           <div className="absolute right-0 ml-auto flex flex-row  group-hover/item:bg-primary-light">
             <svg
@@ -181,7 +181,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -201,7 +201,7 @@ const IconDiv = ({ node }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
                     onClick={handleConnectionRemoveClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -234,7 +234,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M12 5l0 14" />
@@ -334,7 +334,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible group-hover/item:visible group-hover/item:hover:bg-accent "
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor "
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -353,7 +353,7 @@ const IconDiv = ({ node }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-accent "
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor "
                     onClick={handleNewQueryClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
@@ -412,7 +412,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-accent"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -431,7 +431,7 @@ const IconDiv = ({ node }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-accent"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor"
                     onClick={handleNewQueryClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />

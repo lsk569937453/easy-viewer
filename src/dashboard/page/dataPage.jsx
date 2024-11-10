@@ -537,6 +537,7 @@ export default function DataPage({
           size="icon"
           className="h-full w-7 border-none hover:bg-searchMarkerColor"
           onClick={() => exeSql()}
+          disabled={showLoading}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -673,15 +674,15 @@ export default function DataPage({
             <svg
               class="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
               xmlns="http://www.w3.org/2000/svg"
-              fill="none"
               viewBox="0 0 24 24"
+              fill="white"
             >
               <circle
                 class="opacity-25"
                 cx="12"
                 cy="12"
                 r="10"
-                stroke="currentColor"
+                stroke="red"
                 stroke-width="4"
               ></circle>
               <path
@@ -690,7 +691,7 @@ export default function DataPage({
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <p className="font-bold text-white">Loading</p>
+            <p className="font-bold ">Loading</p>
           </div>
         </div>
       </div>

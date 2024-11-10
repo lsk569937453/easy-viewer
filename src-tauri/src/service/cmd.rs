@@ -17,6 +17,7 @@ use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
 use crate::service::query_service::get_query_with_error;
+use crate::service::query_service::rename_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
@@ -169,6 +170,21 @@ pub async fn save_query(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
+    info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn rename_query(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    old_query_name: String,
+    new_query_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        rename_query_with_error(state, connection_id, old_query_name, new_query_name).await
+    );
     info!("exe_sql: {:?}", time.elapsed());
     Ok(res)
 }

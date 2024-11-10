@@ -32,11 +32,16 @@ const QueryPage = ({
   firstCreate = true,
 }) => {
   const [sqlOfQuqery, setSqlOfQuery] = useState(defaltSql)
+  const [currentQueryName, setCurrentQueryName] = useState(queryName)
   const textAreaRef = useRef(null)
   const { event, setShowSaveQueryDialog, handleRemoveButton, setTabsState } =
     useContext(SidebarContext)
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
+
+  useEffect(() => {
+    setCurrentQueryName(queryName)
+  }, [queryName])
   useEffect(() => {
     if (!firstCreate) {
       loadQuery()
@@ -80,7 +85,7 @@ const QueryPage = ({
     let baseConfigId = getRootNode(node).data.baseConfigId
     await invoke("save_query", {
       connectionId: baseConfigId,
-      queryName: queryName,
+      queryName: currentQueryName,
       sql: editor.getValue(),
     })
     setTabsState((prevTabsState) =>
@@ -93,7 +98,7 @@ const QueryPage = ({
     const { response_code, response_msg } = JSON.parse(
       await invoke("get_query", {
         connectionId: baseConfigId,
-        queryName: queryName,
+        queryName: currentQueryName,
       })
     )
     if (response_code == 0) {
@@ -105,7 +110,7 @@ const QueryPage = ({
     let baseConfigId = getRootNode(node).data.baseConfigId
     await invoke("save_query", {
       connectionId: baseConfigId,
-      queryName: queryName,
+      queryName: currentQueryName,
       sql: sqlOfQuqery,
     })
     setTabsState((prevTabsState) =>

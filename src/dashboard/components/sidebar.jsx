@@ -43,12 +43,12 @@ const Sidebar = ({ menuList }) => {
   }, [menuList])
 
   return (
-    <div className={"top-0 col-span-2  flex  h-full "} ref={ref}>
+    <div className={" top-0  col-span-2  flex h-full "} ref={ref}>
       <Tree
         data={currentMenuList}
         ref={treeRef}
         width={"100%"}
-        className="h-[calc(100vh-40px)] overflow-y-auto overscroll-x-none "
+        // className=" scrollbar h-[calc(100vh-40px)] overflow-y-auto overscroll-x-none"
         indent={10}
         height={containerHeight}
       >

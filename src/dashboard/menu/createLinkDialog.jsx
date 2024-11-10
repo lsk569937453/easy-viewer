@@ -127,7 +127,7 @@ const CreateLinkDialog = ({
               </SelectContent>
             </Select>
           </div>
-
+          \
           {currentLinkType === "mysql" && (
             <MysqlConfigComponent
               connectionName={currentLinkName}
@@ -140,7 +140,7 @@ const CreateLinkDialog = ({
                 connectionData?.base_config_enum?.mysql?.config?.port || "3306"
               }
               initialDatabase={
-                connectionData?.base_config_enum?.mysql?.config?.database ||
+                connectionData?.base_config_enum?.mysql?.config?.database ??
                 "mydb"
               }
               initialUsername={

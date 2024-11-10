@@ -35,6 +35,8 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools"
 import useResizeObserver from "use-resize-observer"
 
+import { getLastSQLStatement } from "../../lib/jsx-utils"
+
 import "ace-builds/src-noconflict/ext-language_tools"
 
 import { tr } from "date-fns/locale"
@@ -135,6 +137,14 @@ export default function DataPage({
       sourceHeader,
       tableNameFromSql
     )
+    if (sqlStatements.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Update Sql Error",
+        description: "Can not update as no primary key",
+      })
+      return
+    }
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
@@ -222,9 +232,14 @@ export default function DataPage({
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    console.log(listNodeInfoReq, sql)
+    let finalSql = getLastSQLStatement(sql)
+    console.log(listNodeInfoReq, finalSql)
+
     const { response_code, response_msg } = JSON.parse(
-      await invoke("exe_sql", { listNodeInfoReq: listNodeInfoReq, sql: sql })
+      await invoke("exe_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+        sql: finalSql,
+      })
     )
     clearTimeout(timer)
 

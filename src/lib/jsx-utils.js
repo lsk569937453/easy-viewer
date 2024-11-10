@@ -64,3 +64,12 @@ export function getQueryName() {
   const queryName = `New_Query_${timestamp}`
   return queryName
 }
+export function getLastSQLStatement(sql) {
+  // Split the SQL string by semicolons and filter out empty statements
+  let statements = sql
+    .split(";")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+  // Return the last statement
+  return statements[statements.length - 1]
+}

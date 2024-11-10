@@ -64,3 +64,18 @@ pub async fn rename_query_with_error(
 
     Ok(())
 }
+pub async fn remove_query_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    query_name: String,
+) -> Result<String, anyhow::Error> {
+    info!("remove_query_with_error:{},{}", connection_id, query_name,);
+
+    sqlx::query(r#"DELETE FROM sql_query WHERE connection_id = ?1 AND query_name = ?2"#)
+        .bind(connection_id)
+        .bind(query_name)
+        .execute(&state.pool)
+        .await?;
+
+    Ok("".to_string())
+}

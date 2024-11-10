@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useToast } from "@/components/ui/use-toast"
 
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
@@ -45,6 +46,7 @@ export const SidebarContext = createContext({
   handleAddPageClick: () => {},
   setShowQueryLoading: () => {},
   setQueryName: () => {},
+  setNewQueryName: () => {},
   setBaseConfigId: () => {},
   setNodeForUpdate: () => {},
   setShowDeleteConnectionDialog: () => {},
@@ -53,12 +55,14 @@ export const SidebarContext = createContext({
   setShowSaveQueryDialog: () => {},
   handleRemoveButton: () => {},
   setTabsState: () => {},
-
+  setShowRenameQueryDialog: () => {},
+  setShowRemoveQueryDialog: () => {},
   event: {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+  const { toast } = useToast()
 
   const [menulist, setMenulist] = useState([])
   const [pageDataArray, setPageDataArray] = useState([])
@@ -66,10 +70,13 @@ const DashboardPage = () => {
   const [showQueryLoading, setShowQueryLoading] = useState(false)
   const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
     useState(false)
+  const [showRemoveQueryDialog, setShowRemoveQueryDialog] = useState(false)
   const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
+  const [showRenameQueryDialog, setShowRenameQueryDialog] = useState(false)
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
   const [queryName, setQueryName] = useState("")
+  const [newQueryName, setNewQueryName] = useState("")
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
   const [isOpen, setOpen] = useState(false)
@@ -153,6 +160,35 @@ const DashboardPage = () => {
     }
     setShowQueryLoading(false)
   }
+  const handleQueryRenameClick = async () => {
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("rename_query", {
+        connectionId: Number(baseConfigId),
+        oldQueryName: queryName,
+        newQueryName: newQueryName,
+      })
+    )
+    if (response_code == 0) {
+      console.log("rename_query success")
+      setShowRenameQueryDialog(false)
+      clickNode(nodeForUpdate, menulist, setMenulist)
+      const updatedArray = pageDataArray.map((item) => {
+        if (item.service === queryName) {
+          return { ...item, tabName: newQueryName }
+        }
+        return item
+      })
+      setPageDataArray(updatedArray)
+      setQueryName(newQueryName)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: response_msg,
+      })
+    }
+    setShowRenameQueryDialog(false)
+  }
   const handleDeleteConnectionClick = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("delete_base_config", {
@@ -198,7 +234,7 @@ const DashboardPage = () => {
                 <div className="relative flex flex-row items-center justify-center gap-1 px-10">
                   <div className="flex flex-row items-start justify-start gap-1">
                     <div className="flex-none"> {item.icon}</div>
-                    <p className="grow"> {item.service}</p>
+                    <p className="grow"> {item.tabName}</p>
                   </div>
                   {tabsState.includes(index) && (
                     <div class="group absolute  right-2">
@@ -269,7 +305,7 @@ const DashboardPage = () => {
               forceMount={true}
               hidden={item.service !== tabValue}
             >
-              {item.render(index)}
+              {item.render(index, item.tabName)}
             </TabsContent>
           )
         })}
@@ -288,6 +324,7 @@ const DashboardPage = () => {
           handleAddPageClick,
           setShowQueryLoading,
           setQueryName,
+          setNewQueryName,
           setBaseConfigId,
           setNodeForUpdate,
           setShowDeleteConnectionDialog,
@@ -297,6 +334,8 @@ const DashboardPage = () => {
           setShowSaveQueryDialog,
           handleRemoveButton,
           setTabsState,
+          setShowRenameQueryDialog,
+          setShowRemoveQueryDialog,
         }}
       >
         <ResizablePanelGroup
@@ -351,6 +390,25 @@ const DashboardPage = () => {
               </DialogContent>
             </Dialog>
             <Dialog
+              open={showRenameQueryDialog}
+              onOpenChange={setShowRenameQueryDialog}
+            >
+              <DialogContent className="w-30 bg-slate-200">
+                <DialogTitle>Rename Query</DialogTitle>
+                <div className="flex flex-col gap-4 p-4">
+                  <div className="flex flex-row items-center justify-center">
+                    <p className="flex-[1]">Name:</p>
+                    <input
+                      className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                      value={newQueryName}
+                      onChange={(e) => setNewQueryName(e.target.value)}
+                    />
+                  </div>
+                  <Button onClick={handleQueryRenameClick}> Rename</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Dialog
               open={showDeleteConnectionDialog}
               onOpenChange={setShowDeleteConnectionDialog}
             >
@@ -359,6 +417,36 @@ const DashboardPage = () => {
                   <DialogTitle>Delete</DialogTitle>
                   <DialogDescription>
                     Are you sure you want to delete this connection?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <DialogFooter className="sm:justify-end">
+                  <DialogClose asChild>
+                    <div className="flex flex-row items-center justify-center gap-2">
+                      <Button type="button" variant="secondary">
+                        Cancel
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={handleDeleteConnectionClick}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </DialogClose>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={showRemoveQueryDialog}
+              onOpenChange={setShowRemoveQueryDialog}
+            >
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Delete</DialogTitle>
+                  <DialogDescription>
+                    Are you sure you want to delete this query?
                   </DialogDescription>
                 </DialogHeader>
 

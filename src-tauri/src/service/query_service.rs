@@ -43,3 +43,24 @@ pub async fn get_query_with_error(
 
     Ok(sql)
 }
+pub async fn rename_query_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    old_query_name: String,
+    new_query_name: String,
+) -> Result<(), anyhow::Error> {
+    info!("{}|{}|{}", connection_id, old_query_name, new_query_name);
+    sqlx::query(
+        r#"
+            UPDATE sql_query 
+            SET query_name = ?1 
+            WHERE connection_id=?2 and query_name = ?3     "#,
+    )
+    .bind(new_query_name)
+    .bind(connection_id)
+    .bind(old_query_name)
+    .execute(&state.pool)
+    .await?;
+
+    Ok(())
+}

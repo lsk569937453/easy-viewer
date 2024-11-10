@@ -99,6 +99,7 @@ async fn main() -> Result<(), anyhow::Error> {
             list_node_info,
             exe_sql,
             save_query,
+            rename_query,
             get_query,
             delete_base_config,
             get_ddl,

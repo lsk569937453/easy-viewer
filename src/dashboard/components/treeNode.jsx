@@ -84,6 +84,7 @@ const TreeNode = ({
         ),
         render: () => <TablePage node={node} />,
         service: node.data.name,
+        tabName: node.data.name,
       })
     }
     console.log(node.data.iconName === "singleQuery")
@@ -113,15 +114,17 @@ const TreeNode = ({
             <path d="M14 20l1.5 1.5" />
           </svg>
         ),
-        render: (tabIndex) => (
+
+        render: (tabIndex, queryName) => (
           <QueryPage
             node={node}
             tabIndex={tabIndex}
-            queryName={node.data.name}
+            queryName={queryName}
             firstCreate={false}
           />
         ),
         service: node.data.name,
+        tabName: node.data.name,
       })
     }
   }

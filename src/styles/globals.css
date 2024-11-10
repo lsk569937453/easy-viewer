@@ -104,8 +104,8 @@
 
 @layer utilities {
   .scrollbar::-webkit-scrollbar {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
   }
 
   .scrollbar::-webkit-scrollbar-track {
@@ -124,12 +124,12 @@
   }
 
   /* .scrollbar::-webkit-scrollbar-button:vertical:decrement {
-        background-color: red;
-    }
+    background-color: red;
+  }
 
-    .scrollbar::-webkit-scrollbar-button:vertical:increment {
-        background-color: red;
-    } */
+  .scrollbar::-webkit-scrollbar-button:vertical:increment {
+    background-color: red;
+  } */
 }
 
 html {

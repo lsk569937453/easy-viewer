@@ -17,6 +17,7 @@ use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
 use crate::service::query_service::get_query_with_error;
+use crate::service::query_service::remove_query_with_error;
 use crate::service::query_service::rename_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
@@ -135,7 +136,7 @@ pub async fn update_sql(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(update_sql_with_error(state, list_node_info_req, sqls).await);
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("update_sql: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]
@@ -146,7 +147,7 @@ pub async fn show_columns(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(show_columns_with_error(state, list_node_info_req).await);
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("show_columns: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]
@@ -157,7 +158,7 @@ pub async fn get_ddl(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(get_ddl_with_error(state, list_node_info_req).await);
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("get_ddl: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]
@@ -170,7 +171,7 @@ pub async fn save_query(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]
@@ -185,7 +186,19 @@ pub async fn rename_query(
     let res = handle_response!(
         rename_query_with_error(state, connection_id, old_query_name, new_query_name).await
     );
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("rename_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn remove_query(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    query_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name).await);
+    info!("remove_query: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]
@@ -197,6 +210,6 @@ pub async fn get_query(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(get_query_with_error(state, connection_id, query_name).await);
-    info!("exe_sql: {:?}", time.elapsed());
+    info!("get_query: {:?}", time.elapsed());
     Ok(res)
 }

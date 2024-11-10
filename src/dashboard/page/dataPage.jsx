@@ -135,6 +135,14 @@ export default function DataPage({
       sourceHeader,
       tableNameFromSql
     )
+    if (sqlStatements.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Update Sql Error",
+        description: "Can not update as no primary key",
+      })
+      return
+    }
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }

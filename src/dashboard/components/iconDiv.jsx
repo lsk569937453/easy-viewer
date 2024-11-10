@@ -42,10 +42,12 @@ const IconDiv = ({ node }) => {
   }
   const handleQueryRemoveClick = (e) => {
     e.stopPropagation()
+    setQueryName(node.data.name)
     let rootNode = getRootNode(node)
 
     setBaseConfigId(rootNode.data.baseConfigId)
     setShowRemoveQueryDialog(true)
+    setNodeForUpdate(node.parent)
     console.log("handleQueryRemoveClick")
   }
   const handleRenameQueryClick = (e) => {

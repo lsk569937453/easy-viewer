@@ -204,6 +204,19 @@ const DashboardPage = () => {
       setMenulist(updatedData)
     }
   }
+  const handleRmoveQueryClick = async () => {
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("remove_query", {
+        baseConfigId: Number(baseConfigId),
+        queryName: queryName,
+      })
+    )
+    if (response_code == 0) {
+      console.log("删除成功")
+      setShowRemoveQueryDialog(false)
+      clickNode(nodeForUpdate, menulist, setMenulist)
+    }
+  }
   const handleSaveQueryButtonClick = async () => {
     setEvent({
       type: 0,
@@ -362,7 +375,7 @@ const DashboardPage = () => {
               Refresh
             </MenuItem>
           </ControlledMenu>
-          <ResizablePanel defaultSize={25} className="min-w-[200px]">
+          <ResizablePanel defaultSize={25} className=" min-w-[200px]">
             <Dialog
               open={showEditConnectionDialog}
               onOpenChange={setShowEditConnectionDialog}
@@ -459,7 +472,7 @@ const DashboardPage = () => {
                       <Button
                         type="button"
                         variant="destructive"
-                        onClick={handleDeleteConnectionClick}
+                        onClick={handleRmoveQueryClick}
                       >
                         Delete
                       </Button>

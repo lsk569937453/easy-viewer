@@ -100,6 +100,7 @@ async fn main() -> Result<(), anyhow::Error> {
             exe_sql,
             save_query,
             rename_query,
+            remove_query,
             get_query,
             delete_base_config,
             get_ddl,

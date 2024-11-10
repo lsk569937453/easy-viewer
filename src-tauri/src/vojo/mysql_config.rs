@@ -391,13 +391,17 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
         .fetch_all(&mut conn)
         .await?;
         let mut set = HashSet::new();
-        for database in database_rows {
-            let database_byte: Vec<u8> = database.try_get(0)?;
+        for database_row in database_rows {
+            let mut new_conn = MySqlConnection::connect(&connection_url).await?;
+
+            let database_byte: Vec<u8> = database_row.try_get(0)?;
             let database: String = String::from_utf8(database_byte)?;
             let use_database_sql = format!("use {}", database);
-            conn.execute(&*use_database_sql).await?;
+            new_conn.execute(&*use_database_sql).await?;
+
             set.insert(database.clone());
-            let table_rows = sqlx::query("show tables").fetch_all(&mut conn).await?;
+            let table_rows = sqlx::query("show tables").fetch_all(&mut new_conn).await?;
+            info!("table_rows: {},database: {}", table_rows.len(), database);
             for table in table_rows {
                 let table_bytes: Vec<u8> = table.try_get(0)?;
                 let table = String::from_utf8(table_bytes)?;
@@ -405,7 +409,7 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
 
                 let sql = format!("SHOW COLUMNS FROM `{}` ", table);
 
-                let column_row = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let column_row = sqlx::query(&sql).fetch_all(&mut new_conn).await?;
                 for item in column_row {
                     let columns: String = item.try_get(0)?;
                     set.insert(columns.clone());
@@ -413,6 +417,7 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
             }
         }
         let vec: Vec<String> = set.into_iter().collect();
+        info!("get_complete_words len: {}", vec.len());
         Ok(vec)
     }
 }

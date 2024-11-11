@@ -127,7 +127,7 @@ const CreateLinkDialog = ({
               </SelectContent>
             </Select>
           </div>
-          \
+
           {currentLinkType === "mysql" && (
             <MysqlConfigComponent
               connectionName={currentLinkName}

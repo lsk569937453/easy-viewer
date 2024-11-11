@@ -14,6 +14,7 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
+use crate::service::base_config_service::move_column_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
 use crate::service::query_service::get_query_with_error;
@@ -171,6 +172,19 @@ pub async fn save_query(
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
+    info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn move_column(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    move_direction: i32,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res =
+        handle_response!(move_column_with_error(state, list_node_info_req, move_direction).await);
     info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }

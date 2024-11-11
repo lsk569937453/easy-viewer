@@ -15,7 +15,7 @@ import { CreateLinkDialog } from "./menu/createLinkDialog"
 
 import "@szhsin/react-menu/dist/index.css"
 
-import { event } from "@tauri-apps/api"
+import { event, menu } from "@tauri-apps/api"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -63,6 +63,8 @@ export const SidebarContext = createContext({
   pageDataArray: [],
   event: {},
   tabsState: [],
+  menulist: [],
+  setMenulist: () => {},
   setPageDataArray: () => {},
   handleRemoveWithoutSaveButtonClick: () => {},
 })
@@ -269,6 +271,8 @@ const DashboardPage = () => {
           pageDataArray,
           setPageDataArray,
           handleRemoveWithoutSaveButtonClick,
+          menulist,
+          setMenulist,
         }}
       >
         <ResizablePanelGroup

@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { useToast } from "@/components/ui/use-toast"
 
 import {
+  getConnectionType,
   getCreateColumnAfterAnotherSql,
   getCreateColumnSql,
   getCreateTableSql,
@@ -1341,72 +1342,76 @@ const IconDiv = ({ node }) => {
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-            <Tooltip.Provider delayDuration={delayDuration}>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth}
-                    height={iconHeight}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={(e) => handleColumnMoveClick(e, -1)}
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M18 11l-6 -6" />
-                    <path d="M6 11l6 -6" />
-                  </svg>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
-                    sideOffset={5}
-                  >
-                    <p>Move Column Up</p>
-                    <Tooltip.Arrow className="fill-muted" />
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
-            <Tooltip.Provider delayDuration={delayDuration}>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth}
-                    height={iconHeight}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={(e) => handleColumnMoveClick(e, 1)}
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M18 13l-6 6" />
-                    <path d="M6 13l6 6" />
-                  </svg>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
-                    sideOffset={5}
-                  >
-                    <p>Move Column Down</p>
-                    <Tooltip.Arrow className="fill-muted" />
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
+            {getConnectionType(node) === 0 && (
+              <>
+                <Tooltip.Provider delayDuration={delayDuration}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={iconWidth}
+                        height={iconHeight}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                        onClick={(e) => handleColumnMoveClick(e, -1)}
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 5l0 14" />
+                        <path d="M18 11l-6 -6" />
+                        <path d="M6 11l6 -6" />
+                      </svg>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Move Column Up</p>
+                        <Tooltip.Arrow className="fill-muted" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+                <Tooltip.Provider delayDuration={delayDuration}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={iconWidth}
+                        height={iconHeight}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                        onClick={(e) => handleColumnMoveClick(e, 1)}
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 5l0 14" />
+                        <path d="M18 13l-6 6" />
+                        <path d="M6 13l6 6" />
+                      </svg>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Move Column Down</p>
+                        <Tooltip.Arrow className="fill-muted" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              </>
+            )}
           </div>
         </>
       ) : node.data.iconName === "column" ? (
@@ -1466,72 +1471,76 @@ const IconDiv = ({ node }) => {
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-            <Tooltip.Provider delayDuration={delayDuration}>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth}
-                    height={iconHeight}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={(e) => handleColumnMoveClick(e, -1)}
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M18 11l-6 -6" />
-                    <path d="M6 11l6 -6" />
-                  </svg>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
-                    sideOffset={5}
-                  >
-                    <p>Move Column Up</p>
-                    <Tooltip.Arrow className="fill-muted" />
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
-            <Tooltip.Provider delayDuration={delayDuration}>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth}
-                    height={iconHeight}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={(e) => handleColumnMoveClick(e, 1)}
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 5l0 14" />
-                    <path d="M18 13l-6 6" />
-                    <path d="M6 13l6 6" />
-                  </svg>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
-                    sideOffset={5}
-                  >
-                    <p>Move Column Down</p>
-                    <Tooltip.Arrow className="fill-muted" />
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
+            {getConnectionType(node) === 0 && (
+              <>
+                <Tooltip.Provider delayDuration={delayDuration}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={iconWidth}
+                        height={iconHeight}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-up group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                        onClick={(e) => handleColumnMoveClick(e, -1)}
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 5l0 14" />
+                        <path d="M18 11l-6 -6" />
+                        <path d="M6 11l6 -6" />
+                      </svg>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Move Column Up</p>
+                        <Tooltip.Arrow className="fill-muted" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+                <Tooltip.Provider delayDuration={delayDuration}>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={iconWidth}
+                        height={iconHeight}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-arrow-down group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                        onClick={(e) => handleColumnMoveClick(e, 1)}
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M12 5l0 14" />
+                        <path d="M18 13l-6 6" />
+                        <path d="M6 13l6 6" />
+                      </svg>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Move Column Down</p>
+                        <Tooltip.Arrow className="fill-muted" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              </>
+            )}
           </div>
         </>
       ) : node.data.iconName === "" ? (

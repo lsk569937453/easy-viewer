@@ -116,3 +116,7 @@ ALTER TABLE ${tableName}
     return sqlLiteCreateColumn
   }
 }
+export function getConnectionType(node) {
+  let rootNode = getRootNode(node)
+  return rootNode.data.connectionType
+}

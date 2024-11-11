@@ -40,7 +40,6 @@ import { getLevelInfos, uuid } from "../../lib/jsx-utils"
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
   const [rows, setRows] = useState([])
-  const [tableHeight, setTableHeight] = useState(window.innerHeight - 400)
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -120,13 +119,7 @@ const PropertiesColumnPage = ({ node }) => {
   }
 
   return (
-    <div
-      class="scrollbar relative  flex flex-col overflow-auto"
-      style={{
-        height: tableHeight,
-        overflow: "scroll",
-      }}
-    >
+    <div class="scrollbar relative  h-full w-full overflow-auto">
       <DataTable columns={header} data={rows} table={table} />
     </div>
   )

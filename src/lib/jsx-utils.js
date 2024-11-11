@@ -73,3 +73,20 @@ export function getLastSQLStatement(sql) {
   // Return the last statement
   return statements[statements.length - 1]
 }
+export function getCreateTableSql(node) {
+  let mysqlCreateTable = `CREATE TABLE table_name(  
+    id int NOT NULL PRIMARY KEY AUTO_INCREMENT COMMENT 'Primary Key',
+    create_time DATETIME COMMENT 'Create Time',
+    name VARCHAR(255)
+) COMMENT '';`
+  let sqlLiteCreate = `CREATE TABLE table_name(  
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    content TEXT
+);`
+  let rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 0) {
+    return mysqlCreateTable
+  } else if (rootNode.data.connectionType === 3) {
+    return sqlLiteCreate
+  }
+}

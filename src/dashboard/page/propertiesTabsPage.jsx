@@ -166,9 +166,9 @@ const PropertiesTabsPage = ({ node }) => {
         value="ddl"
         className="mt-2  h-full w-full  ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <div className="flex h-full w-full flex-col">
+        <div className=" h-full w-full ">
           <AceEditor
-            className="   min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className="   min-h-[22px] basis-11/12 	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             ref={editorRef}
             commands={beautify.commands}
             mode="sql"
@@ -190,7 +190,7 @@ const PropertiesTabsPage = ({ node }) => {
 
       <Tabs.Content
         value="column"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-2 h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <PropertiesColumnPage node={node} />
       </Tabs.Content>

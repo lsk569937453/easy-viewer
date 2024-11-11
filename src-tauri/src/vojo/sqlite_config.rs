@@ -138,6 +138,7 @@ impl SqliteConfig {
             None
         };
         let has_multi_rows = sql_parse_result.has_multiple_rows()?;
+        info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
             let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
             let headers = vec![

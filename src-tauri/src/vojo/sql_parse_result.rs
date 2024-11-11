@@ -72,6 +72,8 @@ impl SqlParseResult {
             Statement::Insert(_) => false,
             Statement::Update { .. } => false,
             Statement::Delete(_) => false,
+            Statement::CreateDatabase { .. } => false,
+            Statement::CreateTable { .. } => false,
 
             _ => true,
         };

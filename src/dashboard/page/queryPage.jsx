@@ -2,6 +2,7 @@ import AceEditor from "react-ace"
 
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
+import "ace-builds/src-noconflict/theme-xcode"
 
 import { useContext, useEffect, useRef, useState } from "react"
 
@@ -160,7 +161,7 @@ const QueryPage = ({
             onLoad={handleEditorLoad}
             enableLiveAutocompletion={true}
             showPrintMargin={false}
-            theme="iplastic"
+            theme="xcode"
             onChange={handleOnChange}
             name="UNIQUE_ID_OF_DIV"
             fontSize={16}

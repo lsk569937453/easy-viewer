@@ -11,6 +11,8 @@ import { invoke } from "@tauri-apps/api/core"
 import beautify from "ace-builds/src-noconflict/ext-beautify"
 import { set } from "date-fns"
 
+import { Button } from "@/components/ui/button"
+
 import { getLevelInfos, uuid } from "../../lib/jsx-utils"
 import DataPage from "./dataPage"
 import PropertiesColumnPage from "./propertiesColumnPage"
@@ -18,6 +20,8 @@ import PropertiesPage from "./propertiesPage"
 
 const PropertiesTabsPage = ({ node }) => {
   const [sql, setSql] = useState("select *from test limit 100")
+  const [tabValue, setTabValue] = useState("column")
+
   const editorRef = useRef()
 
   useEffect(() => {
@@ -42,7 +46,12 @@ const PropertiesTabsPage = ({ node }) => {
     }
   }
   return (
-    <Tabs.Root defaultValue="column" className="flex h-full w-full flex-col">
+    <Tabs.Root
+      defaultValue="column"
+      className="flex h-full w-full flex-col"
+      value={tabValue}
+      onValueChange={setTabValue}
+    >
       <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
         <Tabs.Trigger
           value="ddl"
@@ -155,31 +164,33 @@ const PropertiesTabsPage = ({ node }) => {
 
       <Tabs.Content
         value="ddl"
-        className="mt-2 h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-2  h-full w-full  ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
-        <AceEditor
-          className="   min-h-[22px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-          ref={editorRef}
-          commands={beautify.commands}
-          mode="sql"
-          height="100%"
-          width="100%"
-          showGutter={false}
-          enableBasicAutocompletion={true}
-          enableSnippets={true}
-          readOnly={true}
-          enableLiveAutocompletion={true}
-          showPrintMargin={false}
-          theme="xcode"
-          name="UNIQUE_ID_OF_DIV"
-          fontSize={16}
-          value={sql}
-        />
+        <div className=" h-full w-full ">
+          <AceEditor
+            className="   min-h-[22px] basis-11/12 	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            ref={editorRef}
+            commands={beautify.commands}
+            mode="sql"
+            height="100%"
+            width="100%"
+            showGutter={false}
+            enableBasicAutocompletion={true}
+            enableSnippets={true}
+            readOnly={true}
+            enableLiveAutocompletion={true}
+            showPrintMargin={false}
+            theme="xcode"
+            name="UNIQUE_ID_OF_DIV"
+            fontSize={16}
+            value={sql}
+          />
+        </div>
       </Tabs.Content>
 
       <Tabs.Content
         value="column"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-2 h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <PropertiesColumnPage node={node} />
       </Tabs.Content>

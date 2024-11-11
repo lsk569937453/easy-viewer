@@ -2,6 +2,7 @@ import AceEditor from "react-ace"
 
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
+import "ace-builds/src-noconflict/theme-xcode"
 
 import { useContext, useEffect, useRef, useState } from "react"
 
@@ -34,7 +35,7 @@ const QueryPage = ({
   const [sqlOfQuqery, setSqlOfQuery] = useState(defaltSql)
   const [currentQueryName, setCurrentQueryName] = useState(queryName)
   const textAreaRef = useRef(null)
-  const { event, setShowSaveQueryDialog, handleRemoveButton, setTabsState } =
+  const { event, setShowSaveQueryDialog, handleRemoveTabButton, setTabsState } =
     useContext(SidebarContext)
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
@@ -57,7 +58,7 @@ const QueryPage = ({
           const saveSync = async () => {
             await handleOnSave()
             setShowSaveQueryDialog(false)
-            handleRemoveButton(index)
+            handleRemoveTabButton(index)
           }
           saveSync()
         } else {
@@ -65,7 +66,7 @@ const QueryPage = ({
             prevTabsState.filter((tab) => tab !== tabIndex)
           )
           setShowSaveQueryDialog(false)
-          handleRemoveButton(index)
+          handleRemoveTabButton(index)
         }
       }
     } else {
@@ -160,7 +161,7 @@ const QueryPage = ({
             onLoad={handleEditorLoad}
             enableLiveAutocompletion={true}
             showPrintMargin={false}
-            theme="iplastic"
+            theme="xcode"
             onChange={handleOnChange}
             name="UNIQUE_ID_OF_DIV"
             fontSize={16}

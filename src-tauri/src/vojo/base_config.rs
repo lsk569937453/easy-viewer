@@ -82,6 +82,23 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn move_column(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        move_direction: i32,
+    ) -> Result<String, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .move_column(appstate, list_node_info_req, move_direction)
+                    .await?
+            }
+
+            _ => "".to_string(),
+        };
+        Ok(data)
+    }
     pub async fn get_complete_words(
         &self,
         list_node_info_req: ListNodeInfoReq,

@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::vec;
 
 use super::exe_sql_response::ExeSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
@@ -362,6 +363,71 @@ WHERE
         let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
 
         Ok(exe_sql_response)
+    }
+    pub async fn move_column(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        move_direction: i32,
+    ) -> Result<String, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+        let source_column_name = level_infos[5].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+
+        let sql = format!("show columns from {}", table_name);
+        info!("sql: {}", sql);
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let mut column_list = vec![];
+        for item in rows.iter() {
+            let columns_name: String = item.try_get(0)?;
+            let column_type_bytes: Vec<u8> = item.try_get(1)?;
+            let column_type: String = String::from_utf8_lossy(&column_type_bytes).to_string();
+
+            column_list.push((columns_name, column_type));
+        }
+        let first_element = column_list
+            .first()
+            .ok_or(anyhow!("Can not find first element"))?;
+        let last_element = column_list
+            .last()
+            .ok_or(anyhow!("Can not find last element"))?;
+        ensure!(
+            !(source_column_name == first_element.0 && move_direction == -1),
+            "The first column cannot be moved up."
+        );
+        ensure!(
+            !(source_column_name == last_element.0 && move_direction == 1),
+            "The last column cannot be moved down."
+        );
+        let source_index = column_list
+            .iter()
+            .position(|item| item.0 == source_column_name)
+            .ok_or(anyhow!("Can not find source column"))?;
+        let new_index = source_index as i32 + move_direction;
+        column_list.swap(source_index, new_index as usize);
+
+        let target_column = if new_index == 0 {
+            "FIRST".to_string()
+        } else {
+            format!("AFTER {}", column_list[new_index as usize - 1].0)
+        };
+
+        let alter_table_sql = format!(
+            "ALTER TABLE {} MODIFY COLUMN {} {} {}",
+            table_name, source_column_name, column_list[new_index as usize].1, target_column
+        );
+
+        info!("move_column sql: {}", alter_table_sql);
+        conn.execute(&*alter_table_sql).await?;
+        Ok("()".to_string())
     }
     pub async fn get_complete_words(
         &self,

@@ -103,3 +103,20 @@ ALTER TABLE ${tableName}
     return sqlLiteCreateColumn
   }
 }
+export function getCreateColumnAfterAnotherSql(node, tableName, column) {
+  let mysqlCreateColumn = `ALTER TABLE ${tableName} 
+    ADD COLUMN  [type] COMMENT '' AFTER \`${column}\`;`
+  let sqlLiteCreateColumn = `
+ALTER TABLE ${tableName} 
+    ADD COLUMN  [type];`
+  let rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 0) {
+    return mysqlCreateColumn
+  } else if (rootNode.data.connectionType === 3) {
+    return sqlLiteCreateColumn
+  }
+}
+export function getConnectionType(node) {
+  let rootNode = getRootNode(node)
+  return rootNode.data.connectionType
+}

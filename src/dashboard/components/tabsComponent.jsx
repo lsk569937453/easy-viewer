@@ -25,6 +25,30 @@ const TabsComponent = () => {
       className="flex h-full w-full flex-col"
       onValueChange={setTabValue}
     >
+      <ControlledMenu
+        anchorPoint={tabMenuAnchorPoint}
+        state={isTabContextMenuOpen ? "open" : "closed"}
+        direction="right"
+        onClose={() => setIsTabContextMenuOpen(false)}
+        portal
+        className="p-1"
+      >
+        <MenuItem onClick={() => window.location.reload()} className="text-sm">
+          Close
+        </MenuItem>
+        <MenuItem onClick={() => window.location.reload()} className="text-sm">
+          Close Others
+        </MenuItem>
+        <MenuItem onClick={() => window.location.reload()} className="text-sm">
+          Close Tabs to the Left
+        </MenuItem>
+        <MenuItem onClick={() => window.location.reload()} className="text-sm">
+          Close Tabs to the right
+        </MenuItem>
+        <MenuItem onClick={() => window.location.reload()} className="text-sm">
+          Close All
+        </MenuItem>
+      </ControlledMenu>
       <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
         {pageDataArray.map((item, index) => {
           return (
@@ -44,45 +68,6 @@ const TabsComponent = () => {
                 setIsTabContextMenuOpen(true)
               }}
             >
-              <ControlledMenu
-                anchorPoint={tabMenuAnchorPoint}
-                state={isTabContextMenuOpen ? "open" : "closed"}
-                direction="right"
-                onClose={() => setIsTabContextMenuOpen(false)}
-                portal
-                className="p-1"
-              >
-                <MenuItem
-                  onClick={() => window.location.reload()}
-                  className="text-sm"
-                >
-                  Close
-                </MenuItem>
-                <MenuItem
-                  onClick={() => window.location.reload()}
-                  className="text-sm"
-                >
-                  Close Others
-                </MenuItem>
-                <MenuItem
-                  onClick={() => window.location.reload()}
-                  className="text-sm"
-                >
-                  Close Tabs to the Left
-                </MenuItem>
-                <MenuItem
-                  onClick={() => window.location.reload()}
-                  className="text-sm"
-                >
-                  Close Tabs to the right
-                </MenuItem>
-                <MenuItem
-                  onClick={() => window.location.reload()}
-                  className="text-sm"
-                >
-                  Close All
-                </MenuItem>
-              </ControlledMenu>
               <div className="relative flex flex-row items-center justify-center gap-1 px-10">
                 <div className="flex flex-row items-start justify-start gap-1">
                   <div className="flex-none"> {item.icon}</div>

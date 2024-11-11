@@ -41,6 +41,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
 import Sidebar from "./components/sidebar"
+import TabsComponent from "./components/tabsComponent"
 
 export const SidebarContext = createContext({
   handleAddPageClick: () => {},
@@ -53,15 +54,22 @@ export const SidebarContext = createContext({
   setShowEditConnectionDialog: () => {},
   setIsSave: () => {},
   setShowSaveQueryDialog: () => {},
-  handleRemoveButton: () => {},
+  handleRemoveTabButton: () => {},
   setTabsState: () => {},
   setShowRenameQueryDialog: () => {},
   setShowRemoveQueryDialog: () => {},
+  tabValue: {},
+  setTabValue: () => {},
+  pageDataArray: [],
   event: {},
+  tabsState: [],
+  setPageDataArray: () => {},
+  handleRemoveWithoutSaveButtonClick: () => {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
+
   const { toast } = useToast()
 
   const [menulist, setMenulist] = useState([])
@@ -129,18 +137,7 @@ const DashboardPage = () => {
     setTabValue(item.service)
     setPageDataArray([...pageDataArray])
   }
-  const handleRemoveButton = (index) => {
-    pageDataArray.splice(index, 1)
-    const nextType =
-      pageDataArray.length > index
-        ? pageDataArray[index].service
-        : pageDataArray.length > 0
-          ? pageDataArray[pageDataArray.length - 1].service
-          : undefined
 
-    setTabValue(nextType)
-    setPageDataArray([...pageDataArray])
-  }
   const handleRemoveWithoutSaveButtonClick = (index) => {
     setShowSaveQueryDialog(true)
     setSaveQueryTabIndex(index)
@@ -204,6 +201,18 @@ const DashboardPage = () => {
       setMenulist(updatedData)
     }
   }
+  const handleRemoveTabButton = (index) => {
+    pageDataArray.splice(index, 1)
+    const nextType =
+      pageDataArray.length > index
+        ? pageDataArray[index].service
+        : pageDataArray.length > 0
+          ? pageDataArray[pageDataArray.length - 1].service
+          : undefined
+
+    setTabValue(nextType)
+    setPageDataArray([...pageDataArray])
+  }
   const handleRmoveQueryClick = async () => {
     const { response_code, response_msg } = JSON.parse(
       await invoke("remove_query", {
@@ -229,102 +238,7 @@ const DashboardPage = () => {
       index: saveQueryTabIndex,
     })
   }
-  const renderComponent = () => {
-    return (
-      <Tabs
-        value={tabValue}
-        className="flex h-full w-full flex-col"
-        onValueChange={setTabValue}
-      >
-        <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
-          {pageDataArray.map((item, index) => {
-            return (
-              <TabsTrigger
-                value={item.service}
-                key={index}
-                className="w-auto justify-start"
-              >
-                <div className="relative flex flex-row items-center justify-center gap-1 px-10">
-                  <div className="flex flex-row items-start justify-start gap-1">
-                    <div className="flex-none"> {item.icon}</div>
-                    <p className="grow"> {item.tabName}</p>
-                  </div>
-                  {tabsState.includes(index) && (
-                    <div class="group absolute  right-2">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
-                      >
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                        <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-                      </svg>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        onClick={() => {
-                          handleRemoveWithoutSaveButtonClick(index)
-                        }}
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
-                      >
-                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                        <path d="M18 6l-12 12" />
-                        <path d="M6 6l12 12" />
-                      </svg>
-                    </div>
-                  )}
-                  {!tabsState.includes(index) && (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      onClick={() => {
-                        handleRemoveButton(index)
-                      }}
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M18 6l-12 12" />
-                      <path d="M6 6l12 12" />
-                    </svg>
-                  )}
-                </div>
-              </TabsTrigger>
-            )
-          })}
-        </TabsList>
-        {pageDataArray.map((item, index) => {
-          return (
-            <TabsContent
-              key={item.service}
-              value={item.service}
-              className="grow"
-              forceMount={true}
-              hidden={item.service !== tabValue}
-            >
-              {item.render(index, item.tabName)}
-            </TabsContent>
-          )
-        })}
-      </Tabs>
-    )
-  }
+
   const handleNewConnectionButtonClick = () => {
     setShowEditConnectionDialog(true)
     setBaseConfigId(null)
@@ -345,10 +259,16 @@ const DashboardPage = () => {
           setIsSave,
           event,
           setShowSaveQueryDialog,
-          handleRemoveButton,
+          handleRemoveTabButton,
           setTabsState,
           setShowRenameQueryDialog,
           setShowRemoveQueryDialog,
+          tabValue,
+          setTabValue,
+          tabsState,
+          pageDataArray,
+          setPageDataArray,
+          handleRemoveWithoutSaveButtonClick,
         }}
       >
         <ResizablePanelGroup
@@ -367,11 +287,18 @@ const DashboardPage = () => {
             state={isOpen ? "open" : "closed"}
             direction="right"
             onClose={() => setOpen(false)}
+            className="p-1"
           >
-            <MenuItem onClick={handleNewConnectionButtonClick}>
+            <MenuItem
+              onClick={handleNewConnectionButtonClick}
+              className="text-sm"
+            >
               New Connection
             </MenuItem>
-            <MenuItem onClick={() => window.location.reload()}>
+            <MenuItem
+              onClick={() => window.location.reload()}
+              className="text-sm"
+            >
               Refresh
             </MenuItem>
           </ControlledMenu>
@@ -519,7 +446,7 @@ const DashboardPage = () => {
           <ResizableHandle />
           <ResizablePanel defaultSize={75} className="min-w-[200px]">
             <div className="col-span-8 h-full w-full">
-              {pageDataArray.length > 0 ? renderComponent() : ""}
+              {pageDataArray.length > 0 ? <TabsComponent /> : ""}
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>

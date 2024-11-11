@@ -171,11 +171,18 @@ const TreeNode = ({
         state={isOpen ? "open" : "closed"}
         direction="right"
         onClose={() => setOpen(false)}
+        className="p-1"
       >
-        <MenuItem onClick={(e) => handleEditConnectionClick(e)}>
+        <MenuItem
+          onClick={(e) => handleEditConnectionClick(e)}
+          className="text-xs"
+        >
           Edit Connection
         </MenuItem>
-        <MenuItem onClick={(e) => handleDeleteConnectionClick(e)}>
+        <MenuItem
+          onClick={(e) => handleDeleteConnectionClick(e)}
+          className="text-xs"
+        >
           Delete Connection
         </MenuItem>
       </ControlledMenu>

@@ -34,7 +34,7 @@ const QueryPage = ({
   const [sqlOfQuqery, setSqlOfQuery] = useState(defaltSql)
   const [currentQueryName, setCurrentQueryName] = useState(queryName)
   const textAreaRef = useRef(null)
-  const { event, setShowSaveQueryDialog, handleRemoveButton, setTabsState } =
+  const { event, setShowSaveQueryDialog, handleRemoveTabButton, setTabsState } =
     useContext(SidebarContext)
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
@@ -57,7 +57,7 @@ const QueryPage = ({
           const saveSync = async () => {
             await handleOnSave()
             setShowSaveQueryDialog(false)
-            handleRemoveButton(index)
+            handleRemoveTabButton(index)
           }
           saveSync()
         } else {
@@ -65,7 +65,7 @@ const QueryPage = ({
             prevTabsState.filter((tab) => tab !== tabIndex)
           )
           setShowSaveQueryDialog(false)
-          handleRemoveButton(index)
+          handleRemoveTabButton(index)
         }
       }
     } else {

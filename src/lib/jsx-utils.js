@@ -90,3 +90,16 @@ export function getCreateTableSql(node) {
     return sqlLiteCreate
   }
 }
+export function getCreateColumnSql(node, tableName) {
+  let mysqlCreateColumn = `ALTER TABLE ${tableName} 
+    ADD COLUMN  [type] COMMENT '';`
+  let sqlLiteCreateColumn = `
+ALTER TABLE ${tableName} 
+    ADD COLUMN  [type];`
+  let rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 0) {
+    return mysqlCreateColumn
+  } else if (rootNode.data.connectionType === 3) {
+    return sqlLiteCreateColumn
+  }
+}

@@ -20,6 +20,8 @@ const TreeNode = ({
   dragHandle,
   setCurrentMenuList,
   currentMenuList,
+  toggleRowSelection,
+  selectedRows,
 }) => {
   const { toast } = useToast()
   const [isOpen, setOpen] = useState(false)
@@ -36,6 +38,7 @@ const TreeNode = ({
   } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
+    toggleRowSelection(node)
     addTab()
     if (!node.data.showFirstIcon) return
     if (node.children && node.children.length > 0) {
@@ -161,7 +164,9 @@ const TreeNode = ({
     <div
       style={style}
       ref={dragHandle}
-      className="group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 hover:bg-primary-light"
+      className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 hover:bg-primary-light ${
+        selectedRows[node.id] ? "bg-primary-light" : ""
+      }`}
       onClick={() => handleClickIcon(node)}
       onContextMenu={handleContextMenuClick}
     >

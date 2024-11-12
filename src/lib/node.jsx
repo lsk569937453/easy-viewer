@@ -1,3 +1,4 @@
+import { Description } from "@radix-ui/react-dialog"
 import { invoke } from "@tauri-apps/api/core"
 
 import { useToast } from "@/components/ui/use-toast"
@@ -182,6 +183,7 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
         id: uuid(),
         name: item[0],
         iconName: item[1],
+        description: item[2],
         showFirstIcon: showFirstIcon(node, item),
         showSecondIcon: true,
       }))

@@ -112,7 +112,7 @@ pub async fn get_base_config_by_id_with_error(
 pub async fn list_node_info_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-) -> Result<Vec<(String, String)>, anyhow::Error> {
+) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
 
     let value = list_node_info_req.level_infos[0]

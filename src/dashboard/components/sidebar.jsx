@@ -15,6 +15,8 @@ const treeNode = ({
   dragHandle,
   setCurrentMenuList,
   currentMenuList,
+  toggleRowSelection,
+  selectedRows,
 }) => {
   return (
     <TreeNode
@@ -23,6 +25,8 @@ const treeNode = ({
       dragHandle={dragHandle}
       setCurrentMenuList={setCurrentMenuList}
       currentMenuList={currentMenuList}
+      toggleRowSelection={toggleRowSelection}
+      selectedRows={selectedRows}
     />
   )
 }
@@ -34,7 +38,14 @@ const Sidebar = ({ menuList }) => {
   )
 
   const [currentMenuList, setCurrentMenuList] = useState([])
+  const [selectedRows, setSelectedRows] = useState({})
 
+  // Toggle selection for a specific row
+  const toggleRowSelection = (node) => {
+    setSelectedRows((prevSelectedRows) => ({
+      [node.id]: !prevSelectedRows[node.id],
+    }))
+  }
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   useEffect(() => {
@@ -57,6 +68,8 @@ const Sidebar = ({ menuList }) => {
             ...props,
             setCurrentMenuList,
             currentMenuList,
+            toggleRowSelection,
+            selectedRows,
           })
         }
       </Tree>

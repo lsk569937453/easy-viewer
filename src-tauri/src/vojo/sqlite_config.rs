@@ -43,7 +43,7 @@ impl SqliteConfig {
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<(String, String)>, anyhow::Error> {
+    ) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
         let mut vec = vec![];
 
         info!("sqlite list_node_info_req: {:?}", list_node_info_req);
@@ -61,7 +61,7 @@ impl SqliteConfig {
                     .await?;
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    vec.push((row_str, "singleTable".to_string()));
+                    vec.push((row_str, "singleTable".to_string(), None));
                 }
             } else if node_name == "Query" {
                 let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
@@ -71,7 +71,7 @@ impl SqliteConfig {
                 info!("row length:{}", rows.len());
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    vec.push((row_str, "singleQuery".to_string()));
+                    vec.push((row_str, "singleQuery".to_string(), None));
                 }
                 info!("vec: {:?}", vec);
             }
@@ -92,11 +92,13 @@ impl SqliteConfig {
                         vec.push((
                             String::from_utf8_lossy(buf).to_string(),
                             "primary".to_string(),
+                            None,
                         ));
                     } else {
                         vec.push((
                             String::from_utf8_lossy(buf).to_string(),
                             "column".to_string(),
+                            None,
                         ));
                     }
                 }

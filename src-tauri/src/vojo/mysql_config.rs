@@ -11,6 +11,7 @@ use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use anyhow::Ok;
+use bigdecimal::BigDecimal;
 use chrono::DateTime;
 use chrono::Local;
 use serde::Deserialize;
@@ -36,7 +37,7 @@ impl MysqlConfig {
 
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<(String, String)>, anyhow::Error> {
+    ) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
         let mut vec = vec![];
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
@@ -59,9 +60,24 @@ WHERE
 
                 for item in rows {
                     let buf: &[u8] = item.try_get(0)?;
+                    let database_name = String::from_utf8_lossy(buf);
+                    let query_db_size_sql = format!(
+                        r#"SELECT table_schema AS "Database",
+       ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS "Size (MB)"
+FROM information_schema.tables
+WHERE table_schema = "{}";"#,
+                        database_name
+                    );
+                    let query_size_result = sqlx::query(&query_db_size_sql)
+                        .fetch_optional(&mut conn)
+                        .await?
+                        .ok_or(anyhow!(""))?;
+                    let db_size: BigDecimal = query_size_result.try_get(1)?;
+                    let db_size_str = format!("{}M", db_size);
                     vec.push((
-                        String::from_utf8_lossy(buf).to_string(),
+                        database_name.to_string(),
                         "database".to_string(),
+                        Some(db_size_str),
                     ));
                 }
                 info!("list_node_info: {:?}", vec);
@@ -85,6 +101,7 @@ WHERE
                         vec.push((
                             String::from_utf8_lossy(buf).to_string(),
                             "singleTable".to_string(),
+                            None,
                         ));
                     }
                     info!("list_node_info: {:?}", vec);
@@ -98,7 +115,7 @@ WHERE
                     let mut vec = vec![];
                     for row in rows {
                         let row_str: String = row.try_get(0)?;
-                        vec.push((row_str, "singleQuery".to_string()));
+                        vec.push((row_str, "singleQuery".to_string(), None));
                     }
 
                     info!("list_node_info: {:?}", vec);
@@ -128,12 +145,30 @@ WHERE
                             vec.push((
                                 String::from_utf8_lossy(buf).to_string(),
                                 "primary".to_string(),
+                                None,
                             ));
                         } else {
                             vec.push((
                                 String::from_utf8_lossy(buf).to_string(),
                                 "column".to_string(),
+                                None,
                             ));
+                        }
+                    }
+                } else if node_name == "Index" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+                    let mut sql = format!("use {}", database_name);
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    sql = format!("SHOW INDEX FROM {};", table_name);
+                    info!("sql: {}", sql);
+                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    for item in rows {
+                        let index_name: String = item.try_get(2)?;
+                        if index_name == "PRIMARY" {
+                            vec.push((index_name, "singlePrimaryIndex".to_string(), None));
+                        } else {
+                            vec.push((index_name, "singleCommonIndex".to_string(), None));
                         }
                     }
                 }

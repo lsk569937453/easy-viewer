@@ -68,6 +68,7 @@ export const SidebarContext = createContext({
   setMenulist: () => {},
   setPageDataArray: () => {},
   handleRemoveWithoutSaveButtonClick: () => {},
+  treeRef: {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -274,6 +275,7 @@ const DashboardPage = () => {
           handleRemoveWithoutSaveButtonClick,
           menulist,
           setMenulist,
+          treeRef,
         }}
       >
         <ResizablePanelGroup

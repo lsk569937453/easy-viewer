@@ -213,11 +213,7 @@ const updateAllNode = async (node, updatedMenuList) => {
     )
 
     // Iterate over the children of the current node if they exist
-    if (
-      currentNode.children &&
-      currentNode.children.length > 0 &&
-      currentNode.isOpen
-    ) {
+    if (currentNode.children && currentNode.children.length > 0) {
       for (const child of currentNode.children) {
         await traverseAndUpdate(child) // Recursively call for each child
       }

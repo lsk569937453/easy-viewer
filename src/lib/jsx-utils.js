@@ -116,6 +116,17 @@ ALTER TABLE ${tableName}
     return sqlLiteCreateColumn
   }
 }
+export function getCreateIndexSql(node, tableName) {
+  console.log(node,tableName);
+  let mysqlCreateColumn = `ALTER TABLE ${tableName} ADD key (\`\`)`
+  let sqlLiteCreateColumn = `CREATE INDEX ${tableName}_ ON ${tableName}`
+  let rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 0) {
+    return mysqlCreateColumn
+  } else if (rootNode.data.connectionType === 3) {
+    return sqlLiteCreateColumn
+  }
+}
 export function getConnectionType(node) {
   let rootNode = getRootNode(node)
   return rootNode.data.connectionType

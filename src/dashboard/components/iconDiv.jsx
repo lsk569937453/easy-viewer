@@ -8,6 +8,7 @@ import {
   getConnectionType,
   getCreateColumnAfterAnotherSql,
   getCreateColumnSql,
+  getCreateIndexSql,
   getCreateTableSql,
   getLevelInfos,
   getQueryName,
@@ -170,6 +171,51 @@ const IconDiv = ({ node }) => {
     const localQueryName = getQueryName()
     console.log(localQueryName)
     const createTableSql = getCreateColumnSql(node, node.parent.data.name)
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql stroke-orange-400"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M5 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+          <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+          <path d="M18 15v6h2" />
+          <path d="M13 15a2 2 0 0 1 2 2v2a2 2 0 1 1 -4 0v-2a2 2 0 0 1 2 -2z" />
+          <path d="M14 20l1.5 1.5" />
+        </svg>
+      ),
+      render: (tabIndex) => (
+        <QueryPage
+          node={node}
+          tabIndex={tabIndex}
+          defaltSql={createTableSql}
+          queryName={localQueryName}
+          firstCreate={true}
+        />
+      ),
+      service: localQueryName,
+      tabName: localQueryName,
+    })
+  }
+
+  const handleAddNewIndexClick = (e) => {
+    e.stopPropagation()
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    const localQueryName = getQueryName()
+    console.log(localQueryName)
+    const createTableSql = getCreateIndexSql(node, node.parent.data.name)
     handleAddPageClick({
       icon: (
         <svg
@@ -1194,6 +1240,157 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div className="ml-auto flex flex-row pr-3 ">
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    onClick={handleAddNewIndexClick}
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Create Index</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "singlePrimaryIndex" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-3 stroke-yellow-400"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1" />
+              <path d="M12 9l0 3" />
+            </svg>
+          )}
+          <p className="text-sm">{node.data.name}</p>
+
+          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+            </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 5l0 14" />
+              <path d="M5 12l14 0" />
+            </svg>
+          </div>
+        </>
+      ) : node.data.iconName === "singleCommonIndex" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-3"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M15 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M9 3m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
+              <path d="M6 15v-1a2 2 0 0 1 2 -2h8a2 2 0 0 1 2 2v1" />
+              <path d="M12 9l0 3" />
+            </svg>
+          )}
+          <p className="text-sm">{node.data.name}</p>
+
+          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}

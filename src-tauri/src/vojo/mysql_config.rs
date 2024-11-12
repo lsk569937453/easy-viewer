@@ -136,6 +136,22 @@ WHERE
                             ));
                         }
                     }
+                } else if node_name == "Index" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+                    let mut sql = format!("use {}", database_name);
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    sql = format!("SHOW INDEX FROM {};", table_name);
+                    info!("sql: {}", sql);
+                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    for item in rows {
+                        let index_name: String = item.try_get(2)?;
+                        if index_name == "PRIMARY" {
+                            vec.push((index_name, "singlePrimaryIndex".to_string()));
+                        } else {
+                            vec.push((index_name, "singleCommonIndex".to_string()));
+                        }
+                    }
                 }
             }
 

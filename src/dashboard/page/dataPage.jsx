@@ -395,6 +395,7 @@ export default function DataPage({
     onPaginationChange: setPagination,
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    globalFilterFn: "includesString", // built-in filter function
 
     enableRowSelection: true, //enable row selection for all rows
     onRowSelectionChange: setRowSelection,
@@ -440,6 +441,7 @@ export default function DataPage({
                 focus:outline-none
                 disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Search results"
+            onChange={(e) => table.setGlobalFilter(String(e.target.value))}
           />
           <svg
             xmlns="http://www.w3.org/2000/svg"

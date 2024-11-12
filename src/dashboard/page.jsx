@@ -1,4 +1,4 @@
-import { createContext, useEffect, useState } from "react"
+import { createContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
 // import { IconMenuItem, Menu, MenuItem } from "@tauri-apps/api/menu"
@@ -11,6 +11,7 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
 
+import { reloadNode } from "../lib/jsx-utils"
 import { CreateLinkDialog } from "./menu/createLinkDialog"
 
 import "@szhsin/react-menu/dist/index.css"
@@ -67,11 +68,12 @@ export const SidebarContext = createContext({
   setMenulist: () => {},
   setPageDataArray: () => {},
   handleRemoveWithoutSaveButtonClick: () => {},
+  treeRef: {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
-
+  const treeRef = useRef()
   const { toast } = useToast()
 
   const [menulist, setMenulist] = useState([])
@@ -273,6 +275,7 @@ const DashboardPage = () => {
           handleRemoveWithoutSaveButtonClick,
           menulist,
           setMenulist,
+          treeRef,
         }}
       >
         <ResizablePanelGroup
@@ -300,7 +303,9 @@ const DashboardPage = () => {
               New Connection
             </MenuItem>
             <MenuItem
-              onClick={() => window.location.reload()}
+              onClick={() =>
+                reloadNode(treeRef.current.root, menulist, setMenulist)
+              }
               className="text-sm"
             >
               Refresh
@@ -445,7 +450,7 @@ const DashboardPage = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Sidebar menuList={menulist} />
+            <Sidebar menuList={menulist} treeRef={treeRef} />
           </ResizablePanel>
           <ResizableHandle />
           <ResizablePanel defaultSize={75} className="min-w-[200px]">

@@ -133,15 +133,15 @@ const TreeNode = ({
   }
   const handleContextMenuClick = (e) => {
     console.log(e)
-    if (node.data.iconName != "mysql") {
-      return
-    }
-    if (typeof document.hasFocus === "function" && !document.hasFocus()) return
+    if (node.data.iconName == "mysql" || node.data.iconName == "sqlite") {
+      if (typeof document.hasFocus === "function" && !document.hasFocus())
+        return
 
-    e.preventDefault()
-    setAnchorPoint({ x: e.clientX, y: e.clientY })
-    setOpen(true)
-    e.stopPropagation()
+      e.preventDefault()
+      setAnchorPoint({ x: e.clientX, y: e.clientY })
+      setOpen(true)
+      e.stopPropagation()
+    }
   }
   const handleEditConnectionClick = (e) => {
     e.syntheticEvent.stopPropagation()

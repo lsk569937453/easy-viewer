@@ -86,6 +86,8 @@ const CreateLinkDialog = ({
       if (parsedData.base_config_enum.mysql) {
         setCurrentLinkType("mysql")
         console.log("MySQL Config:", parsedData.base_config_enum.mysql.config)
+      } else if (parsedData.base_config_enum.sqlite) {
+        setCurrentLinkType("sqlite")
       }
       setConnectionData(parsedData)
     }
@@ -155,7 +157,14 @@ const CreateLinkDialog = ({
             />
           )}
           {currentLinkType === "sqlite" && (
-            <SqliteConfigComponent connectionName={currentLinkName} />
+            <SqliteConfigComponent
+              isSave={true}
+              connectionName={currentLinkName}
+              defaultFilePath={
+                connectionData?.base_config_enum?.sqlite?.file_path ?? ""
+              }
+              baseCongfigId={baseCongfigId}
+            />
           )}
         </div>
       </DialogContent>

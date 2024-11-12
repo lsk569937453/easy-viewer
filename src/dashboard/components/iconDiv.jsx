@@ -572,7 +572,9 @@ const IconDiv = ({ node }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
           <div className="ml-auto flex flex-row pr-3 ">
             <svg
               xmlns="http://www.w3.org/2000/svg"

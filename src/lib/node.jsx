@@ -5,7 +5,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getLevelInfos, uuid } from "./jsx-utils"
 
-const mysqlDatabaseData = [
+export const mysqlDatabaseData = [
   {
     name: "Query",
     iconName: "query",
@@ -27,7 +27,7 @@ const mysqlDatabaseData = [
     iconName: "procedures",
   },
 ]
-const sqliteRootData = [
+export const sqliteRootData = [
   {
     name: "Query",
     iconName: "query",
@@ -41,7 +41,7 @@ const sqliteRootData = [
     iconName: "views",
   },
 ]
-const sqliteTableData = [
+export const sqliteTableData = [
   {
     name: "Columns",
     iconName: "columns",
@@ -55,7 +55,7 @@ const sqliteTableData = [
     iconName: "partitions",
   },
 ]
-const mysqlTableData = [
+export const mysqlTableData = [
   {
     name: "Columns",
     iconName: "columns",
@@ -69,14 +69,14 @@ const mysqlTableData = [
     iconName: "partitions",
   },
 ]
-const findParentNode = (node) => {
+export const findParentNode = (node) => {
   let temNode = node
   while (temNode.level !== 0) {
     temNode = temNode.parent
   }
   return temNode
 }
-const findAndReplaceChildren = (data, targetId, newChildren) => {
+export const findAndReplaceChildren = (data, targetId, newChildren) => {
   for (let item of data) {
     if (item.id === targetId) {
       item.children = newChildren
@@ -91,7 +91,7 @@ const findAndReplaceChildren = (data, targetId, newChildren) => {
   }
   return false
 }
-const showFirstIcon = (node, item) => {
+export const showFirstIcon = (node, item) => {
   let flag = true
   if (node.level === 4) {
     flag = false

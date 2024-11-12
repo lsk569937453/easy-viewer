@@ -25,8 +25,13 @@ import {
 } from "../../components/ui/dialog"
 import { LoadingSpinner } from "./spinner"
 
-const SqliteConfigComponent = ({ isSave = false, connectionName }) => {
-  const [filePath, setFilePath] = useState("")
+const SqliteConfigComponent = ({
+  isSave = false,
+  connectionName,
+  defaultFilePath = "",
+  baseCongfigId = null,
+}) => {
+  const [filePath, setFilePath] = useState(defaultFilePath)
   const [connectType, setConnectType] = useState("connectTypeHost")
   const [showLoading, setShowLoading] = useState(false)
   const { toast } = useToast()
@@ -44,6 +49,45 @@ const SqliteConfigComponent = ({ isSave = false, connectionName }) => {
     }
     console.log(selected)
     setFilePath(selected)
+  }
+  const handleSaveButtonOnClick = async () => {
+    if (connectionName === undefined || connectionName === "") {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: "连接名称不能为空",
+      })
+      return
+    }
+    let testHostStruct = {
+      sqlite: {
+        file_path: filePath,
+      },
+    }
+    const SaveConnectionRequest = {
+      base_config: { base_config_enum: testHostStruct },
+      connection_name: connectionName,
+      connection_id: Number(baseCongfigId),
+    }
+    console.log(connectionName)
+    const { response_code, response_msg } = await JSON.parse(
+      await invoke("update_base_config", {
+        saveConnectionRequest: SaveConnectionRequest,
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        title: "操作信息",
+        description: "保存成功。",
+      })
+      window.location.reload()
+    } else {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: response_msg,
+      })
+    }
   }
   const handleCreateLinkButtonClick = async () => {
     if (connectionName === undefined || connectionName === "") {
@@ -166,7 +210,11 @@ const SqliteConfigComponent = ({ isSave = false, connectionName }) => {
             创建连接
           </Button>
         )}
-        {isSave && <Button className="basis-6/12">保存连接</Button>}
+        {isSave && (
+          <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
+            保存连接
+          </Button>
+        )}
         <Button
           className="basis-6/12"
           variant="outline"

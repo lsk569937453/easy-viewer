@@ -30,8 +30,8 @@ const treeNode = ({
     />
   )
 }
-const Sidebar = ({ menuList }) => {
-  const treeRef = useRef()
+const Sidebar = ({ menuList, treeRef }) => {
+  // const treeRef = useRef()
   const { ref, width, height } = useResizeObserver()
   const [containerHeight, setContainerHeight] = useState(
     window.innerHeight - 40
@@ -49,7 +49,6 @@ const Sidebar = ({ menuList }) => {
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
   useEffect(() => {
-    console.log(menuList)
     setCurrentMenuList(menuList)
   }, [menuList])
 

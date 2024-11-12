@@ -103,10 +103,13 @@ pub async fn get_base_config_by_id_with_error(
 
     let id: i32 = row.try_get("id")?;
     let connection_json_str: String = row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    let connection_type = base_config.base_config_enum.get_connection_type();
     Ok(GetBaseConnectionByIdResponse {
         base_config_id: id,
         connection_name: row.try_get("connection_name")?,
         connection_json: connection_json_str,
+        connection_type,
     })
 }
 pub async fn list_node_info_with_error(

@@ -15,4 +15,5 @@ pub struct GetBaseConnectionByIdResponse {
     pub base_config_id: i32,
     pub connection_name: String,
     pub connection_json: String,
+    pub connection_type: i32,
 }

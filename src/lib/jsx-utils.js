@@ -64,18 +64,27 @@ const getInteralRootNode = (node) => {
   }
   return tempNode
 }
-const getBaseConfigById = async (baseConfigId) => {
+const loadRootData = async () => {
   const { response_code, response_msg } = JSON.parse(
-    await invoke("get_base_config_by_id", { baseConfigId: baseConfigId })
+    await invoke("get_base_config")
   )
-  if (response_code === 0) {
-    return {
-      connectionType: response_msg.connection_type,
-      iconName: getIconNameByType(response_msg.connection_type),
-      name: response_msg.connection_name,
-    }
-  } else {
-    return null
+  if (response_code == 0) {
+    const rootNodeList = response_msg.base_config_list.map((item, index) => {
+      console.log(item)
+      console.log(index)
+
+      return {
+        connectionType: item.connection_type,
+        iconName: getIconNameByType(item.connection_type),
+        showFirstIcon: true,
+        showSecondIcon: true,
+        key: index,
+        id: uuid(),
+        name: item.connection_name,
+        baseConfigId: item.base_config_id,
+      }
+    })
+    return rootNodeList
   }
 }
 const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {

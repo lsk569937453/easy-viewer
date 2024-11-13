@@ -22,6 +22,23 @@ use sqlx::Executor;
 use sqlx::MySqlConnection;
 use sqlx::Row;
 use sqlx::TypeInfo;
+use std::collections::HashMap;
+use std::sync::OnceLock;
+
+static MYSQL_DATABASE_DATA: OnceLock<HashMap<&'static str, &'static str>> = OnceLock::new();
+
+fn get_mysql_database_data() -> &'static HashMap<&'static str, &'static str> {
+    MYSQL_DATABASE_DATA.get_or_init(|| {
+        let mut map = HashMap::new();
+        map.insert("Query", "query");
+        map.insert("Tables", "tables");
+        map.insert("Views", "views");
+        map.insert("Functions", "functions");
+        map.insert("Procedures", "procedures");
+        map
+    })
+}
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MysqlConfig {
     pub config: DatabaseHostStruct,
@@ -31,6 +48,10 @@ impl MysqlConfig {
         let test_url = self.config.to_url("mysql".to_string());
         MySqlConnection::connect(&test_url).await.map(|_| ())?;
         Ok(())
+    }
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let description = format!("{}:{}", self.config.host, self.config.port);
+        Ok(description)
     }
     pub async fn list_node_info(
         &self,
@@ -72,8 +93,13 @@ WHERE table_schema = "{}";"#,
                         .fetch_optional(&mut conn)
                         .await?
                         .ok_or(anyhow!(""))?;
-                    let db_size: BigDecimal = query_size_result.try_get(1)?;
-                    let db_size_str = format!("{}M", db_size);
+                    let db_size_option: Option<BigDecimal> = query_size_result.try_get(1)?;
+
+                    let db_size_str = if let Some(db_size) = db_size_option {
+                        format!("{}M", db_size)
+                    } else {
+                        "".to_string()
+                    };
                     vec.push((
                         database_name.to_string(),
                         "database".to_string(),

@@ -122,6 +122,7 @@ const DashboardPage = () => {
           id: uuid(),
           name: item.connection_name,
           baseConfigId: item.base_config_id,
+          description: item.description,
         }
       })
       console.log("convert to:" + JSON.stringify(newMenulist))

@@ -96,6 +96,7 @@ const loadRootData = async () => {
         id: uuid(),
         name: item.connection_name,
         baseConfigId: item.base_config_id,
+        description: item.description,
       }
     })
     return rootNodeList
@@ -268,6 +269,7 @@ export const reloadNode = async (node, currentMenuList, setCurrentMenuList) => {
             connectionType: baseConfig.connectionType,
             iconName: baseConfig.iconName,
             name: baseConfig.name,
+            description: baseConfig.description,
           }
         }
         return item
@@ -275,11 +277,13 @@ export const reloadNode = async (node, currentMenuList, setCurrentMenuList) => {
     }
     updatedMenuList = await updateAllNode(rootNode, updatedMenuList)
   }
-  const rootDataList = await loadRootData();
-  const internalNodeMap = new Map(updatedMenuList.map(child => [child.baseConfigId, child]));
-  for(const rootData of rootDataList){
-    if(!internalNodeMap.has(rootData.baseConfigId)){
-      updatedMenuList.push(rootData);
+  const rootDataList = await loadRootData()
+  const internalNodeMap = new Map(
+    updatedMenuList.map((child) => [child.baseConfigId, child])
+  )
+  for (const rootData of rootDataList) {
+    if (!internalNodeMap.has(rootData.baseConfigId)) {
+      updatedMenuList.push(rootData)
     }
   }
 

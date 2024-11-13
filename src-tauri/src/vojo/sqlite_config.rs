@@ -39,6 +39,9 @@ impl SqliteConfig {
             .ok_or(anyhow!("Not valid database file."))?;
         Ok(())
     }
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        Ok(self.file_path.clone())
+    }
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,

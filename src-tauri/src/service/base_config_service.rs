@@ -77,10 +77,12 @@ pub async fn get_base_config_with_error(
                     let connection_json_str: String = item.try_get("connection_json")?;
                     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
                     let connection_type = base_config.base_config_enum.get_connection_type();
+                    let description = base_config.base_config_enum.get_description()?;
                     Ok(GetBaseConnectionResponseItem {
                         base_config_id: id,
                         connection_name: item.try_get("connection_name")?,
                         connection_type,
+                        description,
                     })
                 },
             )

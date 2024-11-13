@@ -34,6 +34,14 @@ impl BaseConfigEnum {
 
         Ok(())
     }
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let res = match self {
+            BaseConfigEnum::Mysql(config) => config.get_description()?,
+            BaseConfigEnum::Sqlite(config) => config.get_description()?,
+            _ => "".to_string(),
+        };
+        Ok(res)
+    }
     pub fn get_connection_type(&self) -> i32 {
         match self {
             BaseConfigEnum::Mysql(_) => 0,

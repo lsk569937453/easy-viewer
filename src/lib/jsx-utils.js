@@ -64,6 +64,20 @@ const getInteralRootNode = (node) => {
   }
   return tempNode
 }
+const getBaseConfigById = async (baseConfigId) => {
+  const { response_code, response_msg } = JSON.parse(
+    await invoke("get_base_config_by_id", { baseConfigId: baseConfigId })
+  )
+  if (response_code === 0) {
+    return {
+      connectionType: response_msg.connection_type,
+      iconName: getIconNameByType(response_msg.connection_type),
+      name: response_msg.connection_name,
+    }
+  } else {
+    return null
+  }
+}
 const loadRootData = async () => {
   const { response_code, response_msg } = JSON.parse(
     await invoke("get_base_config")
@@ -261,6 +275,14 @@ export const reloadNode = async (node, currentMenuList, setCurrentMenuList) => {
     }
     updatedMenuList = await updateAllNode(rootNode, updatedMenuList)
   }
+  const rootDataList = await loadRootData();
+  const internalNodeMap = new Map(updatedMenuList.map(child => [child.baseConfigId, child]));
+  for(const rootData of rootDataList){
+    if(!internalNodeMap.has(rootData.baseConfigId)){
+      updatedMenuList.push(rootData);
+    }
+  }
+
   setCurrentMenuList(updatedMenuList)
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState,useContext} from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
 import { useTranslation } from "react-i18next"
@@ -6,6 +6,8 @@ import { useTranslation } from "react-i18next"
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {SidebarContext} from "../page"
+import { reloadNode } from "../../lib/jsx-utils"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Select,
@@ -35,7 +37,8 @@ const SqliteConfigComponent = ({
   const [connectType, setConnectType] = useState("connectTypeHost")
   const [showLoading, setShowLoading] = useState(false)
   const { toast } = useToast()
-
+  const { treeRef, menulist, setMenulist, setShowEditConnectionDialog } =
+  useContext(SidebarContext)
   const handleSelectPathClick = async () => {
     const selected = await open({
       directory: false,
@@ -80,7 +83,8 @@ const SqliteConfigComponent = ({
         title: "操作信息",
         description: "保存成功。",
       })
-      window.location.reload()
+      reloadNode(treeRef.current.root, menulist, setMenulist)
+      
     } else {
       toast({
         variant: "destructive",
@@ -88,6 +92,8 @@ const SqliteConfigComponent = ({
         description: response_msg,
       })
     }
+    setShowEditConnectionDialog(false)
+
   }
   const handleCreateLinkButtonClick = async () => {
     if (connectionName === undefined || connectionName === "") {

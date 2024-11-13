@@ -1,14 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 
-import {
-  findAndReplaceChildren,
-  findParentNode,
-  mysqlDatabaseData,
-  mysqlTableData,
-  showFirstIcon,
-  sqliteRootData,
-  sqliteTableData,
-} from "./node"
+import { findAndReplaceChildren, findParentNode, showFirstIcon } from "./node"
 
 export function formatDate(input) {
   const date = new Date(input)
@@ -73,30 +65,49 @@ const getBaseConfigById = async (baseConfigId) => {
       connectionType: response_msg.connection_type,
       iconName: getIconNameByType(response_msg.connection_type),
       name: response_msg.connection_name,
+      description: response_msg.description,
     }
   } else {
     return null
+  }
+}
+const loadRootData = async () => {
+  const { response_code, response_msg } = JSON.parse(
+    await invoke("get_base_config")
+  )
+  if (response_code == 0) {
+    const rootNodeList = response_msg.base_config_list.map((item, index) => {
+      console.log(item)
+      console.log(index)
+
+      return {
+        connectionType: item.connection_type,
+        iconName: getIconNameByType(item.connection_type),
+        showFirstIcon: true,
+        showSecondIcon: true,
+        key: index,
+        id: uuid(),
+        name: item.connection_name,
+        baseConfigId: item.base_config_id,
+        description: item.description,
+      }
+    })
+    return rootNodeList
   }
 }
 const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
   const updateNodeChildren = (nodes) => {
     for (let node of nodes) {
       if (node.id === targetId) {
-        // If node.children is missing or empty, directly set it to newChildren
         if (!node.children || node.children.length === 0) {
           node.children = [...newChildren]
         } else {
-          // Otherwise, proceed with the comparison
           const newChildrenMap = new Map(
             newChildren.map((child) => [child.name, child])
           )
-
-          // Filter out children not present in newChildren
           node.children = node.children.filter((child) =>
             newChildrenMap.has(child.name)
           )
-
-          // Add any missing newChildren
           newChildren.forEach((newChild) => {
             if (!node.children.find((child) => child.name === newChild.name)) {
               node.children.push(newChild)
@@ -105,8 +116,6 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
         }
         return true // Stop once the target node is found and updated
       }
-
-      // Recursive call for child nodes
       if (node.children && updateNodeChildren(node.children)) {
         return true
       }
@@ -117,51 +126,6 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
   updateNodeChildren(currentMenuList)
 }
 const updateNode = async (node, currentMenuList) => {
-  // Check if the parent node is MySQL
-  if (node.level == 1 && node.parent.data.connectionType == 0) {
-    const newChildren = mysqlDatabaseData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-
-    return
-  } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
-    const newChildren = mysqlTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-    // Check if the node is SQLite
-  } else if (node.level == 0 && node.data.connectionType == 3) {
-    const newChildren = sqliteRootData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-  } else if (node.level == 2 && findParentNode(node).data.connectionType == 3) {
-    const newChildren = sqliteTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-  }
-
   const listNodeInfoReq = {
     level_infos: getLevelInfos(node),
   }
@@ -172,7 +136,7 @@ const updateNode = async (node, currentMenuList) => {
 
   if (response_code === 0) {
     let newChildren
-    if (response_msg.length === 0) {
+    if (response_msg.list.length === 0) {
       newChildren = [
         {
           id: uuid(),
@@ -183,13 +147,13 @@ const updateNode = async (node, currentMenuList) => {
         },
       ]
     } else {
-      newChildren = response_msg.map((item) => ({
-        id: uuid(),
-        name: item[0],
-        iconName: item[1],
-        description: item[2],
-        showFirstIcon: showFirstIcon(node, item),
-        showSecondIcon: true,
+      newChildren = response_msg.list.map((item) => ({
+        id: item.id,
+        name: item.name,
+        iconName: item.icon_name,
+        description: item.description,
+        showFirstIcon: item.show_first_icon,
+        showSecondIcon: item.show_second_icon,
       }))
     }
 
@@ -198,7 +162,6 @@ const updateNode = async (node, currentMenuList) => {
 }
 
 const updateAllNode = async (node, updatedMenuList) => {
-  // Helper function to recursively iterate through all nodes
   const traverseAndUpdate = async (currentNode) => {
     console.log(currentNode)
     console.log("source", updatedMenuList)
@@ -211,8 +174,6 @@ const updateAllNode = async (node, updatedMenuList) => {
         currentNode.children.length > 0 &&
         currentNode.isOpen
     )
-
-    // Iterate over the children of the current node if they exist
     if (currentNode.children && currentNode.children.length > 0) {
       for (const child of currentNode.children) {
         await traverseAndUpdate(child) // Recursively call for each child
@@ -224,19 +185,14 @@ const updateAllNode = async (node, updatedMenuList) => {
             item.children = null // Set children to null for matching item
             return
           }
-          // Recursively check children of the current item if they exist
           if (item.children && item.children.length > 0) {
             findAndNullifyChildren(item.children)
           }
         }
       }
-
-      // Start searching for the node and nullify its children
       findAndNullifyChildren(updatedMenuList)
     }
   }
-
-  // Start traversal from the root node
   await traverseAndUpdate(node)
 
   return updatedMenuList
@@ -261,16 +217,24 @@ export const reloadNode = async (node, currentMenuList, setCurrentMenuList) => {
             connectionType: baseConfig.connectionType,
             iconName: baseConfig.iconName,
             name: baseConfig.name,
+            description: baseConfig.description,
           }
         }
         return item
       })
     }
-    // Update `updatedMenuList` with any changes made by updateAllNode
     updatedMenuList = await updateAllNode(rootNode, updatedMenuList)
   }
+  const rootDataList = await loadRootData()
+  const internalNodeMap = new Map(
+    updatedMenuList.map((child) => [child.baseConfigId, child])
+  )
+  for (const rootData of rootDataList) {
+    if (!internalNodeMap.has(rootData.baseConfigId)) {
+      updatedMenuList.push(rootData)
+    }
+  }
 
-  // Update the state with the modified menu list
   setCurrentMenuList(updatedMenuList)
 }
 
@@ -281,7 +245,7 @@ export function getRootNode(node) {
   }
   return tempNode
 }
-const formatMap = new Map([
+export const formatMap = new Map([
   [0, "mysql"],
   [3, "sqlite"],
   [2, "postgresql"],

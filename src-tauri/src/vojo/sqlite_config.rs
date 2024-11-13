@@ -3,9 +3,11 @@ use std::path::Path;
 use std::vec;
 
 use super::list_node_info_req::ListNodeInfoReq;
+use super::list_node_info_response::ListNodeInfoResponse;
 use crate::util::sql_utils::sqlite_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
@@ -13,6 +15,7 @@ use crate::AppState;
 use anyhow::Ok;
 use chrono::DateTime;
 use chrono::Local;
+use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
 use sqlx::Column;
@@ -22,6 +25,28 @@ use sqlx::Row;
 use sqlx::SqliteConnection;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
+use std::sync::OnceLock;
+static SQLITE_ROOT_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
+static SQLITE_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
+
+fn get_sqlite_root_data() -> &'static LinkedHashMap<&'static str, &'static str> {
+    SQLITE_ROOT_DATA.get_or_init(|| {
+        let mut map = LinkedHashMap::new();
+        map.insert("Query", "query");
+        map.insert("Tables", "tables");
+        map.insert("Views", "views");
+        map
+    })
+}
+fn get_sqlite_table_data() -> &'static LinkedHashMap<&'static str, &'static str> {
+    SQLITE_TABLE_DATA.get_or_init(|| {
+        let mut map = LinkedHashMap::new();
+        map.insert("Columns", "columns");
+        map.insert("Index", "index");
+        map.insert("Partitions", "partitions");
+        map
+    })
+}
 #[derive(Deserialize, Serialize, Clone)]
 pub struct SqliteConfig {
     pub file_path: String,
@@ -39,16 +64,30 @@ impl SqliteConfig {
             .ok_or(anyhow!("Not valid database file."))?;
         Ok(())
     }
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        Ok(self.file_path.clone())
+    }
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let mut vec = vec![];
 
         info!("sqlite list_node_info_req: {:?}", list_node_info_req);
         let level_infos = list_node_info_req.level_infos;
-        if level_infos.len() == 2 {
+        if level_infos.len() == 1 {
+            for (name, icon_name) in get_sqlite_root_data().iter() {
+                let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                    true,
+                    true,
+                    icon_name.to_string(),
+                    name.to_string(),
+                    None,
+                );
+                vec.push(list_node_info_response_item);
+            }
+        } else if level_infos.len() == 2 {
             let base_config_id = level_infos[0].config_value.parse::<i32>()?;
 
             let node_name = level_infos[1].config_value.clone();
@@ -61,7 +100,15 @@ impl SqliteConfig {
                     .await?;
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    vec.push((row_str, "singleTable".to_string(), None));
+                    // vec.push((row_str, "singleTable".to_string(), None));
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "singleTable".to_string(),
+                        row_str,
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
                 }
             } else if node_name == "Query" {
                 let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
@@ -71,9 +118,28 @@ impl SqliteConfig {
                 info!("row length:{}", rows.len());
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    vec.push((row_str, "singleQuery".to_string(), None));
+                    // vec.push((row_str, "singleQuery".to_string(), None));
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        false,
+                        true,
+                        "singleQuery".to_string(),
+                        row_str,
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
                 }
                 info!("vec: {:?}", vec);
+            }
+        } else if level_infos.len() == 3 {
+            for (name, icon_name) in get_sqlite_table_data().iter() {
+                let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                    true,
+                    true,
+                    icon_name.to_string(),
+                    name.to_string(),
+                    None,
+                );
+                vec.push(list_node_info_response_item);
             }
         } else if level_infos.len() == 4 {
             let base_config_id = level_infos[0].config_value.parse::<i32>()?;
@@ -89,22 +155,38 @@ impl SqliteConfig {
                     let buf: &[u8] = item.try_get(1)?;
                     let key: i32 = item.try_get(5)?;
                     if key > 0 {
-                        vec.push((
-                            String::from_utf8_lossy(buf).to_string(),
+                        // vec.push((
+                        //     String::from_utf8_lossy(buf).to_string(),
+                        //     "primary".to_string(),
+                        //     None,
+                        // ));
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
                             "primary".to_string(),
-                            None,
-                        ));
-                    } else {
-                        vec.push((
                             String::from_utf8_lossy(buf).to_string(),
-                            "column".to_string(),
                             None,
-                        ));
+                        );
+                        vec.push(list_node_info_response_item);
+                    } else {
+                        // vec.push((
+                        //     String::from_utf8_lossy(buf).to_string(),
+                        //     "column".to_string(),
+                        //     None,
+                        // ));
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "column".to_string(),
+                            String::from_utf8_lossy(buf).to_string(),
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
                     }
                 }
             }
         }
-        Ok(vec)
+        Ok(ListNodeInfoResponse::new(vec))
     }
     async fn get_primary_column(
         conn: &mut sqlx::SqliteConnection,

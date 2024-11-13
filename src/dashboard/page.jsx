@@ -69,6 +69,7 @@ export const SidebarContext = createContext({
   setPageDataArray: () => {},
   handleRemoveWithoutSaveButtonClick: () => {},
   treeRef: {},
+  setConnectionType: () => {},
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -77,6 +78,7 @@ const DashboardPage = () => {
   const { toast } = useToast()
 
   const [menulist, setMenulist] = useState([])
+  const [connectionType, setConnectionType] = useState("mysql")
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
   const [showQueryLoading, setShowQueryLoading] = useState(false)
@@ -120,6 +122,7 @@ const DashboardPage = () => {
           id: uuid(),
           name: item.connection_name,
           baseConfigId: item.base_config_id,
+          description: item.description,
         }
       })
       console.log("convert to:" + JSON.stringify(newMenulist))
@@ -276,6 +279,7 @@ const DashboardPage = () => {
           menulist,
           setMenulist,
           treeRef,
+          setConnectionType,
         }}
       >
         <ResizablePanelGroup
@@ -320,6 +324,7 @@ const DashboardPage = () => {
                 baseCongfigId={baseConfigId}
                 isSave={isSave}
                 isOpen={showEditConnectionDialog}
+                connectionType={connectionType}
               />
             </Dialog>
             <Dialog open={showQueryLoading} onOpenChange={setShowQueryLoading}>

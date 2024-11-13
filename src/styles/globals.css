@@ -34,7 +34,7 @@
 
     --primary: 224 33% 39%;
     --primary-light: 213 26.8% 83.9%;
-
+    --primary-selected: 215 20.2% 65.1%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -74,6 +74,8 @@
 
     --primary: 229 27% 40%;
     --primary-light: 224 10% 37%;
+    --primary-selected: 215 20.2% 65.1%;
+
     --primary-foreground: 213 31% 91%;
 
     --secondary: 222.2 47.4% 11.2%;

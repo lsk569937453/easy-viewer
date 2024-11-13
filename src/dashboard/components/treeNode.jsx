@@ -8,7 +8,12 @@ import "@szhsin/react-menu/dist/index.css"
 
 import { useToast } from "@/components/ui/use-toast"
 
-import { getLevelInfos, getRootNode, uuid } from "../../lib/jsx-utils"
+import {
+  formatMap,
+  getLevelInfos,
+  getRootNode,
+  uuid,
+} from "../../lib/jsx-utils"
 import { clickNode } from "../../lib/node.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
@@ -35,6 +40,7 @@ const TreeNode = ({
     setShowDeleteConnectionDialog,
     setShowEditConnectionDialog,
     setIsSave,
+    setConnectionType,
   } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
@@ -150,6 +156,11 @@ const TreeNode = ({
     setNodeForUpdate(node)
     let rootNode = getRootNode(node)
     setBaseConfigId(rootNode.data.baseConfigId)
+    console.log(
+      rootNode.data.connectionType,
+      formatMap.get(rootNode.data.connectionType)
+    )
+    setConnectionType(formatMap.get(rootNode.data.connectionType))
     setShowEditConnectionDialog(true)
     setIsSave(true)
   }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { useTranslation } from "react-i18next"
 
@@ -22,6 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog"
+import { reloadNode } from "../../lib/jsx-utils"
+import { SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
 export function MysqlConfigComponent({
@@ -34,9 +36,8 @@ export function MysqlConfigComponent({
   isSave = false,
   baseCongfigId = null,
 }) {
-  console.log(initialPassword)
-  console.log(initialUsername)
-  console.log(baseCongfigId)
+  const { treeRef, menulist, setMenulist, setShowEditConnectionDialog } =
+    useContext(SidebarContext)
 
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
@@ -217,7 +218,7 @@ export function MysqlConfigComponent({
         title: "操作信息",
         description: "保存成功。",
       })
-      window.location.reload()
+      reloadNode(treeRef.current.root, menulist, setMenulist)
     } else {
       toast({
         variant: "destructive",
@@ -225,6 +226,7 @@ export function MysqlConfigComponent({
         description: response_msg,
       })
     }
+    setShowEditConnectionDialog(false)
   }
   const handleSaveButtonOnClick = async () => {
     if (connectionName === undefined || connectionName === "") {

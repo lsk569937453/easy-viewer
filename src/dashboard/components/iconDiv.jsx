@@ -37,6 +37,7 @@ const IconDiv = ({ node }) => {
     setShowRemoveQueryDialog,
     menulist,
     setMenulist,
+    setConnectionType,
   } = useContext(SidebarContext)
   const { toast } = useToast()
 

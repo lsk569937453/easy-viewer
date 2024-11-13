@@ -82,21 +82,15 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
   const updateNodeChildren = (nodes) => {
     for (let node of nodes) {
       if (node.id === targetId) {
-        // If node.children is missing or empty, directly set it to newChildren
         if (!node.children || node.children.length === 0) {
           node.children = [...newChildren]
         } else {
-          // Otherwise, proceed with the comparison
           const newChildrenMap = new Map(
             newChildren.map((child) => [child.name, child])
           )
-
-          // Filter out children not present in newChildren
           node.children = node.children.filter((child) =>
             newChildrenMap.has(child.name)
           )
-
-          // Add any missing newChildren
           newChildren.forEach((newChild) => {
             if (!node.children.find((child) => child.name === newChild.name)) {
               node.children.push(newChild)
@@ -105,8 +99,6 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
         }
         return true // Stop once the target node is found and updated
       }
-
-      // Recursive call for child nodes
       if (node.children && updateNodeChildren(node.children)) {
         return true
       }
@@ -198,7 +190,6 @@ const updateNode = async (node, currentMenuList) => {
 }
 
 const updateAllNode = async (node, updatedMenuList) => {
-  // Helper function to recursively iterate through all nodes
   const traverseAndUpdate = async (currentNode) => {
     console.log(currentNode)
     console.log("source", updatedMenuList)
@@ -211,8 +202,6 @@ const updateAllNode = async (node, updatedMenuList) => {
         currentNode.children.length > 0 &&
         currentNode.isOpen
     )
-
-    // Iterate over the children of the current node if they exist
     if (currentNode.children && currentNode.children.length > 0) {
       for (const child of currentNode.children) {
         await traverseAndUpdate(child) // Recursively call for each child
@@ -224,19 +213,14 @@ const updateAllNode = async (node, updatedMenuList) => {
             item.children = null // Set children to null for matching item
             return
           }
-          // Recursively check children of the current item if they exist
           if (item.children && item.children.length > 0) {
             findAndNullifyChildren(item.children)
           }
         }
       }
-
-      // Start searching for the node and nullify its children
       findAndNullifyChildren(updatedMenuList)
     }
   }
-
-  // Start traversal from the root node
   await traverseAndUpdate(node)
 
   return updatedMenuList
@@ -266,11 +250,8 @@ export const reloadNode = async (node, currentMenuList, setCurrentMenuList) => {
         return item
       })
     }
-    // Update `updatedMenuList` with any changes made by updateAllNode
     updatedMenuList = await updateAllNode(rootNode, updatedMenuList)
   }
-
-  // Update the state with the modified menu list
   setCurrentMenuList(updatedMenuList)
 }
 
@@ -281,7 +262,7 @@ export function getRootNode(node) {
   }
   return tempNode
 }
-const formatMap = new Map([
+export const formatMap = new Map([
   [0, "mysql"],
   [3, "sqlite"],
   [2, "postgresql"],

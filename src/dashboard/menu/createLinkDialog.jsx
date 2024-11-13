@@ -55,13 +55,17 @@ const CreateLinkDialog = ({
   baseCongfigId = null,
   isSave = false,
   isOpen = false,
+  connectionType = "mysql",
 }) => {
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
-  const [currentLinkType, setCurrentLinkType] = useState("mysql")
+  const [currentLinkType, setCurrentLinkType] = useState(connectionType)
 
   const [currentLinkName, setCurrentLinkName] = useState("")
   const [connectionData, setConnectionData] = useState(null)
+  useEffect(() => {
+    setCurrentLinkType(connectionType)
+  }, [connectionType])
 
   useEffect(() => {
     console.log(baseCongfigId)
@@ -115,7 +119,7 @@ const CreateLinkDialog = ({
           <div className="flex flex-row items-center gap-5 px-4">
             <p className="basis-2/12 text-right">连接类型:</p>
             <Select
-              defaultValue={"mysql"}
+              defaultValue={connectionType}
               onValueChange={(e) => setCurrentLinkType(e)}
             >
               <SelectTrigger className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0">

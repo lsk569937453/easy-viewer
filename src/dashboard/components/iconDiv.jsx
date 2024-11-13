@@ -23,6 +23,7 @@ import TablePage from "../page/tablePage.jsx"
 const iconWidth = 20
 const iconHeight = 20
 const delayDuration = 300
+const secondHoverColor = "bg-primary-light"
 const IconDiv = ({ node }) => {
   const {
     handleAddPageClick,
@@ -357,7 +358,9 @@ const IconDiv = ({ node }) => {
           <p className="flex-none text-xs text-muted-foreground">
             {node.data.description}
           </p>
-          <div className="absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -484,8 +487,12 @@ const IconDiv = ({ node }) => {
             </svg>
           )}
           <p className="flex-none text-sm ">{node.data.name}</p>
-
-          <div className="absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light">
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -578,7 +585,10 @@ const IconDiv = ({ node }) => {
           <p className="flex-none text-xs text-muted-foreground">
             {node.data.description}
           </p>
-          <div className="ml-auto flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}
@@ -640,7 +650,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row pr-3 group-hover/item:bg-primary-light ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -672,7 +685,6 @@ const IconDiv = ({ node }) => {
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -720,7 +732,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql ml-7 flex-none stroke-orange-400"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql ml-6 flex-none stroke-orange-400"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -734,7 +746,9 @@ const IconDiv = ({ node }) => {
           )}
           <p className="flex-grow text-sm ">{node.data.name}</p>
 
-          <div className="absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -767,7 +781,6 @@ const IconDiv = ({ node }) => {
                 </Tooltip.Portal>
               </Tooltip.Root>
             </Tooltip.Provider>
-
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -827,7 +840,10 @@ const IconDiv = ({ node }) => {
             </svg>
           )}
           <p className="flex-grow text-sm">{node.data.name}</p>
-          <div className="ml-auto flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -916,7 +932,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}
@@ -974,7 +993,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}
@@ -1098,7 +1120,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="flex-grow text-sm">{node.data.name}</p>
 
-          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1156,7 +1181,10 @@ const IconDiv = ({ node }) => {
 
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1244,7 +1272,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="ml-auto flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1323,7 +1354,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-3 stroke-yellow-400"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-6 stroke-yellow-400"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
@@ -1335,7 +1366,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}
@@ -1383,7 +1417,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-3"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-6"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
@@ -1395,7 +1429,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}
@@ -1502,7 +1539,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-key ml-3 stroke-yellow-400"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-key ml-6 stroke-yellow-400"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M16.555 3.843l3.602 3.602a2.877 2.877 0 0 1 0 4.069l-2.643 2.643a2.877 2.877 0 0 1 -4.069 0l-.301 -.301l-6.558 6.558a2 2 0 0 1 -1.239 .578l-.175 .008h-1.172a1 1 0 0 1 -.993 -.883l-.007 -.117v-1.172a2 2 0 0 1 .467 -1.284l.119 -.13l.414 -.414h2v-2h2v-2l2.144 -2.144l-.301 -.301a2.877 2.877 0 0 1 0 -4.069l2.643 -2.643a2.877 2.877 0 0 1 4.069 0z" />
@@ -1511,7 +1548,10 @@ const IconDiv = ({ node }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
-          <div className="absolute right-0 z-50 flex flex-row pr-3 ">
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:${secondHoverColor}`}
+          >
+            {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1629,7 +1669,7 @@ const IconDiv = ({ node }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-cube ml-3 stroke-red-500"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-cube ml-6 stroke-red-500"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M21 16.008v-8.018a1.98 1.98 0 0 0 -1 -1.717l-7 -4.008a2.016 2.016 0 0 0 -2 0l-7 4.008c-.619 .355 -1 1.01 -1 1.718v8.018c0 .709 .381 1.363 1 1.717l7 4.008a2.016 2.016 0 0 0 2 0l7 -4.008c.619 -.355 1 -1.01 1 -1.718z" />

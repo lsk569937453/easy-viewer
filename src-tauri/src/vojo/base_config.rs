@@ -3,6 +3,7 @@ use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
 use crate::sql_lite::connection::AppState;
+use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use anyhow::Ok;
 use serde::Deserialize;
@@ -55,7 +56,7 @@ impl BaseConfigEnum {
 
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let vec = match self {
             BaseConfigEnum::Mysql(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
@@ -65,7 +66,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
-            _ => vec![("".to_string(), "".to_string(), None)],
+            _ => ListNodeInfoResponse::new_with_empty(),
         };
         Ok(vec)
     }
@@ -203,10 +204,9 @@ impl PostgresqlConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
-    ) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
-        let vec = vec![];
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let test_url = self.config.to_url("mysql".to_string());
-        Ok(vec)
+        Ok(ListNodeInfoResponse::new_with_empty())
     }
     pub async fn exe_sql(
         &self,

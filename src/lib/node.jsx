@@ -5,70 +5,6 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getLevelInfos, uuid } from "./jsx-utils"
 
-export const mysqlDatabaseData = [
-  {
-    name: "Query",
-    iconName: "query",
-  },
-  {
-    name: "Tables",
-    iconName: "tables",
-  },
-  {
-    name: "Views",
-    iconName: "views",
-  },
-  {
-    name: "Functions",
-    iconName: "functions",
-  },
-  {
-    name: "Procedures",
-    iconName: "procedures",
-  },
-]
-export const sqliteRootData = [
-  {
-    name: "Query",
-    iconName: "query",
-  },
-  {
-    name: "Tables",
-    iconName: "tables",
-  },
-  {
-    name: "Views",
-    iconName: "views",
-  },
-]
-export const sqliteTableData = [
-  {
-    name: "Columns",
-    iconName: "columns",
-  },
-  {
-    name: "Index",
-    iconName: "index",
-  },
-  {
-    name: "Partitions",
-    iconName: "partitions",
-  },
-]
-export const mysqlTableData = [
-  {
-    name: "Columns",
-    iconName: "columns",
-  },
-  {
-    name: "Index",
-    iconName: "index",
-  },
-  {
-    name: "Partitions",
-    iconName: "partitions",
-  },
-]
 export const findParentNode = (node) => {
   let temNode = node
   while (temNode.level !== 0) {
@@ -104,56 +40,6 @@ export const showFirstIcon = (node, item) => {
 }
 export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
   console.log(node)
-
-  // Check if the parent node is MySQL
-  if (node.level == 1 && node.parent.data.connectionType == 0) {
-    const newChildren = mysqlDatabaseData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-    setCurrentMenuList([...currentMenuList])
-    return { response_code: 0, response_msg: "success" }
-  } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
-    const newChildren = mysqlTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-    setCurrentMenuList([...currentMenuList])
-    return { response_code: 0, response_msg: "success" }
-    // Check if the node is SQLite
-  } else if (node.level == 0 && node.data.connectionType == 3) {
-    const newChildren = sqliteRootData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-    setCurrentMenuList([...currentMenuList])
-    return { response_code: 0, response_msg: "success" }
-  } else if (node.level == 2 && findParentNode(node).data.connectionType == 3) {
-    const newChildren = sqliteTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndReplaceChildren(currentMenuList, node.data.id, newChildren)
-    setCurrentMenuList([...currentMenuList])
-    return { response_code: 0, response_msg: "success" }
-  }
-
-  console.log(node)
   const listNodeInfoReq = {
     level_infos: getLevelInfos(node),
   }
@@ -168,7 +54,7 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
 
   if (response_code === 0) {
     let newChildren
-    if (response_msg.length === 0) {
+    if (response_msg.list.length === 0) {
       newChildren = [
         {
           id: uuid(),
@@ -179,13 +65,13 @@ export const clickNode = async (node, currentMenuList, setCurrentMenuList) => {
         },
       ]
     } else {
-      newChildren = response_msg.map((item) => ({
-        id: uuid(),
-        name: item[0],
-        iconName: item[1],
-        description: item[2],
-        showFirstIcon: showFirstIcon(node, item),
-        showSecondIcon: true,
+      newChildren = response_msg.list.map((item) => ({
+        id: item.id,
+        name: item.name,
+        iconName: item.icon_name,
+        description: item.description,
+        showFirstIcon: item.show_first_icon,
+        showSecondIcon: item.show_second_icon,
       }))
     }
 

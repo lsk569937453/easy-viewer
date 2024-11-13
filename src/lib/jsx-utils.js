@@ -1,14 +1,6 @@
 import { invoke } from "@tauri-apps/api/core"
 
-import {
-  findAndReplaceChildren,
-  findParentNode,
-  mysqlDatabaseData,
-  mysqlTableData,
-  showFirstIcon,
-  sqliteRootData,
-  sqliteTableData,
-} from "./node"
+import { findAndReplaceChildren, findParentNode, showFirstIcon } from "./node"
 
 export function formatDate(input) {
   const date = new Date(input)
@@ -73,6 +65,7 @@ const getBaseConfigById = async (baseConfigId) => {
       connectionType: response_msg.connection_type,
       iconName: getIconNameByType(response_msg.connection_type),
       name: response_msg.connection_name,
+      description: response_msg.description,
     }
   } else {
     return null
@@ -133,51 +126,6 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
   updateNodeChildren(currentMenuList)
 }
 const updateNode = async (node, currentMenuList) => {
-  // Check if the parent node is MySQL
-  if (node.level == 1 && node.parent.data.connectionType == 0) {
-    const newChildren = mysqlDatabaseData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-
-    return
-  } else if (node.level == 3 && findParentNode(node).data.connectionType == 0) {
-    const newChildren = mysqlTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-    // Check if the node is SQLite
-  } else if (node.level == 0 && node.data.connectionType == 3) {
-    const newChildren = sqliteRootData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-  } else if (node.level == 2 && findParentNode(node).data.connectionType == 3) {
-    const newChildren = sqliteTableData.map((item) => ({
-      id: uuid(),
-      name: item.name,
-      iconName: item.iconName,
-      showFirstIcon: true,
-      showSecondIcon: true,
-    }))
-    findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
-    return
-  }
-
   const listNodeInfoReq = {
     level_infos: getLevelInfos(node),
   }
@@ -188,7 +136,7 @@ const updateNode = async (node, currentMenuList) => {
 
   if (response_code === 0) {
     let newChildren
-    if (response_msg.length === 0) {
+    if (response_msg.list.length === 0) {
       newChildren = [
         {
           id: uuid(),
@@ -199,13 +147,13 @@ const updateNode = async (node, currentMenuList) => {
         },
       ]
     } else {
-      newChildren = response_msg.map((item) => ({
-        id: uuid(),
-        name: item[0],
-        iconName: item[1],
-        description: item[2],
-        showFirstIcon: showFirstIcon(node, item),
-        showSecondIcon: true,
+      newChildren = response_msg.list.map((item) => ({
+        id: item.id,
+        name: item.name,
+        iconName: item.icon_name,
+        description: item.description,
+        showFirstIcon: item.show_first_icon,
+        showSecondIcon: item.show_second_icon,
       }))
     }
 

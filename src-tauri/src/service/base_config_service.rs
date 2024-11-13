@@ -5,6 +5,7 @@ use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
+use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
@@ -107,17 +108,19 @@ pub async fn get_base_config_by_id_with_error(
     let connection_json_str: String = row.try_get("connection_json")?;
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     let connection_type = base_config.base_config_enum.get_connection_type();
+    let description = base_config.base_config_enum.get_description()?;
     Ok(GetBaseConnectionByIdResponse {
         base_config_id: id,
         connection_name: row.try_get("connection_name")?,
         connection_json: connection_json_str,
         connection_type,
+        description,
     })
 }
 pub async fn list_node_info_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-) -> Result<Vec<(String, String, Option<String>)>, anyhow::Error> {
+) -> Result<ListNodeInfoResponse, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
 
     let value = list_node_info_req.level_infos[0]

@@ -176,7 +176,7 @@ const TreeNode = ({
       style={style}
       ref={dragHandle}
       className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 hover:bg-primary-light ${
-        selectedRows[node.id] ? "bg-primary-light" : ""
+        selectedRows[node.id] ? "bg-primary-selected" : ""
       }`}
       onClick={() => handleClickIcon(node)}
       onContextMenu={handleContextMenuClick}

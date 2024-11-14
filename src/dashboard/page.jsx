@@ -71,6 +71,7 @@ export const SidebarContext = createContext({
   treeRef: {},
   setConnectionType: () => {},
 })
+export const CreateConnectionDialogContext = createContext({})
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })

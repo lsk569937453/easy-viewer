@@ -67,6 +67,7 @@ impl SqliteConfig {
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
         Ok(self.file_path.clone())
     }
+
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -77,13 +78,28 @@ impl SqliteConfig {
         info!("sqlite list_node_info_req: {:?}", list_node_info_req);
         let level_infos = list_node_info_req.level_infos;
         if level_infos.len() == 1 {
+            let mut conn = SqliteConnection::connect(&self.file_path).await?;
+
+            let tables_count: i32 = sqlx::query(
+                "SELECT COUNT(*) 
+FROM sqlite_master 
+WHERE type = 'table';",
+            )
+            .fetch_one(&mut conn)
+            .await?
+            .try_get(0)?;
             for (name, icon_name) in get_sqlite_root_data().iter() {
+                let description = if *name == "Tables" && tables_count > 0 {
+                    Some(format!("({})", tables_count))
+                } else {
+                    None
+                };
                 let list_node_info_response_item = ListNodeInfoResponseItem::new(
                     true,
                     true,
                     icon_name.to_string(),
                     name.to_string(),
-                    None,
+                    description,
                 );
                 vec.push(list_node_info_response_item);
             }
@@ -100,13 +116,21 @@ impl SqliteConfig {
                     .await?;
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    // vec.push((row_str, "singleTable".to_string(), None));
+                    let sql = format!("select count(*) from {}", row_str.clone());
+                    info!("sql: {}", sql);
+                    let record_count: i32 =
+                        sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                    let description = if record_count > 0 {
+                        Some(format!("({})", record_count))
+                    } else {
+                        None
+                    };
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
                         "singleTable".to_string(),
                         row_str,
-                        None,
+                        description,
                     );
                     vec.push(list_node_info_response_item);
                 }
@@ -118,7 +142,6 @@ impl SqliteConfig {
                 info!("row length:{}", rows.len());
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    // vec.push((row_str, "singleQuery".to_string(), None));
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         false,
                         true,
@@ -153,33 +176,25 @@ impl SqliteConfig {
                 let rows = sqlx::query(&query).fetch_all(&mut conn).await?;
                 for item in rows {
                     let buf: &[u8] = item.try_get(1)?;
+                    let type_bytes: &[u8] = item.try_get(2)?;
+                    let type_name = String::from_utf8_lossy(type_bytes).to_string();
                     let key: i32 = item.try_get(5)?;
                     if key > 0 {
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "primary".to_string(),
-                        //     None,
-                        // ));
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
                             true,
                             "primary".to_string(),
                             String::from_utf8_lossy(buf).to_string(),
-                            None,
+                            Some(type_name),
                         );
                         vec.push(list_node_info_response_item);
                     } else {
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "column".to_string(),
-                        //     None,
-                        // ));
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
                             true,
                             "column".to_string(),
                             String::from_utf8_lossy(buf).to_string(),
-                            None,
+                            Some(type_name),
                         );
                         vec.push(list_node_info_response_item);
                     }

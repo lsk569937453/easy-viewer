@@ -111,11 +111,7 @@ WHERE table_schema = "{}";"#,
                     } else {
                         "".to_string()
                     };
-                    // vec.push((
-                    //     database_name.to_string(),
-                    //     "database".to_string(),
-                    //     Some(db_size_str),
-                    // ));
+
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
@@ -129,13 +125,33 @@ WHERE table_schema = "{}";"#,
                 return Ok(ListNodeInfoResponse::new(vec));
             }
             2 => {
+                let mut conn = MySqlConnection::connect(&connection_url).await?;
+                let database_name = level_infos[1].config_value.clone();
+                let sql = format!("use {}", database_name);
+                info!("sql: {}", sql);
+                conn.execute(&*sql).await?;
+                let tables_count: i32 = sqlx::query(
+                    "SELECT COUNT(*) 
+FROM information_schema.tables
+WHERE table_schema = DATABASE()",
+                )
+                .fetch_optional(&mut conn)
+                .await?
+                .ok_or(anyhow!(""))?
+                .try_get(0)?;
                 for (name, icon_name) in get_mysql_database_data().iter() {
+                    let description = if *name == "Tables" && tables_count > 0 {
+                        Some(format!("({})", tables_count))
+                    } else {
+                        None
+                    };
+                    info!("description: {}", tables_count);
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
                         icon_name.to_string(),
                         name.to_string(),
-                        None,
+                        description,
                     );
                     vec.push(list_node_info_response_item);
                 }
@@ -147,24 +163,34 @@ WHERE table_schema = "{}";"#,
                 if node_name == "Tables" {
                     let mut conn = MySqlConnection::connect(&connection_url).await?;
 
-                    let sql = format!("use {}", database_name);
+                    let sql = format!("use {}", database_name.clone());
                     info!("sql: {}", sql);
                     conn.execute(&*sql).await?;
 
                     let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
+
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "singleTable".to_string(),
-                        //     None,
-                        // ));
+                        let table_name = String::from_utf8_lossy(buf).to_string();
+                        let sql = format!(
+                            "select count(*) from {}.{}",
+                            database_name.clone(),
+                            table_name.clone()
+                        );
+                        info!("sql: {}", sql);
+                        let record_count: i32 =
+                            sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                        let description = if record_count > 0 {
+                            Some(format!("({})", record_count))
+                        } else {
+                            None
+                        };
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             true,
                             true,
                             "singleTable".to_string(),
-                            String::from_utf8_lossy(buf).to_string(),
-                            None,
+                            table_name,
+                            description,
                         );
                         vec.push(list_node_info_response_item);
                     }
@@ -179,7 +205,6 @@ WHERE table_schema = "{}";"#,
                     let mut vec = vec![];
                     for row in rows {
                         let row_str: String = row.try_get(0)?;
-                        // vec.push((row_str, "singleQuery".to_string(), None));
 
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
@@ -223,34 +248,26 @@ WHERE table_schema = "{}";"#,
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
+                        let type_bytes: &[u8] = item.try_get(1)?;
+                        let type_name = String::from_utf8_lossy(type_bytes).to_string();
                         let key: &[u8] = item.try_get(3)?;
                         info!("key: {}", String::from_utf8_lossy(key).to_string());
                         if key == b"PRI" {
-                            // vec.push((
-                            //     String::from_utf8_lossy(buf).to_string(),
-                            //     "primary".to_string(),
-                            //     None,
-                            // ));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
                                 "primary".to_string(),
                                 String::from_utf8_lossy(buf).to_string(),
-                                None,
+                                Some(type_name),
                             );
                             vec.push(list_node_info_response_item);
                         } else {
-                            // vec.push((
-                            //     String::from_utf8_lossy(buf).to_string(),
-                            //     "column".to_string(),
-                            //     None,
-                            // ));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
                                 "column".to_string(),
                                 String::from_utf8_lossy(buf).to_string(),
-                                None,
+                                Some(type_name),
                             );
                             vec.push(list_node_info_response_item);
                         }
@@ -267,7 +284,6 @@ WHERE table_schema = "{}";"#,
                     for item in rows {
                         let index_name: String = item.try_get(2)?;
                         if index_name == "PRIMARY" {
-                            // vec.push((index_name, "singlePrimaryIndex".to_string(), None));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
@@ -386,7 +402,6 @@ WHERE table_schema = "{}";"#,
             });
         }
         let mut response_rows = vec![];
-        // info!("rows: {:?}", rows);
         for item in rows.iter() {
             let columns = item.columns();
             let len = columns.len();

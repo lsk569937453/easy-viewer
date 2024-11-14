@@ -83,7 +83,7 @@ impl SqliteConfig {
             let tables_count: i32 = sqlx::query(
                 "SELECT COUNT(*) 
 FROM sqlite_master 
-WHERE type = 'table';",
+WHERE type = 'table' and name !='sqlite_sequence';",
             )
             .fetch_one(&mut conn)
             .await?
@@ -121,7 +121,7 @@ WHERE type = 'table';",
                     let record_count: i32 =
                         sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
                     let description = if record_count > 0 {
-                        Some(format!("({})", record_count))
+                        Some(format!("{}", record_count))
                     } else {
                         None
                     };

@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
+import useResizeObserver from "use-resize-observer"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
@@ -9,15 +10,49 @@ const TabsComponent = () => {
   const [tabMenuAnchorPoint, settabMenuAnchorPoint] = useState({ x: 0, y: 0 })
   const [isTabContextMenuOpen, setIsTabContextMenuOpen] = useState(false)
   const [contextMenuTabIndex, setContextMenuTabIndex] = useState(null)
+  const [tabWidth, setTabWidth] = useState(192)
+  const rowRef = useRef(null)
+
   const {
     tabValue,
     setTabValue,
     pageDataArray,
     tabsState,
+    setTabsState,
     setPageDataArray,
     handleRemoveTabButton,
     handleRemoveWithoutSaveButtonClick,
   } = useContext(SidebarContext)
+
+  useEffect(() => {
+    const adjustWidths = () => {
+      if (!rowRef.current) return
+      const containerWidth = rowRef.current.offsetWidth
+      const elements = rowRef.current.children
+
+      const totalElementsWidth = Array.from(elements).reduce(
+        (acc, el) => acc + el.offsetWidth,
+        0
+      )
+
+      if (totalElementsWidth > containerWidth) {
+        const wid = containerWidth / pageDataArray.length
+        console.log(wid)
+        setTabWidth(wid) // Adjust width
+      } else {
+        setTabWidth(192) // Set to default width
+      }
+    }
+
+    // Initial adjustment on mount
+    adjustWidths()
+
+    // Adjust widths on window resize
+    window.addEventListener("resize", adjustWidths)
+
+    // Cleanup listener on component unmount
+    return () => window.removeEventListener("resize", adjustWidths)
+  }, [pageDataArray.length])
   const handleCloseTab = () => {
     handleRemoveTabButton(contextMenuTabIndex)
   }
@@ -61,6 +96,7 @@ const TabsComponent = () => {
   const handleCloseAllTabs = () => {
     setPageDataArray([])
     setTabValue(undefined)
+    setTabsState([])
   }
   return (
     <Tabs
@@ -89,16 +125,22 @@ const TabsComponent = () => {
           Close Tabs to the right
         </MenuItem>
         <MenuItem onClick={handleCloseAllTabs} className="text-sm">
-          Close All
+          Close All Without Save
         </MenuItem>
       </ControlledMenu>
-      <TabsList className="flex   flex-row items-start justify-start overflow-x-auto">
+      <TabsList
+        className="flex   flex-row items-start justify-start overflow-hidden"
+        ref={rowRef}
+      >
         {pageDataArray.map((item, index) => {
           return (
             <TabsTrigger
               value={item.service}
               key={index}
-              className="w-auto justify-start"
+              className="justify-start"
+              style={{
+                width: `${tabWidth}px`,
+              }}
               onContextMenu={(e) => {
                 if (
                   typeof document.hasFocus === "function" &&
@@ -112,51 +154,33 @@ const TabsComponent = () => {
                 setIsTabContextMenuOpen(true)
               }}
             >
-              <div className="relative flex flex-row items-center justify-center gap-1 px-10">
-                <div className="flex flex-row items-start justify-start gap-1">
-                  <div className="flex-none"> {item.icon}</div>
-                  <p className="grow"> {item.tabName}</p>
-                </div>
-                {tabsState.includes(index) && (
-                  <div class="group absolute  right-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-                    </svg>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      onClick={() => {
-                        handleRemoveWithoutSaveButtonClick(index)
-                      }}
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
-                    >
-                      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                      <path d="M18 6l-12 12" />
-                      <path d="M6 6l12 12" />
-                    </svg>
-                  </div>
+              <div className="flex w-full flex-row items-start justify-start gap-1 p-2">
+                <div className="flex-none"> {item.icon}</div>
+                {tabWidth > 70 && (
+                  <p className="grow-0 overflow-hidden text-ellipsis pr-6">
+                    {" "}
+                    {item.tabName}
+                  </p>
                 )}
-                {!tabsState.includes(index) && (
+              </div>
+              {tabsState.includes(index) && (
+                <div class="group absolute  right-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                  </svg>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     width="16"
                     onClick={() => {
-                      handleRemoveTabButton(index)
+                      handleRemoveWithoutSaveButtonClick(index)
                     }}
                     height="16"
                     viewBox="0 0 24 24"
@@ -165,14 +189,35 @@ const TabsComponent = () => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M18 6l-12 12" />
                     <path d="M6 6l12 12" />
                   </svg>
-                )}
-              </div>
+                </div>
+              )}
+              {!tabsState.includes(index) && (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  onClick={() => {
+                    handleRemoveTabButton(index)
+                  }}
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
+                >
+                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                  <path d="M18 6l-12 12" />
+                  <path d="M6 6l12 12" />
+                </svg>
+              )}
             </TabsTrigger>
           )
         })}

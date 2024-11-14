@@ -181,7 +181,7 @@ WHERE table_schema = DATABASE()",
                         let record_count: i32 =
                             sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
                         let description = if record_count > 0 {
-                            Some(format!("({})", record_count))
+                            Some(format!("{}", record_count))
                         } else {
                             None
                         };

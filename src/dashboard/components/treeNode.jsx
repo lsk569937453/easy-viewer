@@ -175,9 +175,9 @@ const TreeNode = ({
     <div
       style={style}
       ref={dragHandle}
-      className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 hover:bg-primary-light ${
-        selectedRows[node.id] ? "bg-primary-selected" : ""
-      }`}
+      className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 ${
+        selectedRows[node.id] ? "bg-primary-selected" : "hover:bg-primary-light"
+      }  `}
       onClick={() => handleClickIcon(node)}
       onContextMenu={handleContextMenuClick}
     >
@@ -236,7 +236,7 @@ const TreeNode = ({
           <path d="M9 6l6 6l-6 6" />
         </svg>
       )}
-      <IconDiv node={node} />
+      <IconDiv node={node} selectedRows={selectedRows} />
     </div>
   )
 }

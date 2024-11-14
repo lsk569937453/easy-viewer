@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
+import * as Tooltip from "@radix-ui/react-tooltip"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import useResizeObserver from "use-resize-observer"
 
@@ -129,96 +130,111 @@ const TabsComponent = () => {
         </MenuItem>
       </ControlledMenu>
       <TabsList
-        className="flex   flex-row items-start justify-start overflow-hidden"
+        className="flex   h-auto flex-row items-start justify-start overflow-hidden"
         ref={rowRef}
       >
         {pageDataArray.map((item, index) => {
           return (
-            <TabsTrigger
-              value={item.service}
-              key={index}
-              className="justify-start"
-              style={{
-                width: `${tabWidth}px`,
-              }}
-              onContextMenu={(e) => {
-                if (
-                  typeof document.hasFocus === "function" &&
-                  !document.hasFocus()
-                )
-                  return
-                e.stopPropagation()
-                e.preventDefault()
-                settabMenuAnchorPoint({ x: e.clientX, y: e.clientY })
-                setContextMenuTabIndex(index)
-                setIsTabContextMenuOpen(true)
-              }}
-            >
-              <div className="flex w-full flex-row items-start justify-start gap-1 p-2">
-                <div className="flex-none"> {item.icon}</div>
-                {tabWidth > 70 && (
-                  <p className="grow-0 overflow-hidden text-ellipsis pr-6">
-                    {" "}
-                    {item.tabName}
-                  </p>
-                )}
-              </div>
-              {tabsState.includes(index) && (
-                <div class="group absolute  right-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
-                  </svg>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    onClick={() => {
-                      handleRemoveWithoutSaveButtonClick(index)
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  <TabsTrigger
+                    value={item.service}
+                    key={index}
+                    className="justify-start"
+                    style={{
+                      width: `${tabWidth}px`,
                     }}
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
+                    onContextMenu={(e) => {
+                      if (
+                        typeof document.hasFocus === "function" &&
+                        !document.hasFocus()
+                      )
+                        return
+                      e.stopPropagation()
+                      e.preventDefault()
+                      settabMenuAnchorPoint({ x: e.clientX, y: e.clientY })
+                      setContextMenuTabIndex(index)
+                      setIsTabContextMenuOpen(true)
+                    }}
                   >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M18 6l-12 12" />
-                    <path d="M6 6l12 12" />
-                  </svg>
-                </div>
-              )}
-              {!tabsState.includes(index) && (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  onClick={() => {
-                    handleRemoveTabButton(index)
-                  }}
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
-                >
-                  <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                  <path d="M18 6l-12 12" />
-                  <path d="M6 6l12 12" />
-                </svg>
-              )}
-            </TabsTrigger>
+                    <div className="flex w-full flex-row items-start justify-start gap-1 p-2">
+                      <div className="flex-none"> {item.icon}</div>
+                      {tabWidth > 70 && (
+                        <p className="grow-0 overflow-hidden text-ellipsis pr-6">
+                          {" "}
+                          {item.tabName}
+                        </p>
+                      )}
+                    </div>
+                    {tabsState.includes(index) && (
+                      <div class="group absolute  right-2">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          class="icon icon-tabler icons-tabler-outline icon-tabler-x  group-hover:hidden"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M12 7a5 5 0 1 1 -4.995 5.217l-.005 -.217l.005 -.217a5 5 0 0 1 4.995 -4.783z" />
+                        </svg>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          onClick={() => {
+                            handleRemoveWithoutSaveButtonClick(index)
+                          }}
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="icon icon-tabler icons-tabler-outline icon-tabler-x hidden group-hover:block"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M18 6l-12 12" />
+                          <path d="M6 6l12 12" />
+                        </svg>
+                      </div>
+                    )}
+                    {!tabsState.includes(index) && (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        onClick={() => {
+                          handleRemoveTabButton(index)
+                        }}
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        class="icon icon-tabler icons-tabler-outline icon-tabler-x absolute right-2"
+                      >
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                        <path d="M18 6l-12 12" />
+                        <path d="M6 6l12 12" />
+                      </svg>
+                    )}
+                  </TabsTrigger>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p> {item.tabName}</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           )
         })}
       </TabsList>

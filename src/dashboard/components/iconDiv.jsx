@@ -24,7 +24,7 @@ const iconWidth = 20
 const iconHeight = 20
 const delayDuration = 300
 const secondHoverColor = "bg-primary-light"
-const IconDiv = ({ node }) => {
+const IconDiv = ({ node, selectedRows }) => {
   const {
     handleAddPageClick,
     setShowQueryLoading,
@@ -359,7 +359,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
@@ -491,7 +495,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             <Tooltip.Provider>
               <Tooltip.Root>
@@ -586,7 +594,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <svg
@@ -651,7 +663,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider>
@@ -747,7 +763,11 @@ const IconDiv = ({ node }) => {
           <p className="flex-grow text-sm ">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             <Tooltip.Provider>
               <Tooltip.Root>
@@ -844,7 +864,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider>
@@ -936,7 +960,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <svg
@@ -997,7 +1025,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <svg
@@ -1126,7 +1158,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider>
@@ -1187,7 +1223,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -1278,7 +1318,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -1372,7 +1416,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <svg
@@ -1435,7 +1483,11 @@ const IconDiv = ({ node }) => {
           <p className="text-sm">{node.data.name}</p>
 
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <svg
@@ -1556,7 +1608,11 @@ const IconDiv = ({ node }) => {
             {node.data.description}
           </p>
           <div
-            className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
           >
             {" "}
             <Tooltip.Provider delayDuration={delayDuration}>

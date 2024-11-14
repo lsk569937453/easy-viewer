@@ -248,6 +248,8 @@ WHERE table_schema = DATABASE()",
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
+                        let type_bytes: &[u8] = item.try_get(1)?;
+                        let type_name = String::from_utf8_lossy(type_bytes).to_string();
                         let key: &[u8] = item.try_get(3)?;
                         info!("key: {}", String::from_utf8_lossy(key).to_string());
                         if key == b"PRI" {
@@ -256,7 +258,7 @@ WHERE table_schema = DATABASE()",
                                 true,
                                 "primary".to_string(),
                                 String::from_utf8_lossy(buf).to_string(),
-                                None,
+                                Some(type_name),
                             );
                             vec.push(list_node_info_response_item);
                         } else {
@@ -265,7 +267,7 @@ WHERE table_schema = DATABASE()",
                                 true,
                                 "column".to_string(),
                                 String::from_utf8_lossy(buf).to_string(),
-                                None,
+                                Some(type_name),
                             );
                             vec.push(list_node_info_response_item);
                         }

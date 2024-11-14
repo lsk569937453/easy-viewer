@@ -176,6 +176,8 @@ WHERE type = 'table';",
                 let rows = sqlx::query(&query).fetch_all(&mut conn).await?;
                 for item in rows {
                     let buf: &[u8] = item.try_get(1)?;
+                    let type_bytes: &[u8] = item.try_get(2)?;
+                    let type_name = String::from_utf8_lossy(type_bytes).to_string();
                     let key: i32 = item.try_get(5)?;
                     if key > 0 {
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
@@ -183,7 +185,7 @@ WHERE type = 'table';",
                             true,
                             "primary".to_string(),
                             String::from_utf8_lossy(buf).to_string(),
-                            None,
+                            Some(type_name),
                         );
                         vec.push(list_node_info_response_item);
                     } else {
@@ -192,7 +194,7 @@ WHERE type = 'table';",
                             true,
                             "column".to_string(),
                             String::from_utf8_lossy(buf).to_string(),
-                            None,
+                            Some(type_name),
                         );
                         vec.push(list_node_info_response_item);
                     }

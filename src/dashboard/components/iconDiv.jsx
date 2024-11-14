@@ -1552,7 +1552,9 @@ const IconDiv = ({ node }) => {
             </svg>
           )}
           <p className="text-sm">{node.data.name}</p>
-
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
           >
@@ -1684,7 +1686,9 @@ const IconDiv = ({ node }) => {
             </svg>
           )}
           <p className="text-sm">{node.data.name}</p>
-
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
           <div className="absolute right-0 z-50 flex flex-row pr-3 ">
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>

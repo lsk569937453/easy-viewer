@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
+import { useFieldArray } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
 import { AlertDialog, AlertDialogContent } from "@/components/ui/alert-dialog"
@@ -63,17 +64,16 @@ const CreateLinkDialog = ({
 
   const [currentLinkName, setCurrentLinkName] = useState("")
   const [connectionData, setConnectionData] = useState(null)
-  useEffect(() => {
-    setCurrentLinkType(connectionType)
-  }, [connectionType])
 
   useEffect(() => {
     console.log(baseCongfigId)
     if (baseCongfigId) {
+      console.log("initData")
       initData()
     } else {
       setConnectionData(null)
       setCurrentLinkName("")
+      setCurrentLinkType("mysql")
     }
   }, [isOpen])
 
@@ -162,7 +162,7 @@ const CreateLinkDialog = ({
           )}
           {currentLinkType === "sqlite" && (
             <SqliteConfigComponent
-              isSave={true}
+              isSave={isSave}
               connectionName={currentLinkName}
               defaultFilePath={
                 connectionData?.base_config_enum?.sqlite?.file_path ?? ""

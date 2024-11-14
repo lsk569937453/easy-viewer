@@ -839,7 +839,10 @@ const IconDiv = ({ node }) => {
               <path d="M10 3v18" />
             </svg>
           )}
-          <p className="flex-grow text-sm">{node.data.name}</p>
+          <p className="flex-none text-sm">{node.data.name}</p>
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
           >
@@ -1118,8 +1121,10 @@ const IconDiv = ({ node }) => {
               <path d="M10 3v18" />
             </svg>
           )}
-          <p className="flex-grow text-sm">{node.data.name}</p>
-
+          <p className="flex-none text-sm">{node.data.name}</p>
+          <p className="flex-none text-xs text-muted-foreground">
+            {node.data.description}
+          </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 group-hover/item:bg-primary-light`}
           >

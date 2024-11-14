@@ -67,6 +67,7 @@ impl SqliteConfig {
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
         Ok(self.file_path.clone())
     }
+
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -77,13 +78,28 @@ impl SqliteConfig {
         info!("sqlite list_node_info_req: {:?}", list_node_info_req);
         let level_infos = list_node_info_req.level_infos;
         if level_infos.len() == 1 {
+            let mut conn = SqliteConnection::connect(&self.file_path).await?;
+
+            let tables_count: i32 = sqlx::query(
+                "SELECT COUNT(*) 
+FROM sqlite_master 
+WHERE type = 'table';",
+            )
+            .fetch_one(&mut conn)
+            .await?
+            .try_get(0)?;
             for (name, icon_name) in get_sqlite_root_data().iter() {
+                let description = if *name == "Tables" && tables_count > 0 {
+                    Some(format!("({})", tables_count))
+                } else {
+                    None
+                };
                 let list_node_info_response_item = ListNodeInfoResponseItem::new(
                     true,
                     true,
                     icon_name.to_string(),
                     name.to_string(),
-                    None,
+                    description,
                 );
                 vec.push(list_node_info_response_item);
             }
@@ -100,12 +116,21 @@ impl SqliteConfig {
                     .await?;
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
+                    let sql = format!("select count(*) from {}", row_str.clone());
+                    info!("sql: {}", sql);
+                    let record_count: i32 =
+                        sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                    let description = if record_count > 0 {
+                        Some(format!("({})", record_count))
+                    } else {
+                        None
+                    };
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
                         "singleTable".to_string(),
                         row_str,
-                        None,
+                        description,
                     );
                     vec.push(list_node_info_response_item);
                 }

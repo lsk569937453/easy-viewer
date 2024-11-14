@@ -14,7 +14,7 @@ function App() {
         <Menu className="flex-none" />
         <div
           className={cn(
-            "grow border-t border-foreground/30 bg-background pb-8",
+            "grow border-t border-foreground/30 bg-background pb-1",
             "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md"
           )}
         >

@@ -57,7 +57,7 @@ const Sidebar = ({ menuList, treeRef }) => {
         width={"100%"}
         // className=" scrollbar h-[calc(100vh-40px)] overflow-y-auto overscroll-x-none"
         indent={10}
-        height={height - 20}
+        height={height - 5}
       >
         {(props) =>
           treeNode({

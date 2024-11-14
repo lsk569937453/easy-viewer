@@ -68,6 +68,9 @@ const TabsComponent = () => {
     const retainedTab = pageDataArray[contextMenuTabIndex]
     setPageDataArray([retainedTab])
     setTabValue(retainedTab.service)
+    setTabsState((prevState) =>
+      prevState.filter((index) => index === contextMenuTabIndex)
+    )
   }
   const handleCloseTabToLeft = () => {
     if (
@@ -80,6 +83,9 @@ const TabsComponent = () => {
     const updatedPageDataArray = pageDataArray.slice(contextMenuTabIndex)
     setPageDataArray(updatedPageDataArray)
     setTabValue(updatedPageDataArray[0]?.service)
+    setTabsState((prevState) =>
+      prevState.filter((index) => index >= contextMenuTabIndex)
+    )
   }
   const handleCloseTabToRight = () => {
     if (
@@ -93,6 +99,9 @@ const TabsComponent = () => {
     const updatedPageDataArray = pageDataArray.slice(0, contextMenuTabIndex + 1)
     setPageDataArray(updatedPageDataArray)
     setTabValue(updatedPageDataArray[contextMenuTabIndex]?.service)
+    setTabsState((prevState) =>
+      prevState.filter((index) => index <= contextMenuTabIndex)
+    )
   }
   const handleCloseAllTabs = () => {
     setPageDataArray([])
@@ -117,13 +126,13 @@ const TabsComponent = () => {
           Close
         </MenuItem>
         <MenuItem onClick={handleCloseOtherTabs} className="text-sm">
-          Close Others
+          Close Others Without Save
         </MenuItem>
         <MenuItem onClick={handleCloseTabToLeft} className="text-sm">
-          Close Tabs to the Left
+          Close Tabs to the Left Without Save
         </MenuItem>
         <MenuItem onClick={handleCloseTabToRight} className="text-sm">
-          Close Tabs to the right
+          Close Tabs to the right Without Save
         </MenuItem>
         <MenuItem onClick={handleCloseAllTabs} className="text-sm">
           Close All Without Save

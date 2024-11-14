@@ -111,11 +111,7 @@ WHERE table_schema = "{}";"#,
                     } else {
                         "".to_string()
                     };
-                    // vec.push((
-                    //     database_name.to_string(),
-                    //     "database".to_string(),
-                    //     Some(db_size_str),
-                    // ));
+
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
@@ -154,11 +150,7 @@ WHERE table_schema = "{}";"#,
                     let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "singleTable".to_string(),
-                        //     None,
-                        // ));
+
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             true,
                             true,
@@ -179,7 +171,6 @@ WHERE table_schema = "{}";"#,
                     let mut vec = vec![];
                     for row in rows {
                         let row_str: String = row.try_get(0)?;
-                        // vec.push((row_str, "singleQuery".to_string(), None));
 
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
@@ -226,11 +217,6 @@ WHERE table_schema = "{}";"#,
                         let key: &[u8] = item.try_get(3)?;
                         info!("key: {}", String::from_utf8_lossy(key).to_string());
                         if key == b"PRI" {
-                            // vec.push((
-                            //     String::from_utf8_lossy(buf).to_string(),
-                            //     "primary".to_string(),
-                            //     None,
-                            // ));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
@@ -240,11 +226,6 @@ WHERE table_schema = "{}";"#,
                             );
                             vec.push(list_node_info_response_item);
                         } else {
-                            // vec.push((
-                            //     String::from_utf8_lossy(buf).to_string(),
-                            //     "column".to_string(),
-                            //     None,
-                            // ));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
@@ -267,7 +248,6 @@ WHERE table_schema = "{}";"#,
                     for item in rows {
                         let index_name: String = item.try_get(2)?;
                         if index_name == "PRIMARY" {
-                            // vec.push((index_name, "singlePrimaryIndex".to_string(), None));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,

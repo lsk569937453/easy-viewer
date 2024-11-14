@@ -100,7 +100,6 @@ impl SqliteConfig {
                     .await?;
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    // vec.push((row_str, "singleTable".to_string(), None));
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
@@ -118,7 +117,6 @@ impl SqliteConfig {
                 info!("row length:{}", rows.len());
                 for row in rows {
                     let row_str: String = row.try_get(0)?;
-                    // vec.push((row_str, "singleQuery".to_string(), None));
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         false,
                         true,
@@ -155,11 +153,6 @@ impl SqliteConfig {
                     let buf: &[u8] = item.try_get(1)?;
                     let key: i32 = item.try_get(5)?;
                     if key > 0 {
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "primary".to_string(),
-                        //     None,
-                        // ));
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
                             true,
@@ -169,11 +162,6 @@ impl SqliteConfig {
                         );
                         vec.push(list_node_info_response_item);
                     } else {
-                        // vec.push((
-                        //     String::from_utf8_lossy(buf).to_string(),
-                        //     "column".to_string(),
-                        //     None,
-                        // ));
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             false,
                             true,

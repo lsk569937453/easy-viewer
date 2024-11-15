@@ -48,7 +48,7 @@ const PropertiesTabsPage = ({ node }) => {
   return (
     <Tabs.Root
       defaultValue="column"
-      className="flex h-full w-full flex-col"
+      className=" h-full w-full "
       value={tabValue}
       onValueChange={setTabValue}
     >

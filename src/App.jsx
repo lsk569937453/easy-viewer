@@ -10,7 +10,7 @@ import { cn } from "./lib/utils"
 function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <div className="flex h-screen flex-col overflow-clip">
+      <div className="flex h-screen flex-col overflow-clip overflow-hidden">
         <Menu className="flex-none" />
         <div
           className={cn(

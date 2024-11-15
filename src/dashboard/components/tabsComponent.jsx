@@ -36,15 +36,18 @@ const TabsComponent = () => {
         0
       )
 
-      if (totalElementsWidth > containerWidth) {
-        const wid = containerWidth / pageDataArray.length
-        console.log(wid)
-        setTabWidth(wid) // Adjust width
+      const wid = containerWidth / pageDataArray.length
+      console.log(wid)
+      if (wid < 192) {
+        setTabWidth(wid)
       } else {
-        setTabWidth(192) // Set to default width
-      }
+        setTabWidth(192)
+      } // Adjust width
+      // } else {
+      //   setTabWidth(192) // Set to default width
+      // }
     }
-
+    console.log(pageDataArray)
     // Initial adjustment on mount
     adjustWidths()
 
@@ -53,7 +56,7 @@ const TabsComponent = () => {
 
     // Cleanup listener on component unmount
     return () => window.removeEventListener("resize", adjustWidths)
-  }, [pageDataArray.length])
+  }, [pageDataArray])
   const handleCloseTab = () => {
     handleRemoveTabButton(contextMenuTabIndex)
   }

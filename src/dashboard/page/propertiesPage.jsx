@@ -39,7 +39,7 @@ import { Input } from "@/components/ui/input"
 
 const PropertiesPage = ({ node }) => {
   return (
-    <div className="flex h-full flex-col gap-2 ">
+    <div className="flex h-full w-full flex-col gap-2">
       <div className="flex w-1/2 flex-row">
         <div className="flex basis-1/2 flex-row items-center justify-center gap-2">
           <span>Name</span>

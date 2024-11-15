@@ -76,6 +76,7 @@ impl SqliteConfig {
         let mut vec = vec![];
 
         info!("sqlite list_node_info_req: {:?}", list_node_info_req);
+        ensure!(!self.file_path.is_empty(), "File not found !");
         let level_infos = list_node_info_req.level_infos;
         if level_infos.len() == 1 {
             let mut conn = SqliteConnection::connect(&self.file_path).await?;

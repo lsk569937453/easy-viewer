@@ -59,6 +59,9 @@ export function MysqlConfigComponent({
     setCurrentDatabase(initialDatabase)
     setCurrentUsername(initialUsername)
     setCurrentPassword(initialPassword)
+    setCurrentUrl(
+      `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+    )
   }, [
     initialHost,
     initialPort,
@@ -294,7 +297,8 @@ export function MysqlConfigComponent({
         title: "操作信息",
         description: "保存成功。",
       })
-      window.location.reload()
+      reloadNode(treeRef.current.root, menulist, setMenulist)
+      setShowEditConnectionDialog(false)
     } else {
       toast({
         variant: "destructive",

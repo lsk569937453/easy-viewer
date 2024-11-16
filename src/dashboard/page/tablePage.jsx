@@ -5,7 +5,7 @@ import PropertiesPage from "./propertiesPage"
 
 export default function TablePage({ node }) {
   return (
-    <Tabs.Root defaultValue="data" className="flex h-full w-full flex-col">
+    <Tabs.Root defaultValue="data" className="flex h-full w-full flex-col overflow-hidden">
       <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
         <Tabs.Trigger
           value="properties"
@@ -89,7 +89,7 @@ export default function TablePage({ node }) {
 
       <Tabs.Content
         value="properties"
-        className="h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="h-full w-full overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <PropertiesPage node={node} />
       </Tabs.Content>

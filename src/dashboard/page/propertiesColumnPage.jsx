@@ -119,12 +119,12 @@ const PropertiesColumnPage = ({ node }) => {
   }
 
   return (
-    <div class="overflow-x-auto overflow-y-auto scrollbar">
+    <div class="scrollbar  overflow-x-auto overflow-y-auto pb-1">
       <DataTable
         columns={header}
         data={rows}
         table={table}
-        className=" h-full w-full overflow-hidden"
+        // className=" h-full w-full overflow-hidden "
       />
     </div>
   )

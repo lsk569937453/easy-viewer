@@ -158,6 +158,9 @@ const updateNode = async (node, currentMenuList) => {
     }
 
     findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
+  } else {
+    findAndUpdateChildren(currentMenuList, node.data.id, [])
+    node.close()
   }
 }
 

@@ -1741,7 +1741,7 @@ const IconDiv = ({ node, selectedRows }) => {
               <path d="M3.27 6.96l8.73 5.04" />
             </svg>
           )}
-          <p className="text-sm flex-grow">{node.data.name}</p>
+          <p className="text-sm flex-none">{node.data.name}</p>
           <p className="flex-none text-xs text-muted-foreground">
             {node.data.description}
           </p>

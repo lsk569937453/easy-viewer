@@ -142,7 +142,7 @@ const TabsComponent = () => {
         </MenuItem>
       </ControlledMenu>
       <TabsList
-        className="flex   h-auto flex-row items-start justify-start overflow-hidden"
+        className="flex   h-10 flex-row items-start justify-start overflow-hidden"
         ref={rowRef}
       >
         {pageDataArray.map((item, index) => {
@@ -255,7 +255,7 @@ const TabsComponent = () => {
           <TabsContent
             key={item.service}
             value={item.service}
-            className="grow"
+            className="h-full w-full"
             forceMount={true}
             hidden={item.service !== tabValue}
           >

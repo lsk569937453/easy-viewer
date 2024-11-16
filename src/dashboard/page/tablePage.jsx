@@ -89,7 +89,7 @@ export default function TablePage({ node }) {
 
       <Tabs.Content
         value="properties"
-        className="w-full grow ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <PropertiesPage node={node} />
       </Tabs.Content>

@@ -48,7 +48,7 @@ const PropertiesTabsPage = ({ node }) => {
   return (
     <Tabs.Root
       defaultValue="column"
-      className=" h-full w-full "
+      className=" flex h-full w-full flex-col overflow-hidden"
       value={tabValue}
       onValueChange={setTabValue}
     >
@@ -190,7 +190,7 @@ const PropertiesTabsPage = ({ node }) => {
 
       <Tabs.Content
         value="column"
-        className="mt-2 h-full w-full ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className="mt-2 h-full w-full overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <PropertiesColumnPage node={node} />
       </Tabs.Content>

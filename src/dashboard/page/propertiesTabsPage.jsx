@@ -168,7 +168,7 @@ const PropertiesTabsPage = ({ node }) => {
       >
         <div className=" h-full w-full ">
           <AceEditor
-            className="   min-h-[22px] basis-11/12 	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className="   min-h-[22px] basis-11/12 	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50 "
             ref={editorRef}
             commands={beautify.commands}
             mode="sql"

@@ -155,11 +155,11 @@ const TabsComponent = () => {
           return (
             <Tooltip.Provider>
               <Tooltip.Root>
-                <Tooltip.Trigger>
+                <Tooltip.Trigger className="h-full ">
                   <TabsTrigger
                     value={item.service}
                     key={index}
-                    className="justify-start"
+                    className="justify-start hover:bg-primary-light"
                     style={{
                       width: `${tabWidth}px`,
                     }}

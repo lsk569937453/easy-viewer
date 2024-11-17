@@ -335,7 +335,7 @@ const IconDiv = ({ node, selectedRows }) => {
     e.stopPropagation()
     let updatedMenuList = [...menulist]
     updateNode(node, updatedMenuList)
-
+    console.log(updatedMenuList)
     setMenulist(updatedMenuList)
   }
   return (

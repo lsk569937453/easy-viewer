@@ -25,8 +25,6 @@ const TreeNode = ({
   node,
   style,
   dragHandle,
-  setCurrentMenuList,
-  currentMenuList,
   toggleRowSelection,
   selectedRows,
 }) => {
@@ -43,6 +41,8 @@ const TreeNode = ({
     setShowEditConnectionDialog,
     setIsSave,
     setConnectionType,
+    menulist,
+    setMenulist,
   } = useContext(SidebarContext)
 
   const handleClickIcon = async (node) => {
@@ -54,8 +54,8 @@ const TreeNode = ({
     } else {
       const { response_code, response_msg } = await clickNode(
         node,
-        currentMenuList,
-        setCurrentMenuList
+        menulist,
+        setMenulist
       )
       console.log(response_code)
       console.log(response_msg)

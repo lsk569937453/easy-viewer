@@ -105,9 +105,12 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
           const newChildrenMap = new Map(
             newChildren.map((child) => [child.name, child])
           )
-          node.children = node.children.filter((child) =>
-            newChildrenMap.has(child.name)
-          )
+          node.children = node.children
+            .filter((child) => newChildrenMap.has(child.name))
+            .map((child) => {
+              const newDescription = newChildrenMap.get(child.name).description
+              return { ...child, description: newDescription }
+            })
           newChildren.forEach((newChild) => {
             if (!node.children.find((child) => child.name === newChild.name)) {
               node.children.push(newChild)
@@ -125,7 +128,7 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
 
   updateNodeChildren(currentMenuList)
 }
-const updateNode = async (node, currentMenuList) => {
+export const updateNode = async (node, currentMenuList) => {
   const listNodeInfoReq = {
     level_infos: getLevelInfos(node),
   }
@@ -156,7 +159,6 @@ const updateNode = async (node, currentMenuList) => {
         showSecondIcon: item.show_second_icon,
       }))
     }
-
     findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
   } else {
     findAndUpdateChildren(currentMenuList, node.data.id, [])

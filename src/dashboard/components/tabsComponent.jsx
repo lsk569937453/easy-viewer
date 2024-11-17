@@ -68,12 +68,12 @@ const TabsComponent = () => {
     ) {
       return
     }
+    const isEdited = tabsState.includes(contextMenuTabIndex)
+
     const retainedTab = pageDataArray[contextMenuTabIndex]
     setPageDataArray([retainedTab])
     setTabValue(retainedTab.service)
-    setTabsState((prevState) =>
-      prevState.filter((index) => index === contextMenuTabIndex)
-    )
+    setTabsState(() => (isEdited ? [0] : [])) // The retained tab is now at index 0
   }
   const handleCloseTabToLeft = () => {
     if (
@@ -86,8 +86,14 @@ const TabsComponent = () => {
     const updatedPageDataArray = pageDataArray.slice(contextMenuTabIndex)
     setPageDataArray(updatedPageDataArray)
     setTabValue(updatedPageDataArray[0]?.service)
-    setTabsState((prevState) =>
-      prevState.filter((index) => index >= contextMenuTabIndex)
+
+    const tabsToRemoveCount = contextMenuTabIndex
+
+    setTabsState(
+      (prevState) =>
+        prevState
+          .filter((index) => index >= contextMenuTabIndex) // Keep only valid indices
+          .map((index) => index - tabsToRemoveCount) // Adjust remaining indices
     )
   }
   const handleCloseTabToRight = () => {

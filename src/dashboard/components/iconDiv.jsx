@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import * as Tooltip from "@radix-ui/react-tooltip"
+import { menu } from "@tauri-apps/api"
 import { invoke } from "@tauri-apps/api/core"
 
 import { useToast } from "@/components/ui/use-toast"
@@ -14,6 +15,7 @@ import {
   getLevelInfos,
   getQueryName,
   getRootNode,
+  updateNode,
   uuid,
 } from "../../lib/jsx-utils.js"
 import { clickNode } from "../../lib/node.jsx"
@@ -327,6 +329,16 @@ const IconDiv = ({ node, selectedRows }) => {
       })
     }
   }
+  const handleRefreshClick = (e) => {
+    console.log("dsadadad")
+    console.log(node, menulist)
+    e.stopPropagation()
+    // let updatedMenuList = [...menulist]
+    // updateNode(node, updatedMenuList)
+    // console.log(updatedMenuList)
+    // setMenulist(updatedMenuList)
+    clickNode(node, menulist, setMenulist)
+  }
   return (
     <>
       {node.data.iconName === "mysql" ? (
@@ -381,6 +393,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -602,39 +615,38 @@ const IconDiv = ({ node, selectedRows }) => {
                 : "group-hover/item:bg-primary-light"
             }`}
           >
-            {" "}
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={iconWidth}
-              height={iconHeight}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "
-            >
-              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
-              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
-            </svg>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible hover:bg-slate-200 group-hover/item:visible "
-            >
-              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-              <path d="M12 5l0 14" />
-              <path d="M5 12l14 0" />
-            </svg>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
           </div>
         </>
       ) : node.data.iconName === "query" ? (
@@ -671,38 +683,6 @@ const IconDiv = ({ node, selectedRows }) => {
                 : "group-hover/item:bg-primary-light"
             }`}
           >
-            {" "}
-            <Tooltip.Provider>
-              <Tooltip.Root>
-                <Tooltip.Trigger asChild>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth}
-                    height={iconHeight}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor "
-                  >
-                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
-                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
-                  </svg>
-                </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
-                    sideOffset={5}
-                  >
-                    <p>Refresh</p>
-                    <Tooltip.Arrow className="fill-white" />
-                  </Tooltip.Content>
-                </Tooltip.Portal>
-              </Tooltip.Root>
-            </Tooltip.Provider>
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -873,7 +853,7 @@ const IconDiv = ({ node, selectedRows }) => {
             }`}
           >
             {" "}
-            <Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
                   <svg
@@ -886,7 +866,8 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
@@ -899,7 +880,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     sideOffset={5}
                   >
                     <p>Refresh</p>
-                    <Tooltip.Arrow className="fill-white" />
+                    <Tooltip.Arrow className="fill-muted" />
                   </Tooltip.Content>
                 </Tooltip.Portal>
               </Tooltip.Root>
@@ -1231,7 +1212,6 @@ const IconDiv = ({ node, selectedRows }) => {
                 : "group-hover/item:bg-primary-light"
             }`}
           >
-            {" "}
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1246,6 +1226,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={(e) => handleRefreshClick(e)}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />

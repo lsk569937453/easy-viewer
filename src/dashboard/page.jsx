@@ -472,7 +472,7 @@ const DashboardPage = () => {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-                <Sidebar menuList={menulist} treeRef={treeRef} />
+                <Sidebar treeRef={treeRef} />
               </ResizablePanel>
               <ResizableHandle />
               <ResizablePanel defaultSize={75} className="min-w-[200px]">

@@ -108,7 +108,6 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
           node.children = node.children
             .filter((child) => newChildrenMap.has(child.name))
             .map((child) => {
-              // Update the description for the filtered item
               const newDescription = newChildrenMap.get(child.name).description
               return { ...child, description: newDescription }
             })
@@ -129,7 +128,7 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
 
   updateNodeChildren(currentMenuList)
 }
-const updateNode = async (node, currentMenuList) => {
+export const updateNode = async (node, currentMenuList) => {
   const listNodeInfoReq = {
     level_infos: getLevelInfos(node),
   }
@@ -160,7 +159,6 @@ const updateNode = async (node, currentMenuList) => {
         showSecondIcon: item.show_second_icon,
       }))
     }
-
     findAndUpdateChildren(currentMenuList, node.data.id, newChildren)
   } else {
     findAndUpdateChildren(currentMenuList, node.data.id, [])

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useContext, useState } from "react"
 import { useTranslation } from "react-i18next"
 
 // import { WindowTitlebar } from "tauri-controls"
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/menubar"
 
 import { Dialog } from "../../components/ui/dialog"
+import { SidebarContext } from "../page"
 import { AboutDialog } from "./about-dialog"
 import { CreateLinkDialog } from "./createLinkDialog"
 import { LanguageMenu } from "./languageMenu"
@@ -23,8 +24,16 @@ import { MenuModeToggle } from "./themModeMenu"
 export function Menu() {
   const [showAboutDialog, setShowAboutDialog] = useState(false)
   const [showPreferenceDialog, setShowPreferenceDialog] = useState(false)
-  const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false)
+  // const [showCreateLinkDialog, setShowCreateLinkDialog] = useState(false)
+  const { setShowEditConnectionDialog, setBaseConfigId, setIsSave } =
+    useContext(SidebarContext)
   const { t, i18n } = useTranslation()
+
+  const handleNewConnectionButtonClick = () => {
+    setShowEditConnectionDialog(true)
+    setBaseConfigId(null)
+    setIsSave(false)
+  }
   return (
     <div>
       <Menubar className="rounded-none border-b border-none pl-2 lg:pl-3">
@@ -39,12 +48,7 @@ export function Menu() {
         >
           <PreferenceDialog />
         </Dialog>
-        <Dialog
-          open={showCreateLinkDialog}
-          onOpenChange={setShowCreateLinkDialog}
-        >
-          <CreateLinkDialog />
-        </Dialog>
+
         <MenubarMenu>
           <MenubarTrigger className="font-bold">
             {t("toolBar.app.name")}
@@ -62,7 +66,7 @@ export function Menu() {
         <MenubarMenu>
           <MenubarTrigger className="font-bold">配置</MenubarTrigger>
           <MenubarContent>
-            <MenubarItem onClick={() => setShowCreateLinkDialog(true)}>
+            <MenubarItem onClick={() => handleNewConnectionButtonClick()}>
               创建连接
             </MenubarItem>
             {/* <MenubarSeparator />

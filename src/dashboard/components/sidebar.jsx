@@ -17,10 +17,12 @@ const treeNode = ({
   toggleRowSelection,
   selectedRows,
 }) => {
+  console.log(node)
   return (
     <TreeNode
       node={node}
       style={style}
+      key={node.data.id}
       dragHandle={dragHandle}
       toggleRowSelection={toggleRowSelection}
       selectedRows={selectedRows}
@@ -40,7 +42,7 @@ const Sidebar = ({ treeRef }) => {
       [node.id]: !prevSelectedRows[node.id],
     }))
   }
-
+  useEffect(() => {}, [menulist])
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
 

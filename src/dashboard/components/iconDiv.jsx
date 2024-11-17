@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { useToast } from "@/components/ui/use-toast"
 
 import {
+  getAlterColumnSql,
   getConnectionType,
   getCreateColumnAfterAnotherSql,
   getCreateColumnSql,
@@ -166,6 +167,7 @@ const IconDiv = ({ node, selectedRows }) => {
       tabName: localQueryName,
     })
   }
+
   const handleAddNewColumnClick = (e) => {
     e.stopPropagation()
     let rootNode = getRootNode(node)
@@ -1732,7 +1734,7 @@ const IconDiv = ({ node, selectedRows }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-cube ml-6 stroke-red-500 flex-none"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-cube ml-6 flex-none stroke-red-500"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M21 16.008v-8.018a1.98 1.98 0 0 0 -1 -1.717l-7 -4.008a2.016 2.016 0 0 0 -2 0l-7 4.008c-.619 .355 -1 1.01 -1 1.718v8.018c0 .709 .381 1.363 1 1.717l7 4.008a2.016 2.016 0 0 0 2 0l7 -4.008c.619 -.355 1 -1.01 1 -1.718z" />
@@ -1741,7 +1743,7 @@ const IconDiv = ({ node, selectedRows }) => {
               <path d="M3.27 6.96l8.73 5.04" />
             </svg>
           )}
-          <p className="text-sm flex-none">{node.data.name}</p>
+          <p className="flex-none text-sm">{node.data.name}</p>
           <p className="flex-none text-xs text-muted-foreground">
             {node.data.description}
           </p>
@@ -1751,7 +1753,7 @@ const IconDiv = ({ node, selectedRows }) => {
                 ? "group-hover/item:bg-primary-selected"
                 : "group-hover/item:bg-primary-light"
             }`}
-          >          
+          >
             <Tooltip.Provider delayDuration={delayDuration}>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>

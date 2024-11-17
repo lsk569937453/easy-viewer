@@ -105,9 +105,13 @@ const findAndUpdateChildren = (currentMenuList, targetId, newChildren) => {
           const newChildrenMap = new Map(
             newChildren.map((child) => [child.name, child])
           )
-          node.children = node.children.filter((child) =>
-            newChildrenMap.has(child.name)
-          )
+          node.children = node.children
+            .filter((child) => newChildrenMap.has(child.name))
+            .map((child) => {
+              // Update the description for the filtered item
+              const newDescription = newChildrenMap.get(child.name).description
+              return { ...child, description: newDescription }
+            })
           newChildren.forEach((newChild) => {
             if (!node.children.find((child) => child.name === newChild.name)) {
               node.children.push(newChild)

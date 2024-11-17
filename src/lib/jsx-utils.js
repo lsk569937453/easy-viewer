@@ -300,6 +300,14 @@ ALTER TABLE ${tableName}
     return sqlLiteCreateColumn
   }
 }
+export function getAlterColumnSql(node, tableName, column, description) {
+  let mysqlAlterColumn = `ALTER TABLE \`${tableName}\` 
+	CHANGE \`${column}\` \`${column}\` ${description} DEFAULT NULL ;`
+  let rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 0) {
+    return mysqlAlterColumn
+  } else return null
+}
 export function getCreateColumnAfterAnotherSql(node, tableName, column) {
   let mysqlCreateColumn = `ALTER TABLE ${tableName} 
     ADD COLUMN  [type] COMMENT '' AFTER \`${column}\`;`

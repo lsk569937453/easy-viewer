@@ -40,6 +40,7 @@ const Sidebar = ({ treeRef }) => {
       [node.id]: !prevSelectedRows[node.id],
     }))
   }
+
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
 

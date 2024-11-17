@@ -42,7 +42,6 @@ const Sidebar = ({ treeRef }) => {
       [node.id]: !prevSelectedRows[node.id],
     }))
   }
-  useEffect(() => {}, [menulist])
   const { t, i18n } = useTranslation()
   const { toast } = useToast()
 

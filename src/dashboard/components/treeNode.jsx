@@ -71,7 +71,6 @@ const TreeNode = ({
     }
   }
   const addTab = () => {
-    console.log(node.data.iconName === "singleTable")
     if (node.data.iconName === "singleTable") {
       handleAddPageClick({
         icon: (
@@ -98,7 +97,6 @@ const TreeNode = ({
         tabName: node.data.name,
       })
     }
-    console.log(node.data.iconName === "singleQuery")
 
     if (node.data.iconName === "singleQuery") {
       handleAddPageClick({

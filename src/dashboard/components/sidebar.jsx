@@ -17,7 +17,6 @@ const treeNode = ({
   toggleRowSelection,
   selectedRows,
 }) => {
-  console.log(node)
   return (
     <TreeNode
       node={node}

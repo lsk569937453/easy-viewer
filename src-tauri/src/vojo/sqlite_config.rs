@@ -200,6 +200,21 @@ WHERE type = 'table' and name !='sqlite_sequence';",
                         vec.push(list_node_info_response_item);
                     }
                 }
+            } else if node_name == "Index" {
+                let query = format!("PRAGMA index_list({})", table_name);
+                let mut conn = SqliteConnection::connect(&self.file_path).await?;
+                let rows = sqlx::query(&query).fetch_all(&mut conn).await?;
+                for item in rows {
+                    let buf: &[u8] = item.try_get(1)?;
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        false,
+                        true,
+                        "singleCommonIndex".to_string(),
+                        String::from_utf8_lossy(buf).to_string(),
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
             }
         }
         Ok(ListNodeInfoResponse::new(vec))

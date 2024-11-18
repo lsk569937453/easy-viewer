@@ -12,16 +12,57 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 
-const InsertSqlComponent = () => {
+const defaultColumnData = [
+  {
+    columnName: "sss",
+    columnType: "int",
+  },
+]
+const InsertSqlComponent = ({ columnDefaultData }) => {
+  const [columnDataArray, setColumnDataArray] = useState(
+    columnDefaultData || defaultColumnData
+  )
   return (
-    <DialogContent className="w-30 bg-slate-200">
+    <DialogContent className="flex  w-full flex-col bg-slate-200">
       <DialogTitle>创建新的Query</DialogTitle>
-      <div className="flex flex-col gap-4 p-4">
-        <div className="flex flex-row items-center justify-center">
-          <p className="flex-[1]">Name:</p>
-          <input className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50" />
+      <div className="flex  w-full flex-col">
+        <div class="grid  w-full grid-cols-4 gap-4 p-4">
+          <span class=" text-right font-medium text-gray-700">
+            Label 1:ssssssssssssssssssssssssssssssssssss
+          </span>
+          <input
+            type="text"
+            class="flex-1 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring focus:ring-blue-300"
+            placeholder="Enter value"
+          />
+
+          <label class=" text-right font-medium text-gray-700">
+            Label:
+          </label>
+          <input
+            type="text"
+            class="flex-1 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring focus:ring-blue-300"
+            placeholder="Enter value"
+          />
+          <label class="text-right font-medium text-gray-700">
+            Label as:
+          </label>
+          <input
+            type="text"
+            class="flex-1 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring focus:ring-blue-300"
+            placeholder="Enter value"
+          />
+          <label class=" text-right font-medium text-gray-700">
+            Label sd:
+          </label>
+          <input
+            type="text"
+            class="flex-1 rounded-md border border-gray-300 p-2 focus:outline-none focus:ring focus:ring-blue-300"
+            placeholder="Enter value"
+          />
         </div>
-        <Button> Save</Button>
+
+        <Button> Save{columnDataArray.length}</Button>
       </div>
     </DialogContent>
   )

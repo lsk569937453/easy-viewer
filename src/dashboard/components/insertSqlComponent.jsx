@@ -83,12 +83,12 @@ const InsertSqlComponent = ({ node }) => {
         <div className="grid grid-cols-2 gap-4">
           {columnDataArray.map((item, index) => {
             return (
-              <div className="flex flex-row items-center justify-center ">
+              <div className="flex flex-row items-center justify-center " key={index}>
                 <div class="flex basis-2/3  flex-col truncate pr-4 text-right">
                   <span>
                     {" "}
-                    <span className=" text-foreground/50">
-                      {item.column_type}|
+                    <span className=" text-foreground/50 pr-2">
+                      {item.column_type}
                     </span>
                     {item.column_name}:
                   </span>

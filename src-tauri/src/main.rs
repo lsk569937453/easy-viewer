@@ -98,6 +98,7 @@ async fn main() -> Result<(), anyhow::Error> {
             get_base_config_by_id,
             list_node_info,
             exe_sql,
+            get_column_info_for_insert_sql,
             save_query,
             rename_query,
             remove_query,

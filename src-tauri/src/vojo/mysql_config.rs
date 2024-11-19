@@ -64,6 +64,14 @@ impl MysqlConfig {
         let description = format!("{}:{}", self.config.host, self.config.port);
         Ok(description)
     }
+    pub async fn get_column_info_for_is(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+        Ok(ListNodeInfoResponse::new_with_empty())
+    }
     pub async fn list_node_info(
         &self,
 

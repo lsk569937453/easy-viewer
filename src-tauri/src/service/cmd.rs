@@ -7,6 +7,7 @@ use super::base_config_service::delete_base_config_with_error;
 use super::base_config_service::exe_sql_with_error;
 use super::base_config_service::get_base_config_by_id_with_error;
 use super::base_config_service::get_base_config_with_error;
+use super::base_config_service::get_column_info_for_insert_sql_with_error;
 use super::base_config_service::list_node_info_with_error;
 use super::base_config_service::save_base_config_with_error;
 use super::base_config_service::update_base_config_with_error;
@@ -103,6 +104,17 @@ pub async fn list_node_info(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let res = handle_response!(list_node_info_with_error(state, list_node_info_req).await);
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn get_column_info_for_insert_sql(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let res = handle_response!(
+        get_column_info_for_insert_sql_with_error(state, list_node_info_req).await
+    );
     Ok(res)
 }
 #[tauri::command]

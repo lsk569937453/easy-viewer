@@ -70,7 +70,28 @@ impl BaseConfigEnum {
         };
         Ok(vec)
     }
+    pub async fn get_column_info_for_is(
+        &self,
 
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+        let vec = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+            _ => ListNodeInfoResponse::new_with_empty(),
+        };
+        Ok(vec)
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

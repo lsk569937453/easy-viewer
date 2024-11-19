@@ -52,6 +52,14 @@ pub struct SqliteConfig {
     pub file_path: String,
 }
 impl SqliteConfig {
+    pub async fn get_column_info_for_is(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+        Ok(ListNodeInfoResponse::new_with_empty())
+    }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         if !Path::new(&self.file_path).exists() {
             return Err(anyhow!("File not found !"));

@@ -425,7 +425,7 @@ export default function DataPage({
   return (
     <div className="flex  h-full w-full flex-col	">
       <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
-        <InsertSqlComponent />
+        <InsertSqlComponent node={node} />
       </Dialog>
       {!readOnly && (
         <div ref={ref}>
@@ -481,6 +481,7 @@ export default function DataPage({
           size="icon"
           className="h-full w-7 border-none hover:bg-searchMarkerColor "
           onClick={() => setShowInsertDialog(true)}
+          disabled={readOnly}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

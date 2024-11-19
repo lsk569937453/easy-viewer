@@ -86,10 +86,10 @@ const InsertSqlComponent = ({ node }) => {
               <div className="flex flex-row items-center justify-center " key={index}>
                 <div class="flex basis-2/3  flex-col truncate pr-4 text-right">
                   <span>
-                    {" "}
+                    {/* {" "}
                     <span className=" text-foreground/50 pr-2">
                       {item.column_type}
-                    </span>
+                    </span> */}
                     {item.column_name}:
                   </span>
                 </div>
@@ -97,6 +97,7 @@ const InsertSqlComponent = ({ node }) => {
                   <Input
                     type="email"
                     className="basis-1/3"
+                    placeholder= {item.column_type}
                     value={columnValueArray?.[index] || ""} // Use the item directly
                     onChange={(e) => handleInputOnChange(e, index)}
                   />

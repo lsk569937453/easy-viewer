@@ -10,6 +10,16 @@ import { invoke } from "@tauri-apps/api/core"
 import AceEditor from "react-ace"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -21,6 +31,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useToast } from "@/components/ui/use-toast"
+
+import InsertSqlComponent from "../components/insertSqlComponent"
 
 import "ace-builds/src-noconflict/mode-java"
 import "ace-builds/src-noconflict/mode-sql"
@@ -92,6 +104,7 @@ export default function DataPage({
   const [editState, setEditState] = useState([])
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const [rowSelection, setRowSelection] = useState({})
+  const [showInsertDialog, setShowInsertDialog] = useState(false)
   const hasMounted = useRef(false)
 
   const { ref } = useResizeObserver({
@@ -411,6 +424,9 @@ export default function DataPage({
   }
   return (
     <div className="flex  h-full w-full flex-col	">
+      <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
+        <InsertSqlComponent node={node} />
+      </Dialog>
       {!readOnly && (
         <div ref={ref}>
           <AceEditor
@@ -464,6 +480,8 @@ export default function DataPage({
           variant="outline"
           size="icon"
           className="h-full w-7 border-none hover:bg-searchMarkerColor "
+          onClick={() => setShowInsertDialog(true)}
+          disabled={readOnly}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -475,7 +493,7 @@ export default function DataPage({
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-plus"
+            class="icon icon-tabler icons-tabler-outline icon-tabler-plus stroke-yellow-500"
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M12 5l0 14" />

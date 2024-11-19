@@ -1,4 +1,5 @@
 use super::exe_sql_response::ExeSqlResponse;
+use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
@@ -70,7 +71,28 @@ impl BaseConfigEnum {
         };
         Ok(vec)
     }
+    pub async fn get_column_info_for_is(
+        &self,
 
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let vec = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+            _ => GetColumnInfoForInsertSqlResponse::new(),
+        };
+        Ok(vec)
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

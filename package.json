@@ -59,7 +59,7 @@
     "react-ace": "^10.1.0",
     "react-arborist": "^3.4.0",
     "react-color": "^2.19.3",
-    "react-day-picker": "^8.8.0",
+    "react-day-picker": "^8.10.1",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.45.2",
     "react-hotkeys-hook": "^4.6.1",

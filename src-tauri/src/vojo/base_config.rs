@@ -1,4 +1,5 @@
 use super::exe_sql_response::ExeSqlResponse;
+use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
@@ -75,7 +76,7 @@ impl BaseConfigEnum {
 
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
         let vec = match self {
             BaseConfigEnum::Mysql(config) => {
                 config
@@ -88,7 +89,7 @@ impl BaseConfigEnum {
                     .get_column_info_for_is(list_node_info_req, appstate)
                     .await?
             }
-            _ => ListNodeInfoResponse::new_with_empty(),
+            _ => GetColumnInfoForInsertSqlResponse::new(),
         };
         Ok(vec)
     }

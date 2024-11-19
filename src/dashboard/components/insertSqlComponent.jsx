@@ -2,8 +2,11 @@ import { useContext, useEffect, useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
+import { Calendar as CalendarIcon } from "lucide-react"
 
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import {
   Dialog,
   DialogClose,
@@ -15,6 +18,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 
 import { getLevelInfos } from "../../lib/jsx-utils"
 
@@ -38,13 +46,15 @@ const InsertSqlComponent = ({ node }) => {
     }
     console.log(listNodeInfoReq)
     const { response_code, response_msg } = JSON.parse(
-      await invoke("show_columns", { listNodeInfoReq: listNodeInfoReq })
+      await invoke("get_column_info_for_insert_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
     )
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      const { header, rows } = response_msg
-      setColumnDataArray(rows)
-      setColumnValueArray(Array.from({ length: rows.length }, () => ""))
+      const { list } = response_msg
+      setColumnDataArray(list)
+      setColumnValueArray(Array.from({ length: list.length }, () => ""))
     }
   }
   const handleInputOnChange = (e, index) => {
@@ -54,6 +64,12 @@ const InsertSqlComponent = ({ node }) => {
       (prev) => prev.map((item, idx) => (idx === index ? val : item)) // Replace the string at the specific index
     )
     console.log(columnValueArray)
+  }
+  const handleSetDate = (date, index) => {
+    console.log(date, index)
+    setColumnValueArray(
+      (prev) => prev.map((item, idx) => (idx === index ? date : item)) // Replace the string at the specific index
+    )
   }
   return (
     <DialogPrimitive.DialogPortal>
@@ -71,16 +87,48 @@ const InsertSqlComponent = ({ node }) => {
                 <div class="flex basis-2/3  flex-col truncate pr-4 text-right">
                   <span>
                     {" "}
-                    <span className=" text-foreground/50">{item[1]}|</span>
-                    {item[0]}:
+                    <span className=" text-foreground/50">
+                      {item.column_type}|
+                    </span>
+                    {item.column_name}:
                   </span>
                 </div>
-                <Input
-                  type="email"
-                  className="basis-1/3"
-                  value={columnValueArray?.[index] || ""} // Use the item directly
-                  onChange={(e) => handleInputOnChange(e, index)}
-                />
+                {item.type_flag == 0 && (
+                  <Input
+                    type="email"
+                    className="basis-1/3"
+                    value={columnValueArray?.[index] || ""} // Use the item directly
+                    onChange={(e) => handleInputOnChange(e, index)}
+                  />
+                )}
+                {item.type_flag == 1 && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={"outline"}
+                        className={cn(
+                          "w-[280px] justify-start text-left font-normal",
+                          !columnValueArray?.[index] && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {columnValueArray?.[index] ? (
+                          format(date, "PPP")
+                        ) : (
+                          <span>Pick a date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={columnValueArray?.[index]}
+                        onSelect={handleSetDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
             )
           })}

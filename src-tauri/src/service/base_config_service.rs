@@ -4,6 +4,7 @@ use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
@@ -143,7 +144,7 @@ pub async fn list_node_info_with_error(
 pub async fn get_column_info_for_insert_sql_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-) -> Result<ListNodeInfoResponse, anyhow::Error> {
+) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
     info!("list_node_info_req: {:?}", list_node_info_req);
 
     let value = list_node_info_req.level_infos[0]

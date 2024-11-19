@@ -2,11 +2,14 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::vec;
 
+use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use super::list_node_info_response::ListNodeInfoResponse;
+use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::sqlite_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
@@ -57,8 +60,51 @@ impl SqliteConfig {
 
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
-        Ok(ListNodeInfoResponse::new_with_empty())
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let table_name: String = level_infos[2].config_value.clone();
+
+        let sql: String = format!("PRAGMA table_info({})", table_name);
+        info!("sql: {}", sql);
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+
+        let first_item = rows.first().ok_or(anyhow!(""))?;
+        let mut headers = vec![];
+        for i in 0..first_item.columns().len() {
+            let raw = first_item.try_get_raw(i)?;
+            let type_info = raw.type_info();
+            let type_name = type_info.name();
+            let column_name = first_item.columns()[i].name();
+            headers.push(ShowColumnHeader {
+                name: column_name.to_string(),
+                type_name: type_name.to_string().to_lowercase(),
+            });
+        }
+
+        info!("headers: {:?}", headers);
+        let mut response_rows = vec![];
+        for item in rows.iter() {
+            let raw = item.try_get_raw(1)?;
+            let type_info = raw.type_info();
+            let type_name = type_info.name();
+            let column_name =
+                serde_value_to_string(sqlite_row_to_json(item, type_name, 1)?).unwrap_or_default();
+            let raw = item.try_get_raw(2)?;
+            let type_info = raw.type_info();
+            let type_name = type_info.name();
+            let column_type =
+                serde_value_to_string(sqlite_row_to_json(item, type_name, 2)?).unwrap_or_default();
+
+            let type_flag = if column_type != "DATE" { 0 } else { 1 };
+
+            let get_column_info_for_is_response_item =
+                GetColumnInfoForInsertSqlResponseItem::from(column_name, column_type, type_flag);
+
+            response_rows.push(get_column_info_for_is_response_item);
+        }
+        Ok(GetColumnInfoForInsertSqlResponse::from(response_rows))
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         if !Path::new(&self.file_path).exists() {

@@ -2,11 +2,14 @@ use std::collections::HashSet;
 use std::vec;
 
 use super::exe_sql_response::ExeSqlResponse;
+use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
+use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
@@ -69,8 +72,39 @@ impl MysqlConfig {
 
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
-        Ok(ListNodeInfoResponse::new_with_empty())
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        let sql = format!("show columns from {}", table_name);
+        info!("sql: {}", sql);
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        if rows.is_empty() {
+            return Ok(GetColumnInfoForInsertSqlResponse::new());
+        }
+        let mut response_rows = vec![];
+        for item in rows.iter() {
+            let columns = item.columns();
+            let type_name = columns[0].type_info().name();
+            let column_name =
+                serde_value_to_string(mysql_row_to_json(item, type_name, 0)?).unwrap_or_default();
+            let type_name = columns[1].type_info().name();
+            let column_type =
+                serde_value_to_string(mysql_row_to_json(item, type_name, 1)?).unwrap_or_default();
+            let type_flag = if column_type != "date" { 0 } else { 1 };
+            let get_column_info_for_is_response_item =
+                GetColumnInfoForInsertSqlResponseItem::from(column_name, column_type, type_flag);
+
+            response_rows.push(get_column_info_for_is_response_item);
+        }
+
+        Ok(GetColumnInfoForInsertSqlResponse::from(response_rows))
     }
     pub async fn list_node_info(
         &self,

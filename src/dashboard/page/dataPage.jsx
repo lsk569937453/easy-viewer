@@ -55,6 +55,7 @@ import { tr } from "date-fns/locale"
 import { use } from "i18next"
 
 import { getLevelInfos, uuid } from "../../lib/jsx-utils"
+import DeleteSqlComponent from "../components/deleteSqlComponenet"
 
 const pageCount = 100
 
@@ -105,6 +106,7 @@ export default function DataPage({
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const [rowSelection, setRowSelection] = useState({})
   const [showInsertDialog, setShowInsertDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [sqlOfDelete, setSqlOfDelete] = useState("")
   const hasMounted = useRef(false)
 
@@ -443,6 +445,8 @@ export default function DataPage({
       sourceHeader[primaryKeyIndex].name,
       primaryValueArray
     )
+    setSqlOfDelete(sql)
+    setShowDeleteDialog(true)
     console.log(sql)
   }
   return (
@@ -451,6 +455,12 @@ export default function DataPage({
         <InsertSqlComponent
           node={node}
           setShowInsertDialog={setShowInsertDialog}
+        />
+      </Dialog>
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DeleteSqlComponent
+          sqlOfDelete={sqlOfDelete}
+          setShowDeleteDialog={setShowDeleteDialog}
         />
       </Dialog>
       {!readOnly && (

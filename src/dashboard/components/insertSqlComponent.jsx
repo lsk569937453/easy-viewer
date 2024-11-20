@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { invoke } from "@tauri-apps/api/core"
-import { set } from "date-fns"
+import { format, set } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -23,8 +23,9 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { useToast } from "@/components/ui/use-toast"
 
-import { getLevelInfos } from "../../lib/jsx-utils"
+import { getLevelInfos, shouldWithQuote } from "../../lib/jsx-utils"
 
 const defaultColumnData = [
   {
@@ -32,13 +33,45 @@ const defaultColumnData = [
     columnType: "int",
   },
 ]
-const InsertSqlComponent = ({ node }) => {
+const InsertSqlComponent = ({ node, setShowInsertDialog }) => {
   const [columnDataArray, setColumnDataArray] = useState([])
   const [tableName, setTableName] = useState("")
   const [columnValueArray, setColumnValueArray] = useState([])
+  const [insertSql, setInsertSql] = useState("")
+  const { toast } = useToast()
+
   useEffect(() => {
     loadColumnData()
   }, [node])
+
+  useEffect(() => {
+    const validIndices = columnValueArray.filter((value, index) => value !== "")
+    if (columnValueArray.length !== 0 && validIndices.length !== 0) {
+      const sql = generateSql()
+      setInsertSql(sql)
+      console.log(sql)
+    }
+  }, [columnValueArray])
+
+  const generateSql = () => {
+    const validIndices = columnValueArray
+      .map((value, index) => (value !== "" ? index : -1))
+      .filter((index) => index !== -1)
+    const columns = validIndices
+      .map((index) => `\`${columnDataArray[index].column_name}\``)
+      .join(", ")
+
+    console.log(columnDataArray)
+    const values = validIndices
+      .map((value) =>
+        shouldWithQuote(columnDataArray[value].column_type)
+          ? `'${columnValueArray[value]}'`
+          : columnValueArray[value]
+      )
+      .join(", ")
+
+    return `INSERT INTO \`${tableName}\`(${columns}) VALUES(${values});`
+  }
   const loadColumnData = async () => {
     setTableName(node.data.name)
     const listNodeInfoReq = {
@@ -66,10 +99,33 @@ const InsertSqlComponent = ({ node }) => {
     console.log(columnValueArray)
   }
   const handleSetDate = (date, index) => {
+    const dateStr = format(date, "yyyy-MM-dd")
     console.log(date, index)
     setColumnValueArray(
-      (prev) => prev.map((item, idx) => (idx === index ? date : item)) // Replace the string at the specific index
+      (prev) => prev.map((item, idx) => (idx === index ? dateStr : item)) // Replace the string at the specific index
     )
+  }
+  const handleOnInsertClick = async () => {
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("exe_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+        sql: insertSql,
+      })
+    )
+    console.log(response_code, response_msg)
+    if (response_code === 0) {
+      setShowInsertDialog(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Update Sql Error",
+        description: response_msg,
+      })
+    }
   }
   return (
     <DialogPrimitive.DialogPortal>
@@ -83,7 +139,10 @@ const InsertSqlComponent = ({ node }) => {
         <div className="grid grid-cols-2 gap-4">
           {columnDataArray.map((item, index) => {
             return (
-              <div className="flex flex-row items-center justify-center " key={index}>
+              <div
+                className="flex flex-row items-center justify-center "
+                key={index}
+              >
                 <div class="flex basis-2/3  flex-col truncate pr-4 text-right">
                   <span>
                     {/* {" "}
@@ -97,7 +156,7 @@ const InsertSqlComponent = ({ node }) => {
                   <Input
                     type="email"
                     className="basis-1/3"
-                    placeholder= {item.column_type}
+                    placeholder={item.column_type}
                     value={columnValueArray?.[index] || ""} // Use the item directly
                     onChange={(e) => handleInputOnChange(e, index)}
                   />
@@ -108,15 +167,15 @@ const InsertSqlComponent = ({ node }) => {
                       <Button
                         variant={"outline"}
                         className={cn(
-                          "w-[280px] justify-start text-left font-normal",
+                          "basis-1/3 justify-start text-left font-normal",
                           !columnValueArray?.[index] && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {columnValueArray?.[index] ? (
-                          format(date, "PPP")
+                          columnValueArray?.[index]
                         ) : (
-                          <span>Pick a date</span>
+                          <span>{item.column_type}</span>
                         )}
                       </Button>
                     </PopoverTrigger>
@@ -124,7 +183,7 @@ const InsertSqlComponent = ({ node }) => {
                       <Calendar
                         mode="single"
                         selected={columnValueArray?.[index]}
-                        onSelect={handleSetDate}
+                        onSelect={(date) => handleSetDate(date, index)}
                         initialFocus
                       />
                     </PopoverContent>
@@ -135,11 +194,17 @@ const InsertSqlComponent = ({ node }) => {
           })}
         </div>
         <div className="flex h-full flex-row items-center justify-center">
-          <Button className="basis-1/3" variant="secondary">
+          {insertSql}
+        </div>
+        <div className="flex h-full flex-row items-center justify-center">
+          <Button className="basis-1/4" variant="secondary">
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/3"> Save</Button>
+          <Button className="basis-1/4" onClick={handleOnInsertClick}>
+            {" "}
+            Insert
+          </Button>
         </div>
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <span className="sr-only">Close</span>

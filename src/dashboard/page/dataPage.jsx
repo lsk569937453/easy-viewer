@@ -425,7 +425,10 @@ export default function DataPage({
   return (
     <div className="flex  h-full w-full flex-col	">
       <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
-        <InsertSqlComponent node={node} />
+        <InsertSqlComponent
+          node={node}
+          setShowInsertDialog={setShowInsertDialog}
+        />
       </Dialog>
       {!readOnly && (
         <div ref={ref}>

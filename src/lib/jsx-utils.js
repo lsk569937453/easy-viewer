@@ -338,3 +338,17 @@ export function getConnectionType(node) {
   let rootNode = getRootNode(node)
   return rootNode.data.connectionType
 }
+export function shouldWithQuote(str) {
+  if (
+    str === "datetime" ||
+    str === "date" ||
+    str === "time" ||
+    str === "year" ||
+    str.includes("varchar") ||
+    str === "text"
+  ) {
+    return true
+  } else {
+    return false
+  }
+}

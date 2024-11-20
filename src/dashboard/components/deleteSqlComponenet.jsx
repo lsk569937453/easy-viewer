@@ -25,11 +25,31 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/components/ui/use-toast"
 
-import { getLevelInfos, shouldWithQuote } from "../../lib/jsx-utils"
+import { getLevelInfos, reloadNode, shouldWithQuote } from "../../lib/jsx-utils"
+import { SidebarContext } from "../page"
 
-const DeleteSqlComponent = ({ node, sqlOfDelete, setShowDeleteDialog }) => {
+const DeleteSqlComponent = ({
+  node,
+  sqlOfDelete,
+  setShowDeleteDialog,
+  exeSql,
+}) => {
   const { toast } = useToast()
-
+  const {
+    handleAddPageClick,
+    setShowQueryLoading,
+    setQueryName,
+    setBaseConfigId,
+    setNodeForUpdate,
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+    setShowRenameQueryDialog,
+    setNewQueryName,
+    setShowRemoveQueryDialog,
+    menulist,
+    setMenulist,
+    setConnectionType,
+  } = useContext(SidebarContext)
   const handleOnDeleteClick = async () => {
     console.log(node)
     const listNodeInfoReq = {
@@ -42,19 +62,22 @@ const DeleteSqlComponent = ({ node, sqlOfDelete, setShowDeleteDialog }) => {
         sql: sqlOfDelete,
       })
     )
+    const mesgStr = JSON.stringify(response_msg)
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      //   toast({
-      //     variant: "destructive",
-      //     title: "Execute Sql Error",
-      //     description: response_msg,
-      //   })
+      toast({
+        title: "Delete Success",
+        description: "Delete Success",
+      })
+      setShowDeleteDialog(false)
+      exeSql()
+      reloadNode(node, menulist, setMenulist)
     } else {
-      //   toast({
-      //     variant: "destructive",
-      //     title: "Execute Sql Error",
-      //     description: response_msg,
-      //   })
+      toast({
+        variant: "destructive",
+        title: "Delete Sql Error",
+        description: mesgStr,
+      })
     }
     console.log(sqlOfDelete)
   }

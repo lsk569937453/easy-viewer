@@ -462,6 +462,7 @@ export default function DataPage({
           node={node}
           sqlOfDelete={sqlOfDelete}
           setShowDeleteDialog={setShowDeleteDialog}
+          exeSql={exeSql}
         />
       </Dialog>
       {!readOnly && (

@@ -3,11 +3,16 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { invoke } from "@tauri-apps/api/core"
 import { format, set } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
+import Select, { components } from "react-select"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
+
+const InputSelect = (props) => (
+  <components.Input {...props} isHidden={false} className="text-xs" />
+)
 
 const UpdateColumnDialog = ({ node, columnData }) => {
   console.log(columnData)
@@ -15,7 +20,18 @@ const UpdateColumnDialog = ({ node, columnData }) => {
   const [columnType, setColumnType] = useState(columnData[1])
   const [defaultValue, setDefaultValue] = useState(columnData.default)
   const [columnComment, setColumnComment] = useState(columnData.comment)
-
+  const [option, setOption] = useState(null)
+  useEffect(() => {
+    setColumnName(columnData[0])
+    setColumnType(columnData[1])
+    setDefaultValue(columnData.default)
+    setColumnComment(columnData.comment)
+  }, [columnData])
+  const options = [
+    { value: "121", label: "121" },
+    { value: "122", label: "122" },
+    { value: "123", label: "123" },
+  ]
   return (
     <DialogPrimitive.DialogPortal>
       <DialogPrimitive.DialogOverlay className="fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -26,7 +42,7 @@ const UpdateColumnDialog = ({ node, columnData }) => {
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-row items-center justify-center ">
             <div class="flex basis-1/2 flex-col truncate pr-4 text-right">
-              <span>Name:</span>
+              <span>name:</span>
             </div>
             <Input
               type="email"
@@ -37,13 +53,13 @@ const UpdateColumnDialog = ({ node, columnData }) => {
           </div>
           <div className="flex flex-row items-center justify-center ">
             <div class="flex basis-1/2 flex-col truncate pr-4 text-right">
-              <span>Type:</span>
+              <span>type:</span>
             </div>
-            <Input
-              type="email"
-              className="basis-1/2"
-              value={columnType}
-              onChange={(e) => setColumnType(e.target.value)}
+            <Select
+              // menuIsOpen={true}
+              value={option}
+              onChange={setOption}
+              options={options}
             />
           </div>
           <div className="flex flex-row items-center justify-center ">

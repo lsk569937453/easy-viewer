@@ -65,6 +65,7 @@
     "react-hotkeys-hook": "^4.6.1",
     "react-i18next": "^13.5.0",
     "react-resizable-panels": "^2.1.6",
+    "react-select": "^5.8.3",
     "recharts": "^2.7.2",
     "tailwind-scrollbar": "^3.0.4",
     "tailwindcss-animate": "^1.0.6",

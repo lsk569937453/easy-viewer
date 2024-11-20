@@ -120,7 +120,7 @@ const PropertiesColumnPage = ({ node }) => {
             setShowUpdateColumnDialog(true)
           }
           return (
-            <div onClick={() => handleCellOnClick(index)}>
+            <div onClick={() => handleCellOnClick(row.index)}>
               {currentData ? (
                 <p>{currentData}</p>
               ) : (

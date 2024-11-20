@@ -455,6 +455,7 @@ export default function DataPage({
         <InsertSqlComponent
           node={node}
           setShowInsertDialog={setShowInsertDialog}
+          exeSql={exeSql}
         />
       </Dialog>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

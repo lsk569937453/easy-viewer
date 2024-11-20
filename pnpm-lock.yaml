@@ -3283,7 +3283,7 @@ packages:
   /dom-helpers@3.4.0:
     resolution: {integrity: sha512-LnuPJ+dwqKDIyotW1VzmOZ5TONUN7CwkCR5hrgawTUbkBGYdeoNLZo6nNfGkCrjtE1nXXaj7iMMpDa8/d9WoIA==}
     dependencies:
-      '@babel/runtime': 7.21.5
+      '@babel/runtime': 7.23.6
     dev: false
 
   /eastasianwidth@0.2.0:

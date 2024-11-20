@@ -459,6 +459,7 @@ export default function DataPage({
       </Dialog>
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DeleteSqlComponent
+          node={node}
           sqlOfDelete={sqlOfDelete}
           setShowDeleteDialog={setShowDeleteDialog}
         />

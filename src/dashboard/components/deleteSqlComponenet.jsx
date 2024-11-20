@@ -27,14 +27,35 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getLevelInfos, shouldWithQuote } from "../../lib/jsx-utils"
 
-const defaultColumnData = [
-  {
-    columnName: "sss",
-    columnType: "int",
-  },
-]
-const DeleteSqlComponent = ({ sqlOfDelete, setShowDeleteDialog }) => {
+const DeleteSqlComponent = ({ node, sqlOfDelete, setShowDeleteDialog }) => {
+  const { toast } = useToast()
+
   const handleOnDeleteClick = async () => {
+    console.log(node)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("exe_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+        sql: sqlOfDelete,
+      })
+    )
+    console.log(response_code, response_msg)
+    if (response_code === 0) {
+      //   toast({
+      //     variant: "destructive",
+      //     title: "Execute Sql Error",
+      //     description: response_msg,
+      //   })
+    } else {
+      //   toast({
+      //     variant: "destructive",
+      //     title: "Execute Sql Error",
+      //     description: response_msg,
+      //   })
+    }
     console.log(sqlOfDelete)
   }
   return (

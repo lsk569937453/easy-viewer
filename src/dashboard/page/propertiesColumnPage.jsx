@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { createContext, useContext, useEffect, useRef, useState } from "react"
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
 import {
   getCoreRowModel,
@@ -10,6 +10,16 @@ import { invoke } from "@tauri-apps/api/core"
 import AceEditor from "react-ace"
 
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -36,11 +46,19 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { tr } from "date-fns/locale"
 
 import { getLevelInfos, uuid } from "../../lib/jsx-utils"
+import UpdateColumnDialog from "../components/updateColumnComponent"
 
+export const PropertiesColumnContext = createContext({
+  currentColumnData: {},
+  setCurrentColumnData: () => {},
+  sourceRows: [],
+})
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
   const [rows, setRows] = useState([])
-
+  const [sourceRows, setSourceRows] = useState([])
+  const [showUpdateColumnDialog, setShowUpdateColumnDialog] = useState(false)
+  const [currentColumnData, setCurrentColumnData] = useState({})
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 100,
@@ -81,6 +99,7 @@ const PropertiesColumnPage = ({ node }) => {
     console.log(response_code, response_msg)
     if (response_code == 0) {
       const { header, rows } = response_msg
+      setSourceRows(rows)
 
       const columns = header.map((item, index) => ({
         accessorKey: String(index), // Use the index as the accessor key
@@ -92,8 +111,16 @@ const PropertiesColumnPage = ({ node }) => {
         ),
         cell: ({ row }) => {
           const currentData = row.getValue(String(index))
+          const { setCurrentColumnData, sourceRows } = useContext(
+            PropertiesColumnContext
+          )
+          const handleCellOnClick = (index) => {
+            console.log(sourceRows, index)
+            setCurrentColumnData(sourceRows[index])
+            setShowUpdateColumnDialog(true)
+          }
           return (
-            <div>
+            <div onClick={() => handleCellOnClick(row.index)}>
               {currentData ? (
                 <p>{currentData}</p>
               ) : (
@@ -120,12 +147,21 @@ const PropertiesColumnPage = ({ node }) => {
 
   return (
     <div class="scrollbar  h-[calc(100%-2rem)] w-full overflow-x-scroll overflow-y-scroll ">
-      <DataTable
-        columns={header}
-        data={rows}
-        table={table}
-        // className=" h-full w-full overflow-hidden "
-      />
+      <PropertiesColumnContext.Provider
+        value={{
+          currentColumnData: currentColumnData,
+          setCurrentColumnData: setCurrentColumnData,
+          sourceRows: sourceRows,
+        }}
+      >
+        <Dialog
+          open={showUpdateColumnDialog}
+          onOpenChange={setShowUpdateColumnDialog}
+        >
+          <UpdateColumnDialog node={node} columnData={currentColumnData} />
+        </Dialog>
+        <DataTable columns={header} data={rows} table={table} />
+      </PropertiesColumnContext.Provider>
     </div>
   )
 }

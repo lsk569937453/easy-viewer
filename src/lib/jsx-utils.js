@@ -338,3 +338,28 @@ export function getConnectionType(node) {
   let rootNode = getRootNode(node)
   return rootNode.data.connectionType
 }
+export function shouldWithQuote(str) {
+  if (
+    str === "datetime" ||
+    str === "date" ||
+    str === "time" ||
+    str === "year" ||
+    str.includes("varchar") ||
+    str === "text"
+  ) {
+    return true
+  } else {
+    return false
+  }
+}
+export const getDeleteSql = (
+  tableName,
+  primaryColumnName,
+  primaryColumnValues
+) => {
+  // DELETE FROM `all_types_table` WHERE `id` IN (null,1,3
+  const sql = `DELETE FROM \`${tableName}\` WHERE \`${primaryColumnName}\` IN (${primaryColumnValues.join(
+    ","
+  )})`
+  return sql
+}

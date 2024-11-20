@@ -47,7 +47,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools"
 import useResizeObserver from "use-resize-observer"
 
-import { getLastSQLStatement } from "../../lib/jsx-utils"
+import { getDeleteSql, getLastSQLStatement } from "../../lib/jsx-utils"
 
 import "ace-builds/src-noconflict/ext-language_tools"
 
@@ -105,6 +105,7 @@ export default function DataPage({
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const [rowSelection, setRowSelection] = useState({})
   const [showInsertDialog, setShowInsertDialog] = useState(false)
+  const [sqlOfDelete, setSqlOfDelete] = useState("")
   const hasMounted = useRef(false)
 
   const { ref } = useResizeObserver({
@@ -420,7 +421,29 @@ export default function DataPage({
     },
   })
   const handleOnDeleteClick = () => {
-    console.log(rowSelection)
+    const primaryKeyIndex = sourceHeader.findIndex(
+      (column) => column.is_primary_key
+    )
+    if (primaryKeyIndex === -1) {
+      toast({
+        variant: "destructive",
+        title: "Delete Error",
+        description: "No Primary Key",
+      })
+      return
+    }
+
+    const primaryValueArray = sourceRows
+      .filter((row, index) => rowSelection[index])
+      .map((row) => {
+        return row[primaryKeyIndex]
+      })
+    const sql = getDeleteSql(
+      node.data.name,
+      sourceHeader[primaryKeyIndex].name,
+      primaryValueArray
+    )
+    console.log(sql)
   }
   return (
     <div className="flex  h-full w-full flex-col	">

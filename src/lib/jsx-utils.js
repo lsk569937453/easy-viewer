@@ -352,3 +352,14 @@ export function shouldWithQuote(str) {
     return false
   }
 }
+export const getDeleteSql = (
+  tableName,
+  primaryColumnName,
+  primaryColumnValues
+) => {
+  // DELETE FROM `all_types_table` WHERE `id` IN (null,1,3
+  const sql = `DELETE FROM \`${tableName}\` WHERE \`${primaryColumnName}\` IN (${primaryColumnValues.join(
+    ","
+  )})`
+  return sql
+}

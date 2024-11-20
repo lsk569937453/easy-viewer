@@ -197,7 +197,11 @@ const InsertSqlComponent = ({ node, setShowInsertDialog }) => {
           {insertSql}
         </div>
         <div className="flex h-full flex-row items-center justify-center">
-          <Button className="basis-1/4" variant="secondary">
+          <Button
+            className="basis-1/4"
+            variant="secondary"
+            onClick={() => setShowInsertDialog(false)}
+          >
             {" "}
             Cancel
           </Button>

@@ -33,12 +33,12 @@ const options = [
   { value: "BLOB", label: "BLOB" },
   { value: "BINARY", label: "BINARY" },
 ]
-const UpdateColumnComponent = ({ node, columnData }) => {
+const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
   columnData[1] = columnData[1]?.toUpperCase()
 
   console.log(columnData)
   const [columnName, setColumnName] = useState(columnData[0])
-  const [columnType, setColumnType] = useState(columnData[1].toUpperCase())
+  const [columnType, setColumnType] = useState(columnData[1])
   const [currentOptions, setCurrentOptions] = useState(options)
   const [defaultValue, setDefaultValue] = useState(columnData.default)
   const [columnComment, setColumnComment] = useState(columnData.comment)

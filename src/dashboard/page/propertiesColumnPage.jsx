@@ -46,7 +46,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { tr } from "date-fns/locale"
 
 import { getLevelInfos, uuid } from "../../lib/jsx-utils"
-import UpdateColumnDialog from "../components/updateColumnComponent"
+import UpdateColumnComponent from "../components/updateColumnComponent"
 
 export const PropertiesColumnContext = createContext({
   currentColumnData: {},
@@ -158,7 +158,7 @@ const PropertiesColumnPage = ({ node }) => {
           open={showUpdateColumnDialog}
           onOpenChange={setShowUpdateColumnDialog}
         >
-          <UpdateColumnDialog node={node} columnData={currentColumnData} />
+          <UpdateColumnComponent node={node} columnData={currentColumnData} />
         </Dialog>
         <DataTable columns={header} data={rows} table={table} />
       </PropertiesColumnContext.Provider>

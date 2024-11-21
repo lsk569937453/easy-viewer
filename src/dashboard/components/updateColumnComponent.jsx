@@ -15,7 +15,7 @@ const InputSelect = (props) => (
   <components.Input {...props} isHidden={false} className="text-xs" />
 )
 
-const UpdateColumnDialog = ({ node, columnData }) => {
+const UpdateColumnComponent = ({ node, columnData }) => {
   console.log(columnData)
   const [columnName, setColumnName] = useState(columnData[0])
   const [columnType, setColumnType] = useState(columnData[1])
@@ -156,4 +156,4 @@ const UpdateColumnDialog = ({ node, columnData }) => {
     </DialogPrimitive.DialogPortal>
   )
 }
-export default UpdateColumnDialog
+export default UpdateColumnComponent

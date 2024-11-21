@@ -3,6 +3,8 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { invoke } from "@tauri-apps/api/core"
 import { format, set } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { coy } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -215,7 +217,18 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
           })}
         </div>
         <div className="flex h-full flex-row items-center justify-center">
-          {insertSql}
+          <SyntaxHighlighter
+            language="sql"
+            style={coy}
+            className=" w-full "
+            codeTagProps={{
+              style: {
+                whiteSpace: "normal",
+              },
+            }}
+          >
+            {insertSql}
+          </SyntaxHighlighter>
         </div>
         <div className="flex h-full flex-row items-center justify-center">
           <Button

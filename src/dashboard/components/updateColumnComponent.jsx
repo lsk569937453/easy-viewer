@@ -45,13 +45,17 @@ const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
   const [updateColumnSql, setUpdateColumnSql] =
     useState(`ALTER TABLE \`${node.data.name}\` 
     CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT NULL ;`)
-  const [option, setOption] = useState(null)
+
+  const [value, setValue] = useState({
+    value: columnData[1],
+    label: columnData[1],
+  })
+  const [inputValue, setInputValue] = useState(columnData[1])
   useEffect(() => {
     setCurrentOptions(options)
 
     setColumnName(columnData[0])
     setColumnType(columnData[1])
-    setValue({ value: columnData[1], label: columnData[1] })
 
     setDefaultValue(columnData.default)
     setColumnComment(columnData.comment)
@@ -63,13 +67,9 @@ const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
       const newOption = { value: columnData[1], label: columnData[1] }
       setCurrentOptions((prevOptions) => [...prevOptions, newOption])
     }
+    setValue({ value: columnData[1], label: columnData[1] })
+    setInputValue(columnData[1])
   }, [columnData])
-
-  const [value, setValue] = useState({
-    value: columnData[1],
-    label: columnData[1],
-  })
-  const [inputValue, setInputValue] = useState(columnData[1])
 
   const selectRef = useRef()
 

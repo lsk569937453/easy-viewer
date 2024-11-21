@@ -33,55 +33,67 @@ const options = [
   { value: "BLOB", label: "BLOB" },
   { value: "BINARY", label: "BINARY" },
 ]
-const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
+const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
   columnData[1] = columnData[1]?.toUpperCase()
 
   console.log(columnData)
   const [columnName, setColumnName] = useState(columnData[0])
-  const [columnType, setColumnType] = useState(columnData[1])
+  const [isNull, setIsNull] = useState(columnData[2] === "YES")
   const [currentOptions, setCurrentOptions] = useState(options)
   const [defaultValue, setDefaultValue] = useState(columnData.default)
   const [columnComment, setColumnComment] = useState(columnData.comment)
-  const [updateColumnSql, setUpdateColumnSql] =
-    useState(`ALTER TABLE \`${node.data.name}\` 
-    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT NULL ;`)
+  const [updateColumnSql, setUpdateColumnSql] = useState(`ALTER TABLE \`${
+    node.data.name
+  }\` 
+    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT ${
+      isNull ? "NULL" : "NOT NULL"
+    } ;`)
 
-  const [value, setValue] = useState({
+  const [selectValue, setSelectValue] = useState({
     value: columnData[1],
     label: columnData[1],
   })
-  const [inputValue, setInputValue] = useState(columnData[1])
+  const [selectInputValue, setSelectInputValue] = useState(columnData[1])
   useEffect(() => {
     setCurrentOptions(options)
 
     setColumnName(columnData[0])
-    setColumnType(columnData[1])
+    setIsNull(columnData[2] === "YES")
 
     setDefaultValue(columnData.default)
     setColumnComment(columnData.comment)
     setUpdateColumnSql(`ALTER TABLE \`${node.data.name}\` 
-    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT NULL ;`)
+    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT ${
+      isNull ? "NULL" : "NOT NULL"
+    } ;`)
 
     const isInOptions = options.some((option) => option.value === columnData[1])
     if (!isInOptions) {
       const newOption = { value: columnData[1], label: columnData[1] }
       setCurrentOptions((prevOptions) => [...prevOptions, newOption])
     }
-    setValue({ value: columnData[1], label: columnData[1] })
-    setInputValue(columnData[1])
+    setSelectValue({ value: columnData[1], label: columnData[1] })
+    setSelectInputValue(columnData[1])
   }, [columnData])
+
+  useEffect(() => {
+    setUpdateColumnSql(`ALTER TABLE \`${node.data.name}\`
+    CHANGE \`${columnName}\` \`${columnName}\` ${selectInputValue} DEFAULT ${
+      isNull ? "NULL" : "NOT NULL"
+    } ;`)
+  }, [columnName, selectInputValue, isNull])
 
   const selectRef = useRef()
 
   const onInputChange = (inputValue, { action }) => {
     if (action === "input-change") {
-      setInputValue(inputValue)
+      setSelectInputValue(inputValue)
     }
   }
 
   const onChange = (option) => {
-    setValue(option)
-    setInputValue(option ? option.label : "")
+    setSelectValue(option)
+    setSelectInputValue(option ? option.label : "")
   }
 
   const onFocus = () => value && selectRef.current.select.inputRef.select()
@@ -113,8 +125,8 @@ const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
               ref={selectRef}
               options={currentOptions}
               isClearable={true}
-              value={value}
-              inputValue={inputValue}
+              value={selectValue}
+              inputValue={selectInputValue}
               onInputChange={onInputChange}
               onChange={onChange}
               onFocus={onFocus}
@@ -148,16 +160,18 @@ const UpdateColumnComponent = ({ node, columnData = ["", ""] }) => {
           </div>
         </div>
         <div className=" flex flex-row items-center justify-around gap-1">
-          {columnName == "tiny_int_col" && (
-            <div className="flex flex-row">
-              <div class="  truncate  text-right ">
-                <span>Not Null:</span>
-              </div>
-              <div className=" items-center justify-center">
-                <Checkbox />
-              </div>
+          <div className="flex flex-row">
+            <div class="  truncate  text-right ">
+              <span>Not Null:</span>
             </div>
-          )}
+            <div className=" items-center justify-center">
+              <Checkbox
+                checked={!isNull}
+                onCheckedChange={(checked) => setIsNull(!checked)}
+              />
+            </div>
+          </div>
+
           <div className="flex flex-row">
             <div class="  truncate  text-right ">
               <span>Zero Fill:</span>

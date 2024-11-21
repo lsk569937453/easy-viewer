@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
 import * as AlertDialog from "@radix-ui/react-alert-dialog"
+import * as Tooltip from "@radix-ui/react-tooltip"
 import {
   getCoreRowModel,
   getFilteredRowModel,
@@ -52,7 +53,20 @@ export const PropertiesColumnContext = createContext({
   currentColumnData: {},
   setCurrentColumnData: () => {},
   sourceRows: [],
+  setShowUpdateColumnDialog: () => {},
 })
+const usePropertiesColumnActions = () => {
+  const { setCurrentColumnData, sourceRows, setShowUpdateColumnDialog } =
+    useContext(PropertiesColumnContext)
+
+  const handleCellOnClick = (rowIndex) => {
+    console.log(sourceRows, rowIndex)
+    setCurrentColumnData(sourceRows[rowIndex])
+    setShowUpdateColumnDialog(true)
+  }
+
+  return { handleCellOnClick }
+}
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
   const [rows, setRows] = useState([])
@@ -83,7 +97,14 @@ const PropertiesColumnPage = ({ node }) => {
   useEffect(() => {
     exeSql()
   }, [])
-
+  const handleCellOnClick = (rowIndex) => {
+    const { setCurrentColumnData, sourceRows } = useContext(
+      PropertiesColumnContext
+    )
+    console.log(sourceRows, rowIndex)
+    setCurrentColumnData(sourceRows[rowIndex])
+    setShowUpdateColumnDialog(true)
+  }
   const exeSql = async () => {
     // const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
@@ -101,35 +122,121 @@ const PropertiesColumnPage = ({ node }) => {
       const { header, rows } = response_msg
       setSourceRows(rows)
 
-      const columns = header.map((item, index) => ({
-        accessorKey: String(index), // Use the index as the accessor key
-        header: () => (
-          <div className="flex flex-col items-center justify-center gap-1">
-            <p className="font-bold text-foreground">{item.name}</p>
-            <p className="text-xs text-muted-foreground">{item.type_name}</p>
-          </div>
-        ),
-        cell: ({ row }) => {
-          const currentData = row.getValue(String(index))
-          const { setCurrentColumnData, sourceRows } = useContext(
-            PropertiesColumnContext
-          )
-          const handleCellOnClick = (index) => {
-            console.log(sourceRows, index)
-            setCurrentColumnData(sourceRows[index])
-            setShowUpdateColumnDialog(true)
-          }
-          return (
-            <div onClick={() => handleCellOnClick(row.index)}>
-              {currentData ? (
-                <p>{currentData}</p>
-              ) : (
-                <p className="text-muted-foreground">NULL</p>
-              )}
+      const columns = [
+        ...header.map((item, index) => ({
+          accessorKey: String(index), // Use the index as the accessor key
+          header: () => (
+            <div className="flex flex-col items-center justify-center gap-1">
+              <p className="font-bold text-foreground">{item.name}</p>
+              <p className="text-xs text-muted-foreground">{item.type_name}</p>
             </div>
-          )
+          ),
+          cell: ({ row }) => {
+            const currentData = row.getValue(String(index))
+            const { handleCellOnClick } = usePropertiesColumnActions()
+
+            return (
+              <div onClick={() => handleCellOnClick(row.index)}>
+                {currentData ? (
+                  <p>{currentData}</p>
+                ) : (
+                  <p className="text-muted-foreground">NULL</p>
+                )}
+              </div>
+            )
+          },
+        })),
+        {
+          accessorKey: "actions", // Unique accessor key for the extra column
+          header: () => <p className="font-bold text-foreground">Actions</p>,
+
+          cell: ({ row }) => {
+            const { handleCellOnClick } = usePropertiesColumnActions()
+
+            return (
+              <div className="flex gap-2">
+                <Tooltip.Provider>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-full w-7 border-none hover:bg-searchMarkerColor"
+                        onClick={() => handleCellOnClick(row.index)}
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width={24}
+                          height={24}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-muted"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+                          <path d="M13.5 6.5l4 4" />
+                        </svg>
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Edit Column</p>
+                        <Tooltip.Arrow className="fill-white" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+                <Tooltip.Provider>
+                  <Tooltip.Root>
+                    <Tooltip.Trigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-full w-7 border-none hover:bg-searchMarkerColor"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width={24}
+                          height={24}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke-width="2"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-rose-500"
+                        >
+                          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                          <path d="M4 7l16 0" />
+                          <path d="M10 11l0 6" />
+                          <path d="M14 11l0 6" />
+                          <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                          <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                        </svg>
+                      </Button>
+                    </Tooltip.Trigger>
+                    <Tooltip.Portal>
+                      <Tooltip.Content
+                        className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                        sideOffset={5}
+                      >
+                        <p>Delete Column</p>
+                        <Tooltip.Arrow className="fill-white" />
+                      </Tooltip.Content>
+                    </Tooltip.Portal>
+                  </Tooltip.Root>
+                </Tooltip.Provider>
+              </div>
+            )
+          },
         },
-      }))
+      ]
       const transformedData = rows.map((row) =>
         row.reduce((obj, value, index) => {
           obj[String(index)] = value // Use the index as the key
@@ -152,6 +259,7 @@ const PropertiesColumnPage = ({ node }) => {
           currentColumnData: currentColumnData,
           setCurrentColumnData: setCurrentColumnData,
           sourceRows: sourceRows,
+          setShowUpdateColumnDialog: setShowUpdateColumnDialog,
         }}
       >
         <Dialog

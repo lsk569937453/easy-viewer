@@ -4,6 +4,8 @@ import { invoke } from "@tauri-apps/api/core"
 import { format, set } from "date-fns"
 import { Calendar as CalendarIcon } from "lucide-react"
 import Select, { components } from "react-select"
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter"
+import { coy } from "react-syntax-highlighter/dist/esm/styles/prism"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,39 +16,60 @@ import { Input } from "@/components/ui/input"
 const InputSelect = (props) => (
   <components.Input {...props} isHidden={false} className="text-xs" />
 )
-
+const options = [
+  { value: "INT", label: "INT" },
+  { value: "VARCHAR", label: "VARCHAR" },
+  { value: "CHAR", label: "CHAR" },
+  { value: "DATETIME", label: "DATETIME" },
+  { value: "TIMESTAMP", label: "TIMESTAMP" },
+  { value: "DATE", label: "DATE" },
+  { value: "BIT", label: "BIT" },
+  { value: "FLOAT", label: "FLOAT" },
+  { value: "DOUBLE", label: "DOUBLE" },
+  { value: "DECIMAL", label: "DECIMAL" },
+  { value: "BIGINT", label: "BIGINT" },
+  { value: "TEXT", label: "TEXT" },
+  { value: "JSON", label: "JSON" },
+  { value: "BLOB", label: "BLOB" },
+  { value: "BINARY", label: "BINARY" },
+]
 const UpdateColumnComponent = ({ node, columnData }) => {
+  columnData[1] = columnData[1]?.toUpperCase()
+
   console.log(columnData)
   const [columnName, setColumnName] = useState(columnData[0])
-  const [columnType, setColumnType] = useState(columnData[1])
+  const [columnType, setColumnType] = useState(columnData[1].toUpperCase())
+  const [currentOptions, setCurrentOptions] = useState(options)
   const [defaultValue, setDefaultValue] = useState(columnData.default)
   const [columnComment, setColumnComment] = useState(columnData.comment)
+  const [updateColumnSql, setUpdateColumnSql] =
+    useState(`ALTER TABLE \`${node.data.name}\` 
+    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT NULL ;`)
   const [option, setOption] = useState(null)
   useEffect(() => {
+    setCurrentOptions(options)
+
     setColumnName(columnData[0])
     setColumnType(columnData[1])
+    setValue({ value: columnData[1], label: columnData[1] })
+
     setDefaultValue(columnData.default)
     setColumnComment(columnData.comment)
+    setUpdateColumnSql(`ALTER TABLE \`${node.data.name}\` 
+    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT NULL ;`)
+
+    const isInOptions = options.some((option) => option.value === columnData[1])
+    if (!isInOptions) {
+      const newOption = { value: columnData[1], label: columnData[1] }
+      setCurrentOptions((prevOptions) => [...prevOptions, newOption])
+    }
   }, [columnData])
-  const options = [
-    { value: "INT", label: "INT" },
-    { value: "VARCHAR", label: "VARCHAR" },
-    { value: "CHAR", label: "CHAR" },
-    { value: "DATETIME", label: "DATETIME" },
-    { value: "TIMESTAMP", label: "TIMESTAMP" },
-    { value: "DATE", label: "DATE" },
-    { value: "BIT", label: "BIT" },
-    { value: "FLOAT", label: "FLOAT" },
-    { value: "DOUBLE", label: "DOUBLE" },
-    { value: "DECIMAL", label: "DECIMAL" },
-    { value: "BIGINT", label: "BIGINT" },
-    { value: "TEXT", label: "TEXT" },
-    { value: "JSON", label: "JSON" },
-    { value: "BLOB", label: "BLOB" },
-    { value: "BINARY", label: "BINARY" },
-  ]
-  const [value, setValue] = useState()
-  const [inputValue, setInputValue] = useState("")
+
+  const [value, setValue] = useState({
+    value: columnData[1],
+    label: columnData[1],
+  })
+  const [inputValue, setInputValue] = useState(columnData[1])
 
   const selectRef = useRef()
 
@@ -88,7 +111,7 @@ const UpdateColumnComponent = ({ node, columnData }) => {
             </div>
             <Select
               ref={selectRef}
-              options={options}
+              options={currentOptions}
               isClearable={true}
               value={value}
               inputValue={inputValue}
@@ -123,31 +146,55 @@ const UpdateColumnComponent = ({ node, columnData }) => {
               onChange={(e) => setColumnComment(e.target.value)}
             />
           </div>
-          <div className=" flex flex-row items-center justify-center">
-            <div class="flex basis-1/4 flex-col truncate  pr-4 text-right ">
-              <span>Not Null:</span>
+        </div>
+        <div className=" flex flex-row items-center justify-around gap-1">
+          {columnName == "tiny_int_col" && (
+            <div className="flex flex-row">
+              <div class="  truncate  text-right ">
+                <span>Not Null:</span>
+              </div>
+              <div className=" items-center justify-center">
+                <Checkbox />
+              </div>
             </div>
-            <div className="basis-1/4 items-center justify-center">
-              <Checkbox />
-            </div>
-            <div class="flex basis-1/4  flex-col truncate  pr-4  text-right">
+          )}
+          <div className="flex flex-row">
+            <div class="  truncate  text-right ">
               <span>Zero Fill:</span>
             </div>
-            <div className="basis-1/4">
+            <div className=" items-center justify-center">
+              <Checkbox />
+            </div>
+          </div>
+          <div className="flex flex-row">
+            <div class="  truncate  text-right ">
+              <span>UNSIGNED:</span>
+            </div>
+            <div className=" items-center justify-center">
               <Checkbox />
             </div>
           </div>
         </div>
         <div className="flex h-full flex-row items-center justify-center">
-          <Button
-            className="basis-1/4"
-            variant="secondary"
-            // onClick={() => setShowDeleteDialog(false)}
-          >
+          <Button className="basis-1/4" variant="secondary">
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4"> Confirm</Button>
+          <Button className="basis-1/4"> Update</Button>
+        </div>
+        <div className="flex h-full w-full flex-row items-center justify-center">
+          <SyntaxHighlighter
+            language="sql"
+            style={coy}
+            className=" w-full "
+            codeTagProps={{
+              style: {
+                whiteSpace: "normal",
+              },
+            }}
+          >
+            {updateColumnSql}
+          </SyntaxHighlighter>
         </div>
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <span className="sr-only">Close</span>

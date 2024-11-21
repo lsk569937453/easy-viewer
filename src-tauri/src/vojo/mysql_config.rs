@@ -543,13 +543,21 @@ WHERE table_schema = DATABASE()",
         }
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
-        for item in first_item.columns() {
+        for (index, item) in first_item.columns().iter().enumerate() {
+            info!("type_name: {:?}", item);
             let type_name = item.type_info().name();
             let column_name = item.name();
-            headers.push(ShowColumnHeader {
-                name: column_name.to_string(),
-                type_name: type_name.to_string().to_uppercase(),
-            });
+            if index == 2 {
+                headers.push(ShowColumnHeader {
+                    name: "Comment".to_string(),
+                    type_name: "VARCHAR".to_string().to_uppercase(),
+                });
+            } else {
+                headers.push(ShowColumnHeader {
+                    name: column_name.to_string(),
+                    type_name: type_name.to_string().to_uppercase(),
+                });
+            }
         }
         let mut response_rows = vec![];
         // info!("rows: {:?}", rows);

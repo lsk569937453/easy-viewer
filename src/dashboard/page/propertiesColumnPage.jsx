@@ -54,6 +54,7 @@ export const PropertiesColumnContext = createContext({
   setCurrentColumnData: () => {},
   sourceRows: [],
   setShowUpdateColumnDialog: () => {},
+  exeSql: () => {},
 })
 const usePropertiesColumnActions = () => {
   const { setCurrentColumnData, sourceRows, setShowUpdateColumnDialog } =
@@ -71,6 +72,7 @@ const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
   const [rows, setRows] = useState([])
   const [sourceRows, setSourceRows] = useState([])
+
   const [showUpdateColumnDialog, setShowUpdateColumnDialog] = useState(false)
   const [currentColumnData, setCurrentColumnData] = useState({})
   const [pagination, setPagination] = useState({
@@ -97,6 +99,7 @@ const PropertiesColumnPage = ({ node }) => {
   useEffect(() => {
     exeSql()
   }, [])
+
   const handleCellOnClick = (rowIndex) => {
     const { setCurrentColumnData, sourceRows } = useContext(
       PropertiesColumnContext
@@ -106,7 +109,6 @@ const PropertiesColumnPage = ({ node }) => {
     setShowUpdateColumnDialog(true)
   }
   const exeSql = async () => {
-    // const timer = setTimeout(() => setShowLoading(true), 500)
     var startTime = new Date()
 
     const listNodeInfoReq = {
@@ -260,6 +262,7 @@ const PropertiesColumnPage = ({ node }) => {
           setCurrentColumnData: setCurrentColumnData,
           sourceRows: sourceRows,
           setShowUpdateColumnDialog: setShowUpdateColumnDialog,
+          exeSql: exeSql,
         }}
       >
         <Dialog

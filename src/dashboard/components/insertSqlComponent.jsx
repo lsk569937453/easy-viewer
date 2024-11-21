@@ -177,7 +177,6 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
                 </div>
                 {item.type_flag == 0 && (
                   <Input
-                    type="email"
                     className="basis-1/3"
                     placeholder={item.column_type}
                     value={columnValueArray?.[index] || ""} // Use the item directly

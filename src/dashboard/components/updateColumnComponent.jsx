@@ -12,6 +12,10 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
+import { useToast } from "@/components/ui/use-toast"
+
+import { getLevelInfos } from "../../lib/jsx-utils"
+import { PropertiesColumnContext } from "../page/propertiesColumnPage"
 
 const InputSelect = (props) => (
   <components.Input {...props} isHidden={false} className="text-xs" />
@@ -33,55 +37,117 @@ const options = [
   { value: "BLOB", label: "BLOB" },
   { value: "BINARY", label: "BINARY" },
 ]
-const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
-  columnData[1] = columnData[1]?.toUpperCase()
+const UpdateColumnComponent = ({
+  node,
+  columnData = ["", "", "YES", "", ""],
+}) => {
+  const { toast } = useToast()
 
+  const { setShowUpdateColumnDialog, exeSql } = useContext(
+    PropertiesColumnContext
+  )
   console.log(columnData)
+  columnData[1] = columnData[1]?.toUpperCase()
+  const defaultZeroFill = columnData[1]?.includes("ZEROFILL")
+  const defaultUnsigned = columnData[1]?.includes("UNSIGNED")
+  const defaultColumnType = columnData[1]?.split(" ")[0]
+
+  const [sourceColumnName, setSourceColumnName] = useState(columnData[0])
   const [columnName, setColumnName] = useState(columnData[0])
   const [isNull, setIsNull] = useState(columnData[2] === "YES")
   const [currentOptions, setCurrentOptions] = useState(options)
-  const [defaultValue, setDefaultValue] = useState(columnData.default)
-  const [columnComment, setColumnComment] = useState(columnData.comment)
-  const [updateColumnSql, setUpdateColumnSql] = useState(`ALTER TABLE \`${
-    node.data.name
-  }\` 
-    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT ${
-      isNull ? "NULL" : "NOT NULL"
-    } ;`)
+  const [defaultValue, setDefaultValue] = useState(columnData[4])
+  const [columnComment, setColumnComment] = useState(columnData[2])
+  const [isZeroFill, setIsZeroFill] = useState(defaultZeroFill)
+  const [isUnsigned, setIsUnsigned] = useState(defaultUnsigned)
+
+  const getDefaultEndFix = () => {
+    if (isNull && !defaultValue) {
+      return "DEFAULT NULL"
+    } else if (isNull && defaultValue) {
+      return `DEFAULT ${defaultValue}`
+    } else if (!isNull && !defaultValue) {
+      return "NOT NULL"
+    } else if (!isNull && defaultValue) {
+      return `NOT NULL DEFAULT ${defaultValue}`
+    }
+  }
+  const getCommentEndFix = () => {
+    if (columnComment) {
+      return `COMMENT '${columnComment}'`
+    }
+    return ""
+  }
+  const [updateColumnSql, setUpdateColumnSql] = useState(() => {
+    return `ALTER TABLE \`${node?.data?.name || "unknown_table"}\` 
+      CHANGE \`${sourceColumnName || "unknown_column"}\` \`${
+        columnData[0] || "unknown_column"
+      }\` ${defaultColumnType || "VARCHAR(255)"}  
+      ${isZeroFill ? "ZEROFILL" : ""}  
+      ${isUnsigned ? "UNSIGNED" : ""} 
+      ${getDefaultEndFix()}
+      ${getCommentEndFix()};`
+  })
 
   const [selectValue, setSelectValue] = useState({
-    value: columnData[1],
-    label: columnData[1],
+    value: defaultColumnType,
+    label: defaultColumnType,
   })
-  const [selectInputValue, setSelectInputValue] = useState(columnData[1])
+  const [selectInputValue, setSelectInputValue] = useState(defaultColumnType)
   useEffect(() => {
     setCurrentOptions(options)
+    console.log(columnData)
 
+    const defaultZeroFill = columnData[1]?.includes("ZEROFILL")
+    const defaultUnsigned = columnData[1]?.includes("UNSIGNED")
+    const defaultColumnType = columnData[1]?.split(" ")[0]
+    console.log(columnData[1], defaultValue, defaultZeroFill)
+    setIsZeroFill(defaultZeroFill)
+    setIsUnsigned(defaultUnsigned)
     setColumnName(columnData[0])
+    setSourceColumnName(columnData[0])
     setIsNull(columnData[2] === "YES")
 
     setDefaultValue(columnData.default)
     setColumnComment(columnData.comment)
+    const defaultValueEndfix = getDefaultEndFix()
+    const commentEndfix = getCommentEndFix()
     setUpdateColumnSql(`ALTER TABLE \`${node.data.name}\` 
-    CHANGE \`${columnData[0]}\` \`${columnData[0]}\` ${columnData[1]} DEFAULT ${
-      isNull ? "NULL" : "NOT NULL"
-    } ;`)
+    CHANGE \`${sourceColumnName}\` \`${columnData[0]}\` ${defaultColumnType} ${
+      isZeroFill ? "ZEROFILL" : ""
+    }  ${
+      isUnsigned ? "UNSIGNED" : ""
+    }  ${defaultValueEndfix}  ${commentEndfix} ;`)
 
-    const isInOptions = options.some((option) => option.value === columnData[1])
+    const isInOptions = options.some(
+      (option) => option.value === defaultColumnType
+    )
     if (!isInOptions) {
-      const newOption = { value: columnData[1], label: columnData[1] }
+      const newOption = { value: defaultColumnType, label: defaultColumnType }
       setCurrentOptions((prevOptions) => [...prevOptions, newOption])
     }
-    setSelectValue({ value: columnData[1], label: columnData[1] })
-    setSelectInputValue(columnData[1])
+    setSelectValue({ value: defaultColumnType, label: defaultColumnType })
+    setSelectInputValue(defaultColumnType)
   }, [columnData])
 
   useEffect(() => {
+    const defaultValueEndfix = getDefaultEndFix()
+    const commentEndfix = getCommentEndFix()
     setUpdateColumnSql(`ALTER TABLE \`${node.data.name}\`
-    CHANGE \`${columnName}\` \`${columnName}\` ${selectInputValue} DEFAULT ${
-      isNull ? "NULL" : "NOT NULL"
-    } ;`)
-  }, [columnName, selectInputValue, isNull])
+    CHANGE \`${sourceColumnName}\` \`${columnName}\` ${selectInputValue} ${
+      isZeroFill ? "ZEROFILL" : ""
+    }  ${
+      isUnsigned ? "UNSIGNED" : ""
+    }  ${defaultValueEndfix}  ${commentEndfix} ;`)
+  }, [
+    columnName,
+    selectInputValue,
+    isNull,
+    isZeroFill,
+    isUnsigned,
+    defaultValue,
+    columnComment,
+  ])
 
   const selectRef = useRef()
 
@@ -97,7 +163,26 @@ const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
   }
 
   const onFocus = () => value && selectRef.current.select.inputRef.select()
-
+  const handleUpdateOnClick = async () => {
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const response = await invoke("exe_sql", {
+      listNodeInfoReq: listNodeInfoReq,
+      sql: updateColumnSql,
+    })
+    const { response_code, response_msg } = JSON.parse(response)
+    if (response_code == 0) {
+      exeSql()
+      setShowUpdateColumnDialog(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Sql Error",
+        description: response_msg,
+      })
+    }
+  }
   return (
     <DialogPrimitive.DialogPortal>
       <DialogPrimitive.DialogOverlay className="fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -111,7 +196,6 @@ const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
               <span>name:</span>
             </div>
             <Input
-              type="email"
               className="basis-2/3"
               value={columnName} // Use the item directly
               onChange={(e) => setColumnName(e.target.value)}
@@ -142,7 +226,6 @@ const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
               <span>default:</span>
             </div>
             <Input
-              type="email"
               className="basis-2/3"
               value={defaultValue} // Use the item directly
               onChange={(e) => setDefaultValue(e.target.value)}
@@ -177,7 +260,10 @@ const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
               <span>Zero Fill:</span>
             </div>
             <div className=" items-center justify-center">
-              <Checkbox />
+              <Checkbox
+                checked={isZeroFill}
+                onCheckedChange={(checked) => setIsZeroFill(checked)}
+              />
             </div>
           </div>
           <div className="flex flex-row">
@@ -185,16 +271,26 @@ const UpdateColumnComponent = ({ node, columnData = ["", "", "YES"] }) => {
               <span>UNSIGNED:</span>
             </div>
             <div className=" items-center justify-center">
-              <Checkbox />
+              <Checkbox
+                checked={isUnsigned}
+                onCheckedChange={(checked) => setIsUnsigned(checked)}
+              />
             </div>
           </div>
         </div>
         <div className="flex h-full flex-row items-center justify-center">
-          <Button className="basis-1/4" variant="secondary">
+          <Button
+            className="basis-1/4"
+            variant="secondary"
+            onClick={() => setShowUpdateColumnDialog(false)}
+          >
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4"> Update</Button>
+          <Button className="basis-1/4" onClick={handleUpdateOnClick}>
+            {" "}
+            Update
+          </Button>
         </div>
         <div className="flex h-full w-full flex-row items-center justify-center">
           <SyntaxHighlighter

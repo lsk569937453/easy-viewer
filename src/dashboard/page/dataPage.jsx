@@ -47,7 +47,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools"
 import useResizeObserver from "use-resize-observer"
 
-import { getDeleteSql, getLastSQLStatement } from "../../lib/jsx-utils"
+import { getDeleteSql, getSQLStatement } from "../../lib/jsx-utils"
 
 import "ace-builds/src-noconflict/ext-language_tools"
 
@@ -248,15 +248,29 @@ export default function DataPage({
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    let finalSql = getLastSQLStatement(sql)
-    console.log(listNodeInfoReq, finalSql)
+    let sqlArray = getSQLStatement(sql)
+    console.log(listNodeInfoReq, sqlArray)
+    let response_code = 0
+    let response_msg = ""
+    for (const finalSql of sqlArray) {
+      console.log(listNodeInfoReq, finalSql)
 
-    const { response_code, response_msg } = JSON.parse(
-      await invoke("exe_sql", {
+      const response = await invoke("exe_sql", {
         listNodeInfoReq: listNodeInfoReq,
         sql: finalSql,
       })
-    )
+      let res = JSON.parse(response)
+      response_code = res.response_code
+      response_msg = res.response_msg
+      if (response_code !== 0) {
+        toast({
+          variant: "destructive",
+          title: "Sql Error",
+          description: response_msg,
+        })
+        return
+      }
+    }
     clearTimeout(timer)
 
     console.log(response_code, response_msg)

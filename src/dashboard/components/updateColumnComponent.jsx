@@ -8,13 +8,14 @@ import Select, { components } from "react-select"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 
 const InputSelect = (props) => (
   <components.Input {...props} isHidden={false} className="text-xs" />
 )
 
-const UpdateColumnDialog = ({ node, columnData }) => {
+const UpdateColumnComponent = ({ node, columnData }) => {
   console.log(columnData)
   const [columnName, setColumnName] = useState(columnData[0])
   const [columnType, setColumnType] = useState(columnData[1])
@@ -28,10 +29,40 @@ const UpdateColumnDialog = ({ node, columnData }) => {
     setColumnComment(columnData.comment)
   }, [columnData])
   const options = [
-    { value: "121", label: "121" },
-    { value: "122", label: "122" },
-    { value: "123", label: "123" },
+    { value: "INT", label: "INT" },
+    { value: "VARCHAR", label: "VARCHAR" },
+    { value: "CHAR", label: "CHAR" },
+    { value: "DATETIME", label: "DATETIME" },
+    { value: "TIMESTAMP", label: "TIMESTAMP" },
+    { value: "DATE", label: "DATE" },
+    { value: "BIT", label: "BIT" },
+    { value: "FLOAT", label: "FLOAT" },
+    { value: "DOUBLE", label: "DOUBLE" },
+    { value: "DECIMAL", label: "DECIMAL" },
+    { value: "BIGINT", label: "BIGINT" },
+    { value: "TEXT", label: "TEXT" },
+    { value: "JSON", label: "JSON" },
+    { value: "BLOB", label: "BLOB" },
+    { value: "BINARY", label: "BINARY" },
   ]
+  const [value, setValue] = useState()
+  const [inputValue, setInputValue] = useState("")
+
+  const selectRef = useRef()
+
+  const onInputChange = (inputValue, { action }) => {
+    if (action === "input-change") {
+      setInputValue(inputValue)
+    }
+  }
+
+  const onChange = (option) => {
+    setValue(option)
+    setInputValue(option ? option.label : "")
+  }
+
+  const onFocus = () => value && selectRef.current.select.inputRef.select()
+
   return (
     <DialogPrimitive.DialogPortal>
       <DialogPrimitive.DialogOverlay className="fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
@@ -41,48 +72,70 @@ const UpdateColumnDialog = ({ node, columnData }) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-row items-center justify-center ">
-            <div class="flex basis-1/2 flex-col truncate pr-4 text-right">
+            <div class="flex basis-1/3 flex-col truncate pr-4 text-right">
               <span>name:</span>
             </div>
             <Input
               type="email"
-              className="basis-1/2"
+              className="basis-2/3"
               value={columnName} // Use the item directly
               onChange={(e) => setColumnName(e.target.value)}
             />
           </div>
           <div className="flex flex-row items-center justify-center ">
-            <div class="flex basis-1/2 flex-col truncate pr-4 text-right">
+            <div class="flex basis-1/3 flex-col truncate pr-4 text-right">
               <span>type:</span>
             </div>
             <Select
-              // menuIsOpen={true}
-              value={option}
-              onChange={setOption}
+              ref={selectRef}
               options={options}
+              isClearable={true}
+              value={value}
+              inputValue={inputValue}
+              onInputChange={onInputChange}
+              onChange={onChange}
+              onFocus={onFocus}
+              controlShouldRenderValue={false}
+              components={{
+                Input: InputSelect,
+              }}
+              className="basis-2/3"
             />
           </div>
           <div className="flex flex-row items-center justify-center ">
-            <div class="flex basis-1/2  flex-col truncate pr-4 text-right">
+            <div class="flex basis-1/3  flex-col truncate pr-4 text-right">
               <span>default:</span>
             </div>
             <Input
               type="email"
-              className="basis-1/2"
+              className="basis-2/3"
               value={defaultValue} // Use the item directly
               onChange={(e) => setDefaultValue(e.target.value)}
             />
           </div>
           <div className="flex flex-row items-center justify-center ">
-            <div class="flex basis-1/2  flex-col truncate pr-4 text-right">
+            <div class="flex basis-1/3  flex-col truncate pr-4 text-right">
               <span>comment:</span>
             </div>
             <Input
-              type="email"
-              className="basis-1/2"
+              className="basis-2/3"
               value={columnComment} // Use the item directly
               onChange={(e) => setColumnComment(e.target.value)}
             />
+          </div>
+          <div className=" flex flex-row items-center justify-center">
+            <div class="flex basis-1/4 flex-col truncate  pr-4 text-right ">
+              <span>Not Null:</span>
+            </div>
+            <div className="basis-1/4 items-center justify-center">
+              <Checkbox />
+            </div>
+            <div class="flex basis-1/4  flex-col truncate  pr-4  text-right">
+              <span>Zero Fill:</span>
+            </div>
+            <div className="basis-1/4">
+              <Checkbox />
+            </div>
           </div>
         </div>
         <div className="flex h-full flex-row items-center justify-center">
@@ -103,4 +156,4 @@ const UpdateColumnDialog = ({ node, columnData }) => {
     </DialogPrimitive.DialogPortal>
   )
 }
-export default UpdateColumnDialog
+export default UpdateColumnComponent

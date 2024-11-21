@@ -268,6 +268,9 @@ export default function DataPage({
           title: "Sql Error",
           description: response_msg,
         })
+        clearTimeout(timer)
+
+        showLoading(false)
         return
       }
     }

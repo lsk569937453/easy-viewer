@@ -375,7 +375,8 @@ WHERE table_schema = DATABASE()",
             conn.execute(&*use_database_sql).await?;
         }
         info!("sql: {}", sql);
-        let should_parse_sql = !sql.contains("CREATE DATABASE");
+        let should_parse_sql =
+            !sql.contains("CREATE DATABASE") || !sql.contains("CREATE PROCEDURE");
         let (is_simple_select_option, has_multi_rows) = if should_parse_sql {
             let sql_parse_result = SqlParseResult::new(sql.clone())?;
             (

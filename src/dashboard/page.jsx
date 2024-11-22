@@ -14,7 +14,7 @@ import {
 
 import { reloadNode } from "../lib/jsx-utils"
 import { cn } from "../lib/utils"
-import { CreateLinkDialog } from "./menu/createLinkDialog"
+import { CreateConnectionDialog } from "./menu/createConnectionDialog"
 
 import "@szhsin/react-menu/dist/index.css"
 
@@ -358,7 +358,7 @@ const DashboardPage = () => {
                   open={showEditConnectionDialog}
                   onOpenChange={setShowEditConnectionDialog}
                 >
-                  <CreateLinkDialog
+                  <CreateConnectionDialog
                     baseCongfigId={baseConfigId}
                     isSave={isSave}
                     isOpen={showEditConnectionDialog}

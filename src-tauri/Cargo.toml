@@ -52,6 +52,7 @@ tauri-plugin-log = { version = "2" }
 tauri-plugin-shell = "2"
 time = "0.3.35"
 tokio = { version = "1.40.0", features = ["full", "tracing"] }
+tokio-postgres= "0.7.12"
 uuid = { version = "1.11.0", features = [
     "v4",
     "fast-rng",

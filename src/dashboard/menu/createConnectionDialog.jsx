@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
+import { PostgresqlConfigComponent } from "../components/postGresqlConfigComponent"
 import { LoadingSpinner } from "../components/spinner"
 import SqliteConfigComponent from "../components/sqliteConfigComponent"
 
@@ -52,7 +53,7 @@ const baseConfigSchema = {
     },
   },
 }
-const CreateLinkDialog = ({
+const CreateConnectionDialog = ({
   baseCongfigId = null,
   isSave = false,
   isOpen = false,
@@ -170,9 +171,35 @@ const CreateLinkDialog = ({
               baseCongfigId={baseCongfigId}
             />
           )}
+          {currentLinkType === "postgresql" && (
+            <PostgresqlConfigComponent
+              connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "3306"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ??
+                "mydb"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "user"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "password"
+              }
+              isSave={isSave}
+            />
+          )}
         </div>
       </DialogContent>
     </>
   )
 }
-export { CreateLinkDialog }
+export { CreateConnectionDialog }

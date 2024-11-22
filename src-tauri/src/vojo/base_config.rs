@@ -155,6 +155,22 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn get_procedure_details(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_procedure_details(list_node_info_req, appstate)
+                    .await?
+            }
+
+            _ => "vec![]".to_string(),
+        };
+        Ok(data)
+    }
     pub async fn update_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

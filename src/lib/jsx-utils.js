@@ -263,14 +263,16 @@ export function getQueryName() {
   const queryName = `New_Query_${timestamp}`
   return queryName
 }
-export function getSQLStatement(sql) {
-  // Split the SQL string by semicolons and filter out empty statements
-  let statements = sql
-    .split(";")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-  // Return the last statement
-  return statements
+export function getSQLStatement(input) {
+  if (!input.includes(";")) return [input]
+  // Regular expression to match `CREATE PROCEDURE` blocks and individual SQL statements
+  const regex = /(CREATE PROCEDURE[\s\S]+?END;)|([^;]+;)/gi
+
+  // Match all segments
+  const matches = input.match(regex)
+
+  // Trim and filter out empty matches
+  return matches ? matches.map((stmt) => stmt.trim()) : []
 }
 export function getCreateTableSql(node) {
   let mysqlCreateTable = `CREATE TABLE table_name(  

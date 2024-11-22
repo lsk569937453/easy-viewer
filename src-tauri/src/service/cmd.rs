@@ -15,6 +15,7 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
+use crate::service::base_config_service::get_procedure_details_with_error;
 use crate::service::base_config_service::move_column_with_error;
 use crate::service::base_config_service::show_columns_with_error;
 use crate::service::base_config_service::update_sql_with_error;
@@ -24,6 +25,7 @@ use crate::service::query_service::rename_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use tauri::State;
@@ -138,6 +140,18 @@ pub async fn get_complete_words(
     let time = Instant::now();
     let res = handle_response!(get_complete_words_with_error(state, list_node_info_req).await);
     info!("get_complete_words: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+
+pub async fn get_procedure_details(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_procedure_details_with_error(state, list_node_info_req).await);
+    info!("get_procedure_details: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

@@ -77,7 +77,7 @@ export function PostGresqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          postgresql: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -98,7 +98,7 @@ export function PostGresqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        postgresql: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
@@ -171,7 +171,7 @@ export function PostGresqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          postgresql: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -192,7 +192,7 @@ export function PostGresqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        postgresql: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
@@ -246,7 +246,7 @@ export function PostGresqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          postgresql: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -267,7 +267,7 @@ export function PostGresqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        postgresql: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),

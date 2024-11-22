@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
-import { PostgresqlConfigComponent } from "../components/postGresqlConfigComponent"
+import { PostGresqlConfigComponent } from "../components/postGresqlConfigComponent"
 import { LoadingSpinner } from "../components/spinner"
 import SqliteConfigComponent from "../components/sqliteConfigComponent"
 
@@ -172,7 +172,7 @@ const CreateConnectionDialog = ({
             />
           )}
           {currentLinkType === "postgresql" && (
-            <PostgresqlConfigComponent
+            <PostGresqlConfigComponent
               connectionName={currentLinkName}
               baseCongfigId={baseCongfigId}
               initialHost={

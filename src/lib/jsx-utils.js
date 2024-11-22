@@ -254,7 +254,7 @@ export function getRootNode(node) {
 export const formatMap = new Map([
   [0, "mysql"],
   [3, "sqlite"],
-  [2, "postgresql"],
+  [1, "postgresql"],
 ])
 export function getIconNameByType(params) {
   return formatMap.get(params)

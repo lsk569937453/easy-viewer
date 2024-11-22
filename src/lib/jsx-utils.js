@@ -250,6 +250,7 @@ export function getRootNode(node) {
   }
   return tempNode
 }
+
 export const formatMap = new Map([
   [0, "mysql"],
   [3, "sqlite"],

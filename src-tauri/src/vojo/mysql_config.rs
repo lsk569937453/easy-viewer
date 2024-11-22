@@ -741,6 +741,19 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
                     set.insert(columns.clone());
                 }
             }
+            let rows = sqlx::query("SHOW PROCEDURE STATUS")
+                .fetch_all(&mut conn)
+                .await?;
+
+            for row in rows {
+                let db_str_bytes: Vec<u8> = row.try_get(0)?;
+                let row_str: String = row.try_get(1)?;
+                let db_str = String::from_utf8_lossy(&db_str_bytes);
+                if db_str != database {
+                    continue;
+                }
+                set.insert(row_str.clone());
+            }
         }
         let vec: Vec<String> = set.into_iter().collect();
         info!("get_complete_words len: {}", vec.len());

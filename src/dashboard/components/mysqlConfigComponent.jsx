@@ -376,6 +376,7 @@ export function MysqlConfigComponent({
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="密码"
+              type="password"
               onChange={(e) => setCurrentPassword(e.target.value)}
               value={currentPassword}
             ></Input>

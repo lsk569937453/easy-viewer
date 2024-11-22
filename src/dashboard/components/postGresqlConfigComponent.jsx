@@ -26,7 +26,7 @@ import { reloadNode } from "../../lib/jsx-utils"
 import { SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
-export function MysqlConfigComponent({
+export function PostGresqlConfigComponent({
   connectionName,
   initialHost = "localhost",
   initialPort = "3306",

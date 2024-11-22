@@ -47,6 +47,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { tr } from "date-fns/locale"
 
 import { getLevelInfos, uuid } from "../../lib/jsx-utils"
+import DeleteColumnComponent from "../components/deleteColumnComponent"
 import UpdateColumnComponent from "../components/updateColumnComponent"
 
 export const PropertiesColumnContext = createContext({
@@ -55,18 +56,27 @@ export const PropertiesColumnContext = createContext({
   sourceRows: [],
   setShowUpdateColumnDialog: () => {},
   exeSql: () => {},
+  setShowDeleteColumnDialog: () => {},
 })
 const usePropertiesColumnActions = () => {
-  const { setCurrentColumnData, sourceRows, setShowUpdateColumnDialog } =
-    useContext(PropertiesColumnContext)
+  const {
+    setCurrentColumnData,
+    sourceRows,
+    setShowUpdateColumnDialog,
+    setShowDeleteColumnDialog,
+  } = useContext(PropertiesColumnContext)
 
   const handleCellOnClick = (rowIndex) => {
     console.log(sourceRows, rowIndex)
     setCurrentColumnData(sourceRows[rowIndex])
     setShowUpdateColumnDialog(true)
   }
+  const handleOnDeleteClick = (rowIndex) => {
+    setCurrentColumnData(sourceRows[rowIndex])
+    setShowDeleteColumnDialog(true)
+  }
 
-  return { handleCellOnClick }
+  return { handleCellOnClick, handleOnDeleteClick }
 }
 const PropertiesColumnPage = ({ node }) => {
   const [header, setHeader] = useState([])
@@ -74,6 +84,7 @@ const PropertiesColumnPage = ({ node }) => {
   const [sourceRows, setSourceRows] = useState([])
 
   const [showUpdateColumnDialog, setShowUpdateColumnDialog] = useState(false)
+  const [showDeleteColumnDialog, setShowDeleteColumnDialog] = useState(false)
   const [currentColumnData, setCurrentColumnData] = useState({})
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -153,7 +164,8 @@ const PropertiesColumnPage = ({ node }) => {
           header: () => <p className="font-bold text-foreground">Actions</p>,
 
           cell: ({ row }) => {
-            const { handleCellOnClick } = usePropertiesColumnActions()
+            const { handleCellOnClick, handleOnDeleteClick } =
+              usePropertiesColumnActions()
 
             return (
               <div className="flex gap-2">
@@ -202,6 +214,7 @@ const PropertiesColumnPage = ({ node }) => {
                         variant="outline"
                         size="icon"
                         className="h-full w-7 border-none hover:bg-searchMarkerColor"
+                        onClick={() => handleOnDeleteClick(row.index)}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -263,8 +276,15 @@ const PropertiesColumnPage = ({ node }) => {
           sourceRows: sourceRows,
           setShowUpdateColumnDialog: setShowUpdateColumnDialog,
           exeSql: exeSql,
+          setShowDeleteColumnDialog: setShowDeleteColumnDialog,
         }}
       >
+        <Dialog
+          open={showDeleteColumnDialog}
+          onOpenChange={setShowDeleteColumnDialog}
+        >
+          <DeleteColumnComponent node={node} columnData={currentColumnData} />
+        </Dialog>
         <Dialog
           open={showUpdateColumnDialog}
           onOpenChange={setShowUpdateColumnDialog}

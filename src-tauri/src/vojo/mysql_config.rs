@@ -331,6 +331,38 @@ WHERE table_schema = DATABASE()",
                     }
                     info!("list_node_info: {:?}", vec);
                     return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Functions" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                    let sql = format!("use {}", database_name.clone());
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    let list_functions_sql = format!(
+                        "SELECT ROUTINE_NAME, ROUTINE_TYPE, DATA_TYPE, CREATED, LAST_ALTERED
+FROM information_schema.ROUTINES
+WHERE ROUTINE_TYPE = 'FUNCTION'
+  AND ROUTINE_SCHEMA = '{}';",
+                        database_name.clone()
+                    );
+                    let rows = sqlx::query(&list_functions_sql)
+                        .fetch_all(&mut conn)
+                        .await?;
+
+                    for item in rows {
+                        let buf: &[u8] = item.try_get(0)?;
+                        let function_name = String::from_utf8_lossy(buf).to_string();
+
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleFunction".to_string(),
+                            function_name,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
                 }
             }
             4 => {
@@ -448,7 +480,7 @@ WHERE table_schema = DATABASE()",
         info!("sql: {}", sql);
         let should_parse_sql = !(sql.contains("CREATE DATABASE")
             || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE"))
-            || sql.contains("CREATE FUNCTION"));
+            || sql.contains("CREATE FUNCTION") && !sql.contains("SHOW CREATE FUNCTION"));
         info!(
             "should_parse_sql: {},{}",
             should_parse_sql,

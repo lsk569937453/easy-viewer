@@ -7,8 +7,6 @@ use crate::vojo::show_column_response::ShowColumnsResponse;
 use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
-use sqlx::Connection;
-use sqlx::MySqlConnection;
 use tokio_postgres::NoTls;
 #[derive(Deserialize, Serialize, Clone)]
 pub struct PostgresqlConfig {
@@ -23,19 +21,17 @@ impl PostgresqlConfig {
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.connection_url();
-        MySqlConnection::connect(&test_url).await.map(|_| ())?;
+        info!("test_url: {}", test_url);
         let (client, connection) = tokio_postgres::connect(&test_url, NoTls).await?;
 
         tokio::spawn(async move {
             if let Err(e) = connection.await {
-                eprintln!("connection error: {}", e);
+                error!("connection error: {}", e);
             }
         });
 
-        // Now we can execute a simple statement that just returns its parameter.
         let rows = client.query("SELECT $1::TEXT", &[&"hello world"]).await?;
 
-        // And then check that we got back the same string we sent over.
         let value: &str = rows[0].get(0);
         ensure!(
             value == "hello world",

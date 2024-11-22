@@ -211,17 +211,41 @@ const DashboardPage = () => {
       setMenulist(updatedData)
     }
   }
-  const handleRemoveTabButton = (index) => {
-    pageDataArray.splice(index, 1)
-    const nextType =
-      pageDataArray.length > index
-        ? pageDataArray[index].service
-        : pageDataArray.length > 0
-          ? pageDataArray[pageDataArray.length - 1].service
-          : undefined
+  const handleRemoveTabButton = (contextMenuTabIndex) => {
+    if (
+      contextMenuTabIndex === undefined ||
+      contextMenuTabIndex < 0 ||
+      contextMenuTabIndex >= pageDataArray.length
+    ) {
+      return
+    }
 
-    setTabValue(nextType)
-    setPageDataArray([...pageDataArray])
+    const isEdited = tabsState.includes(contextMenuTabIndex)
+
+    // Create a new array excluding the tab at contextMenuTabIndex
+    const updatedPageDataArray = pageDataArray.filter(
+      (_, index) => index !== contextMenuTabIndex
+    )
+
+    setPageDataArray(updatedPageDataArray)
+
+    // If the closed tab was the current tab, update the selected tab
+    if (updatedPageDataArray.length > 0) {
+      const newTabIndex =
+        contextMenuTabIndex === pageDataArray.length - 1
+          ? contextMenuTabIndex - 1
+          : contextMenuTabIndex
+      setTabValue(updatedPageDataArray[newTabIndex]?.service)
+    } else {
+      setTabValue(undefined) // No tabs left
+    }
+
+    setTabsState(
+      (prevState) =>
+        prevState
+          .filter((index) => index !== contextMenuTabIndex) // Remove the closed tab's index
+          .map((index) => (index > contextMenuTabIndex ? index - 1 : index)) // Adjust indices for tabs after the closed tab
+    )
   }
   const handleRmoveQueryClick = async () => {
     const { response_code, response_msg } = JSON.parse(

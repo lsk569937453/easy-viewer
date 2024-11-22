@@ -142,7 +142,9 @@ export default function DataPage({
       exeSql()
     }
   }, [])
-
+  useEffect(() => {
+    setEditState([])
+  }, [readOnly])
   useEffect(() => {
     fetchCompleteWords()
   }, [])
@@ -268,6 +270,9 @@ export default function DataPage({
           title: "Sql Error",
           description: response_msg,
         })
+        clearTimeout(timer)
+
+        showLoading(false)
         return
       }
     }
@@ -465,21 +470,25 @@ export default function DataPage({
   }
   return (
     <div className="flex  h-full w-full flex-col	">
-      <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
-        <InsertSqlComponent
-          node={node}
-          setShowInsertDialog={setShowInsertDialog}
-          exeSql={exeSql}
-        />
-      </Dialog>
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DeleteSqlComponent
-          node={node}
-          sqlOfDelete={sqlOfDelete}
-          setShowDeleteDialog={setShowDeleteDialog}
-          exeSql={exeSql}
-        />
-      </Dialog>
+      {!readOnly && (
+        <>
+          <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
+            <InsertSqlComponent
+              node={node}
+              setShowInsertDialog={setShowInsertDialog}
+              exeSql={exeSql}
+            />
+          </Dialog>
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DeleteSqlComponent
+              node={node}
+              sqlOfDelete={sqlOfDelete}
+              setShowDeleteDialog={setShowDeleteDialog}
+              exeSql={exeSql}
+            />
+          </Dialog>
+        </>
+      )}
       {!readOnly && (
         <div ref={ref}>
           <AceEditor
@@ -529,57 +538,61 @@ export default function DataPage({
             <path d="M21 21l-6 -6" />
           </svg>
         </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor "
-          onClick={() => setShowInsertDialog(true)}
-          disabled={readOnly}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-plus stroke-yellow-500"
-          >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M12 5l0 14" />
-            <path d="M5 12l14 0" />
-          </svg>
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={Object.keys(rowSelection).length === 0}
-          onClick={handleOnDeleteClick}
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="30"
-            height="30"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-rose-500"
-          >
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M4 7l16 0" />
-            <path d="M10 11l0 6" />
-            <path d="M14 11l0 6" />
-            <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
-            <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
-          </svg>
-        </Button>
-        {editState.length > 0 && (
+        {!readOnly && (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-full w-7 border-none hover:bg-searchMarkerColor "
+              onClick={() => setShowInsertDialog(true)}
+              disabled={readOnly}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-plus stroke-yellow-500"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M12 5l0 14" />
+                <path d="M5 12l14 0" />
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              disabled={Object.keys(rowSelection).length === 0}
+              onClick={handleOnDeleteClick}
+              className="h-full w-7 border-none hover:bg-searchMarkerColor"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="30"
+                height="30"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-rose-500"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M4 7l16 0" />
+                <path d="M10 11l0 6" />
+                <path d="M14 11l0 6" />
+                <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+              </svg>
+            </Button>
+          </>
+        )}
+        {editState.length > 0 && !readOnly && (
           <Button
             variant="outline"
             size="icon"

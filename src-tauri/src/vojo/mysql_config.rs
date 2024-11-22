@@ -260,6 +260,37 @@ WHERE table_schema = DATABASE()",
 
                     info!("list_node_info: {:?}", vec);
                     return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Procedures" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                    let sql = format!("use {}", database_name.clone());
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    let rows = sqlx::query("SHOW PROCEDURE STATUS")
+                        .fetch_all(&mut conn)
+                        .await?;
+                    let database_name = level_infos[1].config_value.clone();
+
+                    let mut vec = vec![];
+                    for row in rows {
+                        let db_str_bytes: Vec<u8> = row.try_get(0)?;
+                        let row_str: String = row.try_get(1)?;
+                        let db_str = String::from_utf8_lossy(&db_str_bytes);
+                        if db_str != database_name {
+                            continue;
+                        }
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleProcedure".to_string(),
+                            row_str,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
                 }
             }
             4 => {
@@ -375,7 +406,13 @@ WHERE table_schema = DATABASE()",
             conn.execute(&*use_database_sql).await?;
         }
         info!("sql: {}", sql);
-        let should_parse_sql = !sql.contains("CREATE DATABASE");
+        let should_parse_sql = !(sql.contains("CREATE DATABASE")
+            || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE")));
+        info!(
+            "should_parse_sql: {},{}",
+            should_parse_sql,
+            !sql.contains("CREATE PROCEDURE")
+        );
         let (is_simple_select_option, has_multi_rows) = if should_parse_sql {
             let sql_parse_result = SqlParseResult::new(sql.clone())?;
             (
@@ -400,7 +437,11 @@ WHERE table_schema = DATABASE()",
 
         info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
-            let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
+            let mysql_query_result = if sql.contains("CREATE PROCEDURE") {
+                conn.execute(sql.as_str()).await?
+            } else {
+                sqlx::query(&sql).execute(&mut conn).await?
+            };
             let headers = vec![
                 Header {
                     name: "affected_rows".to_string(),
@@ -466,6 +507,7 @@ WHERE table_schema = DATABASE()",
 
         Ok(exe_sql_response)
     }
+
     pub async fn update_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -703,5 +745,33 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
         let vec: Vec<String> = set.into_iter().collect();
         info!("get_complete_words len: {}", vec.len());
         Ok(vec)
+    }
+    pub async fn get_procedure_details(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let procedure_name = level_infos[3].config_value.clone();
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let conn = MySqlConnection::connect(&connection_url).await?;
+
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+
+        let sql = format!("show create procedure {}", procedure_name);
+        let res_row = sqlx::query(&sql)
+            .fetch_optional(&mut conn)
+            .await?
+            .ok_or(anyhow!(""))?;
+        let query: String = res_row.try_get(2)?;
+
+        Ok(query)
     }
 }

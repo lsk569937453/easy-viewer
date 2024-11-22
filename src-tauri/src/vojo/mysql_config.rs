@@ -861,4 +861,33 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
 
         Ok(query)
     }
+    pub async fn remove_column(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        column_name: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let table_name = level_infos[3].config_value.clone();
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let conn = MySqlConnection::connect(&connection_url).await?;
+
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+
+        let sql = format!(
+            "ALTER TABLE {}
+DROP COLUMN {};",
+            table_name, column_name
+        );
+        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+
+        Ok(())
+    }
 }

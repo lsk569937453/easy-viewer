@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { invoke } from "@tauri-apps/api/core"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -22,17 +23,42 @@ import {
 } from "@/components/ui/popover"
 import { useToast } from "@/components/ui/use-toast"
 
+import { getLevelInfos } from "../../lib/jsx-utils"
 import { PropertiesColumnContext } from "../page/propertiesColumnPage"
 
 const DeleteColumnComponent = ({ node, columnData }) => {
+  const { toast } = useToast()
+
   const {
     setCurrentColumnData,
     sourceRows,
+    exeSql,
     setShowUpdateColumnDialog,
     setShowDeleteColumnDialog,
   } = useContext(PropertiesColumnContext)
   const handleCancelOnClick = () => {
     setShowDeleteColumnDialog(false)
+  }
+  const handleConfirmOnClick = async () => {
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const response = await invoke("remove_column", {
+      listNodeInfoReq: listNodeInfoReq,
+      columnName: columnData[0],
+    })
+    const { response_code, response_msg } = JSON.parse(response)
+
+    if (response_code == 0) {
+      exeSql()
+      setShowDeleteColumnDialog(false)
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Sql Error",
+        description: response_msg,
+      })
+    }
   }
   return (
     <DialogPrimitive.DialogPortal>
@@ -51,7 +77,10 @@ const DeleteColumnComponent = ({ node, columnData }) => {
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4"> Confirm</Button>
+          <Button className="basis-1/4" onClick={handleConfirmOnClick}>
+            {" "}
+            Confirm
+          </Button>
         </div>
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
           <span className="sr-only">Close</span>

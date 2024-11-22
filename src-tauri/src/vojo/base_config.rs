@@ -93,6 +93,20 @@ impl BaseConfigEnum {
         };
         Ok(vec)
     }
+    pub async fn remove_column(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        column_name: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .remove_column(list_node_info_req, appstate, column_name)
+                .await?
+        };
+        Ok(())
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

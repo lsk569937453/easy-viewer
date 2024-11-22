@@ -99,6 +99,7 @@ async fn main() -> Result<(), anyhow::Error> {
             list_node_info,
             exe_sql,
             get_column_info_for_insert_sql,
+            remove_column,
             save_query,
             rename_query,
             remove_query,

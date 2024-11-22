@@ -207,6 +207,29 @@ WHERE type = 'table' and name !='sqlite_sequence';",
                     vec.push(list_node_info_response_item);
                 }
                 info!("vec: {:?}", vec);
+            } else if node_name == "Views" {
+                let mut conn = SqliteConnection::connect(&self.file_path).await?;
+
+                let rows = sqlx::query(
+                    "SELECT name, sql 
+FROM sqlite_master 
+WHERE type = 'view';",
+                )
+                .fetch_all(&mut conn)
+                .await?;
+                info!("row length:{}", rows.len());
+                for row in rows {
+                    let row_str: String = row.try_get(0)?;
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "singleTable".to_string(),
+                        row_str,
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+                info!("vec: {:?}", vec);
             }
         } else if level_infos.len() == 3 {
             for (name, icon_name) in get_sqlite_table_data().iter() {

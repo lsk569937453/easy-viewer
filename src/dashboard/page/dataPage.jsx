@@ -492,7 +492,7 @@ export default function DataPage({
       {!readOnly && (
         <div ref={ref}>
           <AceEditor
-            className=" flex max-h-[200px] min-h-[40px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className=" flex max-h-[200px] min-h-[80px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
             height="100%"
             width="100%"
@@ -501,6 +501,8 @@ export default function DataPage({
             enableSnippets={true}
             readOnly={readOnly}
             enableLiveAutocompletion={true}
+            maxLines={8}
+            minLines={5}
             showPrintMargin={false}
             theme="xcode"
             onChange={handleOnChange}

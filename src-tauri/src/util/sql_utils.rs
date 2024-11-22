@@ -41,7 +41,7 @@ pub fn mysql_row_to_json(
             "YEAR" => row
                 .try_get::<Option<u16>, usize>(key)
                 .map(|item| json!(item))?,
-            "BINARY" | "VARBINARY" | "BLOB" => {
+            "LONGBLOB" | "BINARY" | "VARBINARY" | "BLOB" => {
                 row.try_get::<Option<Vec<u8>>, usize>(key).map(|item| {
                     json!(String::from_utf8_lossy(&item.unwrap_or_default())
                         .trim_matches(char::from(0)))

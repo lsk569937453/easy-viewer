@@ -209,7 +209,9 @@ WHERE table_schema = DATABASE()",
                     info!("sql: {}", sql);
                     conn.execute(&*sql).await?;
 
-                    let rows = sqlx::query("SHOW tables").fetch_all(&mut conn).await?;
+                    let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
+                        .fetch_all(&mut conn)
+                        .await?;
 
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
@@ -289,6 +291,76 @@ WHERE table_schema = DATABASE()",
                         vec.push(list_node_info_response_item);
                     }
 
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Views" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                    let sql = format!("use {}", database_name.clone());
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'VIEW';")
+                        .fetch_all(&mut conn)
+                        .await?;
+                    let database_name = level_infos[1].config_value.clone();
+
+                    for item in rows {
+                        let buf: &[u8] = item.try_get(0)?;
+                        let table_name = String::from_utf8_lossy(buf).to_string();
+                        let sql = format!(
+                            "select count(*) from {}.{}",
+                            database_name.clone(),
+                            table_name.clone()
+                        );
+                        info!("sql: {}", sql);
+                        let record_count: i32 =
+                            sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                        let description = if record_count > 0 {
+                            Some(format!("{}", record_count))
+                        } else {
+                            None
+                        };
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            true,
+                            true,
+                            "singleTable".to_string(),
+                            table_name,
+                            description,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Functions" {
+                    let mut conn = MySqlConnection::connect(&connection_url).await?;
+
+                    let sql = format!("use {}", database_name.clone());
+                    info!("sql: {}", sql);
+                    conn.execute(&*sql).await?;
+                    let list_functions_sql = format!(
+                        "SELECT ROUTINE_NAME, ROUTINE_TYPE, DATA_TYPE, CREATED, LAST_ALTERED
+FROM information_schema.ROUTINES
+WHERE ROUTINE_TYPE = 'FUNCTION'
+  AND ROUTINE_SCHEMA = '{}';",
+                        database_name.clone()
+                    );
+                    let rows = sqlx::query(&list_functions_sql)
+                        .fetch_all(&mut conn)
+                        .await?;
+
+                    for item in rows {
+                        let buf: &[u8] = item.try_get(0)?;
+                        let function_name = String::from_utf8_lossy(buf).to_string();
+
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleFunction".to_string(),
+                            function_name,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
                     info!("list_node_info: {:?}", vec);
                     return Ok(ListNodeInfoResponse::new(vec));
                 }
@@ -407,7 +479,8 @@ WHERE table_schema = DATABASE()",
         }
         info!("sql: {}", sql);
         let should_parse_sql = !(sql.contains("CREATE DATABASE")
-            || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE")));
+            || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE"))
+            || sql.contains("CREATE FUNCTION") && !sql.contains("SHOW CREATE FUNCTION"));
         info!(
             "should_parse_sql: {},{}",
             should_parse_sql,
@@ -437,11 +510,12 @@ WHERE table_schema = DATABASE()",
 
         info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
-            let mysql_query_result = if sql.contains("CREATE PROCEDURE") {
-                conn.execute(sql.as_str()).await?
-            } else {
-                sqlx::query(&sql).execute(&mut conn).await?
-            };
+            let mysql_query_result =
+                if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
+                    conn.execute(sql.as_str()).await?
+                } else {
+                    sqlx::query(&sql).execute(&mut conn).await?
+                };
             let headers = vec![
                 Header {
                     name: "affected_rows".to_string(),
@@ -740,6 +814,19 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
                     let columns: String = item.try_get(0)?;
                     set.insert(columns.clone());
                 }
+            }
+            let rows = sqlx::query("SHOW PROCEDURE STATUS")
+                .fetch_all(&mut conn)
+                .await?;
+
+            for row in rows {
+                let db_str_bytes: Vec<u8> = row.try_get(0)?;
+                let row_str: String = row.try_get(1)?;
+                let db_str = String::from_utf8_lossy(&db_str_bytes);
+                if db_str != database {
+                    continue;
+                }
+                set.insert(row_str.clone());
             }
         }
         let vec: Vec<String> = set.into_iter().collect();

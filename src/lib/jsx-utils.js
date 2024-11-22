@@ -265,6 +265,7 @@ export function getQueryName() {
 }
 export function getSQLStatement(input) {
   if (!input.includes(";")) return [input]
+  if (input.includes("CREATE FUNCTION")) return [input]
   // Regular expression to match `CREATE PROCEDURE` blocks and individual SQL statements
   const regex = /(CREATE PROCEDURE[\s\S]+?END;)|([^;]+;)/gi
 

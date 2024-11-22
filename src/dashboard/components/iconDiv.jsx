@@ -1049,6 +1049,71 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           </div>
         </>
+      ) : node.data.iconName === "singleFunction" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-function ml-6"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M4 4m0 2.667a2.667 2.667 0 0 1 2.667 -2.667h10.666a2.667 2.667 0 0 1 2.667 2.667v10.666a2.667 2.667 0 0 1 -2.667 2.667h-10.666a2.667 2.667 0 0 1 -2.667 -2.667z" />
+              <path d="M9 15.5v.25c0 .69 .56 1.25 1.25 1.25c.71 0 1.304 -.538 1.374 -1.244l.752 -7.512a1.381 1.381 0 0 1 1.374 -1.244c.69 0 1.25 .56 1.25 1.25v.25" />
+              <path d="M9 12h6" />
+            </svg>
+          )}
+          <p className="text-sm">{node.data.name}</p>
+
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-primary-selected"
+                : "group-hover/item:bg-primary-light"
+            }`}
+          >
+            {" "}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+              <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+            </svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible hover:bg-slate-200 group-hover/item:visible "
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M12 5l0 14" />
+              <path d="M5 12l14 0" />
+            </svg>
+          </div>
+        </>
       ) : node.data.iconName === "procedures" ? (
         <>
           {node.data.showSecondIcon && (

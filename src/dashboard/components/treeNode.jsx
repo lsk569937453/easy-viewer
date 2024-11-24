@@ -19,6 +19,9 @@ import {
 import { clickNode } from "../../lib/node.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
+import DatabaseNodeContextMenu from "./contextMenu/databaseNodeContextMenu.jsx"
+import SingleTableNodeContextMenu from "./contextMenu/singleTableNodeContextMenu.jsx"
+import TreeRootNodeContextMenu from "./contextMenu/treeRootNodeContextMenu.jsx"
 import IconDiv from "./iconDiv.jsx"
 
 const TreeNode = ({
@@ -248,7 +251,8 @@ const TreeNode = ({
   }
   const handleContextMenuClick = (e) => {
     console.log(e)
-    if (node.data.iconName == "mysql" || node.data.iconName == "sqlite") {
+    const contextMenuArray = ["mysql", "sqlite", "database", "singleTable"]
+    if (contextMenuArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
         return
 
@@ -258,28 +262,7 @@ const TreeNode = ({
       e.stopPropagation()
     }
   }
-  const handleEditConnectionClick = (e) => {
-    e.syntheticEvent.stopPropagation()
-    e.syntheticEvent.preventDefault()
-    console.log(e)
-    setNodeForUpdate(node)
-    let rootNode = getRootNode(node)
-    setBaseConfigId(rootNode.data.baseConfigId)
-    console.log(
-      rootNode.data.connectionType,
-      formatMap.get(rootNode.data.connectionType)
-    )
-    setConnectionType(formatMap.get(rootNode.data.connectionType))
-    setShowEditConnectionDialog(true)
-    setIsSave(true)
-  }
-  const handleDeleteConnectionClick = (e) => {
-    e.syntheticEvent.stopPropagation()
 
-    let rootNode = getRootNode(node)
-    setBaseConfigId(rootNode.data.baseConfigId)
-    setShowDeleteConnectionDialog(true)
-  }
   return (
     <div
       style={style}
@@ -298,18 +281,15 @@ const TreeNode = ({
         onClose={() => setOpen(false)}
         className="p-1"
       >
-        <MenuItem
-          onClick={(e) => handleEditConnectionClick(e)}
-          className="text-xs"
-        >
-          Edit Connection
-        </MenuItem>
-        <MenuItem
-          onClick={(e) => handleDeleteConnectionClick(e)}
-          className="text-xs"
-        >
-          Delete Connection
-        </MenuItem>
+        {(node.data.iconName == "mysql" || node.data.iconName == "sqlite") && (
+          <TreeRootNodeContextMenu node={node} />
+        )}
+        {node.data.iconName == "database" && (
+          <DatabaseNodeContextMenu node={node} />
+        )}
+        {node.data.iconName == "singleTable" && (
+          <SingleTableNodeContextMenu node={node} />
+        )}
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (
         <svg

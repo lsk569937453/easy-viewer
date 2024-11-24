@@ -333,10 +333,6 @@ const IconDiv = ({ node, selectedRows }) => {
     console.log("dsadadad")
     console.log(node, menulist)
     e.stopPropagation()
-    // let updatedMenuList = [...menulist]
-    // updateNode(node, updatedMenuList)
-    // console.log(updatedMenuList)
-    // setMenulist(updatedMenuList)
     clickNode(node, menulist, setMenulist)
   }
   return (

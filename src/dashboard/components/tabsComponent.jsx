@@ -42,19 +42,11 @@ const TabsComponent = () => {
         setTabWidth(wid)
       } else {
         setTabWidth(192)
-      } // Adjust width
-      // } else {
-      //   setTabWidth(192) // Set to default width
-      // }
+      }
     }
     console.log(pageDataArray)
-    // Initial adjustment on mount
     adjustWidths()
-
-    // Adjust widths on window resize
     window.addEventListener("resize", adjustWidths)
-
-    // Cleanup listener on component unmount
     return () => window.removeEventListener("resize", adjustWidths)
   }, [pageDataArray])
   const handleCloseTab = () => {

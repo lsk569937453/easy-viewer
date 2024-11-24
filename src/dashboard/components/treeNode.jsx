@@ -96,7 +96,7 @@ const TreeNode = ({
           </svg>
         ),
         render: () => <TablePage node={node} />,
-        service: node.data.name,
+        service: `sourceTable${node.data.name}`,
         tabName: node.data.name,
       })
     } else if (node.data.iconName === "singleQuery") {

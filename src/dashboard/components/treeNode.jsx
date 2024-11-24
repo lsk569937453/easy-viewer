@@ -251,15 +251,16 @@ const TreeNode = ({
   }
   const handleContextMenuClick = (e) => {
     console.log(e)
+    e.preventDefault()
+    e.stopPropagation()
+
     const contextMenuArray = ["mysql", "sqlite", "database", "singleTable"]
     if (contextMenuArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
         return
 
-      e.preventDefault()
       setAnchorPoint({ x: e.clientX, y: e.clientY })
       setOpen(true)
-      e.stopPropagation()
     }
   }
 

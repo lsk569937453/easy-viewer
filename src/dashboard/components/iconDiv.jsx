@@ -19,7 +19,7 @@ import {
   uuid,
 } from "../../lib/jsx-utils.js"
 import { clickNode } from "../../lib/node.jsx"
-import { SidebarContext } from "../page.jsx"
+import { MainPageDialogContext, SidebarContext } from "../page.jsx"
 import PropertiesPage from "../page/propertiesPage.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
@@ -35,15 +35,18 @@ const IconDiv = ({ node, selectedRows }) => {
     setQueryName,
     setBaseConfigId,
     setNodeForUpdate,
-    setShowDeleteConnectionDialog,
-    setShowEditConnectionDialog,
-    setShowRenameQueryDialog,
+
     setNewQueryName,
-    setShowRemoveQueryDialog,
     menulist,
     setMenulist,
     setConnectionType,
   } = useContext(SidebarContext)
+  const {
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+    setShowRenameQueryDialog,
+    setShowRemoveQueryDialog,
+  } = useContext(MainPageDialogContext)
   const { toast } = useToast()
 
   const handleNewQueryClick = (e) => {

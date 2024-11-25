@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
 
-import { SidebarContext } from "../page.jsx"
+import { MainPageDialogContext, SidebarContext } from "../page.jsx"
 
 import "@szhsin/react-menu/dist/index.css"
 
@@ -40,15 +40,19 @@ const TreeNode = ({
     setQueryName,
     setBaseConfigId,
     setNodeForUpdate,
-    setShowDeleteConnectionDialog,
-    setShowEditConnectionDialog,
+
     setIsSave,
     setConnectionType,
     menulist,
     setMenulist,
   } = useContext(SidebarContext)
-
-  const handleClickIcon = async (node) => {
+  const { setShowDeleteConnectionDialog, setShowEditConnectionDialog } =
+    useContext(MainPageDialogContext)
+  const handleClickIcon = async (e) => {
+    console.log(e)
+    if (e.button !== 0) {
+      return
+    }
     toggleRowSelection(node)
     addTab()
     if (!node.data.showFirstIcon) return
@@ -271,7 +275,7 @@ const TreeNode = ({
       className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 ${
         selectedRows[node.id] ? "bg-primary-selected" : "hover:bg-primary-light"
       }  `}
-      onClick={() => handleClickIcon(node)}
+      onClick={(e) => handleClickIcon(e)}
       onContextMenu={handleContextMenuClick}
     >
       {" "}

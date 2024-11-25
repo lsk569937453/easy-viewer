@@ -29,7 +29,9 @@ use sqlx::MySqlConnection;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use std::sync::OnceLock;
+use tokio::time::timeout;
 
+use std::time::Duration;
 static MYSQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
 static MYSQL_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
 
@@ -115,9 +117,16 @@ impl MysqlConfig {
         let mut vec = vec![];
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
+        let timeout_duration = Duration::from_secs(1);
+
         match level_infos.len() {
             1 => {
-                let mut conn = MySqlConnection::connect(&connection_url).await?;
+                let mut conn = timeout(
+                    Duration::from_millis(500),
+                    MySqlConnection::connect(&connection_url),
+                )
+                .await
+                .map_err(|e| anyhow!("Connect time out!"))??;
 
                 let rows = sqlx::query(
                     "SELECT `schema_name`

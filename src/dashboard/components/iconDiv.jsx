@@ -108,7 +108,7 @@ const IconDiv = ({ node, selectedRows }) => {
           <path d="M13.5 6.5l4 4" />
         </svg>
       ),
-      render: (tabIndex) => <PropertiesPage node={node} />,
+      render: (tabIndex) => <PropertiesPage node={node} className="pt-4 pl-4 pr-4" />,
       service: `editTable${node.data.name}`,
       tabName: node.data.name,
     })

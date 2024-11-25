@@ -37,10 +37,10 @@ import { tr } from "date-fns/locale"
 
 import { Input } from "@/components/ui/input"
 
-const PropertiesPage = ({ node }) => {
+const PropertiesPage = ({ node,className }) => {
   return (
-    <div className="flex h-full w-full flex-col gap-2 ">
-      <div className="flex w-1/2 flex-row">
+    <div className={`flex h-full w-full flex-col gap-2 ${className}`}>
+      <div className="flex w-1/2 flex-row gap-2">
         <div className="flex basis-1/2 flex-row items-center justify-center gap-2">
           <span>Name</span>
           <input

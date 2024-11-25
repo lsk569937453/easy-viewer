@@ -46,6 +46,8 @@ const SingleTableNodeContextMenu = ({ node }) => {
     setShowDeleteConnectionDialog(true)
   }
   const handleCopyConnectionOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
     navigator.clipboard.writeText(node.data.name).then(() => {
       toast({
         title: "Copied to clipboard",

@@ -19,7 +19,8 @@ import {
   uuid,
 } from "../../lib/jsx-utils.js"
 import { clickNode } from "../../lib/node.jsx"
-import { SidebarContext } from "../page.jsx"
+import { MainPageDialogContext, SidebarContext } from "../page.jsx"
+import PropertiesPage from "../page/propertiesPage.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 
@@ -34,15 +35,18 @@ const IconDiv = ({ node, selectedRows }) => {
     setQueryName,
     setBaseConfigId,
     setNodeForUpdate,
-    setShowDeleteConnectionDialog,
-    setShowEditConnectionDialog,
-    setShowRenameQueryDialog,
+
     setNewQueryName,
-    setShowRemoveQueryDialog,
     menulist,
     setMenulist,
     setConnectionType,
   } = useContext(SidebarContext)
+  const {
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+    setShowRenameQueryDialog,
+    setShowRemoveQueryDialog,
+  } = useContext(MainPageDialogContext)
   const { toast } = useToast()
 
   const handleNewQueryClick = (e) => {
@@ -81,6 +85,33 @@ const IconDiv = ({ node, selectedRows }) => {
     setBaseConfigId(rootNode.data.baseConfigId)
     setNodeForUpdate(node.parent)
     setShowRenameQueryDialog(true)
+  }
+  const handleEditTableOnClick = (e) => {
+    e.stopPropagation()
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql stroke-emerald-400"
+          onClick={handleRenameQueryClick}
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+          <path d="M13.5 6.5l4 4" />
+        </svg>
+      ),
+      render: (tabIndex) => <PropertiesPage node={node} />,
+      service: `editTable${node.data.name}`,
+      tabName: node.data.name,
+    })
   }
   const handleAddNewDatabaseClick = (e) => {
     e.stopPropagation()
@@ -1402,7 +1433,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-pencil group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={handleRenameQueryClick}
+                    onClick={handleEditTableOnClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />

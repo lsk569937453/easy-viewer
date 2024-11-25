@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 
 import { formatMap, getRootNode } from "../../../lib/jsx-utils"
-import { SidebarContext } from "../../page"
+import { MainPageDialogContext, SidebarContext } from "../../page"
 
 const TreeRootNodeContextMenu = ({ node }) => {
   const { toast } = useToast()
@@ -16,13 +16,13 @@ const TreeRootNodeContextMenu = ({ node }) => {
     setQueryName,
     setBaseConfigId,
     setNodeForUpdate,
-    setShowDeleteConnectionDialog,
-    setShowEditConnectionDialog,
     setIsSave,
     setConnectionType,
     menulist,
     setMenulist,
   } = useContext(SidebarContext)
+  const { setShowDeleteConnectionDialog, setShowEditConnectionDialog } =
+    useContext(MainPageDialogContext)
   const handleEditConnectionClick = (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
@@ -46,6 +46,7 @@ const TreeRootNodeContextMenu = ({ node }) => {
     setShowDeleteConnectionDialog(true)
   }
   const handleCopyConnectionOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
     navigator.clipboard.writeText(node.data.name).then(() => {
       toast({
         title: "Copied to clipboard",

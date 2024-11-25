@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 
 import { formatMap, getRootNode } from "../../../lib/jsx-utils"
-import { SidebarContext } from "../../page"
+import { MainPageDialogContext, SidebarContext } from "../../page"
 
 const DatabaseNodeContextMenu = ({ node }) => {
   const { toast } = useToast()
@@ -16,13 +16,16 @@ const DatabaseNodeContextMenu = ({ node }) => {
     setQueryName,
     setBaseConfigId,
     setNodeForUpdate,
-    setShowDeleteConnectionDialog,
-    setShowEditConnectionDialog,
     setIsSave,
     setConnectionType,
     menulist,
     setMenulist,
   } = useContext(SidebarContext)
+  const {
+    setShowDeleteConnectionDialog,
+    setShowEditConnectionDialog,
+    setShowDropDatabaseDialog,
+  } = useContext(MainPageDialogContext)
   const handleEditConnectionClick = (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
@@ -46,11 +49,18 @@ const DatabaseNodeContextMenu = ({ node }) => {
     setShowDeleteConnectionDialog(true)
   }
   const handleCopyConnectionOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
     navigator.clipboard.writeText(node.data.name).then(() => {
       toast({
         title: "Copied to clipboard",
       })
     })
+  }
+  const handleDropDatabaseOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    setShowDropDatabaseDialog(true)
   }
   return (
     <>
@@ -62,7 +72,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
       </MenuItem>
       <Separator />
       <MenuItem
-        onClick={(e) => handleEditConnectionClick(e)}
+        onClick={(e) => handleDropDatabaseOnClick(e)}
         className="text-xs"
       >
         Drop

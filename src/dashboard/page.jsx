@@ -43,6 +43,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
+import DropDatabaseDialog from "./components/dialog/dropDatabaseDialog"
 import Sidebar from "./components/sidebar"
 import TabsComponent from "./components/tabsComponent"
 
@@ -53,14 +54,9 @@ export const SidebarContext = createContext({
   setNewQueryName: () => {},
   setBaseConfigId: () => {},
   setNodeForUpdate: () => {},
-  setShowDeleteConnectionDialog: () => {},
-  setShowEditConnectionDialog: () => {},
   setIsSave: () => {},
-  setShowSaveQueryDialog: () => {},
   handleRemoveTabButton: () => {},
   setTabsState: () => {},
-  setShowRenameQueryDialog: () => {},
-  setShowRemoveQueryDialog: () => {},
   tabValue: {},
   setTabValue: () => {},
   pageDataArray: [],
@@ -73,7 +69,39 @@ export const SidebarContext = createContext({
   treeRef: {},
   setConnectionType: () => {},
 })
-export const CreateConnectionDialogContext = createContext({})
+const useDialog = () => {
+  const [showDropDatabaseDialog, setShowDropDatabaseDialog] = useState(false)
+  const [showRemoveQueryDialog, setShowRemoveQueryDialog] = useState(false)
+  const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
+  const [showRenameQueryDialog, setShowRenameQueryDialog] = useState(false)
+  const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
+    useState(false)
+  const [showEditConnectionDialog, setShowEditConnectionDialog] =
+    useState(false)
+  return {
+    showDropDatabaseDialog,
+    setShowDropDatabaseDialog,
+    showRemoveQueryDialog,
+    setShowRemoveQueryDialog,
+    showSaveQueryDialog,
+    setShowSaveQueryDialog,
+    showRenameQueryDialog,
+    setShowRenameQueryDialog,
+    showDeleteConnectionDialog,
+    setShowDeleteConnectionDialog,
+    showEditConnectionDialog,
+    setShowEditConnectionDialog,
+  }
+}
+export const MainPageDialogContext = createContext({
+  setShowDeleteConnectionDialog: () => {},
+  setShowEditConnectionDialog: () => {},
+  setShowSaveQueryDialog: () => {},
+  setShowRenameQueryDialog: () => {},
+  setShowRemoveQueryDialog: () => {},
+  setShowDropDatabaseDialog: () => {},
+  showDropDatabaseDialog: false,
+})
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
   const [anchorPoint, setAnchorPoint] = useState({ x: 0, y: 0 })
@@ -85,11 +113,20 @@ const DashboardPage = () => {
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
   const [showQueryLoading, setShowQueryLoading] = useState(false)
-  const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
-    useState(false)
-  const [showRemoveQueryDialog, setShowRemoveQueryDialog] = useState(false)
-  const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
-  const [showRenameQueryDialog, setShowRenameQueryDialog] = useState(false)
+  const {
+    showDropDatabaseDialog,
+    setShowDropDatabaseDialog,
+    showRemoveQueryDialog,
+    setShowRemoveQueryDialog,
+    showSaveQueryDialog,
+    setShowSaveQueryDialog,
+    showRenameQueryDialog,
+    setShowRenameQueryDialog,
+    showDeleteConnectionDialog,
+    setShowDeleteConnectionDialog,
+    showEditConnectionDialog,
+    setShowEditConnectionDialog,
+  } = useDialog()
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
   const [queryName, setQueryName] = useState("")
@@ -97,8 +134,7 @@ const DashboardPage = () => {
   const [baseConfigId, setBaseConfigId] = useState(null)
   const [nodeForUpdate, setNodeForUpdate] = useState(null)
   const [isOpen, setOpen] = useState(false)
-  const [showEditConnectionDialog, setShowEditConnectionDialog] =
-    useState(false)
+
   const [isSave, setIsSave] = useState(true)
   const [tabsState, setTabsState] = useState([])
 
@@ -288,15 +324,10 @@ const DashboardPage = () => {
           setNewQueryName,
           setBaseConfigId,
           setNodeForUpdate,
-          setShowDeleteConnectionDialog,
-          setShowEditConnectionDialog,
           setIsSave,
           event,
-          setShowSaveQueryDialog,
           handleRemoveTabButton,
           setTabsState,
-          setShowRenameQueryDialog,
-          setShowRemoveQueryDialog,
           tabValue,
           setTabValue,
           tabsState,
@@ -309,204 +340,220 @@ const DashboardPage = () => {
           setConnectionType,
         }}
       >
-        <div className="flex h-screen flex-col overflow-hidden ">
-          <Menu className="flex-none" />
-          <div
-            className={cn(
-              "h-full w-full border-t border-foreground/30 bg-background pb-1",
-              "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md"
-            )}
-          >
-            <ResizablePanelGroup
-              direction="horizontal"
-              onContextMenu={(e) => {
-                console.log(e)
-                if (
-                  typeof document.hasFocus === "function" &&
-                  !document.hasFocus()
-                )
-                  return
-                e.preventDefault()
-                setAnchorPoint({ x: e.clientX, y: e.clientY })
-                setOpen(true)
-              }}
+        <MainPageDialogContext.Provider
+          value={{
+            setShowDeleteConnectionDialog,
+            setShowEditConnectionDialog,
+            setShowSaveQueryDialog,
+            setShowRenameQueryDialog,
+            setShowRemoveQueryDialog,
+            setShowDropDatabaseDialog,
+            showDropDatabaseDialog,
+          }}
+        >
+          <div className="flex h-screen flex-col overflow-hidden ">
+            <Menu className="flex-none" />
+            <div
+              className={cn(
+                "h-full w-full border-t border-foreground/30 bg-background pb-1",
+                "scrollbar scrollbar-track-transparent scrollbar-thumb-accent scrollbar-thumb-rounded-md"
+              )}
             >
-              <ControlledMenu
-                anchorPoint={anchorPoint}
-                state={isOpen ? "open" : "closed"}
-                direction="right"
-                onClose={() => setOpen(false)}
-                className="p-1"
+              <ResizablePanelGroup
+                direction="horizontal"
+                onContextMenu={(e) => {
+                  console.log(e)
+                  if (
+                    typeof document.hasFocus === "function" &&
+                    !document.hasFocus()
+                  )
+                    return
+                  e.preventDefault()
+                  setAnchorPoint({ x: e.clientX, y: e.clientY })
+                  setOpen(true)
+                }}
               >
-                <MenuItem
-                  onClick={handleNewConnectionButtonClick}
-                  className="text-sm"
+                <ControlledMenu
+                  anchorPoint={anchorPoint}
+                  state={isOpen ? "open" : "closed"}
+                  direction="right"
+                  onClose={() => setOpen(false)}
+                  className="p-1"
                 >
-                  New Connection
-                </MenuItem>
-                <MenuItem
-                  onClick={() =>
-                    reloadNode(treeRef.current.root, menulist, setMenulist)
-                  }
-                  className="text-sm"
-                >
-                  Refresh
-                </MenuItem>
-              </ControlledMenu>
-              <ResizablePanel defaultSize={25} className=" min-w-[200px]">
-                <Dialog
-                  open={showEditConnectionDialog}
-                  onOpenChange={setShowEditConnectionDialog}
-                >
-                  <CreateConnectionDialog
-                    baseCongfigId={baseConfigId}
-                    isSave={isSave}
-                    isOpen={showEditConnectionDialog}
-                    connectionType={connectionType}
-                  />
-                </Dialog>
-                <Dialog
-                  open={showQueryLoading}
-                  onOpenChange={setShowQueryLoading}
-                >
-                  <DialogContent className="w-30 bg-slate-200">
-                    <DialogTitle>创建新的Query</DialogTitle>
-                    <div className="flex flex-col gap-4 p-4">
-                      <div className="flex flex-row items-center justify-center">
-                        <p className="flex-[1]">Name:</p>
-                        <input
-                          className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-                          value={queryName}
-                          onChange={(e) => setQueryName(e.target.value)}
-                        />
+                  <MenuItem
+                    onClick={handleNewConnectionButtonClick}
+                    className="text-sm"
+                  >
+                    New Connection
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() =>
+                      reloadNode(treeRef.current.root, menulist, setMenulist)
+                    }
+                    className="text-sm"
+                  >
+                    Refresh
+                  </MenuItem>
+                </ControlledMenu>
+                <ResizablePanel defaultSize={25} className=" min-w-[200px]">
+                  <DropDatabaseDialog />
+                  <Dialog
+                    open={showEditConnectionDialog}
+                    onOpenChange={setShowEditConnectionDialog}
+                  >
+                    <CreateConnectionDialog
+                      baseCongfigId={baseConfigId}
+                      isSave={isSave}
+                      isOpen={showEditConnectionDialog}
+                      connectionType={connectionType}
+                    />
+                  </Dialog>
+                  <Dialog
+                    open={showQueryLoading}
+                    onOpenChange={setShowQueryLoading}
+                  >
+                    <DialogContent className="w-30 bg-slate-200">
+                      <DialogTitle>创建新的Query</DialogTitle>
+                      <div className="flex flex-col gap-4 p-4">
+                        <div className="flex flex-row items-center justify-center">
+                          <p className="flex-[1]">Name:</p>
+                          <input
+                            className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                            value={queryName}
+                            onChange={(e) => setQueryName(e.target.value)}
+                          />
+                        </div>
+                        <Button onClick={handleQuerySaveClick}> Save</Button>
                       </div>
-                      <Button onClick={handleQuerySaveClick}> Save</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Dialog
-                  open={showRenameQueryDialog}
-                  onOpenChange={setShowRenameQueryDialog}
-                >
-                  <DialogContent className="w-30 bg-slate-200">
-                    <DialogTitle>Rename Query</DialogTitle>
-                    <div className="flex flex-col gap-4 p-4">
-                      <div className="flex flex-row items-center justify-center">
-                        <p className="flex-[1]">Name:</p>
-                        <input
-                          className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
-                          value={newQueryName}
-                          onChange={(e) => setNewQueryName(e.target.value)}
-                        />
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog
+                    open={showRenameQueryDialog}
+                    onOpenChange={setShowRenameQueryDialog}
+                  >
+                    <DialogContent className="w-30 bg-slate-200">
+                      <DialogTitle>Rename Query</DialogTitle>
+                      <div className="flex flex-col gap-4 p-4">
+                        <div className="flex flex-row items-center justify-center">
+                          <p className="flex-[1]">Name:</p>
+                          <input
+                            className="flex h-10 w-full flex-[3] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+                            value={newQueryName}
+                            onChange={(e) => setNewQueryName(e.target.value)}
+                          />
+                        </div>
+                        <Button onClick={handleQueryRenameClick}>
+                          {" "}
+                          Rename
+                        </Button>
                       </div>
-                      <Button onClick={handleQueryRenameClick}> Rename</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-                <Dialog
-                  open={showDeleteConnectionDialog}
-                  onOpenChange={setShowDeleteConnectionDialog}
-                >
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Delete</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to delete this connection?
-                      </DialogDescription>
-                    </DialogHeader>
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog
+                    open={showDeleteConnectionDialog}
+                    onOpenChange={setShowDeleteConnectionDialog}
+                  >
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Delete</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this connection?
+                        </DialogDescription>
+                      </DialogHeader>
 
-                    <DialogFooter className="sm:justify-end">
-                      <DialogClose asChild>
-                        <div className="flex flex-row items-center justify-center gap-2">
-                          <Button type="button" variant="secondary">
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={handleDeleteConnectionClick}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Dialog
-                  open={showRemoveQueryDialog}
-                  onOpenChange={setShowRemoveQueryDialog}
-                >
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Delete</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to delete this query?
-                      </DialogDescription>
-                    </DialogHeader>
+                      <DialogFooter className="sm:justify-end">
+                        <DialogClose asChild>
+                          <div className="flex flex-row items-center justify-center gap-2">
+                            <Button type="button" variant="secondary">
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              onClick={handleDeleteConnectionClick}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog
+                    open={showRemoveQueryDialog}
+                    onOpenChange={setShowRemoveQueryDialog}
+                  >
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Delete</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this query?
+                        </DialogDescription>
+                      </DialogHeader>
 
-                    <DialogFooter className="sm:justify-end">
-                      <DialogClose asChild>
-                        <div className="flex flex-row items-center justify-center gap-2">
-                          <Button type="button" variant="secondary">
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={handleRmoveQueryClick}
-                          >
-                            Delete
-                          </Button>
-                        </div>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Dialog
-                  open={showSaveQueryDialog}
-                  onOpenChange={setShowSaveQueryDialog}
-                >
-                  <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Save Query</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to save the query?
-                      </DialogDescription>
-                    </DialogHeader>
+                      <DialogFooter className="sm:justify-end">
+                        <DialogClose asChild>
+                          <div className="flex flex-row items-center justify-center gap-2">
+                            <Button type="button" variant="secondary">
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              onClick={handleRmoveQueryClick}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Dialog
+                    open={showSaveQueryDialog}
+                    onOpenChange={setShowSaveQueryDialog}
+                  >
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Save Query</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to save the query?
+                        </DialogDescription>
+                      </DialogHeader>
 
-                    <DialogFooter className="sm:justify-end">
-                      <DialogClose asChild>
-                        <div className="flex flex-row items-center justify-center gap-2">
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={handleCancelQueryButtonClick}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            type="button"
-                            onClick={handleSaveQueryButtonClick}
-                          >
-                            Save
-                          </Button>
-                        </div>
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                <Sidebar treeRef={treeRef} />
-              </ResizablePanel>
-              <ResizableHandle />
-              <ResizablePanel defaultSize={75} className="min-w-[200px]">
-                <div className="col-span-8 h-full w-full">
-                  {pageDataArray.length > 0 ? <TabsComponent /> : ""}
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+                      <DialogFooter className="sm:justify-end">
+                        <DialogClose asChild>
+                          <div className="flex flex-row items-center justify-center gap-2">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={handleCancelQueryButtonClick}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              type="button"
+                              onClick={handleSaveQueryButtonClick}
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  <Sidebar treeRef={treeRef} />
+                </ResizablePanel>
+                <ResizableHandle />
+                <ResizablePanel defaultSize={75} className="min-w-[200px]">
+                  <div className="col-span-8 h-full w-full">
+                    {pageDataArray.length > 0 ? <TabsComponent /> : ""}
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </div>
           </div>
-        </div>
+        </MainPageDialogContext.Provider>
       </SidebarContext.Provider>
     </>
   )

@@ -9,6 +9,7 @@ use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -99,9 +100,16 @@ impl MysqlConfig {
             let type_name = columns[1].type_info().name();
             let column_type =
                 serde_value_to_string(mysql_row_to_json(item, type_name, 1)?).unwrap_or_default();
-            let type_flag = if column_type != "date" { 0 } else { 1 };
-            let get_column_info_for_is_response_item =
-                GetColumnInfoForInsertSqlResponseItem::from(column_name, column_type, type_flag);
+            let type_flag = ColumnTypeFlag::from(column_type.clone());
+
+            let key_type: String = item.try_get(3)?;
+            let is_primary = key_type.eq("PRI");
+            let get_column_info_for_is_response_item = GetColumnInfoForInsertSqlResponseItem::from(
+                column_name,
+                column_type,
+                type_flag,
+                is_primary,
+            );
 
             response_rows.push(get_column_info_for_is_response_item);
         }

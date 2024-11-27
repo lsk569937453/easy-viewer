@@ -304,7 +304,150 @@ const SingleTableNodeContextMenu = ({ node }) => {
       tabName: localQueryName,
     })
   }
+  const handleUpdateOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    const localQueryName = getQueryName()
+    console.log(localQueryName)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    console.log(listNodeInfoReq)
 
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_column_info_for_insert_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
+    )
+    console.log(response_code, response_msg)
+
+    if (response_code !== 0) {
+      toast({
+        variant: "destructive",
+        title: "Get Columns Error",
+        description: response_msg,
+      })
+      return
+    }
+    const rows = response_msg.list
+
+    const setClause = rows
+      .map((row) => `${row.column_name} = ${row.column_name}`)
+      .join(",\n      ")
+    const primaryKey = rows.find((row) => row.is_primary)?.column_name || null
+
+    const sql = `update ${node.data.name} set\n      ${setClause}\nwhere\n  ${
+      primaryKey ? `${primaryKey} = ?` : ""
+    };`
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql stroke-orange-400"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M5 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+          <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+          <path d="M18 15v6h2" />
+          <path d="M13 15a2 2 0 0 1 2 2v2a2 2 0 1 1 -4 0v-2a2 2 0 0 1 2 -2z" />
+          <path d="M14 20l1.5 1.5" />
+        </svg>
+      ),
+      render: (tabIndex) => (
+        <QueryPage
+          node={node}
+          tabIndex={tabIndex}
+          defaltSql={sql}
+          queryName={localQueryName}
+          firstCreate={true}
+        />
+      ),
+      service: localQueryName,
+      tabName: localQueryName,
+    })
+  }
+  const handleDeleteOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    let rootNode = getRootNode(node)
+    setBaseConfigId(rootNode.data.baseConfigId)
+    const localQueryName = getQueryName()
+    console.log(localQueryName)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    console.log(listNodeInfoReq)
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("get_column_info_for_insert_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
+    )
+    console.log(response_code, response_msg)
+
+    if (response_code !== 0) {
+      toast({
+        variant: "destructive",
+        title: "Get Columns Error",
+        description: response_msg,
+      })
+      return
+    }
+    const rows = response_msg.list
+    const primaryKey = rows.find((row) => row.is_primary)?.column_name || null
+
+    const sql = `delete from  ${node.data.name} \nwhere\n  ${
+      primaryKey ? `${primaryKey} = ?` : ""
+    };`
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-file-type-sql stroke-orange-400"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+          <path d="M5 20.25c0 .414 .336 .75 .75 .75h1.25a1 1 0 0 0 1 -1v-1a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-1a1 1 0 0 1 1 -1h1.25a.75 .75 0 0 1 .75 .75" />
+          <path d="M5 12v-7a2 2 0 0 1 2 -2h7l5 5v4" />
+          <path d="M18 15v6h2" />
+          <path d="M13 15a2 2 0 0 1 2 2v2a2 2 0 1 1 -4 0v-2a2 2 0 0 1 2 -2z" />
+          <path d="M14 20l1.5 1.5" />
+        </svg>
+      ),
+      render: (tabIndex) => (
+        <QueryPage
+          node={node}
+          tabIndex={tabIndex}
+          defaltSql={sql}
+          queryName={localQueryName}
+          firstCreate={true}
+        />
+      ),
+      service: localQueryName,
+      tabName: localQueryName,
+    })
+  }
   return (
     <>
       <MenuItem
@@ -324,8 +467,8 @@ const SingleTableNodeContextMenu = ({ node }) => {
       <SubMenu label={<>SQL Template</>} className="text-xs">
         <MenuItem onClick={(e) => handleSelectOnClick(e)}>SELECT</MenuItem>
         <MenuItem onClick={(e) => handleInsertOnClick(e)}>INSERT</MenuItem>
-        <MenuItem>UPDATE</MenuItem>
-        <MenuItem>DELETE</MenuItem>
+        <MenuItem onClick={(e) => handleUpdateOnClick(e)}>UPDATE</MenuItem>
+        <MenuItem onClick={(e) => handleDeleteOnClick(e)}>DELETE</MenuItem>
       </SubMenu>
       <MenuItem
         onClick={(e) => handleDeleteConnectionClick(e)}

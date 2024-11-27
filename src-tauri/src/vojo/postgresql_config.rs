@@ -19,6 +19,8 @@ use sqlx::PgConnection;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use std::sync::OnceLock;
+use std::time::Duration;
+use tokio::time::timeout;
 static POSTGRESQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> =
     OnceLock::new();
 static POSTGRESQL_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
@@ -78,7 +80,8 @@ impl PostgresqlConfig {
         if list_node_info_req.level_infos.len() == 1 {
             let test_url = self.connection_url();
             info!("test_url: {}", test_url);
-            let mut connection = PgConnection::connect(&test_url).await?;
+            let mut connection =
+                timeout(Duration::from_millis(500), PgConnection::connect(&test_url)).await??;
             let rows = sqlx::query("SELECT datname FROM pg_database WHERE datistemplate = false;")
                 .fetch_all(&mut connection)
                 .await?;

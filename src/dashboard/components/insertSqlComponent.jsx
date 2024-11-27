@@ -175,7 +175,7 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
                     {item.column_name}:
                   </span>
                 </div>
-                {item.type_flag == 0 && (
+                {item.type_flag === "Common" && (
                   <Input
                     className="basis-1/3"
                     placeholder={item.column_type}
@@ -183,7 +183,7 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
                     onChange={(e) => handleInputOnChange(e, index)}
                   />
                 )}
-                {item.type_flag == 1 && (
+                {item.type_flag === "Date" && (
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button

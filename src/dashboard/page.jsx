@@ -44,6 +44,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
 import DropDatabaseDialog from "./components/dialog/dropDatabaseDialog"
+import TruncateDatabaseDialog from "./components/dialog/truncateDatabaseDialog"
 import Sidebar from "./components/sidebar"
 import TabsComponent from "./components/tabsComponent"
 
@@ -78,6 +79,8 @@ const useDialog = () => {
     useState(false)
   const [showEditConnectionDialog, setShowEditConnectionDialog] =
     useState(false)
+  const [showTruncateDatabaseDialog, setShowTruncateDatabaseDialog] =
+    useState(false)
   return {
     showDropDatabaseDialog,
     setShowDropDatabaseDialog,
@@ -91,6 +94,8 @@ const useDialog = () => {
     setShowDeleteConnectionDialog,
     showEditConnectionDialog,
     setShowEditConnectionDialog,
+    showTruncateDatabaseDialog,
+    setShowTruncateDatabaseDialog,
   }
 }
 export const MainPageDialogContext = createContext({
@@ -100,6 +105,8 @@ export const MainPageDialogContext = createContext({
   setShowRenameQueryDialog: () => {},
   setShowRemoveQueryDialog: () => {},
   setShowDropDatabaseDialog: () => {},
+  setShowTruncateDatabaseDialog: () => {},
+  showTruncateDatabaseDialog: false,
   showDropDatabaseDialog: false,
 })
 const DashboardPage = () => {
@@ -126,6 +133,8 @@ const DashboardPage = () => {
     setShowDeleteConnectionDialog,
     showEditConnectionDialog,
     setShowEditConnectionDialog,
+    showTruncateDatabaseDialog,
+    setShowTruncateDatabaseDialog,
   } = useDialog()
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
@@ -255,17 +264,12 @@ const DashboardPage = () => {
     ) {
       return
     }
-
-    const isEdited = tabsState.includes(contextMenuTabIndex)
-
-    // Create a new array excluding the tab at contextMenuTabIndex
     const updatedPageDataArray = pageDataArray.filter(
       (_, index) => index !== contextMenuTabIndex
     )
 
     setPageDataArray(updatedPageDataArray)
 
-    // If the closed tab was the current tab, update the selected tab
     if (updatedPageDataArray.length > 0) {
       const newTabIndex =
         contextMenuTabIndex === pageDataArray.length - 1
@@ -276,11 +280,10 @@ const DashboardPage = () => {
       setTabValue(undefined) // No tabs left
     }
 
-    setTabsState(
-      (prevState) =>
-        prevState
-          .filter((index) => index !== contextMenuTabIndex) // Remove the closed tab's index
-          .map((index) => (index > contextMenuTabIndex ? index - 1 : index)) // Adjust indices for tabs after the closed tab
+    setTabsState((prevState) =>
+      prevState
+        .filter((index) => index !== contextMenuTabIndex)
+        .map((index) => (index > contextMenuTabIndex ? index - 1 : index))
     )
   }
   const handleRmoveQueryClick = async () => {
@@ -349,6 +352,8 @@ const DashboardPage = () => {
             setShowRemoveQueryDialog,
             setShowDropDatabaseDialog,
             showDropDatabaseDialog,
+            showTruncateDatabaseDialog,
+            setShowTruncateDatabaseDialog,
           }}
         >
           <div className="flex h-screen flex-col overflow-hidden ">
@@ -397,6 +402,7 @@ const DashboardPage = () => {
                 </ControlledMenu>
                 <ResizablePanel defaultSize={25} className=" min-w-[200px]">
                   <DropDatabaseDialog />
+                  <TruncateDatabaseDialog />
                   <Dialog
                     open={showEditConnectionDialog}
                     onOpenChange={setShowEditConnectionDialog}

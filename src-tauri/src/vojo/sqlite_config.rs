@@ -9,6 +9,7 @@ use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::sqlite_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
@@ -97,10 +98,13 @@ impl SqliteConfig {
             let column_type =
                 serde_value_to_string(sqlite_row_to_json(item, type_name, 2)?).unwrap_or_default();
 
-            let type_flag = if column_type != "DATE" { 0 } else { 1 };
-
-            let get_column_info_for_is_response_item =
-                GetColumnInfoForInsertSqlResponseItem::from(column_name, column_type, type_flag);
+            let type_flag = ColumnTypeFlag::from(column_type.clone());
+            let get_column_info_for_is_response_item = GetColumnInfoForInsertSqlResponseItem::from(
+                column_name,
+                column_type,
+                type_flag,
+                false,
+            );
 
             response_rows.push(get_column_info_for_is_response_item);
         }

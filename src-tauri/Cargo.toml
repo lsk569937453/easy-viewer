@@ -18,13 +18,13 @@ base64 = "0.22.1"
 bigdecimal = { version = "0.4.6", features = ["serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 colorsys = { version = "*", default-features = false }
-dirs = "5.0"
+dirs = "5.0.1"
 elasticsearch = "8.16.0-alpha.1"
 
 image = "0.25.5"
 linked-hash-map = "0.5.6"
 
-log = "^0.4"
+log = "0.4.22"
 mongodb = "3.1.0"
 num = "0.4.3"
 percent-encoding = "2.3.0"
@@ -51,10 +51,10 @@ sqlx = { version = "0.8.2", features = [
 ] }
 docx-rs = "0.4.17"
 tauri = { version = "2.1.1", features = ["protocol-asset", "tray-icon"] }
-tauri-plugin-dialog = "2"
-tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2.0.3"
+tauri-plugin-fs = "2.0.3"
 tauri-plugin-log = { version = "2.0.2" }
-tauri-plugin-shell = "2"
+tauri-plugin-shell = "2.0.2"
 time = "0.3.35"
 tokio = { version = "1.41.1", features = ["full", "tracing", "time"] }
 uuid = { version = "1.11.0", features = [
@@ -82,4 +82,4 @@ debug = false
 [env]
 STATIC_VCRUNTIME = false
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-single-instance = "2"
+tauri-plugin-single-instance = "2.0.1"

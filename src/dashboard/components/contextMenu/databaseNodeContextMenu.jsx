@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
+import { set } from "date-fns"
 
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
@@ -25,6 +26,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
     setShowDeleteConnectionDialog,
     setShowEditConnectionDialog,
     setShowDropDatabaseDialog,
+    setShowTruncateDatabaseDialog,
   } = useContext(MainPageDialogContext)
   const handleEditConnectionClick = (e) => {
     e.syntheticEvent.stopPropagation()
@@ -62,6 +64,11 @@ const DatabaseNodeContextMenu = ({ node }) => {
     e.syntheticEvent.preventDefault()
     setShowDropDatabaseDialog(true)
   }
+  const handleTruncateDatabaseOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    setShowTruncateDatabaseDialog(true)
+  }
   return (
     <>
       <MenuItem
@@ -78,7 +85,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
         Drop
       </MenuItem>
       <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
+        onClick={(e) => handleTruncateDatabaseOnClick(e)}
         className="text-xs"
       >
         Truncate

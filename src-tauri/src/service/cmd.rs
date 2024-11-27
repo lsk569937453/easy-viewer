@@ -13,6 +13,7 @@ use super::base_config_service::save_base_config_with_error;
 use super::base_config_service::update_base_config_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
+use crate::service::base_config_service::dump_database_struct_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::get_procedure_details_with_error;
@@ -222,6 +223,17 @@ pub async fn move_column(
     let time = Instant::now();
     let res =
         handle_response!(move_column_with_error(state, list_node_info_req, move_direction).await);
+    info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn dump_database_struct(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(dump_database_struct_with_error(state, list_node_info_req).await);
     info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }

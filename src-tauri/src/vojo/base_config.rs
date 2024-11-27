@@ -126,6 +126,18 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn dump_database_struct(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .dump_database_struct(list_node_info_req, appstate)
+                .await?
+        };
+        Ok(())
+    }
     pub async fn move_column(
         &self,
         appstate: &AppState,

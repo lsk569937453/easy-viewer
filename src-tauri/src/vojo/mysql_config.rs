@@ -475,7 +475,13 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
 
         Ok(ListNodeInfoResponse::new(vec))
     }
-
+    pub async fn dump_database_struct(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

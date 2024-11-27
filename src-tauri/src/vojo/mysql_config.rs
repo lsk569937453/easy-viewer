@@ -3,6 +3,7 @@ use std::vec;
 
 use super::exe_sql_response::ExeSqlResponse;
 use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use super::init_dump_data_response::InitDumpDataResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
@@ -11,6 +12,8 @@ use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
+use crate::vojo::init_dump_data_response::InitDumpDataResponseItem;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
@@ -480,7 +483,103 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let sql = format!("use {}", database_name.clone());
+        info!("sql: {}", sql);
+        conn.execute(&*sql).await?;
+
+        let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
+            .fetch_all(&mut conn)
+            .await?;
+
+        for item in rows {
+            let buf: &[u8] = item.try_get(0)?;
+            let table_name = String::from_utf8_lossy(buf).to_string();
+            let sql = format!(
+                "select * from {}.{}",
+                database_name.clone(),
+                table_name.clone()
+            );
+            let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+            if rows.is_empty() {
+                continue;
+            }
+            let mut sql = format!("INSERT INTO `{}` VALUES", table_name.clone());
+            for (index, item) in rows.iter().enumerate() {
+                let columns = item.columns();
+                let len = columns.len();
+                let mut row = vec![];
+                for i in 0..len {
+                    let type_name = columns[i].type_info().name();
+                    let val = mysql_row_to_json(item, type_name, i)?;
+                    let mut pretty_string = serde_json::to_string_pretty(&val)?;
+                    if type_name == "LONGBLOB"
+                        || type_name == "BINARY"
+                        || type_name == "VARBINARY"
+                        || type_name == "BLOB"
+                    {
+                        pretty_string = pretty_string.trim_matches('"').to_string();
+                    }
+                    row.push(pretty_string);
+                }
+                let formatted_row = row.join(",");
+                let formatted_row = if index == 0 {
+                    format!("({})", formatted_row)
+                } else {
+                    format!(",({})", formatted_row)
+                };
+                sql.push_str(formatted_row.as_str());
+            }
+        }
         Ok(())
+    }
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let sql = format!("use {}", database_name.clone());
+        info!("sql: {}", sql);
+        conn.execute(&*sql).await?;
+
+        let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
+            .fetch_all(&mut conn)
+            .await?;
+        let mut init_dump_data_responses = vec![];
+        for item in rows {
+            let buf: &[u8] = item.try_get(0)?;
+            let table_name = String::from_utf8_lossy(buf).to_string();
+            let get_columns_sql = format!(
+                "SELECT COLUMN_NAME,COLUMN_TYPE
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '{}'
+  AND TABLE_NAME = '{}';",
+                database_name, table_name
+            );
+            let list = sqlx::query(&get_columns_sql).fetch_all(&mut conn).await?;
+            let mut vec = vec![];
+            for item in list {
+                let column_name: String = item.try_get(0)?;
+                let column_type: String = item.try_get(1)?;
+                let init_column_item = InitDumpDataColumnItem::from(column_name, column_type);
+                vec.push(init_column_item);
+            }
+            let init_dump_data_response = InitDumpDataResponseItem::from(table_name, vec);
+            init_dump_data_responses.push(init_dump_data_response);
+        }
+
+        Ok(InitDumpDataResponse::from(init_dump_data_responses))
     }
     pub async fn exe_sql(
         &self,

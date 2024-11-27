@@ -1297,6 +1297,7 @@ dependencies = [
  "dirs",
  "docx-rs",
  "elasticsearch",
+ "hex",
  "image 0.25.5",
  "linked-hash-map",
  "log",

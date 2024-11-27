@@ -4,6 +4,7 @@ use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
 use crate::sql_lite::connection::AppState;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::postgresql_config::PostgresqlConfig;
 use crate::vojo::show_column_response::ShowColumnsResponse;
@@ -137,6 +138,20 @@ impl BaseConfigEnum {
                 .await?
         };
         Ok(())
+    }
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.init_dump_data(list_node_info_req, appstate).await?
+            }
+
+            _ => InitDumpDataResponse::new(),
+        };
+        Ok(data)
     }
     pub async fn move_column(
         &self,

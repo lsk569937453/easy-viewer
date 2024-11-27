@@ -5,6 +5,7 @@ use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
@@ -237,6 +238,30 @@ pub async fn dump_database_struct_with_error(
         .dump_database_struct(list_node_info_req, state.inner())
         .await?;
     Ok("list".to_string())
+}
+pub async fn init_dump_data_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<InitDumpDataResponse, anyhow::Error> {
+    info!(
+        " init_dump_data_with_error list_node_info_req: {:?}",
+        list_node_info_req
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    let res = base_config
+        .base_config_enum
+        .init_dump_data(list_node_info_req, state.inner())
+        .await?;
+    Ok(res)
 }
 pub async fn move_column_with_error(
     state: State<'_, AppState>,

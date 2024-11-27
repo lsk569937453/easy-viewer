@@ -1,12 +1,14 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
+import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
 
 import { Separator } from "@/components/ui/separator"
 import { useToast } from "@/components/ui/use-toast"
 
-import { formatMap, getRootNode } from "../../../lib/jsx-utils"
+import { formatMap, getLevelInfos, getRootNode } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
+import DumpDataPage from "../../page/dumpDataPage"
 
 const DatabaseNodeContextMenu = ({ node }) => {
   const { toast } = useToast()
@@ -69,6 +71,43 @@ const DatabaseNodeContextMenu = ({ node }) => {
     e.syntheticEvent.preventDefault()
     setShowTruncateDatabaseDialog(true)
   }
+  const handleDumpStructOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("dump_database_struct", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
+    )
+    console.log(response_code, response_msg)
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-download stroke-cyan-500"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+          <path d="M7 11l5 5l5 -5" />
+          <path d="M12 4l0 12" />
+        </svg>
+      ),
+      render: (tabIndex) => <DumpDataPage node={node} />,
+      service: `dumpDataBaseStruct${node.data.name}`,
+      tabName: node.data.name,
+    })
+  }
   return (
     <>
       <MenuItem
@@ -91,10 +130,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
         Truncate
       </MenuItem>
       <Separator />
-      <MenuItem
-        onClick={(e) => handleEditConnectionClick(e)}
-        className="text-xs"
-      >
+      <MenuItem onClick={(e) => handleDumpStructOnClick(e)} className="text-xs">
         Dump Struct
       </MenuItem>
       <MenuItem

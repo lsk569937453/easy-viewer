@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod common_tools;
 mod service;
+use chrono::Local;
 mod sql_lite;
 mod util;
 mod vojo;
@@ -76,6 +77,16 @@ async fn main() -> Result<(), anyhow::Error> {
         })
         .plugin(
             tauri_plugin_log::Builder::default()
+                .format(|out, message, record| {
+                    out.finish(format_args!(
+                        "[{}][{}:{}][{}] {}",
+                        Local::now().format("%Y-%m-%d %H:%M:%S.%3f"),
+                        record.file().unwrap_or("<unknown>"),
+                        record.line().unwrap_or(0),
+                        record.level(),
+                        message
+                    ))
+                })
                 .level(LevelFilter::Info)
                 .level_for(
                     "tao::platform_impl::platform::event_loop::runner",
@@ -90,28 +101,29 @@ async fn main() -> Result<(), anyhow::Error> {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            delete_base_config,
+            dump_database_struct,
+            exe_sql,
+            init_dump_data,
             get_about_version,
-            test_url,
-            save_base_config,
-            update_base_config,
             get_base_config,
             get_base_config_by_id,
-            list_node_info,
-            exe_sql,
             get_column_info_for_insert_sql,
-            remove_column,
-            save_query,
-            rename_query,
-            remove_query,
-            get_query,
-            delete_base_config,
-            get_ddl,
-            show_columns,
-            update_sql,
             get_complete_words,
-            move_column,
+            get_ddl,
             get_procedure_details,
-            dump_database_struct
+            get_query,
+            list_node_info,
+            move_column,
+            remove_column,
+            remove_query,
+            rename_query,
+            save_base_config,
+            save_query,
+            show_columns,
+            test_url,
+            update_base_config,
+            update_sql,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

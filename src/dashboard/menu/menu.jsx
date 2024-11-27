@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/menubar"
 
 import { Dialog } from "../../components/ui/dialog"
-import { SidebarContext } from "../page"
+import { MainPageDialogContext, SidebarContext } from "../page"
 import { AboutDialog } from "./about-dialog"
-import { CreateConnectionDialog } from "./CreateConnectionDialog"
+import { CreateConnectionDialog } from "./createConnectionDialog"
 import { LanguageMenu } from "./languageMenu"
 import { PreferenceDialog } from "./preferenceDialog"
 import { MenuModeToggle } from "./themModeMenu"
@@ -25,8 +25,8 @@ export function Menu() {
   const [showAboutDialog, setShowAboutDialog] = useState(false)
   const [showPreferenceDialog, setShowPreferenceDialog] = useState(false)
   // const [showCreateConnectionDialog, setShowCreateConnectionDialog] = useState(false)
-  const { setShowEditConnectionDialog, setBaseConfigId, setIsSave } =
-    useContext(SidebarContext)
+  const { setBaseConfigId, setIsSave } = useContext(SidebarContext)
+  const { setShowEditConnectionDialog } = useContext(MainPageDialogContext)
   const { t, i18n } = useTranslation()
 
   const handleNewConnectionButtonClick = () => {

@@ -3,6 +3,7 @@ pub mod common_constants;
 pub mod exe_sql_response;
 pub mod get_base_config_response;
 pub mod get_column_info_for_is_response;
+pub mod init_dump_data_response;
 pub mod list_node_info_req;
 pub mod list_node_info_response;
 pub mod menu_config;

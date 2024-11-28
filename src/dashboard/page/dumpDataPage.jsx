@@ -1,5 +1,8 @@
 import { createContext, useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
+import { open } from "@tauri-apps/plugin-dialog"
+import moment from 'moment';
+import { platform } from '@tauri-apps/plugin-os';
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +24,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useToast } from "@/components/ui/use-toast"
+
+import { getLevelInfos } from "../../lib/jsx-utils"
 import {
   Table,
   TableBody,
@@ -30,10 +36,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { useToast } from "@/components/ui/use-toast"
-
-import { getLevelInfos } from "../../lib/jsx-utils"
+} from "../components/scorllableTable"
 
 const DumpDataPage = ({ node }) => {
   const { toast } = useToast()
@@ -41,6 +44,8 @@ const DumpDataPage = ({ node }) => {
   const [formatOption, setFormatOption] = useState("sql")
   const [tableData, setTableData] = useState([])
   const [columnData, setColumnData] = useState([[]])
+  const [showColumnIndex, setShowColumnIndex] = useState(0)
+  const [filePath, setFilePath] = useState("")
   useEffect(() => {
     loadData()
   }, [])
@@ -56,7 +61,12 @@ const DumpDataPage = ({ node }) => {
 
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      const tableData = response_msg.list.map((item, index) => item.table_name)
+      const tableData = response_msg.list.map((item, index) => {
+        return {
+          name: item.table_name,
+          checked: true,
+        }
+      })
       setTableData(tableData)
       const columnData = response_msg.list.map((item) => {
         return item.columns.map((item2) => {
@@ -73,51 +83,126 @@ const DumpDataPage = ({ node }) => {
       })
     }
   }
+
+  const handleColumnCheckboxOnChange = (showColumnIndex, index, val) => {
+    setColumnData((prevColumnData) => {
+      const updatedColumnData = [...prevColumnData]
+      updatedColumnData[showColumnIndex] = [
+        ...updatedColumnData[showColumnIndex],
+      ]
+      updatedColumnData[showColumnIndex][index] = {
+        ...updatedColumnData[showColumnIndex][index],
+        checked: val,
+      }
+      return updatedColumnData
+    })
+  }
+  const handleTableCheckboxOnChange = (index, val) => {
+    setTableData((prevTableData) => {
+      const updatedTableData = [...prevTableData]
+      updatedTableData[index] = {
+        ...updatedTableData[index],
+        checked: val,
+      }
+      return updatedTableData
+    })
+    setShowColumnIndex(index)
+  }
+  const handleTableOnClick = (index) => {
+    setShowColumnIndex(index)
+  }
+  const handleSelectPathClick = async () => {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+    })
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
+    const currentDateTime = moment().format('YYYY-MM-DD:HH:mm:ss');
+    const endFix = formatOption.toLowerCase();
+    const currentPlatform = platform();
+    var path;
+    if (currentPlatform === "windows") {
+      path = `${selected}\\${currentDateTime}.${endFix}`
+    } else { 
+      path = `${selected}/${currentDateTime}.${endFix}`
+    }
+    setFilePath(path)
+  }
   return (
     <div className="flex h-full w-full flex-col  gap-2 p-4">
       <div className="max-h-1/2 flex w-full flex-row">
         <div className="flex basis-1/2 flex-col">
-          <Table className="h-60 w-full  border">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Table Name</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((item, index) => {
-                return (
-                  <TableRow key={index}>
-                    <TableCell className="flex flex-row gap-2">
-                      <Checkbox id="terms" />
-                      <div>{item}</div>
-                    </TableCell>
-                  </TableRow>
-                )
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex basis-1/2 flex-col">
-          <Table className="h-60 w-full border">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Column Name</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="h-60">
-              {columnData.length > 0 &&
-                columnData[0].map((item, index) => {
+          <div className="relative overflow-auto">
+            <Table className="w-full  border">
+              <TableHeader className="sticky top-0">
+                <TableRow>
+                  <TableHead>Table Name</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {tableData.map((item, index) => {
                   return (
                     <TableRow key={index}>
-                      <TableCell className="flex flex-row gap-2">
-                        <Checkbox id="terms" checked={item.checked} />
-                        <div>{item.column_name}</div>
+                      <TableCell
+                        className={`flex  cursor-pointer flex-row gap-2  p-1 ${
+                          index === showColumnIndex ? "bg-muted" : ""
+                        }`}
+                        onClick={() => handleTableOnClick(index)}
+                      >
+                        <Checkbox
+                          id="terms"
+                          checked={item.checked}
+                          onCheckedChange={(val) =>
+                            handleTableCheckboxOnChange(index, val)
+                          }
+                        />
+                        <div>{item.name}</div>
                       </TableCell>
                     </TableRow>
                   )
                 })}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        <div className="flex basis-1/2 flex-col">
+          <div className="relative h-60 overflow-auto">
+            <Table className="w-full border">
+              <TableHeader className="sticky top-0 bg-secondary">
+                <TableRow>
+                  <TableHead>Column Name</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {columnData.length > 0 &&
+                  columnData[showColumnIndex].map((item, index) => {
+                    return (
+                      <TableRow key={index}>
+                        <TableCell className="flex  flex-row gap-2 p-1">
+                          <Checkbox
+                            id="terms"
+                            checked={item.checked}
+                            onCheckedChange={(val) =>
+                              handleColumnCheckboxOnChange(
+                                showColumnIndex,
+                                index,
+                                val
+                              )
+                            }
+                          />
+                          <div>{item.column_name}</div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
       <Card>
@@ -179,9 +264,15 @@ const DumpDataPage = ({ node }) => {
           </div>
 
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
-            <div className="basis-1/4 		">Export To Self-containered File:</div>
-            <Input className="w-80 focus-visible:ring-1 focus-visible:ring-offset-0" />
-            <Button className="text-xs">...</Button>
+            <div className="basis-1/4">Export To Self-containered File:</div>
+            <Input
+              className="w-80 focus-visible:ring-1 focus-visible:ring-offset-0"
+              value={filePath}
+              onChange={(e) => setFilePath(e.target.value)}
+            />
+            <Button className="text-xs" onClick={handleSelectPathClick}>
+              ...
+            </Button>
           </div>
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
             <div className="basis-1/4"></div>

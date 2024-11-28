@@ -37,7 +37,10 @@ import { getLevelInfos } from "../../lib/jsx-utils"
 
 const DumpDataPage = ({ node }) => {
   const { toast } = useToast()
-
+  const [exportOption, setExportOption] = useState("dumapAll")
+  const [formatOption, setFormatOption] = useState("sql")
+  const [tableData, setTableData] = useState([])
+  const [columnData, setColumnData] = useState([[]])
   useEffect(() => {
     loadData()
   }, [])
@@ -53,7 +56,15 @@ const DumpDataPage = ({ node }) => {
 
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      response_msg.list.map((item) => {})
+      const tableData = response_msg.list.map((item, index) => item.table_name)
+      setTableData(tableData)
+      const columnData = response_msg.list.map((item) => {
+        return item.columns.map((item2) => {
+          return { ...item2, checked: true }
+        })
+      })
+      console.log(columnData)
+      setColumnData(columnData)
     } else {
       toast({
         variant: "destructive",
@@ -66,36 +77,45 @@ const DumpDataPage = ({ node }) => {
     <div className="flex h-full w-full flex-col  gap-2 p-4">
       <div className="max-h-1/2 flex w-full flex-row">
         <div className="flex basis-1/2 flex-col">
-          <Table className="h-full w-full  border">
+          <Table className="h-60 w-full  border">
             <TableHeader>
               <TableRow>
                 <TableHead>Table Name</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow key={1}>
-                <TableCell className="flex flex-row gap-2">
-                  <Checkbox id="terms" />
-                  <div>2</div>
-                </TableCell>
-              </TableRow>
+              {tableData.map((item, index) => {
+                return (
+                  <TableRow key={index}>
+                    <TableCell className="flex flex-row gap-2">
+                      <Checkbox id="terms" />
+                      <div>{item}</div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </div>
         <div className="flex basis-1/2 flex-col">
-          <Table className="h-full w-full border">
+          <Table className="h-60 w-full border">
             <TableHeader>
               <TableRow>
                 <TableHead>Column Name</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              <TableRow key={1}>
-                <TableCell className="flex flex-row gap-2">
-                  <Checkbox id="terms" />
-                  <div>2</div>
-                </TableCell>
-              </TableRow>
+            <TableBody className="h-60">
+              {columnData.length > 0 &&
+                columnData[0].map((item, index) => {
+                  return (
+                    <TableRow key={index}>
+                      <TableCell className="flex flex-row gap-2">
+                        <Checkbox id="terms" checked={item.checked} />
+                        <div>{item.column_name}</div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
             </TableBody>
           </Table>
         </div>
@@ -107,9 +127,15 @@ const DumpDataPage = ({ node }) => {
         <CardContent className=" flex flex-col gap-2">
           <div className="flex w-full flex-row items-center justify-start gap-2 text-right">
             <div className="basis-1/4">Objects To Export:</div>
-            <Select>
-              <SelectTrigger className="w-[180px] focus:ring-1 focus:ring-offset-0">
-                <SelectValue placeholder="Select a fruit" value="dumapAll" />
+            <Select
+              value={exportOption}
+              onValueChange={(value) => {
+                console.log(value)
+                setExportOption(value)
+              }}
+            >
+              <SelectTrigger className="w-[200px] text-xs focus:ring-1 focus:ring-offset-0">
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -123,15 +149,43 @@ const DumpDataPage = ({ node }) => {
                 </SelectGroup>
               </SelectContent>
             </Select>
+
+            {exportOption == "dumpData" && (
+              <>
+                <div className="ml-4">File Format:</div>
+                <div>
+                  <Select
+                    value={formatOption}
+                    onValueChange={(value) => {
+                      console.log(value)
+                      setFormatOption(value)
+                    }}
+                  >
+                    <SelectTrigger className="w-[180px] focus:ring-1 focus:ring-offset-0">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectItem value="sql">SQL</SelectItem>
+                        <SelectItem value="xml">XML</SelectItem>
+                        <SelectItem value="json">JSON </SelectItem>
+                        <SelectItem value="csv">CSV</SelectItem>
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
           </div>
+
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
-            <div className="basis-1/4">Export To Self-containered File:</div>
+            <div className="basis-1/4 		">Export To Self-containered File:</div>
             <Input className="w-80 focus-visible:ring-1 focus-visible:ring-offset-0" />
-            <Button>.....</Button>
+            <Button className="text-xs">...</Button>
           </div>
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
-            <div className="basis-1/4">Print [Start Export] to start...</div>
-            <Button>Start Export</Button>
+            <div className="basis-1/4"></div>
+            <Button className="text-xs">Start Export</Button>
           </div>
         </CardContent>
       </Card>

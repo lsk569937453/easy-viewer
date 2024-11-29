@@ -24,6 +24,7 @@ async fn main() -> Result<(), anyhow::Error> {
     let appstate = AppState::new().await?;
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             let _ = app
                 .get_webview_window("main")

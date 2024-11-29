@@ -30,6 +30,7 @@
     "dialog:allow-confirm",
     "dialog:default",
     "fs:default",
-    "shell:default"
+    "shell:default",
+    "os:default"
   ]
 }

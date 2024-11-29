@@ -62,6 +62,7 @@ uuid = { version = "1.11.0", features = [
     "fast-rng",
     "macro-diagnostics",
 ] }
+tauri-plugin-os = "2"
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

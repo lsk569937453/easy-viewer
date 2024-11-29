@@ -1,5 +1,6 @@
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
@@ -13,7 +14,6 @@ use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
 use sqlx::Row;
 use tauri::State;
-
 pub async fn save_base_config_with_error(
     state: State<'_, AppState>,
     save_connection_request: SaveConnectionRequest,
@@ -215,12 +215,13 @@ pub async fn exe_sql_with_error(
 
     Ok(list)
 }
-pub async fn dump_database_struct_with_error(
+pub async fn dump_database_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
+    dump_database_req: DumpDatabaseReq,
 ) -> Result<String, anyhow::Error> {
     info!(
-        " dump_database_struct_with_error list_node_info_req: {:?}",
+        " dump_database_with_error list_node_info_req: {:?}",
         list_node_info_req
     );
     let value = list_node_info_req.level_infos[0]
@@ -235,7 +236,7 @@ pub async fn dump_database_struct_with_error(
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     base_config
         .base_config_enum
-        .dump_database_struct(list_node_info_req, state.inner())
+        .dump_database(list_node_info_req, state.inner(), dump_database_req)
         .await?;
     Ok("list".to_string())
 }

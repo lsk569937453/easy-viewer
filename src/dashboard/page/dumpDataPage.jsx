@@ -1,8 +1,8 @@
 import { createContext, useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { open } from "@tauri-apps/plugin-dialog"
-import moment from 'moment';
-import { platform } from '@tauri-apps/plugin-os';
+import { platform } from "@tauri-apps/plugin-os"
+import moment from "moment"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -14,7 +14,18 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import {
   Select,
   SelectContent,
@@ -46,6 +57,9 @@ const DumpDataPage = ({ node }) => {
   const [columnData, setColumnData] = useState([[]])
   const [showColumnIndex, setShowColumnIndex] = useState(0)
   const [filePath, setFilePath] = useState("")
+  const [showTaskStatusDialog, setShowTaskStatusDialog] = useState(false)
+  const [progress, setProgress] = useState(44)
+
   useEffect(() => {
     loadData()
   }, [])
@@ -122,21 +136,64 @@ const DumpDataPage = ({ node }) => {
       return
     } else {
     }
-    const currentDateTime = moment().format('YYYY-MM-DD:HH:mm:ss');
-    const endFix = formatOption.toLowerCase();
-    const currentPlatform = platform();
-    var path;
+    const currentDateTime = moment().format("YYYY-MM-DD:HH:mm:ss")
+    const endFix = formatOption.toLowerCase()
+    const currentPlatform = platform()
+    var path
     if (currentPlatform === "windows") {
       path = `${selected}\\${currentDateTime}.${endFix}`
-    } else { 
+    } else {
       path = `${selected}/${currentDateTime}.${endFix}`
     }
     setFilePath(path)
   }
+  const handleStartExportOnClick = async () => {
+    setShowTaskStatusDialog(true)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const dumpDatabaseReq = {}
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("dump_database", {
+        listNodeInfoReq: listNodeInfoReq,
+        dumpDatabaseReq: dumpDatabaseReq,
+      })
+    )
+    console.log(response_code, response_msg)
+  }
   return (
     <div className="flex h-full w-full flex-col  gap-2 p-4">
+      <Dialog
+        open={showTaskStatusDialog}
+        onOpenChange={setShowTaskStatusDialog}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Task Running Status</DialogTitle>
+            <DialogDescription className="flex flex-col gap-2">
+              <div className="flex flex-row items-center gap-2">
+                <Progress
+                  value={progress}
+                  className="h-1 w-full bg-primary/50"
+                />
+                <span>{progress}%</span>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="sm:justify-end">
+            <DialogClose asChild>
+              <div className="flex flex-row items-center justify-center gap-2">
+                <Button type="button" variant="secondary">
+                  Cancel
+                </Button>
+              </div>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <div className="max-h-1/2 flex w-full flex-row">
-        <div className="flex basis-1/2 flex-col">
+        <div className="flex basis-1/4 flex-col">
           <div className="relative overflow-auto">
             <Table className="w-full  border">
               <TableHeader className="sticky top-0">
@@ -170,7 +227,7 @@ const DumpDataPage = ({ node }) => {
             </Table>
           </div>
         </div>
-        <div className="flex basis-1/2 flex-col">
+        <div className="flex basis-3/4 flex-col">
           <div className="relative h-60 overflow-auto">
             <Table className="w-full border">
               <TableHeader className="sticky top-0 bg-secondary">
@@ -195,7 +252,7 @@ const DumpDataPage = ({ node }) => {
                               )
                             }
                           />
-                          <div>{item.column_name}</div>
+                          <div className="text-xs">{item.column_name}</div>
                         </TableCell>
                       </TableRow>
                     )
@@ -266,7 +323,7 @@ const DumpDataPage = ({ node }) => {
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
             <div className="basis-1/4">Export To Self-containered File:</div>
             <Input
-              className="w-80 focus-visible:ring-1 focus-visible:ring-offset-0"
+              className="w-80 text-xs focus-visible:ring-1 focus-visible:ring-offset-0"
               value={filePath}
               onChange={(e) => setFilePath(e.target.value)}
             />
@@ -276,7 +333,12 @@ const DumpDataPage = ({ node }) => {
           </div>
           <div className="medium flex w-full flex-row items-center justify-start gap-2 text-right">
             <div className="basis-1/4"></div>
-            <Button className="text-xs">Start Export</Button>
+            <Button
+              className="text-xs"
+              onClick={() => handleStartExportOnClick()}
+            >
+              Start Export
+            </Button>
           </div>
         </CardContent>
       </Card>

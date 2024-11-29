@@ -20,7 +20,7 @@ chrono = { version = "0.4.38", features = ["serde"] }
 colorsys = { version = "*", default-features = false }
 dirs = "5.0.1"
 elasticsearch = "8.16.0-alpha.1"
-
+itertools = "0.13.0"
 image = "0.25.5"
 linked-hash-map = "0.5.6"
 hex = "0.4.3"

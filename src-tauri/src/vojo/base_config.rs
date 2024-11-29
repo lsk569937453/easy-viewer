@@ -4,6 +4,7 @@ use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
 use crate::sql_lite::connection::AppState;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::postgresql_config::PostgresqlConfig;
@@ -127,14 +128,15 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
-    pub async fn dump_database_struct(
+    pub async fn dump_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         if let BaseConfigEnum::Mysql(config) = self {
             config
-                .dump_database_struct(list_node_info_req, appstate)
+                .dump_database(list_node_info_req, appstate, dump_database_req)
                 .await?
         };
         Ok(())

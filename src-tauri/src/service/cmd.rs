@@ -11,7 +11,7 @@ use super::base_config_service::update_base_config_with_error;
 use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
-use crate::service::base_config_service::dump_database_struct_with_error;
+use crate::service::base_config_service::dump_database_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::get_procedure_details_with_error;
@@ -26,6 +26,7 @@ use crate::service::query_service::rename_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
@@ -228,12 +229,15 @@ pub async fn move_column(
 }
 #[tauri::command]
 
-pub async fn dump_database_struct(
+pub async fn dump_database(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
+    dump_database_req: DumpDatabaseReq,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(dump_database_struct_with_error(state, list_node_info_req).await);
+    let res = handle_response!(
+        dump_database_with_error(state, list_node_info_req, dump_database_req).await
+    );
     info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }

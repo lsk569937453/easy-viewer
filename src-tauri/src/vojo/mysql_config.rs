@@ -1,6 +1,3 @@
-use std::collections::HashSet;
-use std::vec;
-
 use super::exe_sql_response::ExeSqlResponse;
 use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use super::init_dump_data_response::InitDumpDataResponse;
@@ -9,6 +6,9 @@ use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::base_config::DatabaseHostStruct;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
+use crate::vojo::dump_database_res::DumpDatabaseResColumnItem;
+use crate::vojo::dump_database_res::DumpDatabaseResItem;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
@@ -23,6 +23,7 @@ use anyhow::Ok;
 use bigdecimal::BigDecimal;
 use chrono::DateTime;
 use chrono::Local;
+use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
@@ -32,7 +33,9 @@ use sqlx::Executor;
 use sqlx::MySqlConnection;
 use sqlx::Row;
 use sqlx::TypeInfo;
+use std::collections::HashSet;
 use std::sync::OnceLock;
+use std::vec;
 use tokio::time::timeout;
 
 use std::time::Duration;
@@ -478,10 +481,11 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
 
         Ok(ListNodeInfoResponse::new(vec))
     }
-    pub async fn dump_database_struct(
+    pub async fn dump_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
@@ -497,47 +501,70 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             .fetch_all(&mut conn)
             .await?;
 
+        let mut dump_data_list = vec![];
         for item in rows {
             let buf: &[u8] = item.try_get(0)?;
             let table_name = String::from_utf8_lossy(buf).to_string();
-            let sql = format!(
-                "select * from {}.{}",
-                database_name.clone(),
-                table_name.clone()
-            );
-            let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
-            if rows.is_empty() {
+            let table_index = dump_database_req
+                .tables
+                .iter()
+                .position(|x| x.name == table_name)
+                .ok_or(anyhow!("table not found"))?;
+            if !dump_database_req.tables[table_index].checked {
                 continue;
             }
-            let mut sql = format!("INSERT INTO `{}` VALUES", table_name.clone());
-            for (index, item) in rows.iter().enumerate() {
-                let columns = item.columns();
-                let len = columns.len();
-                let mut row = vec![];
-                for i in 0..len {
-                    let type_name = columns[i].type_info().name();
-                    let val = mysql_row_to_json(item, type_name, i)?;
-                    let mut pretty_string = serde_json::to_string_pretty(&val)?;
-                    if type_name == "LONGBLOB"
-                        || type_name == "BINARY"
-                        || type_name == "VARBINARY"
-                        || type_name == "BLOB"
-                    {
-                        pretty_string = pretty_string.trim_matches('"').to_string();
-                    }
-                    row.push(pretty_string);
-                }
-                let formatted_row = row.join(",");
-                let formatted_row = if index == 0 {
-                    format!("({})", formatted_row)
-                } else {
-                    format!(",({})", formatted_row)
-                };
-                sql.push_str(formatted_row.as_str());
+            let mut dump_database_res_item = DumpDatabaseResItem::new();
+            if dump_database_req.export_option.is_export_struct() {
+                let sql = format!("show create table {}", table_name);
+                let row = sqlx::query(&sql)
+                    .fetch_optional(&mut conn)
+                    .await?
+                    .ok_or(anyhow!("Not found table"))?;
+                let ddl: String = row.try_get(1)?;
+                dump_database_res_item.table_struct = Some(ddl);
             }
+            if dump_database_req.export_option.is_export_data() {
+                let selected_column = dump_database_req.columns[table_index]
+                    .iter()
+                    .filter(|x| x.checked)
+                    .map(|x| x.column_name.clone())
+                    .join(",");
+                let sql = format!(
+                    "select {} from {}.{}",
+                    selected_column,
+                    database_name.clone(),
+                    table_name.clone()
+                );
+                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                if !rows.is_empty() {
+                    let mut vec = vec![];
+
+                    for item in rows.iter() {
+                        let columns = item.columns();
+                        let len = columns.len();
+                        let mut database_res_column_list = vec![];
+                        for i in 0..len {
+                            let column_name = columns[i].name();
+                            let column_type = columns[i].type_info().name();
+                            let column_value = mysql_row_to_json(item, column_type, i)?;
+                            let database_res_column_item = DumpDatabaseResColumnItem::from(
+                                column_name.to_string(),
+                                column_type.to_string(),
+                                column_value,
+                            );
+                            database_res_column_list.push(database_res_column_item);
+                        }
+                        vec.push(database_res_column_list);
+                    }
+                    dump_database_res_item.column_list = Some(vec);
+                }
+            }
+            dump_data_list.push(dump_database_res_item);
         }
+        info!("dump_data_list: {:#?}", dump_data_list);
         Ok(())
     }
+
     pub async fn init_dump_data(
         &self,
         list_node_info_req: ListNodeInfoReq,

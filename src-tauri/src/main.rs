@@ -103,7 +103,7 @@ async fn main() -> Result<(), anyhow::Error> {
         })
         .invoke_handler(tauri::generate_handler![
             delete_base_config,
-            dump_database_struct,
+            dump_database,
             exe_sql,
             init_dump_data,
             get_about_version,

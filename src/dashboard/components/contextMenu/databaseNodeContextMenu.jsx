@@ -74,15 +74,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
   const handleDumpStructOnClick = async (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
-    const listNodeInfoReq = {
-      level_infos: getLevelInfos(node),
-    }
-    const { response_code, response_msg } = JSON.parse(
-      await invoke("dump_database_struct", {
-        listNodeInfoReq: listNodeInfoReq,
-      })
-    )
-    console.log(response_code, response_msg)
+
     handleAddPageClick({
       icon: (
         <svg

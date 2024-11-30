@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/resizable"
 
 import { DataTable } from "../../dashboard/components/table"
-import { SidebarContext } from "../page.jsx"
+import { MainPageDialogContext, SidebarContext } from "../page.jsx"
 import DataPage from "./dataPage"
 
 import "ace-builds/src-noconflict/theme-github"
@@ -35,8 +35,9 @@ const QueryPage = ({
   const [sqlOfQuqery, setSqlOfQuery] = useState(defaltSql)
   const [currentQueryName, setCurrentQueryName] = useState(queryName)
   const textAreaRef = useRef(null)
-  const { event, setShowSaveQueryDialog, handleRemoveTabButton, setTabsState } =
+  const { event, handleRemoveTabButton, setTabsState } =
     useContext(SidebarContext)
+  const { setShowSaveQueryDialog } = useContext(MainPageDialogContext)
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
 
@@ -133,9 +134,9 @@ const QueryPage = ({
   return (
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={50} className="min-h-[200px]">
-        <div className="flex h-full flex-col items-start justify-start">
+        <div className="flex h-full flex-col items-start justify-start bg-muted">
           <div
-            className="flex cursor-pointer flex-row items-start p-2 text-muted"
+            className="flex cursor-pointer flex-row items-start p-2 "
             onClick={() => setClickFlag(!clickFlag)}
           >
             <svg
@@ -150,7 +151,7 @@ const QueryPage = ({
             <span className="select-none"> Run</span>
           </div>
           <AceEditor
-            className=" resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className=" resize-y	   border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
             width="100%"
             ref={textAreaRef}

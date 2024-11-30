@@ -5,11 +5,14 @@ import PropertiesPage from "./propertiesPage"
 
 export default function TablePage({ node }) {
   return (
-    <Tabs.Root defaultValue="data" className="flex h-full w-full flex-col overflow-hidden">
-      <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
+    <Tabs.Root
+      defaultValue="data"
+      className="flex h-full w-full flex-col overflow-hidden bg-background "
+    >
+      <Tabs.List className="inline-flex h-10 flex-none items-center justify-start   bg-muted p-1 text-muted-foreground">
         <Tabs.Trigger
           value="properties"
-          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
+          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground"
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -33,7 +36,7 @@ export default function TablePage({ node }) {
         </Tabs.Trigger>
         <Tabs.Trigger
           value="data"
-          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
+          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground"
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -58,7 +61,7 @@ export default function TablePage({ node }) {
         </Tabs.Trigger>
         <Tabs.Trigger
           value="diagram"
-          className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground "
+          className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground"
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -96,7 +99,7 @@ export default function TablePage({ node }) {
 
       <Tabs.Content
         value="data"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        className=" ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <DataPage node={node} />
       </Tabs.Content>

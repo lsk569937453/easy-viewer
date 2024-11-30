@@ -55,7 +55,7 @@ const PropertiesTabsPage = ({ node }) => {
       <Tabs.List className="inline-flex h-10 flex-none items-center justify-start  rounded-md p-1 text-muted-foreground">
         <Tabs.Trigger
           value="ddl"
-          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
+          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground"
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -79,7 +79,7 @@ const PropertiesTabsPage = ({ node }) => {
         </Tabs.Trigger>
         <Tabs.Trigger
           value="column"
-          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground"
+          className="inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground"
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -104,7 +104,7 @@ const PropertiesTabsPage = ({ node }) => {
         </Tabs.Trigger>
         <Tabs.Trigger
           value="foreignKey"
-          className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background data-[state=active]:text-foreground "
+          className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground "
         >
           <div className="flex items-center space-x-1">
             <svg
@@ -168,7 +168,7 @@ const PropertiesTabsPage = ({ node }) => {
       >
         <div className=" h-full w-full ">
           <AceEditor
-            className="   min-h-[22px] basis-11/12 	  border border-input bg-background px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50 "
+            className="min-h-[22px]   basis-11/12 border 	  border-input bg-background bg-muted px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50 "
             ref={editorRef}
             commands={beautify.commands}
             mode="sql"

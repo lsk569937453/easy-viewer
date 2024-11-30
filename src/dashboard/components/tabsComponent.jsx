@@ -140,7 +140,7 @@ const TabsComponent = () => {
         </MenuItem>
       </ControlledMenu>
       <TabsList
-        className=" flex h-10 flex-row items-start justify-start "
+        className=" flex h-10 flex-row items-start justify-start bg-background"
         ref={rowRef}
       >
         {pageDataArray.map((item, index) => {
@@ -151,7 +151,7 @@ const TabsComponent = () => {
                   <TabsTrigger
                     value={item.service}
                     key={index}
-                    className="justify-start hover:bg-primary-light"
+                    className="justify-start hover:bg-muted/40 data-[state=active]:bg-muted "
                     style={{
                       width: `${tabWidth}px`,
                     }}
@@ -253,7 +253,7 @@ const TabsComponent = () => {
           <TabsContent
             key={item.service}
             value={item.service}
-            className="h-full w-full overflow-hidden"
+            className="h-full w-full overflow-hidden bg-background"
             forceMount={true}
             hidden={item.service !== tabValue}
           >

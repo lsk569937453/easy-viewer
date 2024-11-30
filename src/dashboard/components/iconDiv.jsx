@@ -27,7 +27,7 @@ import TablePage from "../page/tablePage.jsx"
 const iconWidth = 20
 const iconHeight = 20
 const delayDuration = 300
-const secondHoverColor = "bg-primary-light"
+const secondHoverColor = "bg-primary"
 const IconDiv = ({ node, selectedRows }) => {
   const {
     handleAddPageClick,
@@ -396,14 +396,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className=" flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -533,14 +535,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm ">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider>
@@ -655,14 +659,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm ">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider>
@@ -754,14 +760,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -822,14 +830,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -896,8 +906,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider>
@@ -964,8 +974,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider>
@@ -1059,14 +1069,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1162,8 +1174,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1227,8 +1239,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1408,14 +1420,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1479,8 +1493,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>
@@ -1574,8 +1588,8 @@ const IconDiv = ({ node, selectedRows }) => {
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1774,14 +1788,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             {" "}
@@ -1912,14 +1928,16 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className="flex-none text-xs text-muted-foreground">
+          <p className={`flex-none text-xs ${
+        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+      }`}>
             {node.data.description}
           </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]
-                ? "group-hover/item:bg-primary-selected"
-                : "group-hover/item:bg-primary-light"
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
             }`}
           >
             <Tooltip.Provider delayDuration={delayDuration}>

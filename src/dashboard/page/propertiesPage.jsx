@@ -37,22 +37,24 @@ import { tr } from "date-fns/locale"
 
 import { Input } from "@/components/ui/input"
 
-const PropertiesPage = ({ node,className }) => {
+const PropertiesPage = ({ node, className }) => {
   return (
-    <div className={`flex h-full w-full flex-col gap-2 ${className}`}>
+    <div
+      className={`flex h-full w-full flex-col gap-2 ${className} bg-muted pl-1 pt-1`}
+    >
       <div className="flex w-1/2 flex-row gap-2">
         <div className="flex basis-1/2 flex-row items-center justify-center gap-2">
           <span>Name</span>
           <input
             placeholder="Name"
-            className="flex h-10  rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 rounded-md  border border-input  bg-muted px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
         <div className="flex basis-1/2 flex-row items-center justify-center gap-2">
           <span>Comment</span>
           <input
             placeholder="Comment"
-            className="flex h-10  rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex h-10 rounded-md  border border-input  bg-muted px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
       </div>

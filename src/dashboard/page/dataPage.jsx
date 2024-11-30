@@ -341,7 +341,7 @@ export default function DataPage({
           }, [editState])
           return (
             <input
-              className={`${isEditing ? "bg-indigo-400" : ""} w-full `}
+              className={`${isEditing ? "bg-indigo-400" : ""} w-full bg-muted`}
               type="text"
               value={value}
               onChange={handleOnChange}
@@ -469,7 +469,7 @@ export default function DataPage({
     console.log(sql)
   }
   return (
-    <div className="flex  h-full w-full flex-col	">
+    <div className="flex  h-full w-full flex-col	bg-muted">
       {!readOnly && (
         <>
           <Dialog open={showInsertDialog} onOpenChange={setShowInsertDialog}>
@@ -492,7 +492,7 @@ export default function DataPage({
       {!readOnly && (
         <div ref={ref}>
           <AceEditor
-            className=" flex max-h-[200px] min-h-[80px] basis-11/12 resize-y	  border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex max-h-[200px] min-h-[80px] basis-11/12 resize-y border	  border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
             height="100%"
             width="100%"
@@ -512,11 +512,11 @@ export default function DataPage({
           />
         </div>
       )}
-      <div className="flex h-8 flex-row bg-background">
+      <div className="flex h-8 flex-row bg-muted">
         <div className="align-center align-text-center relative flex ">
           <input
             className=" flex h-full basis-16 
-                border border-input bg-background px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium
+                border border-input bg-muted px-3 py-2 pl-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium
                 placeholder:text-muted-foreground focus:border-muted
                 focus:outline-none
                 disabled:cursor-not-allowed disabled:opacity-50"
@@ -533,7 +533,7 @@ export default function DataPage({
             stroke-width="2"
             stroke-linecap="round"
             stroke-linejoin="round"
-            class="icon icon-tabler icons-tabler-outline icon-tabler-search absolute left-3 mt-1"
+            class="icon icon-tabler icons-tabler-outline icon-tabler-search absolute left-3 mt-1 "
           >
             <path stroke="none" d="M0 0h24v24H0z" fill="none" />
             <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
@@ -545,7 +545,7 @@ export default function DataPage({
             <Button
               variant="outline"
               size="icon"
-              className="h-full w-7 border-none hover:bg-searchMarkerColor "
+              className="h-full w-7 border-none bg-muted hover:bg-background"
               onClick={() => setShowInsertDialog(true)}
               disabled={readOnly}
             >
@@ -571,7 +571,7 @@ export default function DataPage({
               size="icon"
               disabled={Object.keys(rowSelection).length === 0}
               onClick={handleOnDeleteClick}
-              className="h-full w-7 border-none hover:bg-searchMarkerColor"
+              className="h-full w-7 border-none bg-muted hover:bg-background"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -598,7 +598,7 @@ export default function DataPage({
           <Button
             variant="outline"
             size="icon"
-            className="h-full w-7 border-none hover:bg-searchMarkerColor"
+            className="h-full w-7 border-none bg-muted hover:bg-background"
             onClick={handleOnSaveButtonClick}
           >
             <svg
@@ -623,7 +623,7 @@ export default function DataPage({
         <Button
           variant="outline"
           size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          className="h-full w-7 border-none bg-muted hover:bg-background"
           onClick={() => exeSql()}
           disabled={showLoading}
         >
@@ -641,7 +641,7 @@ export default function DataPage({
         <Button
           variant="outline"
           size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          className="h-full w-7 border-none bg-muted hover:bg-background"
           onClick={() => table.firstPage()}
           disabled={!table.getCanPreviousPage()}
         >
@@ -665,7 +665,7 @@ export default function DataPage({
         <Button
           variant="outline"
           size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          className="h-full w-7 border-none bg-muted hover:bg-background"
           onClick={() => table.previousPage()}
           disabled={!table.getCanPreviousPage()}
         >
@@ -688,7 +688,7 @@ export default function DataPage({
         <Button
           variant="outline"
           size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          className="h-full w-7 border-none bg-muted hover:bg-background"
           onClick={() => table.nextPage()}
           disabled={!table.getCanNextPage()}
         >
@@ -711,7 +711,7 @@ export default function DataPage({
         <Button
           variant="outline"
           size="icon"
-          className="h-full w-7 border-none hover:bg-searchMarkerColor"
+          className="h-full w-7 border-none bg-muted hover:bg-background"
           onClick={() => table.lastPage()}
           disabled={!table.getCanNextPage()}
         >
@@ -744,7 +744,7 @@ export default function DataPage({
         class="scrollbar relative"
         style={{
           height: tableHeight,
-          overflow: showLoading ? "hidden" : "scroll",
+          overflow: showLoading ? "hidden" : "auto",
         }}
         ref={setContainer}
       >

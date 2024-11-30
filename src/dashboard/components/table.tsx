@@ -26,7 +26,7 @@ const Filter = ({ column }: { column: Column<any, any> }) => {
 
   return (
     <input
-      className="w-36 rounded border shadow"
+      className="w-36 rounded border bg-muted shadow"
       onChange={(e) => column.setFilterValue(e.target.value)}
       onClick={(e) => e.stopPropagation()}
       placeholder={`Search...`}
@@ -46,7 +46,7 @@ export const DataTable = <TValue,>({
 }) => {
   return (
     <Table style={{ width: table.getTotalSize() }}>
-      <TableHeader className="sticky top-0 bg-accent">
+      <TableHeader className="sticky top-0 bg-muted">
         {table.getHeaderGroups().map((headerGroup: any) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header: any) => {

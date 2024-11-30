@@ -45,7 +45,7 @@ const Sidebar = ({ treeRef }) => {
   const { toast } = useToast()
 
   return (
-    <div className={" top-0  col-span-2  flex h-full "} ref={ref}>
+    <div className={" top-0  col-span-2  flex h-full bg-background "} ref={ref}>
       <Tree
         data={menulist}
         ref={treeRef}

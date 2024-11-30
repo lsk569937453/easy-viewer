@@ -287,7 +287,7 @@ const PropertiesColumnPage = ({ node }) => {
   }
 
   return (
-    <div class="scrollbar  h-[calc(100%-2rem)] w-full overflow-x-scroll overflow-y-scroll ">
+    <div class="scrollbar h-full w-full overflow-x-auto overflow-y-auto ">
       <PropertiesColumnContext.Provider
         value={{
           currentColumnData: currentColumnData,

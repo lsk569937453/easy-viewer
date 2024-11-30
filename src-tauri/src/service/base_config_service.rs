@@ -72,24 +72,59 @@ pub async fn get_base_config_with_error(
 
     let mut base_configs = vec![];
     if !row_list.is_empty() {
-        base_configs = row_list
-            .into_iter()
-            .map(
-                |item| -> Result<GetBaseConnectionResponseItem, anyhow::Error> {
-                    let id: i32 = item.try_get("id")?;
-                    let connection_json_str: String = item.try_get("connection_json")?;
-                    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-                    let connection_type = base_config.base_config_enum.get_connection_type();
-                    let description = base_config.base_config_enum.get_description()?;
-                    Ok(GetBaseConnectionResponseItem {
-                        base_config_id: id,
-                        connection_name: item.try_get("connection_name")?,
-                        connection_type,
-                        description,
-                    })
-                },
-            )
-            .collect::<Result<Vec<GetBaseConnectionResponseItem>, anyhow::Error>>()?;
+        for item in row_list.iter() {
+            let id: i32 = match item.try_get("id") {
+                Ok(val) => val,
+                Err(_) => continue,
+            };
+
+            let connection_json_str: String = match item.try_get("connection_json") {
+                Ok(val) => val,
+                Err(_) => continue,
+            };
+
+            let base_config: BaseConfig = match serde_json::from_str(&connection_json_str) {
+                Ok(val) => val,
+                Err(_) => continue,
+            };
+
+            let description = match base_config.base_config_enum.get_description() {
+                Ok(val) => val,
+                Err(_) => continue,
+            };
+
+            let connection_type = base_config.base_config_enum.get_connection_type();
+
+            let connection_name: String = match item.try_get("connection_name") {
+                Ok(val) => val,
+                Err(_) => continue,
+            };
+
+            base_configs.push(GetBaseConnectionResponseItem {
+                base_config_id: id,
+                connection_name,
+                connection_type,
+                description,
+            });
+        }
+        // base_configs = row_list
+        //     .into_iter()
+        //     .map(
+        //         |item| -> Result<GetBaseConnectionResponseItem, anyhow::Error> {
+        //             let id: i32 = item.try_get("id")?;
+        //             let connection_json_str: String = item.try_get("connection_json")?;
+        //             let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+        //             let connection_type = base_config.base_config_enum.get_connection_type();
+        //             let description = base_config.base_config_enum.get_description()?;
+        //             Ok(GetBaseConnectionResponseItem {
+        //                 base_config_id: id,
+        //                 connection_name: item.try_get("connection_name")?,
+        //                 connection_type,
+        //                 description,
+        //             })
+        //         },
+        //     )
+        //     .collect::<Result<Vec<GetBaseConnectionResponseItem>, anyhow::Error>>()?;
     }
     Ok(GetBaseConnectionResponse {
         base_config_list: base_configs,

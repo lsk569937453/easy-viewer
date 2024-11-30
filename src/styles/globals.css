@@ -18,37 +18,29 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
-
-    --muted: 224 25%, 61%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
-
-    --primary: 224 33% 39%;
-    --primary-light: 213 26.8% 83.9%;
-    --primary-selected: 215 20.2% 65.1%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --searchMarkerColor: 215 20.2% 65.1%;
-
+    --foreground: 0 0% 20%;
+    --card: 0 0% 97%;
+    --card-foreground: 0 0% 20%;
+    --popover: 0 0% 98%;
+    --popover-foreground: 0 0% 20%;
+    --primary: 330 100% 80%;
+    --primary-foreground: 0 0% 20%;
+    --secondary: 250 100% 70%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 30%;
+    --accent: 50 100% 80%;
+    --accent-foreground: 0 0% 20%;
     --destructive: 0 100% 50%;
-    --destructive-foreground: 210 40% 98%;
-
-    --ring: 215 20.2% 65.1%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    --input: 0 0% 95%;
+    --ring: 330 100% 60%;
+    --chart-1: 330 100% 60%;
+    --chart-2: 250 100% 70%;
+    --chart-3: 50 100% 60%;
+    --chart-4: 0 100% 50%;
+    --chart-5: 0 0% 80%;
 
     --radius: 0.5rem;
   }
@@ -73,8 +65,8 @@
     --card-foreground: 213 31% 91%;
 
     --primary: 229 27% 40%;
-    --primary-light: 224 10% 37%;
-    --primary-selected: 215 20.2% 65.1%;
+    --primary: 224 10% 37%;
+    --secondary: 215 20.2% 65.1%;
 
     --primary-foreground: 213 31% 91%;
 
@@ -112,17 +104,17 @@
 
   .scrollbar::-webkit-scrollbar-track {
     /* border-radius: 100vh; */
-    background: hsl(var(--background));
+    background: hsl(var(--muted));
   }
 
   .scrollbar::-webkit-scrollbar-thumb {
-    background: hsl(var(--border));
+    background: hsl(var(--muted-foreground));
     /* border-radius: 100vh; */
     border: 3px solid hsl(var(--border));
   }
 
   .scrollbar::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--border));
+    background: hsl(var(--muted-foreground));
   }
 
   /* .scrollbar::-webkit-scrollbar-button:vertical:decrement {
@@ -144,7 +136,7 @@ html {
 
 body {
   position: fixed;
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }

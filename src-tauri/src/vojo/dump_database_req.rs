@@ -7,7 +7,9 @@ pub struct DumpDatabaseReq {
     pub columns: Vec<Vec<DumpDatabaseColumnItem>>,
     pub export_type: ExportType,
     pub export_option: ExportOption,
+    pub file_path: String,
 }
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DumpDatabaseTableItem {
     pub name: String,
@@ -19,16 +21,21 @@ pub struct DumpDatabaseColumnItem {
     pub checked: bool,
 }
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum ExportType {
     Sql,
     Json,
     Xml,
     Csv,
+    Excel,
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub enum ExportOption {
+    #[serde(rename = "dumapAll")]
     ExportAll,
+    #[serde(rename = "dumpData")]
     ExportStruct,
+    #[serde(rename = "dumpStructure")]
     ExportData,
 }
 impl ExportOption {

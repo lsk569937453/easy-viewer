@@ -152,7 +152,13 @@ const DumpDataPage = ({ node }) => {
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    const dumpDatabaseReq = {}
+    const dumpDatabaseReq = {
+      tables: tableData,
+      columns: columnData,
+      export_type: formatOption,
+      export_option: exportOption,
+      file_path: filePath,
+    }
     const { response_code, response_msg } = JSON.parse(
       await invoke("dump_database", {
         listNodeInfoReq: listNodeInfoReq,
@@ -162,7 +168,7 @@ const DumpDataPage = ({ node }) => {
     console.log(response_code, response_msg)
   }
   return (
-    <div className="flex h-full w-full flex-col  gap-2 p-4">
+    <div className="flex h-full w-full flex-col  gap-2 bg-muted p-4">
       <Dialog
         open={showTaskStatusDialog}
         onOpenChange={setShowTaskStatusDialog}
@@ -192,10 +198,10 @@ const DumpDataPage = ({ node }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <div className="max-h-1/2 flex w-full flex-row">
+      <div className="max-h-1/2 flex w-full flex-row  rounded-md border bg-background">
         <div className="flex basis-1/4 flex-col">
           <div className="relative overflow-auto">
-            <Table className="w-full  border">
+            <Table className="w-full border">
               <TableHeader className="sticky top-0">
                 <TableRow>
                   <TableHead>Table Name</TableHead>
@@ -207,7 +213,9 @@ const DumpDataPage = ({ node }) => {
                     <TableRow key={index}>
                       <TableCell
                         className={`flex  cursor-pointer flex-row gap-2  p-1 ${
-                          index === showColumnIndex ? "bg-muted" : ""
+                          index === showColumnIndex
+                            ? "bg-accent text-accent-foreground"
+                            : ""
                         }`}
                         onClick={() => handleTableOnClick(index)}
                       >
@@ -218,7 +226,7 @@ const DumpDataPage = ({ node }) => {
                             handleTableCheckboxOnChange(index, val)
                           }
                         />
-                        <div>{item.name}</div>
+                        <div className="text-xs">{item.name}</div>
                       </TableCell>
                     </TableRow>
                   )
@@ -230,7 +238,7 @@ const DumpDataPage = ({ node }) => {
         <div className="flex basis-3/4 flex-col">
           <div className="relative h-60 overflow-auto">
             <Table className="w-full border">
-              <TableHeader className="sticky top-0 bg-secondary">
+              <TableHeader className="sticky top-0 bg-background">
                 <TableRow>
                   <TableHead>Column Name</TableHead>
                 </TableRow>
@@ -262,7 +270,7 @@ const DumpDataPage = ({ node }) => {
           </div>
         </div>
       </div>
-      <Card>
+      <Card className="bg-background">
         <CardHeader>
           <CardTitle>Export Options</CardTitle>
         </CardHeader>
@@ -312,6 +320,7 @@ const DumpDataPage = ({ node }) => {
                         <SelectItem value="xml">XML</SelectItem>
                         <SelectItem value="json">JSON </SelectItem>
                         <SelectItem value="csv">CSV</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -327,7 +336,11 @@ const DumpDataPage = ({ node }) => {
               value={filePath}
               onChange={(e) => setFilePath(e.target.value)}
             />
-            <Button className="text-xs" onClick={handleSelectPathClick}>
+            <Button
+              className="text-xs"
+              size="sm"
+              onClick={handleSelectPathClick}
+            >
               ...
             </Button>
           </div>
@@ -335,6 +348,7 @@ const DumpDataPage = ({ node }) => {
             <div className="basis-1/4"></div>
             <Button
               className="text-xs"
+              size="sm"
               onClick={() => handleStartExportOnClick()}
             >
               Start Export

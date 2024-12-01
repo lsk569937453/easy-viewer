@@ -53,7 +53,7 @@ export const DataTable = <TValue,>({
               return (
                 <TableHead
                   key={header.id}
-                  className="relative w-6 border"
+                  className="relative  w-6 border border-background"
                   style={{
                     width: header.getSize(),
                   }}
@@ -91,7 +91,7 @@ export const DataTable = <TValue,>({
                     width: cell.column.getSize(),
                     minWidth: cell.column.columnDef.minSize,
                   }}
-                  className="border"
+                  className="border border-background"
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
@@ -100,7 +100,10 @@ export const DataTable = <TValue,>({
           ))
         ) : (
           <TableRow>
-            <TableCell colSpan={columns.length} className=" w-full text-center">
+            <TableCell
+              colSpan={columns.length}
+              className=" w-full text-center "
+            >
               No results.
             </TableCell>
           </TableRow>

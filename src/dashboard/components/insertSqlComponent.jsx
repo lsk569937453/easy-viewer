@@ -177,7 +177,7 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
                 </div>
                 {item.type_flag === "Common" && (
                   <Input
-                    className="basis-1/3"
+                    className="basis-1/3 placeholder:text-muted focus-visible:ring-transparent "
                     placeholder={item.column_type}
                     value={columnValueArray?.[index] || ""} // Use the item directly
                     onChange={(e) => handleInputOnChange(e, index)}
@@ -229,7 +229,7 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
             {insertSql}
           </SyntaxHighlighter>
         </div>
-        <div className="flex h-full flex-row items-center justify-center">
+        <div className="flex h-full flex-row items-center justify-center gap-4">
           <Button
             className="basis-1/4"
             variant="secondary"

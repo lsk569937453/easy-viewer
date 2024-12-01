@@ -101,16 +101,16 @@ const DeleteSqlComponent = ({
             {sqlOfDelete}
           </SyntaxHighlighter>
         </div>
-        <div className="flex h-full flex-row items-center justify-center">
+        <div className="flex h-full flex-row items-center justify-center gap-4">
           <Button
-            className="basis-1/4"
+            className="basis-1/4 text-xs"
             variant="secondary"
             onClick={() => setShowDeleteDialog(false)}
           >
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4" onClick={handleOnDeleteClick}>
+          <Button className="basis-1/4 text-xs" onClick={handleOnDeleteClick}>
             {" "}
             Confirm
           </Button>

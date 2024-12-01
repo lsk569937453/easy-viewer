@@ -157,6 +157,7 @@ const DumpDataPage = ({ node }) => {
       columns: columnData,
       export_type: formatOption,
       export_option: exportOption,
+      file_path: filePath,
     }
     const { response_code, response_msg } = JSON.parse(
       await invoke("dump_database", {
@@ -319,6 +320,7 @@ const DumpDataPage = ({ node }) => {
                         <SelectItem value="xml">XML</SelectItem>
                         <SelectItem value="json">JSON </SelectItem>
                         <SelectItem value="csv">CSV</SelectItem>
+                        <SelectItem value="excel">Excel</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
@@ -334,7 +336,11 @@ const DumpDataPage = ({ node }) => {
               value={filePath}
               onChange={(e) => setFilePath(e.target.value)}
             />
-            <Button className="text-xs" onClick={handleSelectPathClick}>
+            <Button
+              className="text-xs"
+              size="sm"
+              onClick={handleSelectPathClick}
+            >
               ...
             </Button>
           </div>
@@ -342,6 +348,7 @@ const DumpDataPage = ({ node }) => {
             <div className="basis-1/4"></div>
             <Button
               className="text-xs"
+              size="sm"
               onClick={() => handleStartExportOnClick()}
             >
               Start Export

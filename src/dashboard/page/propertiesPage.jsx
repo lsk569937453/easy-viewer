@@ -58,7 +58,9 @@ const PropertiesPage = ({ node, className }) => {
           />
         </div>
       </div>
-      <Button className="ml-1 w-1/12">Update</Button>
+      <Button className="ml-1 w-1/12" size="sm">
+        Update
+      </Button>
       <PropertiesTabsPage node={node} />
     </div>
   )

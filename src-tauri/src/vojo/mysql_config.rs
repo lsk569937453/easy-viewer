@@ -521,7 +521,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     .await?
                     .ok_or(anyhow!("Not found table"))?;
                 let ddl: String = row.try_get(1)?;
-                dump_database_res_item.table_struct = Some(ddl);
+                dump_database_res_item.table_struct = ddl;
             }
             if dump_database_req.export_option.is_export_data() {
                 let selected_column = dump_database_req.columns[table_index]
@@ -556,7 +556,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                         }
                         vec.push(database_res_column_list);
                     }
-                    dump_database_res_item.column_list = Some(vec);
+                    dump_database_res_item.column_list = vec;
                 }
             }
             dump_data_list.push(dump_database_res_item);

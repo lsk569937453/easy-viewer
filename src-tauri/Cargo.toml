@@ -19,17 +19,19 @@ bigdecimal = { version = "0.4.6", features = ["serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
 colorsys = { version = "*", default-features = false }
 dirs = "5.0.1"
+docx-rs = "0.4.17"
 elasticsearch = "8.16.0-alpha.1"
-itertools = "0.13.0"
-image = "0.25.5"
-linked-hash-map = "0.5.6"
 hex = "0.4.3"
+image = "0.25.5"
+itertools = "0.13.0"
+linked-hash-map = "0.5.6"
 log = "0.4.22"
 mongodb = "3.1.0"
 num = "0.4.3"
 percent-encoding = "2.3.0"
 redis = "0.27.5"
 serde = { version = "1.0.215", features = ["derive"] }
+serde-xml-rs = "0.6.0"
 serde_json = "1.0.133"
 serde_repr = "0.1.19"
 serde_yaml = "0.9.34"
@@ -49,11 +51,11 @@ sqlx = { version = "0.8.2", features = [
     "bit-vec"
     
 ] }
-docx-rs = "0.4.17"
 tauri = { version = "2.1.1", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-dialog = "2.0.3"
 tauri-plugin-fs = "2.0.3"
 tauri-plugin-log = { version = "2.0.2" }
+tauri-plugin-os = "2"
 tauri-plugin-shell = "2.0.2"
 time = "0.3.35"
 tokio = { version = "1.41.1", features = ["full", "tracing", "time"] }
@@ -62,7 +64,7 @@ uuid = { version = "1.11.0", features = [
     "fast-rng",
     "macro-diagnostics",
 ] }
-tauri-plugin-os = "2"
+xlsxwriter = "0.6.1"
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

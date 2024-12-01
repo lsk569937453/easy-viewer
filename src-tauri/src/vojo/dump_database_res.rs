@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use std::fmt::Debug;
+
+use super::dump_database_req::{DumpDatabaseReq};
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DumpDatabaseRes {
     pub data_list: Vec<DumpDatabaseResItem>,
@@ -33,6 +35,9 @@ impl DumpDatabaseRes {
     //     };
     //     sql.push_str(formatted_row.as_str());
     // }
+    pub fn export_to_file(&self, dump_database_req: DumpDatabaseReq) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DumpDatabaseResItem {

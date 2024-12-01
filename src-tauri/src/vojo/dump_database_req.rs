@@ -19,6 +19,7 @@ pub struct DumpDatabaseColumnItem {
     pub checked: bool,
 }
 #[derive(Deserialize, Serialize, Debug)]
+#[serde(rename_all = "snake_case")]
 pub enum ExportType {
     Sql,
     Json,
@@ -27,8 +28,11 @@ pub enum ExportType {
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub enum ExportOption {
+    #[serde(rename = "dumapAll")]
     ExportAll,
+    #[serde(rename = "dumpData")]
     ExportStruct,
+    #[serde(rename = "dumpStructure")]
     ExportData,
 }
 impl ExportOption {

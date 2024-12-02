@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
+import { open } from "@tauri-apps/plugin-dialog"
 import { set } from "date-fns"
 
 import { Separator } from "@/components/ui/separator"
@@ -32,26 +33,29 @@ const DatabaseNodeContextMenu = ({ node }) => {
     setShowTruncateDatabaseDialog,
   } = useContext(MainPageDialogContext)
 
-  const handleDeleteConnectionClick = (e) => {
-    e.syntheticEvent.stopPropagation()
-
-    let rootNode = getRootNode(node)
-    setBaseConfigId(rootNode.data.baseConfigId)
-    setShowDeleteConnectionDialog(true)
-  }
   const handleGenerateDocumentOnClick = async (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
+    const selected = await open({
+      directory: true,
+      multiple: false,
+    })
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
+
+    console.log(selected)
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    const importDatabaseReq = {
-      file_path: "d:\\logs",
-    }
+
     const { response_code, response_msg } = JSON.parse(
       await invoke("generate_database_document", {
         listNodeInfoReq: listNodeInfoReq,
-        fileDir: "d:\\logs",
+        fileDir: selected,
       })
     )
     if (response_code === 0) {

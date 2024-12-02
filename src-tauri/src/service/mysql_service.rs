@@ -870,7 +870,10 @@ WHERE TABLE_SCHEMA = '{}'
         let full_path = dir_path.join("file_name.docx");
         info!("full_path: {}", full_path.display());
         let file = std::fs::File::create(full_path)?;
-        let mut doc = Docx::new();
+        let style3 = Style::new("Table1", StyleType::Table)
+            .name("Table test")
+            .table_align(TableAlignmentType::Center);
+        let mut doc = Docx::new().add_style(style3);
         for item in rows {
             let buf: &[u8] = item.try_get(0)?;
             let table_name = String::from_utf8_lossy(buf).to_string();
@@ -880,8 +883,33 @@ WHERE TABLE_SCHEMA = '{}'
                 .await?
                 .ok_or(anyhow!("Not found table"))?;
             let ddl: String = row.try_get(1)?;
-            doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text(ddl)));
+            let table = Table::new(vec![
+                TableRow::new(vec![
+                    TableCell::new()
+                        .add_paragraph(
+                            Paragraph::new().add_run(Run::new().add_text("Hello").size(30).bold()),
+                        )
+                        .shading(Shading::new().color("red")),
+                    TableCell::new()
+                        .add_paragraph(
+                            Paragraph::new()
+                                .add_run(Run::new().add_text("Hello2321313131").size(30).bold()),
+                        )
+                        .shading(Shading::new().shd_type(ShdType::Clear).fill("C0C0C0")),
+                ]),
+                TableRow::new(vec![
+                    TableCell::new()
+                        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("Hello"))),
+                    TableCell::new().add_paragraph(
+                        Paragraph::new().add_run(Run::new().add_text("Hello2321313131")),
+                    ),
+                ]),
+            ])
+            .style("Table1");
+            doc = doc.add_table(table);
+            doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text(table_name)));
         }
+
         doc.build().pack(file)?;
 
         Ok(())

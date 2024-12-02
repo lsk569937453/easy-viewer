@@ -1,22 +1,22 @@
-use super::exe_sql_response::ExeSqlResponse;
-use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
-use super::import_database_req::ImportDatabaseReq;
-use super::init_dump_data_response::InitDumpDataResponse;
-use super::list_node_info_req::ListNodeInfoReq;
+use crate::service::base_config_service::DatabaseHostStruct;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
-use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::dump_database_res::DumpDatabaseRes;
 use crate::vojo::dump_database_res::DumpDatabaseResColumnItem;
 use crate::vojo::dump_database_res::DumpDatabaseResColumnStructItem;
 use crate::vojo::dump_database_res::DumpDatabaseResItem;
+use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::init_dump_data_response::InitDumpDataResponseItem;
+use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::vojo::show_column_response::ShowColumnHeader;
@@ -39,6 +39,8 @@ use sqlx::TypeInfo;
 use std::collections::HashSet;
 use std::sync::OnceLock;
 use std::vec;
+use tokio::fs::File;
+use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::time::timeout;
 
 use std::time::Duration;
@@ -490,6 +492,41 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         appstate: &AppState,
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
+        info!("import_database_req: {:?}", import_database_req);
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let sql = format!("use {}", database_name.clone());
+        info!("sql: {}", sql);
+        conn.execute(&*sql).await?;
+        let file = File::open(&import_database_req.file_path).await?;
+
+        let reader = BufReader::new(file);
+
+        let mut lines = reader.lines();
+
+        let mut sql_buffer = String::new();
+
+        while let Some(line) = lines.next_line().await? {
+            if line.trim().is_empty() {
+                if !sql_buffer.trim().is_empty() {
+                    info!("Executing SQL: {}", sql_buffer);
+                    conn.execute(&*sql_buffer).await?;
+                    sql_buffer.clear();
+                }
+            } else {
+                sql_buffer.push_str(&line);
+                sql_buffer.push('\n');
+            }
+        }
+
+        if !sql_buffer.trim().is_empty() {
+            info!("Executing final SQL: {}", sql_buffer);
+            conn.execute(&*sql_buffer).await?;
+        }
         Ok(())
     }
     pub async fn dump_database(

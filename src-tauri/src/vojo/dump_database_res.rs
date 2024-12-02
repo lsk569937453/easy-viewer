@@ -26,8 +26,10 @@ impl DumpDatabaseRes {
                 for i in 0..self.data_list.len() {
                     let item = &self.data_list[i];
                     writeln!(file, "{};", item.table_struct.clone())?;
+                    writeln!(file)?;
                     let sql = item.get_data_for_sql()?;
                     writeln!(file, "{};", sql)?;
+                    writeln!(file)?;
                 }
             }
             ExportOption::ExportStruct => {
@@ -36,6 +38,7 @@ impl DumpDatabaseRes {
                 for i in 0..self.data_list.len() {
                     let item = &self.data_list[i];
                     writeln!(file, "{};", item.table_struct.clone())?;
+                    writeln!(file)?;
                 }
             }
             ExportOption::ExportData => match dump_database_req.export_type {
@@ -46,6 +49,7 @@ impl DumpDatabaseRes {
                         let item = &self.data_list[i];
                         let sql = item.get_data_for_sql()?;
                         writeln!(file, "{};", sql)?;
+                        writeln!(file)?;
                     }
                 }
                 ExportType::Json => {

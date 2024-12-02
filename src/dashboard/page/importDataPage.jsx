@@ -52,6 +52,8 @@ import {
 
 const ImportDataPage = ({ node }) => {
   const [filePath, setFilePath] = useState("")
+  const { toast } = useToast()
+
   const handleSelectPathClick = async () => {
     const selected = await open({
       directory: false,
@@ -66,7 +68,53 @@ const ImportDataPage = ({ node }) => {
 
     setFilePath(selected)
   }
-  const handleImportDataOnClick = async () => {}
+  const handleImportDataOnClick = async () => {
+    if (filePath === "") {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No file chosen",
+        duration: 1000,
+      })
+      return
+    }
+    if (!filePath.endsWith(".sql")) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Only support sql file",
+        duration: 1000,
+      })
+      return
+    }
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const importDatabaseReq = {
+      file_path: filePath,
+    }
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("import_database", {
+        listNodeInfoReq: listNodeInfoReq,
+        importDatabaseReq: importDatabaseReq,
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Import success",
+        duration: 1000,
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+        duration: 1000,
+      })
+    }
+  }
   return (
     <div className="h-full w-full bg-muted p-4">
       <Card className="bg-background ">
@@ -74,9 +122,14 @@ const ImportDataPage = ({ node }) => {
           <CardTitle>Import Options</CardTitle>
         </CardHeader>
         <CardContent className=" flex flex-col gap-2">
-          <div className="flex flex-row items-center justify-start">
+          <div className="flex flex-row items-center justify-start gap-2">
             <div>Browser your computer</div>
-            <Button size="sm" variant="outline" onClick={handleSelectPathClick}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border border-muted"
+              onClick={handleSelectPathClick}
+            >
               Chose File
             </Button>
             {filePath ? (

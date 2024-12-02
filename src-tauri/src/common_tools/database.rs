@@ -1,5 +1,5 @@
+use crate::service::base_config_service::BaseConfig;
 use crate::sql_lite::connection::AppState;
-use crate::vojo::base_config::BaseConfig;
 
 use crate::vojo::static_connections::Connections;
 use serde::Deserialize;

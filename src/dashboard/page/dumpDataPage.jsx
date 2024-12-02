@@ -120,6 +120,14 @@ const DumpDataPage = ({ node }) => {
       }
       return updatedTableData
     })
+    setColumnData((prevColumnData) => {
+      const updatedColumnData = [...prevColumnData]
+      updatedColumnData[index] = updatedColumnData[index].map((item) => ({
+        ...item,
+        checked: val,
+      }))
+      return updatedColumnData
+    })
     setShowColumnIndex(index)
   }
   const handleTableOnClick = (index) => {
@@ -136,7 +144,7 @@ const DumpDataPage = ({ node }) => {
       return
     } else {
     }
-    const currentDateTime = moment().format("YYYY-MM-DD:HH:mm:ss")
+    const currentDateTime = moment().format("YYYY-MM-DD-HH-mm-ss")
     const endFix = formatOption.toLowerCase()
     const currentPlatform = platform()
     var path
@@ -148,6 +156,14 @@ const DumpDataPage = ({ node }) => {
     setFilePath(path)
   }
   const handleStartExportOnClick = async () => {
+    if (filePath === "") {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please select a file path.",
+      })
+      return
+    }
     setShowTaskStatusDialog(true)
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
@@ -166,6 +182,25 @@ const DumpDataPage = ({ node }) => {
       })
     )
     console.log(response_code, response_msg)
+  }
+  const handleFormatOptionOnChange = (val) => {
+    setFormatOption(val)
+    if (filePath.endsWith("." + val)) {
+      return
+    }
+    let newFilePath = filePath
+    if (
+      newFilePath.endsWith(".sql") ||
+      newFilePath.endsWith(".csv") ||
+      newFilePath.endsWith(".xml")
+    ) {
+      newFilePath = newFilePath.slice(0, -4) + "." + val
+    } else if (filePath.endsWith(".json") || filePath.endsWith(".xlsx")) {
+      newFilePath = newFilePath.slice(0, -5) + "." + val
+    } else {
+      newFilePath = newFilePath + "." + val
+    }
+    setFilePath(newFilePath)
   }
   return (
     <div className="flex h-full w-full flex-col  gap-2 bg-muted p-4">
@@ -306,10 +341,7 @@ const DumpDataPage = ({ node }) => {
                 <div>
                   <Select
                     value={formatOption}
-                    onValueChange={(value) => {
-                      console.log(value)
-                      setFormatOption(value)
-                    }}
+                    onValueChange={(value) => handleFormatOptionOnChange(value)}
                   >
                     <SelectTrigger className="w-[180px] focus:ring-1 focus:ring-offset-0">
                       <SelectValue />
@@ -320,7 +352,7 @@ const DumpDataPage = ({ node }) => {
                         <SelectItem value="xml">XML</SelectItem>
                         <SelectItem value="json">JSON </SelectItem>
                         <SelectItem value="csv">CSV</SelectItem>
-                        <SelectItem value="excel">Excel</SelectItem>
+                        <SelectItem value="xlsx">Excel</SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>

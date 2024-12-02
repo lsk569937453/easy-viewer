@@ -27,16 +27,16 @@ pub enum ExportType {
     Json,
     Xml,
     Csv,
-    Excel,
+    Xlsx,
 }
 #[derive(Deserialize, Serialize, Debug)]
 pub enum ExportOption {
     #[serde(rename = "dumapAll")]
     ExportAll,
     #[serde(rename = "dumpData")]
-    ExportStruct,
-    #[serde(rename = "dumpStructure")]
     ExportData,
+    #[serde(rename = "dumpStructure")]
+    ExportStruct,
 }
 impl ExportOption {
     pub fn is_export_struct(&self) -> bool {

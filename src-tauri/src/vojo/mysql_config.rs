@@ -7,7 +7,9 @@ use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
 use crate::vojo::base_config::DatabaseHostStruct;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
+use crate::vojo::dump_database_res::DumpDatabaseRes;
 use crate::vojo::dump_database_res::DumpDatabaseResColumnItem;
+use crate::vojo::dump_database_res::DumpDatabaseResColumnStructItem;
 use crate::vojo::dump_database_res::DumpDatabaseResItem;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
@@ -538,8 +540,8 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                 let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                 if !rows.is_empty() {
                     let mut vec = vec![];
-
-                    for item in rows.iter() {
+                    let mut column_structs = vec![];
+                    for (row_index, item) in rows.iter().enumerate() {
                         let columns = item.columns();
                         let len = columns.len();
                         let mut database_res_column_list = vec![];
@@ -547,21 +549,31 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                             let column_name = columns[i].name();
                             let column_type = columns[i].type_info().name();
                             let column_value = mysql_row_to_json(item, column_type, i)?;
-                            let database_res_column_item = DumpDatabaseResColumnItem::from(
-                                column_name.to_string(),
-                                column_type.to_string(),
-                                column_value,
-                            );
+                            let database_res_column_item =
+                                DumpDatabaseResColumnItem::from(column_value);
                             database_res_column_list.push(database_res_column_item);
+
+                            if row_index == 0 {
+                                let database_res_column_struct_item =
+                                    DumpDatabaseResColumnStructItem::from(
+                                        column_name.to_string(),
+                                        column_type.to_string(),
+                                    );
+                                column_structs.push(database_res_column_struct_item);
+                            }
                         }
                         vec.push(database_res_column_list);
                     }
                     dump_database_res_item.column_list = vec;
+                    dump_database_res_item.column_structs = column_structs;
+                    dump_database_res_item.table_name = table_name;
                 }
             }
             dump_data_list.push(dump_database_res_item);
         }
         info!("dump_data_list: {:#?}", dump_data_list);
+        let dump_database_res = DumpDatabaseRes::from(dump_data_list);
+        dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }
 

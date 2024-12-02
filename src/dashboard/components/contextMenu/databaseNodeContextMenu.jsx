@@ -39,6 +39,37 @@ const DatabaseNodeContextMenu = ({ node }) => {
     setBaseConfigId(rootNode.data.baseConfigId)
     setShowDeleteConnectionDialog(true)
   }
+  const handleGenerateDocumentOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const importDatabaseReq = {
+      file_path: "d:\\logs",
+    }
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("generate_database_document", {
+        listNodeInfoReq: listNodeInfoReq,
+        fileDir: "d:\\logs",
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Import success",
+        duration: 1000,
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+        duration: 1000,
+      })
+    }
+  }
   const handleCopyConnectionOnClick = (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
@@ -148,7 +179,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
         Import SQL
       </MenuItem>
       <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
+        onClick={(e) => handleGenerateDocumentOnClick(e)}
         className="text-xs"
       >
         Generate Document

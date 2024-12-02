@@ -105,6 +105,7 @@ async fn main() -> Result<(), anyhow::Error> {
             delete_base_config,
             dump_database,
             import_database,
+            generate_database_document,
             exe_sql,
             init_dump_data,
             get_about_version,

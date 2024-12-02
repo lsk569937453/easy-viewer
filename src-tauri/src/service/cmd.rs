@@ -13,6 +13,7 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::dump_database_with_error;
+use crate::service::cmd_service::generate_database_document_with_error;
 use crate::service::cmd_service::get_complete_words_with_error;
 use crate::service::cmd_service::get_ddl_with_error;
 use crate::service::cmd_service::get_procedure_details_with_error;
@@ -240,7 +241,7 @@ pub async fn dump_database(
     let res = handle_response!(
         dump_database_with_error(state, list_node_info_req, dump_database_req).await
     );
-    info!("save_query: {:?}", time.elapsed());
+    info!("dump_database: {:?}", time.elapsed());
     Ok(res)
 }
 
@@ -254,6 +255,20 @@ pub async fn import_database(
     let time = Instant::now();
     let res = handle_response!(
         import_database_with_error(state, list_node_info_req, import_database_req).await
+    );
+    info!("import_database: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn generate_database_document(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    file_dir: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        generate_database_document_with_error(state, list_node_info_req, file_dir).await
     );
     info!("save_query: {:?}", time.elapsed());
     Ok(res)

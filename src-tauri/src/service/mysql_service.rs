@@ -2,6 +2,8 @@ use crate::service::base_config_service::DatabaseHostStruct;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
+use docx_rs::*;
+
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::dump_database_res::DumpDatabaseRes;
 use crate::vojo::dump_database_res::DumpDatabaseResColumnItem;
@@ -37,6 +39,7 @@ use sqlx::MySqlConnection;
 use sqlx::Row;
 use sqlx::TypeInfo;
 use std::collections::HashSet;
+use std::path::Path;
 use std::sync::OnceLock;
 use std::vec;
 use tokio::fs::File;
@@ -843,6 +846,45 @@ WHERE TABLE_SCHEMA = '{}'
         let ddl: String = row.try_get(1)?;
 
         Ok(ddl)
+    }
+    pub async fn generate_database_document(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        file_dir: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+
+        let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
+            .fetch_all(&mut conn)
+            .await?;
+
+        let dir_path = Path::new(&file_dir);
+        let full_path = dir_path.join("file_name.docx");
+        info!("full_path: {}", full_path.display());
+        let file = std::fs::File::create(full_path)?;
+        let mut doc = Docx::new();
+        for item in rows {
+            let buf: &[u8] = item.try_get(0)?;
+            let table_name = String::from_utf8_lossy(buf).to_string();
+            let sql = format!("show create table {}", table_name);
+            let row = sqlx::query(&sql)
+                .fetch_optional(&mut conn)
+                .await?
+                .ok_or(anyhow!("Not found table"))?;
+            let ddl: String = row.try_get(1)?;
+            doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text(ddl)));
+        }
+        doc.build().pack(file)?;
+
+        Ok(())
     }
     pub async fn show_columns(
         &self,

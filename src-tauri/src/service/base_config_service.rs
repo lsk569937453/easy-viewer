@@ -169,6 +169,19 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn generate_database_document(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        file_dir: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .generate_database_document(list_node_info_req, appstate, file_dir)
+                .await?
+        };
+        Ok(())
+    }
     pub async fn move_column(
         &self,
         appstate: &AppState,

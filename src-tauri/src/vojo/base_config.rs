@@ -1,5 +1,6 @@
 use super::exe_sql_response::ExeSqlResponse;
 use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use super::import_database_req::ImportDatabaseReq;
 use super::list_node_info_req::ListNodeInfoReq;
 use super::mysql_config::MysqlConfig;
 use super::sqlite_config::SqliteConfig;
@@ -137,6 +138,19 @@ impl BaseConfigEnum {
         if let BaseConfigEnum::Mysql(config) = self {
             config
                 .dump_database(list_node_info_req, appstate, dump_database_req)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .import_database(list_node_info_req, appstate, import_database_req)
                 .await?
         };
         Ok(())

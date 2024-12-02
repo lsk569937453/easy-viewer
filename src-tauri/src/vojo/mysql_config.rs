@@ -1,5 +1,6 @@
 use super::exe_sql_response::ExeSqlResponse;
 use super::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use super::import_database_req::ImportDatabaseReq;
 use super::init_dump_data_response::InitDumpDataResponse;
 use super::list_node_info_req::ListNodeInfoReq;
 use crate::sql_lite::connection::AppState;
@@ -482,6 +483,14 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         }
 
         Ok(ListNodeInfoResponse::new(vec))
+    }
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
     }
     pub async fn dump_database(
         &self,

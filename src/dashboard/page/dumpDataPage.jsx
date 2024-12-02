@@ -164,7 +164,7 @@ const DumpDataPage = ({ node }) => {
       })
       return
     }
-    setShowTaskStatusDialog(true)
+    // setShowTaskStatusDialog(true)
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
@@ -181,7 +181,19 @@ const DumpDataPage = ({ node }) => {
         dumpDatabaseReq: dumpDatabaseReq,
       })
     )
-    console.log(response_code, response_msg)
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Dump Data Successfully",
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+      })
+    }
   }
   const handleFormatOptionOnChange = (val) => {
     setFormatOption(val)

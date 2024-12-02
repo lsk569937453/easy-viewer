@@ -15,6 +15,7 @@ use crate::service::base_config_service::dump_database_with_error;
 use crate::service::base_config_service::get_complete_words_with_error;
 use crate::service::base_config_service::get_ddl_with_error;
 use crate::service::base_config_service::get_procedure_details_with_error;
+use crate::service::base_config_service::import_database_with_error;
 use crate::service::base_config_service::init_dump_data_with_error;
 use crate::service::base_config_service::move_column_with_error;
 use crate::service::base_config_service::remove_column_with_error;
@@ -27,6 +28,7 @@ use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::base_config::BaseConfig;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
@@ -237,6 +239,21 @@ pub async fn dump_database(
     let time = Instant::now();
     let res = handle_response!(
         dump_database_with_error(state, list_node_info_req, dump_database_req).await
+    );
+    info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+
+pub async fn import_database(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    import_database_req: ImportDatabaseReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        import_database_with_error(state, list_node_info_req, import_database_req).await
     );
     info!("save_query: {:?}", time.elapsed());
     Ok(res)

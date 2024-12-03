@@ -458,8 +458,10 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     info!("sql: {}", sql);
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     for item in rows {
-                        let index_name: String = item.try_get(2)?;
-                        if index_name == "PRIMARY" {
+                        let index_name: String = item.try_get(0)?;
+
+                        let key_name: String = item.try_get(2)?;
+                        if key_name == "PRIMARY" {
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
@@ -915,6 +917,48 @@ WHERE TABLE_SCHEMA = '{}'
             table_name.clone(),
             column_name
         );
+        info!("drop_sql: {}", drop_sql);
+        conn.execute(&*drop_sql).await?;
+
+        Ok(())
+    }
+    pub async fn drop_index(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+        let source_index_name = level_infos[5].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        let sql = format!("SHOW INDEX FROM {};", table_name);
+        info!("sql: {}", sql);
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let mut drop_sql = String::new();
+        for item in rows {
+            let index_name: String = item.try_get(0)?;
+            info!("index_name: {}", index_name);
+            let key_name: String = item.try_get(2)?;
+            if index_name == source_index_name {
+                if key_name == "PRIMARY" {
+                    drop_sql = format!("ALTER TABLE {} DROP PRIMARY KEY;", table_name.clone());
+                } else {
+                    drop_sql = format!(
+                        "ALTER TABLE {} DROP INDEX {};",
+                        table_name.clone(),
+                        key_name
+                    );
+                }
+                break;
+            }
+        }
         info!("drop_sql: {}", drop_sql);
         conn.execute(&*drop_sql).await?;
 

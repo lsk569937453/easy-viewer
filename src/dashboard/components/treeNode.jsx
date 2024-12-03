@@ -21,6 +21,7 @@ import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 import DatabaseNodeContextMenu from "./contextMenu/databaseNodeContextMenu.jsx"
 import SingleColumnNodeContextMenu from "./contextMenu/singleColumnNodeContextMenu.jsx"
+import SingleIndexNodeContextMenu from "./contextMenu/singleIndexNodeContextMenu.jsx"
 import SingleTableNodeContextMenu from "./contextMenu/singleTableNodeContextMenu.jsx"
 import TreeRootNodeContextMenu from "./contextMenu/treeRootNodeContextMenu.jsx"
 import IconDiv from "./iconDiv.jsx"
@@ -266,6 +267,8 @@ const TreeNode = ({
       "singleTable",
       "column",
       "primary",
+      "singlePrimaryIndex",
+      "singleCommonIndex",
     ]
     if (contextMenuArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
@@ -308,6 +311,10 @@ const TreeNode = ({
         {(node.data.iconName == "column" ||
           node.data.iconName == "primary") && (
           <SingleColumnNodeContextMenu node={node} />
+        )}
+        {(node.data.iconName == "singlePrimaryIndex" ||
+          node.data.iconName == "singleCommonIndex") && (
+          <SingleIndexNodeContextMenu node={node} />
         )}
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (

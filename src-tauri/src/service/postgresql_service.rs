@@ -198,6 +198,7 @@ WHERE schemaname = 'public';",
 
             let base_config_id = level_infos[0].config_value.parse::<i32>()?;
             let database_name = level_infos[1].config_value.clone();
+            let schema_name = level_infos[2].config_value.clone();
             let table_name = level_infos[4].config_value.clone();
             let node_name = level_infos[5].config_value.clone();
 
@@ -246,11 +247,18 @@ WHERE schemaname = 'public';",
 
                 let mut conn = PgConnection::connect(&connection_url).await?;
 
-                let sql = format!("select c.column_name,  t.constraint_type
-    from   information_schema.columns c
-    left join information_schema.key_column_usage s on s.table_name = c.table_name and s.column_name = c.column_name
-    left join information_schema.table_constraints t on t.table_name = c.table_name and t.constraint_name = s.constraint_name
-    where  c.table_name ='{}' ", table_name);
+                let sql = format!(
+                    "SELECT 
+    indexname AS index_name,
+    indexdef AS index_definition
+FROM 
+    pg_indexes
+WHERE 
+    schemaname = '{}'  
+    AND tablename = '{}'; ",
+                    schema_name.clone(),
+                    table_name
+                );
                 info!("sql: {}", sql);
                 let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                 for item in rows {
@@ -433,6 +441,22 @@ WHERE table_name = '{}'
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<ShowColumnsResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let node_name = level_infos[5].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let conn = PgConnection::connect(&connection_url).await?;
+        let show_column_sql = format!(
+            "SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = '{}' AND table_schema = '{}';",
+            table_name, schema_name
+        );
         Ok(ShowColumnsResponse::new())
     }
     pub async fn get_complete_words(

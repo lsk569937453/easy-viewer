@@ -19,7 +19,6 @@ pub async fn show_column_info(
     let first_item = rows.first().ok_or(anyhow!(""))?;
     let mut headers = vec![];
     for (index, item) in first_item.columns().iter().enumerate() {
-        info!("type_name: {:?}", item);
         let type_name = item.type_info().name();
         let column_name = item.name();
         if index == 2 {

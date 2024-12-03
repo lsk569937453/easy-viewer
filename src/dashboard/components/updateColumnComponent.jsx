@@ -278,16 +278,21 @@ const UpdateColumnComponent = ({
             </div>
           </div>
         </div>
-        <div className="flex h-full flex-row items-center justify-center">
+        <div className="flex h-full flex-row items-center justify-center gap-2">
           <Button
-            className="basis-1/4"
+            className="basis-1/4 text-xs"
             variant="secondary"
+            size="sm"
             onClick={() => setShowUpdateColumnDialog(false)}
           >
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4" onClick={handleUpdateOnClick}>
+          <Button
+            className="basis-1/4 text-xs"
+            onClick={handleUpdateOnClick}
+            size="sm"
+          >
             {" "}
             Update
           </Button>

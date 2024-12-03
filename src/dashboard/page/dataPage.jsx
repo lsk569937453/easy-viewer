@@ -501,6 +501,7 @@ export default function DataPage({
             enableSnippets={true}
             readOnly={readOnly}
             enableLiveAutocompletion={true}
+            placeholder="Different SQL is separated by a empty line;"
             // maxLines={8}
             minLines={5}
             showPrintMargin={false}

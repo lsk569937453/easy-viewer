@@ -26,7 +26,8 @@ import {
   getQueryName,
   getRootNode,
 } from "../../../lib/jsx-utils"
-import { SidebarContext } from "../../page"
+import { MainPageDialogContext, SidebarContext } from "../../page"
+import DumpDataPage from "../../page/dumpDataPage"
 import PropertiesPage from "../../page/propertiesPage"
 import QueryPage from "../../page/queryPage"
 
@@ -46,27 +47,43 @@ const SingleTableNodeContextMenu = ({ node }) => {
     menulist,
     setMenulist,
   } = useContext(SidebarContext)
-  const handleEditConnectionClick = (e) => {
+
+  const { setShowDropTableDialog, setShowTruncateTableDialog } = useContext(
+    MainPageDialogContext
+  )
+
+  const handleDumpStructureOnClick = (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
-    console.log(e)
-    setNodeForUpdate(node)
-    let rootNode = getRootNode(node)
-    setBaseConfigId(rootNode.data.baseConfigId)
-    console.log(
-      rootNode.data.connectionType,
-      formatMap.get(rootNode.data.connectionType)
-    )
-    setConnectionType(formatMap.get(rootNode.data.connectionType))
-    setShowEditConnectionDialog(true)
-    setIsSave(true)
-  }
-  const handleDeleteConnectionClick = (e) => {
-    e.syntheticEvent.stopPropagation()
-
-    let rootNode = getRootNode(node)
-    setBaseConfigId(rootNode.data.baseConfigId)
-    setShowDeleteConnectionDialog(true)
+    handleAddPageClick({
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="icon icon-tabler icons-tabler-outline icon-tabler-download stroke-cyan-500"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2" />
+          <path d="M7 11l5 5l5 -5" />
+          <path d="M12 4l0 12" />
+        </svg>
+      ),
+      render: (tabIndex) => (
+        <DumpDataPage
+          node={node.parent.parent}
+          selectedTableName={node.data.name}
+        />
+      ),
+      service: `dumpDataBaseStruct${node.parent.parent.data.name}`,
+      tabName: node.parent.parent.data.name,
+    })
   }
   const handleCopyConnectionOnClick = (e) => {
     e.syntheticEvent.stopPropagation()
@@ -378,6 +395,18 @@ const SingleTableNodeContextMenu = ({ node }) => {
       tabName: localQueryName,
     })
   }
+  const handleDropTableOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    setShowDropTableDialog(true)
+    setNodeForUpdate(node)
+  }
+  const handleTruncateTableOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    setShowTruncateTableDialog(true)
+    setNodeForUpdate(node)
+  }
   const handleDeleteOnClick = async (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
@@ -471,44 +500,25 @@ const SingleTableNodeContextMenu = ({ node }) => {
         <MenuItem onClick={(e) => handleDeleteOnClick(e)}>DELETE</MenuItem>
       </SubMenu>
       <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
+        onClick={(e) => handleDumpStructureOnClick(e)}
         className="text-xs"
       >
         Dump Struct
       </MenuItem>
       <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
+        onClick={(e) => handleDumpStructureOnClick(e)}
         className="text-xs"
       >
         Dump Struct And Data
       </MenuItem>
-      <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
-        className="text-xs"
-      >
-        Import SQL
-      </MenuItem>
-      <MenuItem
-        onClick={(e) => handleDeleteConnectionClick(e)}
-        className="text-xs"
-      >
-        Generate Mock Data
-      </MenuItem>
+
       <Separator />
-      <MenuItem
-        onClick={(e) => handleEditConnectionClick(e)}
-        className="text-xs"
-      >
+      <MenuItem onClick={(e) => handleDropTableOnClick(e)} className="text-xs">
         Drop
       </MenuItem>
+
       <MenuItem
-        onClick={(e) => handleEditConnectionClick(e)}
-        className="text-xs"
-      >
-        Copy Table
-      </MenuItem>
-      <MenuItem
-        onClick={(e) => handleEditConnectionClick(e)}
+        onClick={(e) => handleTruncateTableOnClick(e)}
         className="text-xs"
       >
         Truncate Table

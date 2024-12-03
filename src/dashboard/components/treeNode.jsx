@@ -20,6 +20,7 @@ import { clickNode } from "../../lib/node.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
 import DatabaseNodeContextMenu from "./contextMenu/databaseNodeContextMenu.jsx"
+import SingleColumnNodeContextMenu from "./contextMenu/singleColumnNodeContextMenu.jsx"
 import SingleTableNodeContextMenu from "./contextMenu/singleTableNodeContextMenu.jsx"
 import TreeRootNodeContextMenu from "./contextMenu/treeRootNodeContextMenu.jsx"
 import IconDiv from "./iconDiv.jsx"
@@ -258,7 +259,14 @@ const TreeNode = ({
     e.preventDefault()
     e.stopPropagation()
 
-    const contextMenuArray = ["mysql", "sqlite", "database", "singleTable"]
+    const contextMenuArray = [
+      "mysql",
+      "sqlite",
+      "database",
+      "singleTable",
+      "column",
+      "primary",
+    ]
     if (contextMenuArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
         return
@@ -273,7 +281,9 @@ const TreeNode = ({
       style={style}
       ref={dragHandle}
       className={`group/item mb-1 flex cursor-pointer flex-row content-center  items-center justify-items-center gap-2 ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
+        selectedRows[node.id]
+          ? "bg-accent text-accent-foreground"
+          : "hover:bg-muted/50"
       }  `}
       onClick={(e) => handleClickIcon(e)}
       onContextMenu={handleContextMenuClick}
@@ -294,6 +304,10 @@ const TreeNode = ({
         )}
         {node.data.iconName == "singleTable" && (
           <SingleTableNodeContextMenu node={node} />
+        )}
+        {(node.data.iconName == "column" ||
+          node.data.iconName == "primary") && (
+          <SingleColumnNodeContextMenu node={node} />
         )}
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (

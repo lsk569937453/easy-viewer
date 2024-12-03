@@ -12,6 +12,8 @@ use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
+use crate::service::cmd_service::drop_column_with_error;
+use crate::service::cmd_service::drop_table_with_error;
 use crate::service::cmd_service::dump_database_with_error;
 use crate::service::cmd_service::generate_database_document_with_error;
 use crate::service::cmd_service::get_complete_words_with_error;
@@ -22,6 +24,7 @@ use crate::service::cmd_service::init_dump_data_with_error;
 use crate::service::cmd_service::move_column_with_error;
 use crate::service::cmd_service::remove_column_with_error;
 use crate::service::cmd_service::show_columns_with_error;
+use crate::service::cmd_service::truncate_table_with_error;
 use crate::service::cmd_service::update_sql_with_error;
 use crate::service::query_service::get_query_with_error;
 use crate::service::query_service::remove_query_with_error;
@@ -271,6 +274,39 @@ pub async fn generate_database_document(
         generate_database_document_with_error(state, list_node_info_req, file_dir).await
     );
     info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn drop_table(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(drop_table_with_error(state, list_node_info_req).await);
+    info!("drop_table: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn drop_column(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(drop_column_with_error(state, list_node_info_req).await);
+    info!("drop_column: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn truncate_table(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(truncate_table_with_error(state, list_node_info_req).await);
+    info!("truncate_table: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

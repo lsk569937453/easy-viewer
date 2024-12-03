@@ -43,8 +43,11 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
+import DropColumnDialog from "./components/dialog/dropColumnDialog"
 import DropDatabaseDialog from "./components/dialog/dropDatabaseDialog"
+import DropTableDialog from "./components/dialog/dropTableDialog"
 import TruncateDatabaseDialog from "./components/dialog/truncateDatabaseDialog"
+import TruncateTableDialog from "./components/dialog/truncateTableDialog"
 import Sidebar from "./components/sidebar"
 import TabsComponent from "./components/tabsComponent"
 
@@ -75,12 +78,15 @@ const useDialog = () => {
   const [showRemoveQueryDialog, setShowRemoveQueryDialog] = useState(false)
   const [showSaveQueryDialog, setShowSaveQueryDialog] = useState(false)
   const [showRenameQueryDialog, setShowRenameQueryDialog] = useState(false)
+  const [showDropTableDialog, setShowDropTableDialog] = useState(false)
   const [showDeleteConnectionDialog, setShowDeleteConnectionDialog] =
     useState(false)
   const [showEditConnectionDialog, setShowEditConnectionDialog] =
     useState(false)
   const [showTruncateDatabaseDialog, setShowTruncateDatabaseDialog] =
     useState(false)
+  const [showTruncateTableDialog, setShowTruncateTableDialog] = useState(false)
+  const [showDropColumnDialog, setShowDropColumnDialog] = useState(false)
   return {
     showDropDatabaseDialog,
     setShowDropDatabaseDialog,
@@ -96,6 +102,12 @@ const useDialog = () => {
     setShowEditConnectionDialog,
     showTruncateDatabaseDialog,
     setShowTruncateDatabaseDialog,
+    showDropTableDialog,
+    setShowDropTableDialog,
+    showTruncateTableDialog,
+    setShowTruncateTableDialog,
+    showDropColumnDialog,
+    setShowDropColumnDialog,
   }
 }
 export const MainPageDialogContext = createContext({
@@ -106,8 +118,14 @@ export const MainPageDialogContext = createContext({
   setShowRemoveQueryDialog: () => {},
   setShowDropDatabaseDialog: () => {},
   setShowTruncateDatabaseDialog: () => {},
+  setShowDropTableDialog: () => {},
+  setShowTruncateTableDialog: () => {},
+  setShowDropColumnDialog: () => {},
   showTruncateDatabaseDialog: false,
   showDropDatabaseDialog: false,
+  showDropTableDialog: false,
+  showTruncateTableDialog: false,
+  showDropColumnDialog: false,
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -120,6 +138,7 @@ const DashboardPage = () => {
   const [pageDataArray, setPageDataArray] = useState([])
   const [tabValue, setTabValue] = useState(null)
   const [showQueryLoading, setShowQueryLoading] = useState(false)
+
   const {
     showDropDatabaseDialog,
     setShowDropDatabaseDialog,
@@ -135,6 +154,12 @@ const DashboardPage = () => {
     setShowEditConnectionDialog,
     showTruncateDatabaseDialog,
     setShowTruncateDatabaseDialog,
+    showDropTableDialog,
+    setShowDropTableDialog,
+    showTruncateTableDialog,
+    setShowTruncateTableDialog,
+    showDropColumnDialog,
+    setShowDropColumnDialog,
   } = useDialog()
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
@@ -354,6 +379,12 @@ const DashboardPage = () => {
             showDropDatabaseDialog,
             showTruncateDatabaseDialog,
             setShowTruncateDatabaseDialog,
+            showDropTableDialog,
+            setShowDropTableDialog,
+            showTruncateTableDialog,
+            setShowTruncateTableDialog,
+            showDropColumnDialog,
+            setShowDropColumnDialog,
           }}
         >
           <div className="flex h-screen flex-col overflow-hidden ">
@@ -403,6 +434,10 @@ const DashboardPage = () => {
                 <ResizablePanel defaultSize={25} className=" min-w-[200px]">
                   <DropDatabaseDialog />
                   <TruncateDatabaseDialog />
+                  <DropTableDialog node={nodeForUpdate} />
+                  <TruncateTableDialog node={nodeForUpdate} />
+                  <DropColumnDialog node={nodeForUpdate} />
+
                   <Dialog
                     open={showEditConnectionDialog}
                     onOpenChange={setShowEditConnectionDialog}
@@ -437,7 +472,7 @@ const DashboardPage = () => {
                     open={showRenameQueryDialog}
                     onOpenChange={setShowRenameQueryDialog}
                   >
-                    <DialogContent className="w-30 bg-slate-200">
+                    <DialogContent className="w-30 bg-slate-200 p-4">
                       <DialogTitle>Rename Query</DialogTitle>
                       <div className="flex flex-col gap-4 p-4">
                         <div className="flex flex-row items-center justify-center">

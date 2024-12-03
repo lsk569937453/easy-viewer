@@ -893,6 +893,75 @@ WHERE TABLE_SCHEMA = '{}'
 
         Ok(())
     }
+
+    pub async fn drop_column(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+        let column_name = level_infos[5].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        let drop_sql = format!(
+            "ALTER TABLE {} DROP COLUMN {};",
+            table_name.clone(),
+            column_name
+        );
+        info!("drop_sql: {}", drop_sql);
+        conn.execute(&*drop_sql).await?;
+
+        Ok(())
+    }
+    pub async fn drop_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        let drop_sql = format!("drop table {}", table_name);
+        info!("drop_sql: {}", drop_sql);
+        conn.execute(&*drop_sql).await?;
+
+        Ok(())
+    }
+    pub async fn truncate_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+        let drop_sql = format!("TRUNCATE  TABLE  {}", table_name);
+        info!("drop_sql: {}", drop_sql);
+        conn.execute(&*drop_sql).await?;
+
+        Ok(())
+    }
     pub async fn show_columns(
         &self,
         list_node_info_req: ListNodeInfoReq,

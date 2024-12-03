@@ -108,7 +108,9 @@ const IconDiv = ({ node, selectedRows }) => {
           <path d="M13.5 6.5l4 4" />
         </svg>
       ),
-      render: (tabIndex) => <PropertiesPage node={node} className="pt-4 pl-4 pr-4" />,
+      render: (tabIndex) => (
+        <PropertiesPage node={node} className="pl-4 pr-4 pt-4" />
+      ),
       service: `editTable${node.data.name}`,
       tabName: node.data.name,
     })
@@ -396,9 +398,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className=" flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -535,9 +541,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm ">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -659,9 +669,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm ">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -760,9 +774,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -830,9 +848,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -910,6 +932,38 @@ const IconDiv = ({ node, selectedRows }) => {
                 : "group-hover/item:bg-muted"
             }`}
           >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
             <Tooltip.Provider>
               <Tooltip.Root>
                 <Tooltip.Trigger asChild>
@@ -1069,9 +1123,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -1420,9 +1478,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -1788,9 +1850,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div
@@ -1928,9 +1994,13 @@ const IconDiv = ({ node, selectedRows }) => {
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>
-          <p className={`flex-none text-xs ${
-        selectedRows[node.id] ? "bg-accent text-accent-foreground" : "hover:bg-muted/50"
-      }`}>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
             {node.data.description}
           </p>
           <div

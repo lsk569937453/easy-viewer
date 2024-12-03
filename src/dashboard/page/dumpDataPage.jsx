@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "../components/scorllableTable"
 
-const DumpDataPage = ({ node }) => {
+const DumpDataPage = ({ node, selectedTableName = null }) => {
   const { toast } = useToast()
   const [exportOption, setExportOption] = useState("dumapAll")
   const [formatOption, setFormatOption] = useState("sql")
@@ -75,19 +75,38 @@ const DumpDataPage = ({ node }) => {
 
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      const tableData = response_msg.list.map((item, index) => {
-        return {
-          name: item.table_name,
-          checked: true,
-        }
-      })
-      setTableData(tableData)
-      const columnData = response_msg.list.map((item) => {
-        return item.columns.map((item2) => {
-          return { ...item2, checked: true }
+      const tableData = response_msg.list.map((item) => ({
+        name: item.table_name,
+        checked: selectedTableName === null, // All true if selectedTableName is null
+      }))
+
+      const columnData = response_msg.list.map((item) =>
+        item.columns.map((item2) => ({
+          ...item2,
+          checked: selectedTableName === null, // All true if selectedTableName is null
+        }))
+      )
+
+      if (selectedTableName !== null) {
+        const selectedIndex = tableData.findIndex(
+          (item) => item.name === selectedTableName
+        )
+
+        // Update tableData checked property
+        tableData.forEach((item, index) => {
+          item.checked = index === selectedIndex
         })
-      })
-      console.log(columnData)
+
+        // Update columnData checked property
+        columnData.forEach((columns, index) => {
+          columns.forEach((column) => {
+            column.checked = index === selectedIndex
+          })
+        })
+        setShowColumnIndex(selectedIndex)
+      }
+
+      setTableData(tableData)
       setColumnData(columnData)
     } else {
       toast({

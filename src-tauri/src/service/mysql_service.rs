@@ -1,4 +1,5 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::service::mysql_common_service::show_column_info;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
@@ -21,7 +22,6 @@ use crate::vojo::init_dump_data_response::InitDumpDataResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
-use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use anyhow::Ok;
@@ -867,9 +867,13 @@ WHERE TABLE_SCHEMA = '{}'
             .await?;
 
         let dir_path = Path::new(&file_dir);
-        let full_path = dir_path.join("file_name.docx");
+        let now = Local::now();
+        let formatted_time = now.format("%Y-%m-%d-%H-%M-%S").to_string();
+        let file_name = format!("{}-{}.docx", database_name, formatted_time);
+        let full_path = dir_path.join(file_name);
         info!("full_path: {}", full_path.display());
         let file = std::fs::File::create(full_path)?;
+
         let style3 = Style::new("Table1", StyleType::Table)
             .name("Table test")
             .table_align(TableAlignmentType::Center);
@@ -877,37 +881,12 @@ WHERE TABLE_SCHEMA = '{}'
         for item in rows {
             let buf: &[u8] = item.try_get(0)?;
             let table_name = String::from_utf8_lossy(buf).to_string();
-            let sql = format!("show create table {}", table_name);
-            let row = sqlx::query(&sql)
-                .fetch_optional(&mut conn)
-                .await?
-                .ok_or(anyhow!("Not found table"))?;
-            let ddl: String = row.try_get(1)?;
-            let table = Table::new(vec![
-                TableRow::new(vec![
-                    TableCell::new()
-                        .add_paragraph(
-                            Paragraph::new().add_run(Run::new().add_text("Hello").size(30).bold()),
-                        )
-                        .shading(Shading::new().color("red")),
-                    TableCell::new()
-                        .add_paragraph(
-                            Paragraph::new()
-                                .add_run(Run::new().add_text("Hello2321313131").size(30).bold()),
-                        )
-                        .shading(Shading::new().shd_type(ShdType::Clear).fill("C0C0C0")),
-                ]),
-                TableRow::new(vec![
-                    TableCell::new()
-                        .add_paragraph(Paragraph::new().add_run(Run::new().add_text("Hello"))),
-                    TableCell::new().add_paragraph(
-                        Paragraph::new().add_run(Run::new().add_text("Hello2321313131")),
-                    ),
-                ]),
-            ])
-            .style("Table1");
+            doc = doc
+                .add_paragraph(Paragraph::new().add_run(Run::new().add_text(table_name.clone())));
+            let show_column_response = show_column_info(&mut conn, table_name.clone()).await?;
+            let table = show_column_response.into_docx_table()?;
             doc = doc.add_table(table);
-            doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text(table_name)));
+            doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text("")));
         }
 
         doc.build().pack(file)?;
@@ -928,50 +907,7 @@ WHERE TABLE_SCHEMA = '{}'
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
         conn.execute(&*use_database_sql).await?;
-        let sql = format!("show columns from {}", table_name);
-        info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
-        if rows.is_empty() {
-            return Ok(ShowColumnsResponse::new());
-        }
-        let first_item = rows.first().ok_or(anyhow!(""))?;
-        let mut headers = vec![];
-        for (index, item) in first_item.columns().iter().enumerate() {
-            info!("type_name: {:?}", item);
-            let type_name = item.type_info().name();
-            let column_name = item.name();
-            if index == 2 {
-                headers.push(ShowColumnHeader {
-                    name: "Comment".to_string(),
-                    type_name: "VARCHAR".to_string().to_uppercase(),
-                });
-            } else {
-                headers.push(ShowColumnHeader {
-                    name: column_name.to_string(),
-                    type_name: type_name.to_string().to_uppercase(),
-                });
-            }
-        }
-        let mut response_rows = vec![];
-        // info!("rows: {:?}", rows);
-        for item in rows.iter() {
-            let columns = item.columns();
-            let len = columns.len();
-            let mut row = vec![];
-            for i in 0..len {
-                let type_name = columns[i].type_info().name();
-                let val = mysql_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
-                }
-            }
-            response_rows.push(row);
-        }
-        let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
+        let exe_sql_response = show_column_info(&mut conn, table_name).await?;
 
         Ok(exe_sql_response)
     }

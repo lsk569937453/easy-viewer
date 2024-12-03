@@ -1,3 +1,5 @@
+use anyhow::Ok;
+use docx_rs::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
@@ -17,6 +19,39 @@ impl ShowColumnsResponse {
         rows: Vec<Vec<Option<String>>>,
     ) -> ShowColumnsResponse {
         ShowColumnsResponse { header, rows }
+    }
+    pub fn into_docx_table(self) -> Result<Table, anyhow::Error> {
+        let mut rows = vec![];
+        let mut headers = vec![];
+        for item in self.header.iter() {
+            headers.push(
+                TableCell::new()
+                    .add_paragraph(
+                        Paragraph::new()
+                            .add_run(Run::new().add_text(item.name.clone()).size(30).bold())
+                            .align(AlignmentType::Center),
+                    )
+                    .shading(Shading::new().shd_type(ShdType::Clear).fill("C0C0C0")),
+            );
+        }
+        rows.push(TableRow::new(headers));
+        info!("row len:{}", self.rows.len());
+        for item in self.rows.iter() {
+            let mut cells = vec![];
+            for i in 0..item.len() {
+                cells.push(
+                    TableCell::new().add_paragraph(
+                        Paragraph::new()
+                            .add_run(Run::new().add_text(item[i].clone().unwrap_or("".to_string())))
+                            .align(AlignmentType::Center),
+                    ),
+                );
+            }
+            rows.push(TableRow::new(cells));
+        }
+
+        let res = Table::new(rows);
+        Ok(res)
     }
 }
 #[derive(Deserialize, Serialize, Debug)]

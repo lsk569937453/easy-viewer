@@ -265,16 +265,9 @@ export function getQueryName() {
   return queryName
 }
 export function getSQLStatement(input) {
-  if (!input.includes(";")) return [input]
-  if (input.includes("CREATE FUNCTION")) return [input]
-  // Regular expression to match `CREATE PROCEDURE` blocks and individual SQL statements
-  const regex = /(CREATE PROCEDURE[\s\S]+?END;)|([^;]+;)/gi
+  const statements = input.split(/\n\s*\n/).map((statement) => statement.trim())
 
-  // Match all segments
-  const matches = input.match(regex)
-
-  // Trim and filter out empty matches
-  return matches ? matches.map((stmt) => stmt.trim()) : []
+  return statements.filter((statement) => statement.length > 0)
 }
 export function getCreateTableSql(node) {
   let mysqlCreateTable = `CREATE TABLE table_name(  

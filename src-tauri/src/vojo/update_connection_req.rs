@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::base_config::BaseConfig;
+use crate::service::base_config_service::BaseConfig;
 
 #[derive(Deserialize, Serialize)]
 pub struct UpdateConnectionRequest {

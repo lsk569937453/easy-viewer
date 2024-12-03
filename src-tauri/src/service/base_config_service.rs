@@ -1,443 +1,332 @@
+use super::mysql_service::MysqlConfig;
+use crate::service::postgresql_service::PostgresqlConfig;
 use crate::sql_lite::connection::AppState;
-use crate::vojo::base_config::BaseConfig;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
-use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
-use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
-use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
-use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::show_column_response::ShowColumnsResponse;
-use crate::vojo::update_connection_req::UpdateConnectionRequest;
-use sqlx::Row;
-use tauri::State;
-pub async fn save_base_config_with_error(
-    state: State<'_, AppState>,
-    save_connection_request: SaveConnectionRequest,
-) -> Result<(), anyhow::Error> {
-    let json_str = serde_json::to_string(&save_connection_request.base_config)?;
-    info!("save base config: {}", json_str);
-
-    sqlx::query("insert into base_config (connection_name,connection_json) values (?,?)")
-        .bind(save_connection_request.connection_name)
-        .bind(json_str)
-        .execute(&state.pool)
-        .await?;
-    Ok(())
+use crate::vojo::sqlite_config::SqliteConfig;
+use anyhow::Ok;
+use serde::Deserialize;
+use serde::Serialize;
+#[derive(Deserialize, Serialize)]
+pub enum BaseConfigEnum {
+    #[serde(rename = "mysql")]
+    Mysql(MysqlConfig),
+    #[serde(rename = "postgresql")]
+    Postgresql(PostgresqlConfig),
+    #[serde(rename = "sqlite")]
+    Sqlite(SqliteConfig),
+    #[serde(rename = "kafka")]
+    Kafka(KafkaConfig),
 }
+impl BaseConfigEnum {
+    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.test_connection().await?;
+            }
+            BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
+            BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
 
-pub async fn update_base_config_with_error(
-    state: State<'_, AppState>,
-    update_connection_request: UpdateConnectionRequest,
-) -> Result<(), anyhow::Error> {
-    let json_str = serde_json::to_string(&update_connection_request.base_config)?;
-    info!(
-        "name:{},id:{},update base config: {}",
-        update_connection_request.connection_name,
-        update_connection_request.connection_id,
-        json_str,
-    );
-
-    sqlx::query(
-        "UPDATE base_config 
-SET connection_name = ?, connection_json = ? 
-WHERE id = ?",
-    )
-    .bind(update_connection_request.connection_name)
-    .bind(json_str)
-    .bind(update_connection_request.connection_id)
-    .execute(&state.pool)
-    .await?;
-    Ok(())
-}
-pub async fn delete_base_config_with_error(
-    state: State<'_, AppState>,
-    base_config_id: i32,
-) -> Result<(), anyhow::Error> {
-    sqlx::query("DELETE FROM base_config WHERE id = ?")
-        .bind(base_config_id)
-        .execute(&state.pool)
-        .await?;
-    Ok(())
-}
-pub async fn get_base_config_with_error(
-    state: State<'_, AppState>,
-) -> Result<GetBaseConnectionResponse, anyhow::Error> {
-    let row_list = sqlx::query("select connection_name,id,connection_json from base_config")
-        .fetch_all(&state.pool)
-        .await?;
-
-    let mut base_configs = vec![];
-    if !row_list.is_empty() {
-        for item in row_list.iter() {
-            let id: i32 = match item.try_get("id") {
-                Ok(val) => val,
-                Err(_) => continue,
-            };
-
-            let connection_json_str: String = match item.try_get("connection_json") {
-                Ok(val) => val,
-                Err(_) => continue,
-            };
-
-            let base_config: BaseConfig = match serde_json::from_str(&connection_json_str) {
-                Ok(val) => val,
-                Err(_) => continue,
-            };
-
-            let description = match base_config.base_config_enum.get_description() {
-                Ok(val) => val,
-                Err(_) => continue,
-            };
-
-            let connection_type = base_config.base_config_enum.get_connection_type();
-
-            let connection_name: String = match item.try_get("connection_name") {
-                Ok(val) => val,
-                Err(_) => continue,
-            };
-
-            base_configs.push(GetBaseConnectionResponseItem {
-                base_config_id: id,
-                connection_name,
-                connection_type,
-                description,
-            });
+            _ => {}
         }
-        // base_configs = row_list
-        //     .into_iter()
-        //     .map(
-        //         |item| -> Result<GetBaseConnectionResponseItem, anyhow::Error> {
-        //             let id: i32 = item.try_get("id")?;
-        //             let connection_json_str: String = item.try_get("connection_json")?;
-        //             let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-        //             let connection_type = base_config.base_config_enum.get_connection_type();
-        //             let description = base_config.base_config_enum.get_description()?;
-        //             Ok(GetBaseConnectionResponseItem {
-        //                 base_config_id: id,
-        //                 connection_name: item.try_get("connection_name")?,
-        //                 connection_type,
-        //                 description,
-        //             })
-        //         },
-        //     )
-        //     .collect::<Result<Vec<GetBaseConnectionResponseItem>, anyhow::Error>>()?;
+
+        Ok(())
     }
-    Ok(GetBaseConnectionResponse {
-        base_config_list: base_configs,
-    })
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let res = match self {
+            BaseConfigEnum::Mysql(config) => config.get_description()?,
+            BaseConfigEnum::Sqlite(config) => config.get_description()?,
+            _ => "".to_string(),
+        };
+        Ok(res)
+    }
+    pub fn get_connection_type(&self) -> i32 {
+        match self {
+            BaseConfigEnum::Mysql(_) => 0,
+            BaseConfigEnum::Postgresql(_) => 1,
+            BaseConfigEnum::Kafka(_) => 2,
+            BaseConfigEnum::Sqlite(_) => 3,
+        }
+    }
+    pub async fn list_node_info(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+        let vec = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
+
+            BaseConfigEnum::Sqlite(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            _ => ListNodeInfoResponse::new_with_empty(),
+        };
+        Ok(vec)
+    }
+    pub async fn get_column_info_for_is(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let vec = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
+            _ => GetColumnInfoForInsertSqlResponse::new(),
+        };
+        Ok(vec)
+    }
+    pub async fn remove_column(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        column_name: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .remove_column(list_node_info_req, appstate, column_name)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sql: String,
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            _ => ExeSqlResponse::new(),
+        };
+        Ok(data)
+    }
+    pub async fn dump_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .dump_database(list_node_info_req, appstate, dump_database_req)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .import_database(list_node_info_req, appstate, import_database_req)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.init_dump_data(list_node_info_req, appstate).await?
+            }
+
+            _ => InitDumpDataResponse::new(),
+        };
+        Ok(data)
+    }
+    pub async fn generate_database_document(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        file_dir: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config
+                .generate_database_document(list_node_info_req, appstate, file_dir)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn move_column(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        move_direction: i32,
+    ) -> Result<String, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .move_column(appstate, list_node_info_req, move_direction)
+                    .await?
+            }
+
+            _ => "".to_string(),
+        };
+        Ok(data)
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
+            _ => vec![],
+        };
+        Ok(data)
+    }
+    pub async fn get_procedure_details(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .get_procedure_details(list_node_info_req, appstate)
+                    .await?
+            }
+
+            _ => "vec![]".to_string(),
+        };
+        Ok(data)
+    }
+    pub async fn update_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        sql: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.update_sql(list_node_info_req, appstate, sql).await?
+            }
+
+            BaseConfigEnum::Sqlite(config) => {
+                config.update_sql(list_node_info_req, appstate, sql).await?
+            }
+            _ => (),
+        };
+        Ok(())
+    }
+    pub async fn show_columns(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<ShowColumnsResponse, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.show_columns(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.show_columns(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
+                config.show_columns(list_node_info_req, appstate).await?
+            }
+            _ => ShowColumnsResponse::new(),
+        };
+        Ok(data)
+    }
+    pub async fn get_ddl(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let data = match self {
+            BaseConfigEnum::Mysql(config) => config.get_ddl(list_node_info_req, appstate).await?,
+
+            BaseConfigEnum::Sqlite(config) => config.get_ddl(list_node_info_req, appstate).await?,
+            _ => "ExeSqlResponse::new()".to_string(),
+        };
+        Ok(data)
+    }
 }
-pub async fn get_base_config_by_id_with_error(
-    state: State<'_, AppState>,
-    base_config_id: i32,
-) -> Result<GetBaseConnectionByIdResponse, anyhow::Error> {
-    let row =
-        sqlx::query("select connection_name,id,connection_json from base_config where id = ?")
-            .bind(base_config_id)
-            .fetch_optional(&state.pool)
-            .await?
-            .ok_or(anyhow!("not found"))?;
 
-    let id: i32 = row.try_get("id")?;
-    let connection_json_str: String = row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let connection_type = base_config.base_config_enum.get_connection_type();
-    let description = base_config.base_config_enum.get_description()?;
-    Ok(GetBaseConnectionByIdResponse {
-        base_config_id: id,
-        connection_name: row.try_get("connection_name")?,
-        connection_json: connection_json_str,
-        connection_type,
-        description,
-    })
+#[derive(Deserialize, Serialize, Clone)]
+pub struct KafkaConfig {
+    pub broker: String,
+    pub topic: String,
 }
-pub async fn list_node_info_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<ListNodeInfoResponse, anyhow::Error> {
-    info!("list_node_info_req: {:?}", list_node_info_req);
 
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .list_node_info(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct DatabaseHostStruct {
+    pub host: String,
+    pub database: Option<String>,
+    pub user_name: String,
+    pub password: String,
+    pub port: i32,
 }
-pub async fn get_column_info_for_insert_sql_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
-    info!(
-        " get_column_info_for_insert_sql list_node_info_req: {:?}",
-        list_node_info_req
-    );
-
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .get_column_info_for_is(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
+impl DatabaseHostStruct {
+    pub fn to_url(&self, protocol_name: String) -> String {
+        if let Some(database) = &self.database {
+            format!(
+                "{}://{}:{}@{}:{}/{}",
+                protocol_name, self.user_name, self.password, self.host, self.port, database
+            )
+        } else {
+            format!(
+                "{}://{}:{}@{}:{}",
+                protocol_name, self.user_name, self.password, self.host, self.port
+            )
+        }
+    }
 }
-pub async fn remove_column_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    column_name: String,
-) -> Result<(), anyhow::Error> {
-    info!("remove_column list_node_info_req: {:?}", list_node_info_req);
+#[derive(Deserialize, Serialize)]
+pub struct BaseConfig {
+    pub base_config_enum: BaseConfigEnum,
+}
 
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    base_config
-        .base_config_enum
-        .remove_column(list_node_info_req, state.inner(), column_name)
-        .await?;
-
+#[test]
+fn test_host() -> Result<(), anyhow::Error> {
     Ok(())
-}
-pub async fn exe_sql_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    sql: String,
-) -> Result<ExeSqlResponse, anyhow::Error> {
-    info!("exe_sql list_node_info_req: {:?}", list_node_info_req);
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .exe_sql(list_node_info_req, state.inner(), sql)
-        .await?;
-
-    Ok(list)
-}
-pub async fn dump_database_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    dump_database_req: DumpDatabaseReq,
-) -> Result<String, anyhow::Error> {
-    info!(
-        " dump_database_with_error list_node_info_req: {:?}",
-        list_node_info_req
-    );
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    base_config
-        .base_config_enum
-        .dump_database(list_node_info_req, state.inner(), dump_database_req)
-        .await?;
-    Ok("list".to_string())
-}
-pub async fn init_dump_data_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<InitDumpDataResponse, anyhow::Error> {
-    info!(
-        " init_dump_data_with_error list_node_info_req: {:?}",
-        list_node_info_req
-    );
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let res = base_config
-        .base_config_enum
-        .init_dump_data(list_node_info_req, state.inner())
-        .await?;
-    Ok(res)
-}
-pub async fn move_column_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    move_direction: i32,
-) -> Result<String, anyhow::Error> {
-    info!(
-        " move_column_with_error list_node_info_req: {:?}",
-        list_node_info_req
-    );
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .move_column(state.inner(), list_node_info_req, move_direction)
-        .await?;
-    Ok(list)
-}
-pub async fn get_complete_words_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<Vec<String>, anyhow::Error> {
-    info!(
-        "get_complete_words list_node_info_req: {:?}",
-        list_node_info_req
-    );
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .get_complete_words(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
-}
-pub async fn get_procedure_details_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, anyhow::Error> {
-    info!(
-        "get_complete_words list_node_info_req: {:?}",
-        list_node_info_req
-    );
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .get_procedure_details(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
-}
-pub async fn update_sql_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    sql: Vec<String>,
-) -> Result<(), anyhow::Error> {
-    info!("update_sql list_node_info_req: {:?}", list_node_info_req);
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    base_config
-        .base_config_enum
-        .update_sql(list_node_info_req, state.inner(), sql)
-        .await?;
-
-    Ok(())
-}
-pub async fn show_columns_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<ShowColumnsResponse, anyhow::Error> {
-    info!("show_columns list_node_info_req: {:?}", list_node_info_req);
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .show_columns(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
-}
-pub async fn get_ddl_with_error(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, anyhow::Error> {
-    info!("get_ddl list_node_info_req: {:?}", list_node_info_req);
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
-    let list = base_config
-        .base_config_enum
-        .get_ddl(list_node_info_req, state.inner())
-        .await?;
-
-    Ok(list)
 }

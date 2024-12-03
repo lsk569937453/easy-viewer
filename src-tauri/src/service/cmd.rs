@@ -1,32 +1,35 @@
 use std::time::Instant;
 
-use super::base_config_service::delete_base_config_with_error;
-use super::base_config_service::exe_sql_with_error;
-use super::base_config_service::get_base_config_by_id_with_error;
-use super::base_config_service::get_base_config_with_error;
-use super::base_config_service::get_column_info_for_insert_sql_with_error;
-use super::base_config_service::list_node_info_with_error;
-use super::base_config_service::save_base_config_with_error;
-use super::base_config_service::update_base_config_with_error;
+use super::cmd_service::delete_base_config_with_error;
+use super::cmd_service::exe_sql_with_error;
+use super::cmd_service::get_base_config_by_id_with_error;
+use super::cmd_service::get_base_config_with_error;
+use super::cmd_service::get_column_info_for_insert_sql_with_error;
+use super::cmd_service::list_node_info_with_error;
+use super::cmd_service::save_base_config_with_error;
+use super::cmd_service::update_base_config_with_error;
 use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
-use crate::service::base_config_service::dump_database_with_error;
-use crate::service::base_config_service::get_complete_words_with_error;
-use crate::service::base_config_service::get_ddl_with_error;
-use crate::service::base_config_service::get_procedure_details_with_error;
-use crate::service::base_config_service::init_dump_data_with_error;
-use crate::service::base_config_service::move_column_with_error;
-use crate::service::base_config_service::remove_column_with_error;
-use crate::service::base_config_service::show_columns_with_error;
-use crate::service::base_config_service::update_sql_with_error;
+use crate::service::base_config_service::BaseConfig;
+use crate::service::cmd_service::dump_database_with_error;
+use crate::service::cmd_service::generate_database_document_with_error;
+use crate::service::cmd_service::get_complete_words_with_error;
+use crate::service::cmd_service::get_ddl_with_error;
+use crate::service::cmd_service::get_procedure_details_with_error;
+use crate::service::cmd_service::import_database_with_error;
+use crate::service::cmd_service::init_dump_data_with_error;
+use crate::service::cmd_service::move_column_with_error;
+use crate::service::cmd_service::remove_column_with_error;
+use crate::service::cmd_service::show_columns_with_error;
+use crate::service::cmd_service::update_sql_with_error;
 use crate::service::query_service::get_query_with_error;
 use crate::service::query_service::remove_query_with_error;
 use crate::service::query_service::rename_query_with_error;
 use crate::service::query_service::save_query_with_error;
 use crate::sql_lite::connection::AppState;
-use crate::vojo::base_config::BaseConfig;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
@@ -237,6 +240,35 @@ pub async fn dump_database(
     let time = Instant::now();
     let res = handle_response!(
         dump_database_with_error(state, list_node_info_req, dump_database_req).await
+    );
+    info!("dump_database: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+
+pub async fn import_database(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    import_database_req: ImportDatabaseReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        import_database_with_error(state, list_node_info_req, import_database_req).await
+    );
+    info!("import_database: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn generate_database_document(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    file_dir: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        generate_database_document_with_error(state, list_node_info_req, file_dir).await
     );
     info!("save_query: {:?}", time.elapsed());
     Ok(res)

@@ -202,6 +202,16 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn drop_index(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::Mysql(config) = self {
+            config.drop_index(list_node_info_req, appstate).await?
+        };
+        Ok(())
+    }
     pub async fn truncate_table(
         &self,
         list_node_info_req: ListNodeInfoReq,

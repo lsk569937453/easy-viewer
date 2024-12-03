@@ -374,6 +374,30 @@ pub async fn drop_column_with_error(
         .await?;
     Ok("list".to_string())
 }
+pub async fn drop_index_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, anyhow::Error> {
+    info!(
+        " drop_index_with_error list_node_info_req: {:?}",
+        list_node_info_req
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .drop_index(list_node_info_req, state.inner())
+        .await?;
+    Ok("list".to_string())
+}
 pub async fn truncate_table_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

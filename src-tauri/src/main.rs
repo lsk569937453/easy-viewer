@@ -108,6 +108,7 @@ async fn main() -> Result<(), anyhow::Error> {
             generate_database_document,
             drop_table,
             drop_column,
+            drop_index,
             truncate_table,
             exe_sql,
             init_dump_data,

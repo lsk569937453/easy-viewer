@@ -13,6 +13,7 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::drop_column_with_error;
+use crate::service::cmd_service::drop_index_with_error;
 use crate::service::cmd_service::drop_table_with_error;
 use crate::service::cmd_service::dump_database_with_error;
 use crate::service::cmd_service::generate_database_document_with_error;
@@ -296,6 +297,17 @@ pub async fn drop_column(
     let time = Instant::now();
     let res = handle_response!(drop_column_with_error(state, list_node_info_req).await);
     info!("drop_column: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn drop_index(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(drop_index_with_error(state, list_node_info_req).await);
+    info!("drop_index: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

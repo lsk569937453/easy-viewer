@@ -41,7 +41,6 @@ fn get_postgresql_table_data() -> &'static LinkedHashMap<&'static str, &'static 
         let mut map = LinkedHashMap::new();
         map.insert("Columns", "columns");
         map.insert("Index", "index");
-        map.insert("Partitions", "partitions");
         map
     })
 }
@@ -74,6 +73,7 @@ impl PostgresqlConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
     ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let mut vec = vec![];
 
@@ -127,6 +127,9 @@ impl PostgresqlConfig {
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 4 {
             let node_name = list_node_info_req.level_infos[3].config_value.clone();
+            let base_config_id = list_node_info_req.level_infos[0]
+                .config_value
+                .parse::<i32>()?;
 
             if node_name == "Tables" {
                 let database_name = list_node_info_req.level_infos[1].config_value.clone();
@@ -156,7 +159,127 @@ WHERE schemaname = 'public';",
                     vec.push(list_node_info_response_item);
                 }
                 return Ok(ListNodeInfoResponse::new(vec));
+            } else if node_name == "Query" {
+                let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
+                    .bind(base_config_id)
+                    .fetch_all(&appstate.pool)
+                    .await?;
+                let mut vec = vec![];
+                for row in rows {
+                    let row_str: String = row.try_get(0)?;
+
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        false,
+                        true,
+                        "singleQuery".to_string(),
+                        row_str,
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+
+                info!("list_node_info: {:?}", vec);
+                return Ok(ListNodeInfoResponse::new(vec));
             }
+        } else if list_node_info_req.level_infos.len() == 5 {
+            for (name, icon_name) in get_postgresql_table_data().iter() {
+                let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                    true,
+                    true,
+                    icon_name.to_string(),
+                    name.to_string(),
+                    None,
+                );
+                vec.push(list_node_info_response_item);
+            }
+            return Ok(ListNodeInfoResponse::new(vec));
+        } else if list_node_info_req.level_infos.len() == 6 {
+            let level_infos = list_node_info_req.level_infos;
+
+            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+            let database_name = level_infos[1].config_value.clone();
+            let table_name = level_infos[4].config_value.clone();
+            let node_name = level_infos[5].config_value.clone();
+
+            if node_name == "Columns" {
+                let connection_url = self.connection_url_with_database(database_name);
+
+                let mut conn = PgConnection::connect(&connection_url).await?;
+
+                let sql = format!("select c.column_name, c.data_type,  t.constraint_type
+                from   information_schema.columns c
+                left join information_schema.key_column_usage s on s.table_name = c.table_name and s.column_name = c.column_name
+                left join information_schema.table_constraints t on t.table_name = c.table_name and t.constraint_name = s.constraint_name
+                where  c.table_name ='{}' ", table_name);
+                info!("sql: {}", sql);
+                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                for item in rows {
+                    let column_name: String = item.try_get(0)?;
+                    let column_type: String = item.try_get(1)?;
+
+                    let key_name: Option<String> = item.try_get(2)?;
+                    if let Some(s) = key_name {
+                        if s == "PRIMARY KEY" {
+                            let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                                false,
+                                true,
+                                "primary".to_string(),
+                                column_name,
+                                Some(column_type),
+                            );
+                            vec.push(list_node_info_response_item);
+                        }
+                    } else {
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "column".to_string(),
+                            column_name,
+                            Some(column_type),
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                }
+                return Ok(ListNodeInfoResponse::new(vec));
+            } else if node_name == "Index" {
+                let connection_url = self.connection_url_with_database(database_name);
+
+                let mut conn = PgConnection::connect(&connection_url).await?;
+
+                let sql = format!("select c.column_name,  t.constraint_type
+    from   information_schema.columns c
+    left join information_schema.key_column_usage s on s.table_name = c.table_name and s.column_name = c.column_name
+    left join information_schema.table_constraints t on t.table_name = c.table_name and t.constraint_name = s.constraint_name
+    where  c.table_name ='{}' ", table_name);
+                info!("sql: {}", sql);
+                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                for item in rows {
+                    let index_name: String = item.try_get(0)?;
+
+                    let key_name: String = item.try_get(1)?;
+                    if key_name == "PRIMARY KEY" {
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singlePrimaryIndex".to_string(),
+                            index_name,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    } else {
+                        // vec.push((index_name, "singleCommonIndex".to_string(), None));
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleCommonIndex".to_string(),
+                            index_name,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                }
+            }
+            return Ok(ListNodeInfoResponse::new(vec));
         }
         Ok(ListNodeInfoResponse::new_with_empty())
     }

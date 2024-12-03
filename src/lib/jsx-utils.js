@@ -323,7 +323,7 @@ ALTER TABLE ${tableName}
 export function getCreateIndexSql(node, tableName) {
   console.log(node, tableName)
   let mysqlCreateColumn = `ALTER TABLE ${tableName} ADD key (\`\`)`
-  let sqlLiteCreateColumn = `CREATE INDEX ${tableName}_ ON ${tableName}`
+  let sqlLiteCreateColumn = `CREATE INDEX ${tableName}_ ON ${tableName}(\`\`)`
   let rootNode = getRootNode(node)
   if (rootNode.data.connectionType === 0) {
     return mysqlCreateColumn

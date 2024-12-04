@@ -42,6 +42,8 @@ impl BaseConfigEnum {
         let res = match self {
             BaseConfigEnum::Mysql(config) => config.get_description()?,
             BaseConfigEnum::Sqlite(config) => config.get_description()?,
+            BaseConfigEnum::Postgresql(config) => config.get_description()?,
+
             _ => "".to_string(),
         };
         Ok(res)
@@ -328,6 +330,10 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mysql(config) => config.get_ddl(list_node_info_req, appstate).await?,
 
             BaseConfigEnum::Sqlite(config) => config.get_ddl(list_node_info_req, appstate).await?,
+            BaseConfigEnum::Postgresql(config) => {
+                config.get_ddl(list_node_info_req, appstate).await?
+            }
+
             _ => "ExeSqlResponse::new()".to_string(),
         };
         Ok(data)

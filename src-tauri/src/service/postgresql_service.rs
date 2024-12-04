@@ -6,6 +6,7 @@ use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
+use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use anyhow::Ok;
@@ -55,6 +56,10 @@ impl PostgresqlConfig {
             self.config.user_name, self.config.password, self.config.host, self.config.port,
         )
     }
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let description = format!("{}:{}", self.config.host, self.config.port);
+        Ok(description)
+    }
     fn connection_url_with_database(&self, database: String) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -91,12 +96,21 @@ impl PostgresqlConfig {
             }
             for item in rows.iter() {
                 let database_name: String = item.try_get(0)?;
+                let sql = format!(
+                    "SELECT pg_size_pretty(pg_database_size('{}')) AS database_size;",
+                    database_name
+                );
+                let db_size_row = sqlx::query(&sql)
+                    .fetch_optional(&mut connection)
+                    .await?
+                    .ok_or(anyhow!("Not found"))?;
+                let description: String = db_size_row.try_get(0)?;
                 let list_node_info_response_item = ListNodeInfoResponseItem::new(
                     true,
                     true,
                     "database".to_string(),
                     database_name.to_string(),
-                    None,
+                    Some(description),
                 );
                 vec.push(list_node_info_response_item);
             }
@@ -114,13 +128,37 @@ impl PostgresqlConfig {
             vec.push(list_node_info_response_item);
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 3 {
+            let level_infos = list_node_info_req.level_infos;
+
+            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+            let database_name = level_infos[1].config_value.clone();
+            let schema_name = level_infos[2].config_value.clone();
+            let connection_url = self.connection_url_with_database(database_name);
+
+            let mut conn = PgConnection::connect(&connection_url).await?;
+            let sql = format!(
+                "SELECT COUNT(*) AS table_count
+FROM information_schema.tables
+WHERE table_schema = '{}';",
+                schema_name
+            );
+            let result_row = sqlx::query(&sql)
+                .fetch_optional(&mut conn)
+                .await?
+                .ok_or(anyhow!(""))?;
+            let tables_count: i64 = result_row.try_get(0)?;
             for (name, icon_name) in get_postgresql_database_data().iter() {
+                let description = if *name == "Tables" && tables_count > 0 {
+                    Some(format!("({})", tables_count))
+                } else {
+                    None
+                };
                 let list_node_info_response_item = ListNodeInfoResponseItem::new(
                     true,
                     true,
                     icon_name.to_string(),
                     name.to_string(),
-                    None,
+                    description,
                 );
                 vec.push(list_node_info_response_item);
             }
@@ -149,12 +187,23 @@ WHERE schemaname = 'public';",
                 }
                 for item in rows.iter() {
                     let table_name: String = item.try_get(0)?;
+                    let sql = format!("select count(*) from {}", table_name.clone());
+                    info!("sql: {}", sql);
+                    let record_count: i64 = sqlx::query(&sql)
+                        .fetch_one(&mut connection)
+                        .await?
+                        .try_get(0)?;
+                    let description = if record_count > 0 {
+                        Some(format!("{}", record_count))
+                    } else {
+                        None
+                    };
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
                         "singleTable".to_string(),
                         table_name,
-                        None,
+                        description,
                     );
                     vec.push(list_node_info_response_item);
                 }
@@ -422,6 +471,58 @@ WHERE table_name = '{}'
 
         Ok(exe_sql_response)
     }
+    pub async fn get_ddl(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let sql = format!(
+            "SELECT                                          
+  'CREATE TABLE ' || relname || E'\n(\n' ||
+  array_to_string(
+    array_agg(
+      '    ' || column_name || ' ' ||  type || ' '|| not_null
+    )
+    , E',\n'
+  ) || E'\n);\n'
+from
+(
+  SELECT 
+    c.relname, a.attname AS column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+    case 
+      when a.attnotnull
+    then 'NOT NULL' 
+    else 'NULL' 
+    END as not_null 
+  FROM pg_class c,
+   pg_attribute a,
+   pg_type t
+   WHERE c.relname = '{}'
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid
+ ORDER BY a.attnum
+) as tabledefinition
+group by relname;",
+            table_name
+        );
+        let row = sqlx::query(&sql)
+            .fetch_optional(&mut conn)
+            .await?
+            .ok_or(anyhow!("Not found table"))?;
+        let ddl: String = row.try_get(0)?;
+        Ok(ddl)
+    }
     pub async fn update_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -447,17 +548,51 @@ WHERE table_name = '{}'
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let node_name = level_infos[5].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
 
-        let conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = PgConnection::connect(&connection_url).await?;
         let show_column_sql = format!(
             "SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_name = '{}' AND table_schema = '{}';",
             table_name, schema_name
         );
-        Ok(ShowColumnsResponse::new())
+        let rows = sqlx::query(&show_column_sql).fetch_all(&mut conn).await?;
+        if rows.is_empty() {
+            return Ok(ShowColumnsResponse::new());
+        }
+        let first_row = rows.first().ok_or(anyhow!(""))?;
+        let mut headers = vec![];
+
+        for (index, item) in first_row.columns().iter().enumerate() {
+            let type_name = item.type_info().name();
+            let column_name = item.name();
+            headers.push(ShowColumnHeader {
+                name: column_name.to_string(),
+                type_name: type_name.to_string().to_uppercase(),
+            });
+        }
+        let mut response_rows = vec![];
+        for item in rows.iter() {
+            let columns = item.columns();
+            let len = columns.len();
+            let mut row = vec![];
+            for i in 0..len {
+                let type_name = columns[i].type_info().name();
+                let val = postgres_row_to_json(item, type_name, i)?;
+                if val.is_string() {
+                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
+                } else if val.is_null() {
+                    row.push(None);
+                } else {
+                    row.push(Some(val.to_string()));
+                }
+            }
+            response_rows.push(row);
+        }
+        let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
+
+        Ok(exe_sql_response)
     }
     pub async fn get_complete_words(
         &self,

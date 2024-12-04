@@ -13,7 +13,7 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-anyhow = "1.0.93"
+anyhow = "1.0.94"
 base64 = "0.22.1"
 bigdecimal = { version = "0.4.6", features = ["serde"] }
 chrono = { version = "0.4.38", features = ["serde"] }
@@ -24,12 +24,13 @@ elasticsearch = "8.16.0-alpha.1"
 hex = "0.4.3"
 image = "0.25.5"
 itertools = "0.13.0"
+
 linked-hash-map = "0.5.6"
 log = "0.4.22"
 mongodb = "3.1.0"
 num = "0.4.3"
 percent-encoding = "2.3.0"
-redis = "0.27.5"
+redis = "0.27.6"
 serde = { version = "1.0.215", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 serde_json = "1.0.133"
@@ -48,17 +49,17 @@ sqlx = { version = "0.8.2", features = [
     "uuid", 
     "ipnetwork",
     "mac_address",
-    "bit-vec"
+    "bit-vec",
     
 ] }
 tauri = { version = "2.1.1", features = ["protocol-asset", "tray-icon"] }
-tauri-plugin-dialog = "2.0.3"
-tauri-plugin-fs = "2.0.3"
-tauri-plugin-log = { version = "2.0.2" }
+tauri-plugin-dialog = "2.0.4"
+tauri-plugin-fs = "2.1.0"
+tauri-plugin-log = { version = "2.0.3" }
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2.0.2"
-time = "0.3.35"
-tokio = { version = "1.41.1", features = ["full", "tracing", "time"] }
+time = "0.3.37"
+tokio = { version = "1.42.0", features = ["full", "tracing", "time"] }
 uuid = { version = "1.11.0", features = [
     "v4",
     "fast-rng",
@@ -85,4 +86,4 @@ debug = false
 [env]
 STATIC_VCRUNTIME = false
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-single-instance = "2.0.1"
+tauri-plugin-single-instance = "2.0.2"

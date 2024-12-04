@@ -1,8 +1,9 @@
 use std::fs;
 
-use sqlx::sqlite::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePool};
 use sqlx::Executor;
 use std::io::Write;
+use std::str::FromStr;
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
@@ -18,7 +19,16 @@ impl AppState {
         } else {
             info!("File already exists: {:?}", db_path);
         }
-        let pool = SqlitePool::connect(db_path.to_str().ok_or(anyhow!("invalid db path"))?).await?;
+
+        let options =
+            SqliteConnectOptions::from_str(db_path.to_str().ok_or(anyhow!("invalid db path"))?)?
+                .pragma("key", "the_password")
+                .pragma("cipher_page_size", "1024")
+                .pragma("kdf_iter", "64000")
+                .pragma("cipher_hmac_algorithm", "HMAC_SHA1")
+                .pragma("cipher_kdf_algorithm", "PBKDF2_HMAC_SHA1")
+                .foreign_keys(false);
+        let pool = SqlitePool::connect_with(options).await?;
 
         let mut conn = pool.acquire().await?;
         conn.execute(

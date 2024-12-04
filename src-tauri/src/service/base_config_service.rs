@@ -95,6 +95,11 @@ impl BaseConfigEnum {
                     .get_column_info_for_is(list_node_info_req, appstate)
                     .await?
             }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
             _ => GetColumnInfoForInsertSqlResponse::new(),
         };
         Ok(vec)
@@ -106,11 +111,20 @@ impl BaseConfigEnum {
         appstate: &AppState,
         column_name: String,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config
-                .remove_column(list_node_info_req, appstate, column_name)
-                .await?
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .remove_column(list_node_info_req, appstate, column_name)
+                    .await?;
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .remove_column(list_node_info_req, appstate, column_name)
+                    .await?;
+            }
+            _ => (),
         };
+
         Ok(())
     }
     pub async fn exe_sql(
@@ -139,11 +153,19 @@ impl BaseConfigEnum {
         appstate: &AppState,
         dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config
-                .dump_database(list_node_info_req, appstate, dump_database_req)
-                .await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .dump_database(list_node_info_req, appstate, dump_database_req)
+                    .await?;
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .dump_database(list_node_info_req, appstate, dump_database_req)
+                    .await?;
+            }
+            _ => (),
+        }
         Ok(())
     }
     pub async fn import_database(
@@ -152,11 +174,20 @@ impl BaseConfigEnum {
         appstate: &AppState,
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config
-                .import_database(list_node_info_req, appstate, import_database_req)
-                .await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .import_database(list_node_info_req, appstate, import_database_req)
+                    .await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .import_database(list_node_info_req, appstate, import_database_req)
+                    .await?
+            }
+
+            _ => (),
+        }
         Ok(())
     }
     pub async fn init_dump_data(
@@ -166,6 +197,9 @@ impl BaseConfigEnum {
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
         let data = match self {
             BaseConfigEnum::Mysql(config) => {
+                config.init_dump_data(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
                 config.init_dump_data(list_node_info_req, appstate).await?
             }
 
@@ -201,8 +235,14 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config.drop_column(list_node_info_req, appstate).await?
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.drop_column(list_node_info_req, appstate).await?;
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.drop_column(list_node_info_req, appstate).await?;
+            }
+            _ => (),
         };
         Ok(())
     }

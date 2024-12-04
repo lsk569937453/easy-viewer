@@ -184,7 +184,7 @@ const PropertiesColumnPage = ({ node }) => {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-full w-7 border-none hover:bg-background"
+                              className="h-full w-7 border-none bg-muted hover:bg-background"
                               onClick={() => handleCellOnClick(row.index)}
                             >
                               <svg
@@ -197,7 +197,7 @@ const PropertiesColumnPage = ({ node }) => {
                                 stroke-width="2"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                                class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-muted"
+                                class="icon icon-tabler icons-tabler-outline icon-tabler-trash stroke-foreground"
                               >
                                 <path
                                   stroke="none"
@@ -226,7 +226,7 @@ const PropertiesColumnPage = ({ node }) => {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-full w-7 border-none hover:bg-searchMarkerColor"
+                              className="h-full w-7 border-none bg-muted hover:bg-background"
                               onClick={() => handleOnDeleteClick(row.index)}
                             >
                               <svg

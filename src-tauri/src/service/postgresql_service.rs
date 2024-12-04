@@ -1,8 +1,12 @@
 use crate::service::base_config_service::DatabaseHostStruct;
 use crate::sql_lite::connection::AppState;
 use crate::util::sql_utils::postgres_row_to_json;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::import_database_req::ImportDatabaseReq;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -74,6 +78,39 @@ impl PostgresqlConfig {
         let test_url = self.config.to_url("postgres".to_string());
         PgConnection::connect(&test_url).await.map(|_| ())?;
         Ok(())
+    }
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        Ok(InitDumpDataResponse::new())
+    }
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        info!("import_database_req: {:?}", import_database_req);
+        Ok(())
+    }
+    pub async fn dump_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+    pub async fn get_column_info_for_is(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        Ok(GetColumnInfoForInsertSqlResponse::new())
     }
     pub async fn list_node_info(
         &self,
@@ -600,5 +637,52 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         appstate: &AppState,
     ) -> Result<Vec<String>, anyhow::Error> {
         Ok(vec![])
+    }
+    pub async fn remove_column(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        column_name: String,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        // let column_name = level_infos[6].config_value.clone();
+
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
+        info!("remove_column sql: {}", sql);
+        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+
+        Ok(())
+    }
+    pub async fn drop_column(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let column_name = level_infos[6].config_value.clone();
+
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
+        info!("remove_column sql: {}", sql);
+        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+
+        Ok(())
     }
 }

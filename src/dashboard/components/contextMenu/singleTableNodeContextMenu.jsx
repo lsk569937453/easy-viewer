@@ -195,7 +195,9 @@ const SingleTableNodeContextMenu = ({ node }) => {
     }
     console.log(listNodeInfoReq)
     const { response_code, response_msg } = JSON.parse(
-      await invoke("show_columns", { listNodeInfoReq: listNodeInfoReq })
+      await invoke("get_column_info_for_insert_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
     )
     console.log(response_code, response_msg)
     if (response_code !== 0) {
@@ -206,8 +208,8 @@ const SingleTableNodeContextMenu = ({ node }) => {
       })
       return
     }
-    const { rows } = response_msg
-    const columnNames = rows.map((row) => row[0])
+    const rows = response_msg.list
+    const columnNames = rows.map((row) => row.column_name)
 
     const sql = `select ${columnNames.join(", ")} from ${node.data.name}`
     handleAddPageClick({
@@ -259,7 +261,9 @@ const SingleTableNodeContextMenu = ({ node }) => {
     }
     console.log(listNodeInfoReq)
     const { response_code, response_msg } = JSON.parse(
-      await invoke("show_columns", { listNodeInfoReq: listNodeInfoReq })
+      await invoke("get_column_info_for_insert_sql", {
+        listNodeInfoReq: listNodeInfoReq,
+      })
     )
     console.log(response_code, response_msg)
     if (response_code !== 0) {
@@ -270,8 +274,8 @@ const SingleTableNodeContextMenu = ({ node }) => {
       })
       return
     }
-    const { rows } = response_msg
-    const columnNames = rows.map((row) => row[0])
+    const rows = response_msg.list
+    const columnNames = rows.map((row) => row.column_name)
 
     const placeholders = columnNames.map((col) => `$${col}`)
 

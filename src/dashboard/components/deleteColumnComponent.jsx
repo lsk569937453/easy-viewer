@@ -68,16 +68,21 @@ const DeleteColumnComponent = ({ node, columnData }) => {
           Are you sure you want to delete the column of
           <span className="ml-1 bg-yellow-400 font-bold">{columnData[0]}?</span>
         </p>
-        <div className="flex h-full flex-row items-center justify-center">
+        <div className="flex h-full flex-row items-center justify-center gap-4">
           <Button
-            className="basis-1/4"
+            className="basis-1/4 text-xs"
             variant="secondary"
+            size="sm"
             onClick={handleCancelOnClick}
           >
             {" "}
             Cancel
           </Button>
-          <Button className="basis-1/4" onClick={handleConfirmOnClick}>
+          <Button
+            className="basis-1/4 text-xs"
+            onClick={handleConfirmOnClick}
+            size="sm"
+          >
             {" "}
             Confirm
           </Button>

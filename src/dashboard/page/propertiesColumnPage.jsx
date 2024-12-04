@@ -184,7 +184,7 @@ const PropertiesColumnPage = ({ node }) => {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-full w-7 border-none hover:bg-searchMarkerColor"
+                              className="h-full w-7 border-none hover:bg-background"
                               onClick={() => handleCellOnClick(row.index)}
                             >
                               <svg

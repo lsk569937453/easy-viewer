@@ -278,7 +278,7 @@ const UpdateColumnComponent = ({
             </div>
           </div>
         </div>
-        <div className="flex h-full flex-row items-center justify-center gap-2">
+        <div className="flex h-full flex-row items-center justify-center gap-4">
           <Button
             className="basis-1/4 text-xs"
             variant="secondary"

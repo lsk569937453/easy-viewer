@@ -1,5 +1,6 @@
 use super::mysql_service::MysqlConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
+use crate::service::sqlite_service::SqliteConfig;
 use crate::sql_lite::connection::AppState;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
@@ -9,7 +10,6 @@ use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::show_column_response::ShowColumnsResponse;
-use crate::vojo::sqlite_config::SqliteConfig;
 use anyhow::Ok;
 use serde::Deserialize;
 use serde::Serialize;
@@ -42,6 +42,8 @@ impl BaseConfigEnum {
         let res = match self {
             BaseConfigEnum::Mysql(config) => config.get_description()?,
             BaseConfigEnum::Sqlite(config) => config.get_description()?,
+            BaseConfigEnum::Postgresql(config) => config.get_description()?,
+
             _ => "".to_string(),
         };
         Ok(res)
@@ -64,7 +66,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mysql(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
-            BaseConfigEnum::Postgresql(config) => config.list_node_info(list_node_info_req).await?,
+            BaseConfigEnum::Postgresql(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
 
             BaseConfigEnum::Sqlite(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
@@ -326,6 +330,10 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mysql(config) => config.get_ddl(list_node_info_req, appstate).await?,
 
             BaseConfigEnum::Sqlite(config) => config.get_ddl(list_node_info_req, appstate).await?,
+            BaseConfigEnum::Postgresql(config) => {
+                config.get_ddl(list_node_info_req, appstate).await?
+            }
+
             _ => "ExeSqlResponse::new()".to_string(),
         };
         Ok(data)

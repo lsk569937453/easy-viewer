@@ -49,17 +49,22 @@ import {
   TableRow,
 } from "../components/scorllableTable"
 
-const DumpDataPage = ({ node, selectedTableName = null }) => {
+const PostGresqlDumpDataPage = ({
+  node,
+  selectedSchemaName = null,
+  selectedTableName = null,
+}) => {
   const { toast } = useToast()
   const [exportOption, setExportOption] = useState("dumapAll")
   const [formatOption, setFormatOption] = useState("sql")
-  const [tableData, setTableData] = useState([])
-  const [columnData, setColumnData] = useState([[]])
+
   const [showColumnIndex, setShowColumnIndex] = useState(0)
   const [filePath, setFilePath] = useState("")
   const [showTaskStatusDialog, setShowTaskStatusDialog] = useState(false)
   const [progress, setProgress] = useState(44)
-
+  const [allData, setAllData] = useState([])
+  const [tableIndex, setTableIndex] = useState(0)
+  const [schemaIndex, setSchemaIndex] = useState(0)
   useEffect(() => {
     loadData()
   }, [])
@@ -75,39 +80,48 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
 
     console.log(response_code, response_msg)
     if (response_code === 0) {
-      const tableData = response_msg.tableList.map((item) => ({
-        name: item.table_name,
-        checked: selectedTableName === null, // All true if selectedTableName is null
-      }))
-
-      const columnData = response_msg.tableList.map((item) =>
-        item.columns.map((item2) => ({
-          ...item2,
-          checked: selectedTableName === null, // All true if selectedTableName is null
-        }))
-      )
-
-      if (selectedTableName !== null) {
-        const selectedIndex = tableData.findIndex(
-          (item) => item.name === selectedTableName
-        )
-
-        // Update tableData checked property
-        tableData.forEach((item, index) => {
-          item.checked = index === selectedIndex
-        })
-
-        // Update columnData checked property
-        columnData.forEach((columns, index) => {
-          columns.forEach((column) => {
-            column.checked = index === selectedIndex
+      if (selectedSchemaName === null || selectedTableName === null) {
+        const tableData = response_msg.schemaList.map((schema) => {
+          schema.checked = true
+          schema.table_list = schema.table_list.map((table) => {
+            table.checked = true
+            table.columns = table.columns.map((column) => {
+              column.checked = true
+              return column
+            })
+            return table
           })
+          return schema
         })
-        setShowColumnIndex(selectedIndex)
-      }
+        setAllData(tableData)
+      } else if (selectedSchemaName !== null || selectedTableName === null) {
+        const tableData = response_msg.schemaList.map((schema) => {
+          // Set all schemas to unchecked by default
+          schema.checked = schema.schema_name === selectedSchemaName
 
-      setTableData(tableData)
-      setColumnData(columnData)
+          if (schema.checked) {
+            schema.table_list = schema.table_list.map((table) => {
+              table.checked = true
+              table.columns = table.columns.map((column) => {
+                column.checked = true
+                return column
+              })
+              return table
+            })
+          } else {
+            schema.table_list = schema.table_list.map((table) => {
+              table.checked = false
+              table.columns = table.columns.map((column) => {
+                column.checked = false
+                return column
+              })
+              return table
+            })
+          }
+          return schema
+        })
+        setAllData(tableData)
+      }
     } else {
       toast({
         variant: "destructive",
@@ -117,37 +131,28 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
     }
   }
 
-  const handleColumnCheckboxOnChange = (showColumnIndex, index, val) => {
-    setColumnData((prevColumnData) => {
-      const updatedColumnData = [...prevColumnData]
-      updatedColumnData[showColumnIndex] = [
-        ...updatedColumnData[showColumnIndex],
-      ]
-      updatedColumnData[showColumnIndex][index] = {
-        ...updatedColumnData[showColumnIndex][index],
-        checked: val,
-      }
-      return updatedColumnData
+  const handleColumnCheckboxOnChange = (index, val) => {
+    setAllData((prevTableData) => {
+      const updatedTableData = [...prevTableData]
+      updatedTableData[schemaIndex].table_list[tableIndex].columns[
+        index
+      ].checked = val
+      return updatedTableData
     })
   }
   const handleTableCheckboxOnChange = (index, val) => {
-    setTableData((prevTableData) => {
+    setAllData((prevTableData) => {
       const updatedTableData = [...prevTableData]
-      updatedTableData[index] = {
-        ...updatedTableData[index],
-        checked: val,
-      }
+      updatedTableData[schemaIndex].table_list[index].checked = val
+      updatedTableData[schemaIndex].table_list[index].columns =
+        updatedTableData[schemaIndex].table_list[index].columns.map((item) => ({
+          ...item,
+          checked: val,
+        }))
       return updatedTableData
     })
-    setColumnData((prevColumnData) => {
-      const updatedColumnData = [...prevColumnData]
-      updatedColumnData[index] = updatedColumnData[index].map((item) => ({
-        ...item,
-        checked: val,
-      }))
-      return updatedColumnData
-    })
-    setShowColumnIndex(index)
+
+    setTableIndex(index)
   }
   const handleTableOnClick = (index) => {
     setShowColumnIndex(index)
@@ -274,7 +279,7 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tableData.map((item, index) => {
+                {allData[schemaIndex]?.table_list.map((item, index) => {
                   return (
                     <TableRow key={index}>
                       <TableCell
@@ -292,7 +297,7 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
                             handleTableCheckboxOnChange(index, val)
                           }
                         />
-                        <div className="text-xs">{item.name}</div>
+                        <div className="text-xs">{item.table_name}</div>
                       </TableCell>
                     </TableRow>
                   )
@@ -310,8 +315,8 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {columnData.length > 0 &&
-                  columnData[showColumnIndex].map((item, index) => {
+                {allData[schemaIndex]?.table_list[tableIndex]?.columns.map(
+                  (item, index) => {
                     return (
                       <TableRow key={index}>
                         <TableCell className="flex  flex-row gap-2 p-1">
@@ -319,18 +324,15 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
                             id="terms"
                             checked={item.checked}
                             onCheckedChange={(val) =>
-                              handleColumnCheckboxOnChange(
-                                showColumnIndex,
-                                index,
-                                val
-                              )
+                              handleColumnCheckboxOnChange(index, val)
                             }
                           />
                           <div className="text-xs">{item.column_name}</div>
                         </TableCell>
                       </TableRow>
                     )
-                  })}
+                  }
+                )}
               </TableBody>
             </Table>
           </div>
@@ -423,4 +425,4 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
   )
 }
 
-export default DumpDataPage
+export default PostGresqlDumpDataPage

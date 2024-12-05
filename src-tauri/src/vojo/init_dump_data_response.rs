@@ -1,25 +1,44 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize)]
-pub struct InitDumpDataResponse {
-    pub list: Vec<InitDumpDataResponseItem>,
+pub enum InitDumpDataResponse {
+    #[serde(rename = "tableList")]
+    TableList(Vec<InitDumpTableResponseItem>),
+    #[serde(rename = "schemaList")]
+    SchemaList(Vec<InitDumpSchemaResponseItem>),
 }
 impl InitDumpDataResponse {
     pub fn new() -> Self {
-        InitDumpDataResponse { list: vec![] }
+        InitDumpDataResponse::TableList(vec![])
     }
-    pub fn from(list: Vec<InitDumpDataResponseItem>) -> Self {
-        InitDumpDataResponse { list }
+    pub fn from_table_list(list: Vec<InitDumpTableResponseItem>) -> Self {
+        InitDumpDataResponse::TableList(list)
+    }
+    pub fn from_schema_list(list: Vec<InitDumpSchemaResponseItem>) -> Self {
+        InitDumpDataResponse::SchemaList(list)
     }
 }
 #[derive(Deserialize, Serialize)]
-pub struct InitDumpDataResponseItem {
+pub struct InitDumpSchemaResponseItem {
+    pub schema_name: String,
+    pub table_list: Vec<InitDumpTableResponseItem>,
+}
+impl InitDumpSchemaResponseItem {
+    pub fn from(schema_name: String, table_list: Vec<InitDumpTableResponseItem>) -> Self {
+        InitDumpSchemaResponseItem {
+            schema_name,
+            table_list,
+        }
+    }
+}
+#[derive(Deserialize, Serialize)]
+pub struct InitDumpTableResponseItem {
     pub table_name: String,
     pub columns: Vec<InitDumpDataColumnItem>,
 }
-impl InitDumpDataResponseItem {
+impl InitDumpTableResponseItem {
     pub fn from(table_name: String, columns: Vec<InitDumpDataColumnItem>) -> Self {
-        InitDumpDataResponseItem {
+        InitDumpTableResponseItem {
             table_name,
             columns,
         }

@@ -18,7 +18,7 @@ use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlRespo
 use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
-use crate::vojo::init_dump_data_response::InitDumpDataResponseItem;
+use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -665,11 +665,13 @@ WHERE TABLE_SCHEMA = '{}'
                 let init_column_item = InitDumpDataColumnItem::from(column_name, column_type);
                 vec.push(init_column_item);
             }
-            let init_dump_data_response = InitDumpDataResponseItem::from(table_name, vec);
+            let init_dump_data_response = InitDumpTableResponseItem::from(table_name, vec);
             init_dump_data_responses.push(init_dump_data_response);
         }
 
-        Ok(InitDumpDataResponse::from(init_dump_data_responses))
+        Ok(InitDumpDataResponse::from_table_list(
+            init_dump_data_responses,
+        ))
     }
     pub async fn exe_sql(
         &self,

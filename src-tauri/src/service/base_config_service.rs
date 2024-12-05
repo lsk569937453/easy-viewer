@@ -213,11 +213,19 @@ impl BaseConfigEnum {
         appstate: &AppState,
         file_dir: String,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config
-                .generate_database_document(list_node_info_req, appstate, file_dir)
-                .await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .generate_database_document(list_node_info_req, appstate, file_dir)
+                    .await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .generate_database_document(list_node_info_req, appstate, file_dir)
+                    .await?
+            }
+            _ => (),
+        }
         Ok(())
     }
     pub async fn drop_table(
@@ -225,9 +233,15 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config.drop_table(list_node_info_req, appstate).await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.drop_table(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.drop_table(list_node_info_req, appstate).await?
+            }
+            _ => (),
+        }
         Ok(())
     }
     pub async fn drop_column(
@@ -251,9 +265,15 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config.drop_index(list_node_info_req, appstate).await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.drop_index(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.drop_index(list_node_info_req, appstate).await?
+            }
+            _ => (),
+        }
         Ok(())
     }
     pub async fn truncate_table(
@@ -261,9 +281,15 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::Mysql(config) = self {
-            config.truncate_table(list_node_info_req, appstate).await?
-        };
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config.truncate_table(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config.truncate_table(list_node_info_req, appstate).await?
+            }
+            _ => (),
+        }
         Ok(())
     }
     pub async fn move_column(
@@ -336,6 +362,9 @@ impl BaseConfigEnum {
             }
 
             BaseConfigEnum::Sqlite(config) => {
+                config.update_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Postgresql(config) => {
                 config.update_sql(list_node_info_req, appstate, sql).await?
             }
             _ => (),

@@ -6,7 +6,10 @@ use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::import_database_req::ImportDatabaseReq;
+use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
+use crate::vojo::init_dump_data_response::InitDumpSchemaResponseItem;
+use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -84,7 +87,58 @@ impl PostgresqlConfig {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
-        Ok(InitDumpDataResponse::new())
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let sql = "SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+  AND schema_name NOT LIKE 'pg_%';";
+        let rows = sqlx::query(sql).fetch_all(&mut conn).await?;
+        let schema_names: Vec<String> = rows.iter().map(|row| row.get("schema_name")).collect();
+        let mut init_dump_data_response = vec![];
+        for schema_name in schema_names {
+            let mut sql = format!(
+                "SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = '{}'  
+  AND table_type = 'BASE TABLE';",
+                schema_name
+            );
+            let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+            let table_names: Vec<String> = rows.iter().map(|row| row.get("table_name")).collect();
+            let mut init_dump_tables_responses = vec![];
+
+            for table_name in table_names {
+                sql = format!(
+                    "SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = '{}'  
+  AND table_name = '{}';",
+                    schema_name, table_name
+                );
+                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let mut vec = vec![];
+                for item in rows.iter() {
+                    let column_name: String = item.try_get(0)?;
+                    let column_type: String = item.try_get(1)?;
+                    let init_column_item = InitDumpDataColumnItem::from(column_name, column_type);
+                    vec.push(init_column_item);
+                }
+                let init_dump_tables = InitDumpTableResponseItem::from(table_name, vec);
+                init_dump_tables_responses.push(init_dump_tables);
+            }
+            let init_dump_schema =
+                InitDumpSchemaResponseItem::from(schema_name, init_dump_tables_responses);
+            init_dump_data_response.push(init_dump_schema);
+        }
+        Ok(InitDumpDataResponse::from_schema_list(
+            init_dump_data_response,
+        ))
     }
     pub async fn import_database(
         &self,
@@ -103,6 +157,40 @@ impl PostgresqlConfig {
     ) -> Result<(), anyhow::Error> {
         Ok(())
     }
+    pub async fn generate_database_document(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        file_dir: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        Ok(())
+    }
+    pub async fn drop_index(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        Ok(())
+    }
+    pub async fn drop_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        Ok(())
+    }
+    pub async fn truncate_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        Ok(())
+    }
+
     pub async fn get_column_info_for_is(
         &self,
 
@@ -155,14 +243,30 @@ impl PostgresqlConfig {
 
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 2 {
-            let list_node_info_response_item = ListNodeInfoResponseItem::new(
-                true,
-                true,
-                "public".to_string(),
-                "public".to_string(),
-                None,
-            );
-            vec.push(list_node_info_response_item);
+            let database_name = list_node_info_req.level_infos[1].config_value.clone();
+            let test_url = self.connection_url_with_database(database_name);
+            info!("test_url: {}", test_url);
+            let mut connection = PgConnection::connect(&test_url).await?;
+            let sql = "SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+  AND schema_name NOT LIKE 'pg_%';";
+            let rows = sqlx::query(sql).fetch_all(&mut connection).await?;
+            if rows.is_empty() {
+                return Ok(ListNodeInfoResponse::new_with_empty());
+            }
+            for item in rows.iter() {
+                let schema_name: String = item.try_get(0)?;
+                let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                    true,
+                    true,
+                    "public".to_string(),
+                    schema_name,
+                    None,
+                );
+                vec.push(list_node_info_response_item);
+            }
+
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 3 {
             let level_infos = list_node_info_req.level_infos;
@@ -202,6 +306,8 @@ WHERE table_schema = '{}';",
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 4 {
             let node_name = list_node_info_req.level_infos[3].config_value.clone();
+            let schema_name = list_node_info_req.level_infos[2].config_value.clone();
+
             let base_config_id = list_node_info_req.level_infos[0]
                 .config_value
                 .parse::<i32>()?;
@@ -211,13 +317,13 @@ WHERE table_schema = '{}';",
                 let test_url = self.connection_url_with_database(database_name);
                 info!("test_url: {}", test_url);
                 let mut connection = PgConnection::connect(&test_url).await?;
-                let rows = sqlx::query(
+                let sql = format!(
                     "SELECT tablename
 FROM pg_catalog.pg_tables
-WHERE schemaname = 'public';",
-                )
-                .fetch_all(&mut connection)
-                .await?;
+WHERE schemaname = '{}';",
+                    schema_name
+                );
+                let rows = sqlx::query(&sql).fetch_all(&mut connection).await?;
                 info!("rows: {}", rows.len());
                 if rows.is_empty() {
                     return Ok(ListNodeInfoResponse::new_with_empty());
@@ -564,15 +670,15 @@ group by relname;",
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
-        sql: Vec<String>,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        sqls: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
 
         let level_infos = list_node_info_req.level_infos;
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let node_name = level_infos[2].config_value.clone();
-        Ok(ExeSqlResponse::new())
+        Ok(())
     }
     pub async fn show_columns(
         &self,

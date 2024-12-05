@@ -11,6 +11,7 @@ import { formatMap, getLevelInfos, getRootNode } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
 import DumpDataPage from "../../page/dumpDataPage"
 import ImportDataPage from "../../page/importDataPage"
+import PostGresqlDumpDataPage from "../../page/postgresqlDumpDataPage"
 
 const DatabaseNodeContextMenu = ({ node }) => {
   const { toast } = useToast()
@@ -96,7 +97,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
   const handleDumpStructOnClick = async (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
-
+    let rootNode = getRootNode(node)
     handleAddPageClick({
       icon: (
         <svg
@@ -117,7 +118,13 @@ const DatabaseNodeContextMenu = ({ node }) => {
           <path d="M12 4l0 12" />
         </svg>
       ),
-      render: (tabIndex) => <DumpDataPage node={node} />,
+      render: (tabIndex) => {
+        return rootNode.data.connectionType === 1 ? (
+          <PostGresqlDumpDataPage node={node} />
+        ) : (
+          <DumpDataPage node={node} />
+        )
+      },
       service: `dumpDataBaseStruct${node.data.name}`,
       tabName: node.data.name,
     })

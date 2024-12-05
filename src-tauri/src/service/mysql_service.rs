@@ -555,15 +555,16 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             .await?;
 
         let mut dump_data_list = vec![];
+        let common_data = dump_database_req.source_data.get_common_data()?;
         for item in rows {
             let buf: &[u8] = item.try_get(0)?;
             let table_name = String::from_utf8_lossy(buf).to_string();
-            let table_index = dump_database_req
+            let table_index = common_data
                 .tables
                 .iter()
                 .position(|x| x.name == table_name)
                 .ok_or(anyhow!("table not found"))?;
-            if !dump_database_req.tables[table_index].checked {
+            if !common_data.tables[table_index].checked {
                 continue;
             }
             let mut dump_database_res_item = DumpDatabaseResItem::new();
@@ -577,7 +578,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                 dump_database_res_item.table_struct = ddl;
             }
             if dump_database_req.export_option.is_export_data() {
-                let selected_column = dump_database_req.columns[table_index]
+                let selected_column = common_data.columns[table_index]
                     .iter()
                     .filter(|x| x.checked)
                     .map(|x| x.column_name.clone())

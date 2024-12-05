@@ -1,4 +1,4 @@
-use super::dump_database_req::DumpDatabaseReq;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::dump_database_req::ExportOption;
 use crate::vojo::dump_database_req::ExportType;
 use serde::{Deserialize, Serialize};

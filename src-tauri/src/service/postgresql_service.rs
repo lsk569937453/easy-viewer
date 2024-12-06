@@ -40,37 +40,35 @@ use tokio::time::timeout;
 static POSTGRESQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> =
     OnceLock::new();
 static POSTGRESQL_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
-fn generate_ddl(table_name: String) -> String {
+fn generate_ddl(schema_name: String, table_name: String) -> String {
     format!(
-        "SELECT                                          
-  'CREATE TABLE ' || relname || E'\n(\n' ||
-  array_to_string(
-    array_agg(
-      '    ' || column_name || ' ' ||  type || ' '|| not_null
-    )
-    , E',\n'
-  ) || E'\n);\n'
-from
-(
-  SELECT 
-    c.relname, a.attname AS column_name,
-    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
-    case 
-      when a.attnotnull
-    then 'NOT NULL' 
-    else 'NULL' 
-    END as not_null 
-  FROM pg_class c,
-   pg_attribute a,
-   pg_type t
-   WHERE c.relname = '{}'
-   AND a.attnum > 0
-   AND a.attrelid = c.oid
-   AND a.atttypid = t.oid
- ORDER BY a.attnum
-) as tabledefinition
-group by relname;",
-        table_name
+        "SELECT 'CREATE TABLE ' || table_schema || '.' || table_name || ' (' || E'\n' ||
+       array_to_string(
+           array_agg(
+               '    ' || column_name || ' ' || 
+               data_type || 
+               CASE 
+                   WHEN character_maximum_length IS NOT NULL 
+                   THEN '(' || character_maximum_length || ')'
+                   ELSE ''
+               END ||
+               CASE 
+                   WHEN numeric_precision IS NOT NULL 
+                   THEN '(' || numeric_precision || ',' || numeric_scale || ')'
+                   ELSE ''
+               END ||
+               CASE 
+                   WHEN is_nullable = 'NO' THEN ' NOT NULL'
+                   ELSE ''
+               END
+           ), E',\n'
+       ) || E'\n);'
+FROM information_schema.columns
+WHERE table_name = '{}' 
+  AND table_schema = '{}'
+GROUP BY table_schema, table_name;
+",
+        table_name, schema_name
     )
 }
 fn get_postgresql_database_data() -> &'static LinkedHashMap<&'static str, &'static str> {
@@ -231,7 +229,8 @@ WHERE schema_name = '{}';",
                     continue;
                 }
                 let table_name = table.table_name;
-                let create_table_sql = generate_ddl(table_name.clone());
+                let create_table_sql = generate_ddl(schema_name.clone(), table_name.clone());
+                info!("create_table_sql: {}", create_table_sql);
                 let creat_table_row: String = sqlx::query(&create_table_sql)
                     .fetch_optional(&mut conn)
                     .await?
@@ -248,7 +247,12 @@ WHERE schema_name = '{}';",
                         .filter(|x| x.checked)
                         .map(|x| x.column_name.clone())
                         .join(",");
-                    let sql = format!("select {} from {}", selected_column, table_name.clone());
+                    let sql = format!(
+                        "select {} from {}.{}",
+                        selected_column,
+                        schema_name.clone(),
+                        table_name.clone()
+                    );
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     if !rows.is_empty() {
                         let mut vec = vec![];
@@ -278,18 +282,19 @@ WHERE schema_name = '{}';",
                         }
                         dump_database_res_item.column_list = vec;
                         dump_database_res_item.column_structs = column_structs;
-                        dump_database_res_item.table_name = table_name;
+                        dump_database_res_item.table_name =
+                            format!("{}.{}", schema_name, table_name);
                     }
                 }
                 dump_data_list.push(dump_database_res_item);
             }
             let postgresql_dump_data_item =
-                PostgresqlDumpDataItem::from(schema_name, DumpTableList::from(dump_data_list));
+                PostgresqlDumpDataItem::from(creat_schema_row, DumpTableList::from(dump_data_list));
             vecs.push(postgresql_dump_data_item);
         }
         info!("dump_data_list: {:#?}", vecs);
         let dump_database_res = PostgresqlDumpData::from(vecs);
-        // dump_database_res.export_to_file(dump_database_req)?;
+        dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }
     pub async fn generate_database_document(
@@ -763,7 +768,7 @@ WHERE table_name = '{}'
         let connection_url = self.connection_url_with_database(database_name);
 
         let mut conn = PgConnection::connect(&connection_url).await?;
-        let sql = generate_ddl(table_name);
+        let sql = generate_ddl(schema_name, table_name);
         let row = sqlx::query(&sql)
             .fetch_optional(&mut conn)
             .await?

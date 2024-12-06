@@ -25,10 +25,10 @@ impl PostgresqlDumpData {
                 let mut file = std::fs::File::create(file_path)?;
                 info!("file created success");
                 for schema in self.dump_data_list.clone() {
-                    writeln!(file, "{};", schema.schema_name.clone())?;
+                    writeln!(file, "{}", schema.create_schema.clone())?;
                     writeln!(file)?;
                     for table in schema.table_list.0 {
-                        writeln!(file, "{};", table.table_struct.clone())?;
+                        writeln!(file, "{}", table.table_struct.clone())?;
                         writeln!(file)?;
                         let sql = table.get_data_for_sql()?;
                         writeln!(file, "{};", sql)?;
@@ -40,10 +40,10 @@ impl PostgresqlDumpData {
                 let mut file = std::fs::File::create(file_path)?;
                 info!("file created success");
                 for schema in self.dump_data_list.clone() {
-                    writeln!(file, "{};", schema.schema_name.clone())?;
+                    writeln!(file, "{}", schema.create_schema.clone())?;
                     writeln!(file)?;
                     for table in schema.table_list.0 {
-                        writeln!(file, "{};", table.table_struct.clone())?;
+                        writeln!(file, "{}", table.table_struct.clone())?;
                         writeln!(file)?;
                     }
                 }
@@ -63,14 +63,14 @@ impl PostgresqlDumpData {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PostgresqlDumpDataItem {
-    pub schema_name: String,
+    pub create_schema: String,
 
     pub table_list: DumpTableList,
 }
 impl PostgresqlDumpDataItem {
-    pub fn from(schema_name: String, table_list: DumpTableList) -> Self {
+    pub fn from(create_schema: String, table_list: DumpTableList) -> Self {
         PostgresqlDumpDataItem {
-            schema_name,
+            create_schema,
             table_list,
         }
     }

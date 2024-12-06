@@ -1,4 +1,5 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::service::dump_data::dump_database_service::DumpTableList;
 use crate::service::mysql_common_service::show_column_info;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
@@ -624,7 +625,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             dump_data_list.push(dump_database_res_item);
         }
         info!("dump_data_list: {:#?}", dump_data_list);
-        let dump_database_res = DumpDatabaseRes::from(dump_data_list);
+        let dump_database_res = DumpDatabaseRes::from(DumpTableList::from(dump_data_list));
         dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }

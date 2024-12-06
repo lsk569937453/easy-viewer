@@ -1,7 +1,15 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnItem;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResItem;
+use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpData;
+use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpDataItem;
 use crate::sql_lite::connection::AppState;
 use crate::util::sql_utils::postgres_row_to_json;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
+use itertools::Itertools;
+
+use crate::service::dump_data::dump_database_service::DumpTableList;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
@@ -32,7 +40,39 @@ use tokio::time::timeout;
 static POSTGRESQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> =
     OnceLock::new();
 static POSTGRESQL_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
-
+fn generate_ddl(table_name: String) -> String {
+    format!(
+        "SELECT                                          
+  'CREATE TABLE ' || relname || E'\n(\n' ||
+  array_to_string(
+    array_agg(
+      '    ' || column_name || ' ' ||  type || ' '|| not_null
+    )
+    , E',\n'
+  ) || E'\n);\n'
+from
+(
+  SELECT 
+    c.relname, a.attname AS column_name,
+    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
+    case 
+      when a.attnotnull
+    then 'NOT NULL' 
+    else 'NULL' 
+    END as not_null 
+  FROM pg_class c,
+   pg_attribute a,
+   pg_type t
+   WHERE c.relname = '{}'
+   AND a.attnum > 0
+   AND a.attrelid = c.oid
+   AND a.atttypid = t.oid
+ ORDER BY a.attnum
+) as tabledefinition
+group by relname;",
+        table_name
+    )
+}
 fn get_postgresql_database_data() -> &'static LinkedHashMap<&'static str, &'static str> {
     POSTGRESQL_DATABASE_DATA.get_or_init(|| {
         let mut map = LinkedHashMap::new();
@@ -155,6 +195,101 @@ WHERE table_schema = '{}'
         appstate: &AppState,
         dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let common_data = dump_database_req.source_data.get_postgresql_data()?;
+        let mut vecs = vec![];
+        for schema in common_data.list {
+            let schema_checked = schema.checked;
+            if !schema_checked {
+                continue;
+            }
+
+            let schema_name = schema.schema_name;
+            let create_schema_sql = format!(
+                "SELECT 'CREATE SCHEMA ' || schema_name || ';'
+FROM information_schema.schemata
+WHERE schema_name = '{}';",
+                schema_name.clone()
+            );
+            let creat_schema_row: String = sqlx::query(&create_schema_sql)
+                .fetch_optional(&mut conn)
+                .await?
+                .ok_or(anyhow!("Not found schema"))?
+                .try_get(0)?;
+            let mut dump_data_list = vec![];
+
+            for table in schema.table_list {
+                let table_checked = table.checked;
+                if !table_checked {
+                    continue;
+                }
+                let table_name = table.table_name;
+                let create_table_sql = generate_ddl(table_name.clone());
+                let creat_table_row: String = sqlx::query(&create_table_sql)
+                    .fetch_optional(&mut conn)
+                    .await?
+                    .ok_or(anyhow!("Not found table"))?
+                    .try_get(0)?;
+
+                let mut dump_database_res_item = DumpDatabaseResItem::new();
+                dump_database_res_item.table_name = table_name.clone();
+                dump_database_res_item.table_struct = creat_table_row;
+                if dump_database_req.export_option.is_export_data() {
+                    let selected_column = table
+                        .columns
+                        .iter()
+                        .filter(|x| x.checked)
+                        .map(|x| x.column_name.clone())
+                        .join(",");
+                    let sql = format!("select {} from {}", selected_column, table_name.clone());
+                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    if !rows.is_empty() {
+                        let mut vec = vec![];
+                        let mut column_structs = vec![];
+                        for (row_index, item) in rows.iter().enumerate() {
+                            let columns = item.columns();
+                            let len = columns.len();
+                            let mut database_res_column_list = vec![];
+                            for i in 0..len {
+                                let column_name = columns[i].name();
+                                let column_type = columns[i].type_info().name();
+                                let column_value = postgres_row_to_json(item, column_type, i)?;
+                                let database_res_column_item =
+                                    DumpDatabaseResColumnItem::from(column_value);
+                                database_res_column_list.push(database_res_column_item);
+
+                                if row_index == 0 {
+                                    let database_res_column_struct_item =
+                                        DumpDatabaseResColumnStructItem::from(
+                                            column_name.to_string(),
+                                            column_type.to_string(),
+                                        );
+                                    column_structs.push(database_res_column_struct_item);
+                                }
+                            }
+                            vec.push(database_res_column_list);
+                        }
+                        dump_database_res_item.column_list = vec;
+                        dump_database_res_item.column_structs = column_structs;
+                        dump_database_res_item.table_name = table_name;
+                    }
+                }
+                dump_data_list.push(dump_database_res_item);
+            }
+            let postgresql_dump_data_item =
+                PostgresqlDumpDataItem::from(schema_name, DumpTableList::from(dump_data_list));
+            vecs.push(postgresql_dump_data_item);
+        }
+        info!("dump_data_list: {:#?}", vecs);
+        let dump_database_res = PostgresqlDumpData::from(vecs);
+        // dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }
     pub async fn generate_database_document(
@@ -628,37 +763,7 @@ WHERE table_name = '{}'
         let connection_url = self.connection_url_with_database(database_name);
 
         let mut conn = PgConnection::connect(&connection_url).await?;
-        let sql = format!(
-            "SELECT                                          
-  'CREATE TABLE ' || relname || E'\n(\n' ||
-  array_to_string(
-    array_agg(
-      '    ' || column_name || ' ' ||  type || ' '|| not_null
-    )
-    , E',\n'
-  ) || E'\n);\n'
-from
-(
-  SELECT 
-    c.relname, a.attname AS column_name,
-    pg_catalog.format_type(a.atttypid, a.atttypmod) as type,
-    case 
-      when a.attnotnull
-    then 'NOT NULL' 
-    else 'NULL' 
-    END as not_null 
-  FROM pg_class c,
-   pg_attribute a,
-   pg_type t
-   WHERE c.relname = '{}'
-   AND a.attnum > 0
-   AND a.attrelid = c.oid
-   AND a.atttypid = t.oid
- ORDER BY a.attnum
-) as tabledefinition
-group by relname;",
-            table_name
-        );
+        let sql = generate_ddl(table_name);
         let row = sqlx::query(&sql)
             .fetch_optional(&mut conn)
             .await?

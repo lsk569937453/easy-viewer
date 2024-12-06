@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use std::fmt::Debug;
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DumpDatabaseReq {
     pub source_data: DumpDatabaseSourceData,
     pub export_type: ExportType,
     pub export_option: ExportOption,
     pub file_path: String,
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 
 pub enum DumpDatabaseSourceData {
     #[serde(rename = "commonData")]
@@ -81,7 +81,7 @@ pub enum ExportType {
     Csv,
     Xlsx,
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum ExportOption {
     #[serde(rename = "dumapAll")]
     ExportAll,

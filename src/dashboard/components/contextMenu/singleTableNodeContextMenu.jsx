@@ -27,7 +27,7 @@ import {
   getRootNode,
 } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
-import DumpDataPage from "../../page/dumpDataPage"
+import DumpDataPage from "../../page/commonDumpDataPage"
 import PropertiesPage from "../../page/propertiesPage"
 import QueryPage from "../../page/queryPage"
 

@@ -1,26 +1,78 @@
 use serde::{Deserialize, Serialize};
 
 use std::fmt::Debug;
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DumpDatabaseReq {
-    pub tables: Vec<DumpDatabaseTableItem>,
-    pub columns: Vec<Vec<DumpDatabaseColumnItem>>,
+    pub source_data: DumpDatabaseSourceData,
     pub export_type: ExportType,
     pub export_option: ExportOption,
     pub file_path: String,
 }
+#[derive(Deserialize, Serialize, Debug, Clone)]
 
-#[derive(Deserialize, Serialize, Debug)]
+pub enum DumpDatabaseSourceData {
+    #[serde(rename = "commonData")]
+    CommonData(CommonData),
+    #[serde(rename = "postgresqlData")]
+    PostgresqlData(PostgresqlData),
+}
+impl DumpDatabaseSourceData {
+    pub fn get_common_data(&self) -> Result<CommonData, anyhow::Error> {
+        match self {
+            DumpDatabaseSourceData::CommonData(data) => Ok(data.clone()),
+            _ => Err(anyhow!("not common data")),
+        }
+    }
+    pub fn get_postgresql_data(&self) -> Result<PostgresqlData, anyhow::Error> {
+        match self {
+            DumpDatabaseSourceData::PostgresqlData(data) => Ok(data.clone()),
+            _ => Err(anyhow!("not postgresql data")),
+        }
+    }
+}
+#[derive(Deserialize, Serialize, Debug, Clone)]
+
+pub struct CommonData {
+    pub tables: Vec<DumpDatabaseTableItem>,
+    pub columns: Vec<Vec<DumpDatabaseColumnItem>>,
+}
+#[derive(Deserialize, Serialize, Debug, Clone)]
+
+pub struct PostgresqlData {
+    pub list: Vec<PostgresqlSchemaData>,
+}
+#[derive(Deserialize, Serialize, Debug, Clone)]
+
+pub struct PostgresqlSchemaData {
+    pub table_list: Vec<PostgresqlTableItem>,
+    pub schema_name: String,
+    pub checked: bool,
+}
+#[derive(Deserialize, Serialize, Debug, Clone)]
+
+pub struct PostgresqlTableItem {
+    pub columns: Vec<PostgresqlColumnItem>,
+    pub table_name: String,
+    pub checked: bool,
+}
+#[derive(Deserialize, Serialize, Debug, Clone)]
+
+pub struct PostgresqlColumnItem {
+    pub column_name: String,
+    pub checked: bool,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DumpDatabaseTableItem {
     pub name: String,
     pub checked: bool,
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DumpDatabaseColumnItem {
     pub column_name: String,
     pub checked: bool,
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ExportType {
     Sql,
@@ -29,7 +81,7 @@ pub enum ExportType {
     Csv,
     Xlsx,
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum ExportOption {
     #[serde(rename = "dumapAll")]
     ExportAll,

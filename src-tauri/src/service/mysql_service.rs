@@ -1,15 +1,16 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::service::dump_data::dump_database_service::DumpTableList;
 use crate::service::mysql_common_service::show_column_info;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::mysql_row_to_json;
 use docx_rs::*;
 
+use crate::service::dump_data::dump_database_service::DumpDatabaseRes;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnItem;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResItem;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
-use crate::vojo::dump_database_res::DumpDatabaseRes;
-use crate::vojo::dump_database_res::DumpDatabaseResColumnItem;
-use crate::vojo::dump_database_res::DumpDatabaseResColumnStructItem;
-use crate::vojo::dump_database_res::DumpDatabaseResItem;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
@@ -555,15 +556,16 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             .await?;
 
         let mut dump_data_list = vec![];
+        let common_data = dump_database_req.source_data.get_common_data()?;
         for item in rows {
             let buf: &[u8] = item.try_get(0)?;
             let table_name = String::from_utf8_lossy(buf).to_string();
-            let table_index = dump_database_req
+            let table_index = common_data
                 .tables
                 .iter()
                 .position(|x| x.name == table_name)
                 .ok_or(anyhow!("table not found"))?;
-            if !dump_database_req.tables[table_index].checked {
+            if !common_data.tables[table_index].checked {
                 continue;
             }
             let mut dump_database_res_item = DumpDatabaseResItem::new();
@@ -577,7 +579,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                 dump_database_res_item.table_struct = ddl;
             }
             if dump_database_req.export_option.is_export_data() {
-                let selected_column = dump_database_req.columns[table_index]
+                let selected_column = common_data.columns[table_index]
                     .iter()
                     .filter(|x| x.checked)
                     .map(|x| x.column_name.clone())
@@ -623,7 +625,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             dump_data_list.push(dump_database_res_item);
         }
         info!("dump_data_list: {:#?}", dump_data_list);
-        let dump_database_res = DumpDatabaseRes::from(dump_data_list);
+        let dump_database_res = DumpDatabaseRes::from(DumpTableList::from(dump_data_list));
         dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }

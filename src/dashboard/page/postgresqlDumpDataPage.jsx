@@ -140,6 +140,27 @@ const PostGresqlDumpDataPage = ({
       return updatedTableData
     })
   }
+  const handleSchemaCheckboxOnChange = (index, val) => {
+    setAllData((prevTableData) => {
+      const updatedTableData = [...prevTableData]
+      updatedTableData[schemaIndex].checked = val
+      updatedTableData[schemaIndex].table_list = updatedTableData[
+        schemaIndex
+      ].table_list.map((item) => {
+        item.columns = item.columns.map((item2) => ({
+          ...item2,
+          checked: val,
+        }))
+        return {
+          ...item,
+          checked: val,
+        }
+      })
+      return updatedTableData
+    })
+
+    setSchemaIndex(index)
+  }
   const handleTableCheckboxOnChange = (index, val) => {
     setAllData((prevTableData) => {
       const updatedTableData = [...prevTableData]
@@ -155,7 +176,11 @@ const PostGresqlDumpDataPage = ({
     setTableIndex(index)
   }
   const handleTableOnClick = (index) => {
-    setShowColumnIndex(index)
+    setTableIndex(index)
+  }
+  const handleSchemaOnClick = (index) => {
+    setSchemaIndex(index)
+    setTableIndex(0)
   }
   const handleSelectPathClick = async () => {
     const selected = await open({
@@ -188,13 +213,16 @@ const PostGresqlDumpDataPage = ({
       })
       return
     }
-    // setShowTaskStatusDialog(true)
+    console.log(allData)
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
     const dumpDatabaseReq = {
-      tables: tableData,
-      columns: columnData,
+      source_data: {
+        postgresqlData: {
+          list: allData,
+        },
+      },
       export_type: formatOption,
       export_option: exportOption,
       file_path: filePath,
@@ -270,7 +298,43 @@ const PostGresqlDumpDataPage = ({
         </DialogContent>
       </Dialog>
       <div className="max-h-1/2 flex w-full flex-row  rounded-md border bg-background">
-        <div className="flex basis-1/4 flex-col">
+        <div className="flex basis-1/3 flex-col">
+          <div className="relative overflow-auto">
+            <Table className="w-full border">
+              <TableHeader className="sticky top-0">
+                <TableRow>
+                  <TableHead>Schema Name</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {allData.map((item, index) => {
+                  return (
+                    <TableRow key={index}>
+                      <TableCell
+                        className={`flex  cursor-pointer flex-row gap-2  p-1 ${
+                          index === schemaIndex
+                            ? "bg-accent text-accent-foreground"
+                            : ""
+                        }`}
+                        onClick={() => handleSchemaOnClick(index)}
+                      >
+                        <Checkbox
+                          id="terms"
+                          checked={item.checked}
+                          onCheckedChange={(val) =>
+                            handleSchemaCheckboxOnChange(index, val)
+                          }
+                        />
+                        <div className="text-xs">{item.schema_name}</div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+        <div className="flex basis-1/3 flex-col">
           <div className="relative overflow-auto">
             <Table className="w-full border">
               <TableHeader className="sticky top-0">
@@ -284,7 +348,7 @@ const PostGresqlDumpDataPage = ({
                     <TableRow key={index}>
                       <TableCell
                         className={`flex  cursor-pointer flex-row gap-2  p-1 ${
-                          index === showColumnIndex
+                          index === tableIndex
                             ? "bg-accent text-accent-foreground"
                             : ""
                         }`}
@@ -306,7 +370,7 @@ const PostGresqlDumpDataPage = ({
             </Table>
           </div>
         </div>
-        <div className="flex basis-3/4 flex-col">
+        <div className="flex basis-1/3 flex-col">
           <div className="relative h-60 overflow-auto">
             <Table className="w-full border">
               <TableHeader className="sticky top-0 bg-background">

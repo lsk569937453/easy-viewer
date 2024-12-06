@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "../components/scorllableTable"
 
-const DumpDataPage = ({ node, selectedTableName = null }) => {
+const CommonDumpDataPage = ({ node, selectedTableName = null }) => {
   const { toast } = useToast()
   const [exportOption, setExportOption] = useState("dumapAll")
   const [formatOption, setFormatOption] = useState("sql")
@@ -83,7 +83,7 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
       const columnData = response_msg.tableList.map((item) =>
         item.columns.map((item2) => ({
           ...item2,
-          checked: selectedTableName === null, // All true if selectedTableName is null
+          checked: selectedTableName === null,
         }))
       )
 
@@ -91,13 +91,9 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
         const selectedIndex = tableData.findIndex(
           (item) => item.name === selectedTableName
         )
-
-        // Update tableData checked property
         tableData.forEach((item, index) => {
           item.checked = index === selectedIndex
         })
-
-        // Update columnData checked property
         columnData.forEach((columns, index) => {
           columns.forEach((column) => {
             column.checked = index === selectedIndex
@@ -188,8 +184,12 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
       level_infos: getLevelInfos(node),
     }
     const dumpDatabaseReq = {
-      tables: tableData,
-      columns: columnData,
+      source_data: {
+        commonData: {
+          tables: tableData,
+          columns: columnData,
+        },
+      },
       export_type: formatOption,
       export_option: exportOption,
       file_path: filePath,
@@ -423,4 +423,4 @@ const DumpDataPage = ({ node, selectedTableName = null }) => {
   )
 }
 
-export default DumpDataPage
+export default CommonDumpDataPage

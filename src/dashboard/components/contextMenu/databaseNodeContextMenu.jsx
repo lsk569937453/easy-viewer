@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { formatMap, getLevelInfos, getRootNode } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
-import DumpDataPage from "../../page/dumpDataPage"
+import CommonDumpDataPage from "../../page/commonDumpDataPage"
 import ImportDataPage from "../../page/importDataPage"
 import PostGresqlDumpDataPage from "../../page/postgresqlDumpDataPage"
 
@@ -98,6 +98,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()
     let rootNode = getRootNode(node)
+    let base_config_id = rootNode.data.baseConfigId
     handleAddPageClick({
       icon: (
         <svg
@@ -122,10 +123,10 @@ const DatabaseNodeContextMenu = ({ node }) => {
         return rootNode.data.connectionType === 1 ? (
           <PostGresqlDumpDataPage node={node} />
         ) : (
-          <DumpDataPage node={node} />
+          <CommonDumpDataPage node={node} />
         )
       },
-      service: `dumpDataBaseStruct${node.data.name}`,
+      service: `dumpDataBaseStruct${node.data.name}${base_config_id}`,
       tabName: node.data.name,
     })
   }

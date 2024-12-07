@@ -92,21 +92,24 @@ export default function TablePage({ node }) {
 
       <Tabs.Content
         value="properties"
-        className="h-full w-full overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        forceMount
+        className="h-full w-full overflow-hidden ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=inactive]:hidden"
       >
         <PropertiesPage node={node} />
       </Tabs.Content>
 
       <Tabs.Content
         value="data"
-        className=" ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        forceMount
+        className="ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=inactive]:hidden"
       >
         <DataPage node={node} />
       </Tabs.Content>
 
       <Tabs.Content
         value="diagram"
-        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        forceMount
+        className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 data-[state=inactive]:hidden"
       >
         <p>sss3</p>
       </Tabs.Content>

@@ -74,7 +74,7 @@ pub async fn get_base_config_with_error(
     let mut base_configs = vec![];
     if !row_list.is_empty() {
         for item in row_list.iter() {
-            let id: i32 = match item.try_get("id") {
+            let id: u64 = match item.try_get("id") {
                 Ok(val) => val,
                 Err(_) => continue,
             };
@@ -142,7 +142,7 @@ pub async fn get_base_config_by_id_with_error(
             .await?
             .ok_or(anyhow!("not found"))?;
 
-    let id: i32 = row.try_get("id")?;
+    let id: u64 = row.try_get("id")?;
     let connection_json_str: String = row.try_get("connection_json")?;
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     let connection_type = base_config.base_config_enum.get_connection_type();
@@ -161,7 +161,7 @@ pub async fn list_node_info_with_error(
 ) -> Result<ListNodeInfoResponse, anyhow::Error> {
     let value = list_node_info_req.level_infos[0]
         .config_value
-        .parse::<i32>()?;
+        .parse::<i64>()?;
     let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
         .bind(value)
         .fetch_optional(&state.pool)

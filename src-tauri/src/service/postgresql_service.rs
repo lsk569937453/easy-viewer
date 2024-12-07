@@ -311,7 +311,17 @@ WHERE schema_name = '{}';",
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let index_name = level_infos[6].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let drop_index_sql = format!("DROP INDEX IF EXISTS {}.{};", schema_name, index_name);
+        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn drop_table(
@@ -319,7 +329,17 @@ WHERE schema_name = '{}';",
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let drop_index_sql = format!("DROP TABLE {}.{};", schema_name, table_name);
+        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn truncate_table(
@@ -470,7 +490,11 @@ WHERE schemaname = '{}';",
                 }
                 for item in rows.iter() {
                     let table_name: String = item.try_get(0)?;
-                    let sql = format!("select count(*) from {}", table_name.clone());
+                    let sql = format!(
+                        "select count(*) from {}.{}",
+                        schema_name.clone(),
+                        table_name.clone()
+                    );
                     info!("sql: {}", sql);
                     let record_count: i64 = sqlx::query(&sql)
                         .fetch_one(&mut connection)

@@ -1,14 +1,19 @@
+use itertools::Itertools;
 use std::collections::HashSet;
 use std::path::Path;
 use std::vec;
 
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::sqlite_row_to_json;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
+use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -30,6 +35,12 @@ use sqlx::SqliteConnection;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
 use std::sync::OnceLock;
+
+use super::dump_data::dump_database_service::DumpDatabaseRes;
+use super::dump_data::dump_database_service::DumpDatabaseResColumnItem;
+use super::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
+use super::dump_data::dump_database_service::DumpDatabaseResItem;
+use super::dump_data::dump_database_service::DumpTableList;
 static SQLITE_ROOT_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
 static SQLITE_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
 
@@ -56,6 +67,139 @@ pub struct SqliteConfig {
     pub file_path: String,
 }
 impl SqliteConfig {
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let sql = "SELECT name 
+FROM sqlite_master 
+WHERE type = 'table';"
+            .to_string();
+        let table_names = sqlx::query(&sql)
+            .fetch_all(&mut conn)
+            .await?
+            .iter()
+            .map(|row| -> Result<String, anyhow::Error> { Ok(row.try_get("name")?) })
+            .collect::<Result<Vec<String>, anyhow::Error>>()?;
+        let mut tables = vec![];
+        for table in table_names {
+            let get_column_info_sql = format!("PRAGMA table_info({});", table);
+            let rows = sqlx::query(&get_column_info_sql)
+                .fetch_all(&mut conn)
+                .await?;
+            let mut columns = vec![];
+            for row in rows {
+                let column_name: String = row.try_get("name")?;
+                let column_type: String = row.try_get("type")?;
+                let ini = InitDumpDataColumnItem::from(column_name, column_type);
+                columns.push(ini);
+            }
+            let table = InitDumpTableResponseItem::from(table, columns);
+            tables.push(table);
+        }
+        Ok(InitDumpDataResponse::from_table_list(tables))
+    }
+    pub async fn dump_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let common_data = dump_database_req.source_data.get_common_data()?;
+        let mut dump_data_list = vec![];
+
+        for (table_index, table) in common_data.tables.iter().enumerate() {
+            if !table.checked {
+                continue;
+            }
+            let table_name = table.name.clone();
+            let create_table_sql = format!(
+                "SELECT sql
+FROM sqlite_master
+WHERE type = 'table' AND name = '{}';",
+                table_name
+            );
+            let table_ddl: String = sqlx::query(&create_table_sql)
+                .fetch_optional(&mut conn)
+                .await?
+                .ok_or(anyhow!("Not found table"))?
+                .try_get(0)?;
+            let mut dump_database_res_item = DumpDatabaseResItem::new();
+            dump_database_res_item.table_struct = table_ddl.clone();
+            if dump_database_req.export_option.is_export_data() {
+                let selected_column = common_data.columns[table_index]
+                    .iter()
+                    .filter(|x| x.checked)
+                    .map(|x| x.column_name.clone())
+                    .join(",");
+                let sql = format!("select {} from {}", selected_column, table_name.clone());
+                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                if !rows.is_empty() {
+                    let mut vec = vec![];
+                    let mut column_structs = vec![];
+                    for (row_index, item) in rows.iter().enumerate() {
+                        let columns = item.columns();
+                        let len = columns.len();
+                        let mut database_res_column_list = vec![];
+                        for i in 0..len {
+                            let column_name = columns[i].name();
+                            let column_type = columns[i].type_info().name();
+                            let column_value = sqlite_row_to_json(item, column_type, i)?;
+                            let database_res_column_item =
+                                DumpDatabaseResColumnItem::from(column_value);
+                            database_res_column_list.push(database_res_column_item);
+
+                            if row_index == 0 {
+                                let database_res_column_struct_item =
+                                    DumpDatabaseResColumnStructItem::from(
+                                        column_name.to_string(),
+                                        column_type.to_string(),
+                                    );
+                                column_structs.push(database_res_column_struct_item);
+                            }
+                        }
+                        vec.push(database_res_column_list);
+                    }
+                    dump_database_res_item.column_list = vec;
+                    dump_database_res_item.column_structs = column_structs;
+                    dump_database_res_item.table_name = table_name;
+                }
+            }
+            dump_data_list.push(dump_database_res_item);
+        }
+        let dump_database_res = DumpDatabaseRes::from(DumpTableList::from(dump_data_list));
+        dump_database_res.export_to_file(dump_database_req)?;
+        Ok(())
+    }
+    pub async fn drop_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let table_name: String = level_infos[2].config_value.clone();
+        let sql: String = format!("DROP TABLE IF EXISTS {};", table_name);
+        sqlx::query(&sql).execute(&mut conn).await?;
+        Ok(())
+    }
+    pub async fn drop_index(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let index_name: String = level_infos[4].config_value.clone();
+        let sql: String = format!("DROP INDEX IF EXISTS {};", index_name);
+        sqlx::query(&sql).execute(&mut conn).await?;
+        Ok(())
+    }
     pub async fn get_column_info_for_is(
         &self,
 

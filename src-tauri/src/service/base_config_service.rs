@@ -164,6 +164,11 @@ impl BaseConfigEnum {
                     .dump_database(list_node_info_req, appstate, dump_database_req)
                     .await?;
             }
+            BaseConfigEnum::Sqlite(config) => {
+                config
+                    .dump_database(list_node_info_req, appstate, dump_database_req)
+                    .await?;
+            }
             _ => (),
         }
         Ok(())
@@ -202,7 +207,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => {
                 config.init_dump_data(list_node_info_req, appstate).await?
             }
-
+            BaseConfigEnum::Sqlite(config) => {
+                config.init_dump_data(list_node_info_req, appstate).await?
+            }
             _ => InitDumpDataResponse::new(),
         };
         Ok(data)
@@ -240,6 +247,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => {
                 config.drop_table(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Sqlite(config) => {
+                config.drop_table(list_node_info_req, appstate).await?
+            }
             _ => (),
         }
         Ok(())
@@ -256,6 +266,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => {
                 config.drop_column(list_node_info_req, appstate).await?;
             }
+            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support drop column"))?,
             _ => (),
         };
         Ok(())
@@ -270,6 +281,9 @@ impl BaseConfigEnum {
                 config.drop_index(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Postgresql(config) => {
+                config.drop_index(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
                 config.drop_index(list_node_info_req, appstate).await?
             }
             _ => (),

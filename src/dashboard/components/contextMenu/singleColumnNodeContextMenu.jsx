@@ -163,6 +163,10 @@ const SingleColumnNodeContextMenu = ({ node }) => {
     setShowDropColumnDialog(true)
     setNodeForUpdate(node)
   }
+  const getRootNodeType = (e) => {
+    const rootNode = getRootNode(node)
+    return rootNode.data.connectionType
+  }
   return (
     <>
       <MenuItem
@@ -185,9 +189,14 @@ const SingleColumnNodeContextMenu = ({ node }) => {
         Create Index
       </MenuItem>
 
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
-        Drop Column
-      </MenuItem>
+      {getRootNodeType() !== 3 && (
+        <MenuItem
+          onClick={(e) => handleDropColumnOnClick(e)}
+          className="text-xs"
+        >
+          Drop Column
+        </MenuItem>
+      )}
     </>
   )
 }

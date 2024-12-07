@@ -467,7 +467,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                                 false,
                                 true,
                                 "singlePrimaryIndex".to_string(),
-                                index_name,
+                                key_name,
                                 None,
                             );
                             vec.push(list_node_info_response_item);
@@ -477,7 +477,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                                 false,
                                 true,
                                 "singleCommonIndex".to_string(),
-                                index_name,
+                                key_name,
                                 None,
                             );
                             vec.push(list_node_info_response_item);
@@ -947,10 +947,10 @@ WHERE TABLE_SCHEMA = '{}'
         let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
         let mut drop_sql = String::new();
         for item in rows {
-            let index_name: String = item.try_get(0)?;
-            info!("index_name: {}", index_name);
             let key_name: String = item.try_get(2)?;
-            if index_name == source_index_name {
+            info!("index_name: {}", key_name);
+
+            if key_name == source_index_name {
                 if key_name == "PRIMARY" {
                     drop_sql = format!("ALTER TABLE {} DROP PRIMARY KEY;", table_name.clone());
                 } else {

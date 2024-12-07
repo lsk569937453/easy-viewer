@@ -104,7 +104,7 @@ pub fn sqlite_row_to_json(
                 .map(|item| json!(item))?,
 
             "INTEGER" | "TINYINT" | "SMALLINT" | "MEDIUMINT" => row
-                .try_get::<Option<i32>, usize>(key)
+                .try_get::<Option<u64>, usize>(key)
                 .map(|item| json!(item))?,
             "INT UNSIGNED" | "TINYINT UNSIGNED" | "SMALLINT UNSIGNED" | "MEDIUMINT UNSIGNED" => row
                 .try_get::<Option<u32>, usize>(key)

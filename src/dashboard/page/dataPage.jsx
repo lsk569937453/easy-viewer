@@ -47,7 +47,7 @@ import "ace-builds/src-noconflict/ext-language_tools"
 import { addCompleter } from "ace-builds/src-noconflict/ext-language_tools"
 import useResizeObserver from "use-resize-observer"
 
-import { getDeleteSql, getSQLStatement } from "../../lib/jsx-utils"
+import { getDeleteSql, getRootNode, getSQLStatement } from "../../lib/jsx-utils"
 
 import "ace-builds/src-noconflict/ext-language_tools"
 
@@ -78,6 +78,16 @@ const IndeterminateCheckbox = ({ indeterminate, className = "", ...rest }) => {
     />
   )
 }
+const generateSql = (node = "", limit = 100) => {
+  const rootNode = getRootNode(node)
+  if (rootNode.data.connectionType === 1) {
+    const table = `${node.parent.parent.data.name}.${node.data.name}`
+    return `SELECT * FROM ${table} LIMIT ${limit}`
+  } else {
+    return `SELECT * FROM ${node.data.name} LIMIT ${limit}`
+  }
+}
+
 export default function DataPage({
   node,
   inputSql,
@@ -85,9 +95,7 @@ export default function DataPage({
   clickFlag,
 }) {
   const { toast } = useToast()
-  const [sql, setSql] = useState(
-    inputSql || `SELECT * FROM ${node.data.name} LIMIT 100`
-  )
+  const [sql, setSql] = useState(inputSql || generateSql(node))
   const [timeCost, setTimeCost] = useState(0)
   //渲染用
   const [header, setHeader] = useState([])

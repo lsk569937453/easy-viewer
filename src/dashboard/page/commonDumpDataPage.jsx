@@ -219,6 +219,12 @@ const CommonDumpDataPage = ({ node, selectedTableName = null }) => {
     if (filePath.endsWith("." + val)) {
       return
     }
+    if (filePath === "") {
+      const currentDateTime = moment().format("YYYY-MM-DD-HH-mm-ss")
+      const endFix = formatOption.toLowerCase()
+      setFilePath(currentDateTime + "." + endFix)
+      return
+    }
     let newFilePath = filePath
     if (
       newFilePath.endsWith(".sql") ||

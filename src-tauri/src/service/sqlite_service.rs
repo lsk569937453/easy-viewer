@@ -76,7 +76,7 @@ impl SqliteConfig {
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let sql = "SELECT name 
 FROM sqlite_master 
-WHERE type = 'table';"
+WHERE type = 'table' and name !='sqlite_sequence';"
             .to_string();
         let table_names = sqlx::query(&sql)
             .fetch_all(&mut conn)
@@ -149,6 +149,10 @@ WHERE type = 'table' AND name = '{}';",
                         for i in 0..len {
                             let column_name = columns[i].name();
                             let column_type = columns[i].type_info().name();
+                            info!(
+                                "column_name: {}, column_type: {},table:{}",
+                                column_name, column_type, table_name
+                            );
                             let column_value = sqlite_row_to_json(item, column_type, i)?;
                             let database_res_column_item =
                                 DumpDatabaseResColumnItem::from(column_value);

@@ -231,6 +231,9 @@ impl BaseConfigEnum {
                     .generate_database_document(list_node_info_req, appstate, file_dir)
                     .await?
             }
+            BaseConfigEnum::Sqlite(_) => {
+                Err(anyhow!("sqlite not support generate_database_document"))?
+            }
             _ => (),
         }
         Ok(())

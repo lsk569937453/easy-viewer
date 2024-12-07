@@ -63,7 +63,7 @@ const DatabaseNodeContextMenu = ({ node }) => {
       toast({
         variant: "default",
         title: "Success",
-        description: "Import success",
+        description: "Generate document success",
         duration: 1000,
       })
     } else {

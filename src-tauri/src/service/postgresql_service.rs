@@ -5,14 +5,21 @@ use crate::service::dump_data::dump_database_service::DumpDatabaseResItem;
 use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpData;
 use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpDataItem;
 use crate::sql_lite::connection::AppState;
+use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::postgres_row_to_json;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
+use chrono::Local;
+use docx_rs::*;
 use itertools::Itertools;
+use std::collections::HashSet;
+use std::path::Path;
 
 use crate::service::dump_data::dump_database_service::DumpTableList;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
 use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
@@ -40,6 +47,10 @@ use tokio::time::timeout;
 static POSTGRESQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> =
     OnceLock::new();
 static POSTGRESQL_TABLE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> = OnceLock::new();
+const GET_SCHEMA_SQL: &str = "SELECT schema_name
+FROM information_schema.schemata
+WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
+  AND schema_name NOT LIKE 'pg_%';";
 fn generate_ddl(schema_name: String, table_name: String) -> String {
     format!(
         "SELECT 'CREATE TABLE ' || table_schema || '.' || table_name || ' (' || E'\n' ||
@@ -132,11 +143,8 @@ impl PostgresqlConfig {
         let connection_url = self.connection_url_with_database(database_name);
 
         let mut conn = PgConnection::connect(&connection_url).await?;
-        let sql = "SELECT schema_name
-FROM information_schema.schemata
-WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-  AND schema_name NOT LIKE 'pg_%';";
-        let rows = sqlx::query(sql).fetch_all(&mut conn).await?;
+
+        let rows = sqlx::query(GET_SCHEMA_SQL).fetch_all(&mut conn).await?;
         let schema_names: Vec<String> = rows.iter().map(|row| row.get("schema_name")).collect();
         let mut init_dump_data_response = vec![];
         for schema_name in schema_names {
@@ -303,7 +311,93 @@ WHERE schema_name = '{}';",
         appstate: &AppState,
         file_dir: String,
     ) -> Result<(), anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+
+        let connection_url = self.connection_url_with_database(database_name.clone());
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let rows = sqlx::query(GET_SCHEMA_SQL).fetch_all(&mut conn).await?;
+        let schema_names: Vec<String> = rows.iter().map(|row| row.get("schema_name")).collect();
+        let dir_path = Path::new(&file_dir);
+        let now = Local::now();
+        let formatted_time = now.format("%Y-%m-%d-%H-%M-%S").to_string();
+        let file_name = format!("{}-{}.docx", database_name, formatted_time);
+        let full_path = dir_path.join(file_name);
+        info!("full_path: {}", full_path.display());
+        let file = std::fs::File::create(full_path)?;
+
+        let style3 = Style::new("Table1", StyleType::Table)
+            .name("Table test")
+            .table_align(TableAlignmentType::Center);
+        let mut doc = Docx::new().add_style(style3);
+        for schema_name in schema_names {
+            let get_table_sql = format!(
+                "SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = '{}';",
+                schema_name
+            );
+            let tables_names = sqlx::query(&get_table_sql)
+                .fetch_all(&mut conn)
+                .await?
+                .iter()
+                .map(|row| -> Result<String, anyhow::Error> { Ok(row.try_get(0)?) })
+                .collect::<Result<Vec<String>, _>>()?;
+            for table_name in tables_names {
+                let show_column_sql = format!(
+                    "SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_name = '{}' AND table_schema = '{}';",
+                    table_name, schema_name
+                );
+                let rows = sqlx::query(&show_column_sql).fetch_all(&mut conn).await?;
+                if rows.is_empty() {
+                    return Ok(());
+                }
+                let first_row = rows.first().ok_or(anyhow!(""))?;
+                let mut headers = vec![];
+
+                for (index, item) in first_row.columns().iter().enumerate() {
+                    let type_name = item.type_info().name();
+                    let column_name = item.name();
+                    headers.push(ShowColumnHeader {
+                        name: column_name.to_string(),
+                        type_name: type_name.to_string().to_uppercase(),
+                    });
+                }
+                let mut response_rows = vec![];
+                for item in rows.iter() {
+                    let columns = item.columns();
+                    let len = columns.len();
+                    let mut row = vec![];
+                    for i in 0..len {
+                        let type_name = columns[i].type_info().name();
+                        let val = postgres_row_to_json(item, type_name, i)?;
+                        if val.is_string() {
+                            row.push(Some(val.as_str().unwrap_or_default().to_string()));
+                        } else if val.is_null() {
+                            row.push(None);
+                        } else {
+                            row.push(Some(val.to_string()));
+                        }
+                    }
+                    response_rows.push(row);
+                }
+                let show_column_response = ShowColumnsResponse::from(headers, response_rows);
+                doc = doc.add_paragraph(
+                    Paragraph::new()
+                        .add_run(Run::new().add_text(format!("{}.{}", schema_name, table_name))),
+                );
+                let table = show_column_response.into_docx_table()?;
+                doc = doc.add_table(table);
+                doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text("")));
+            }
+        }
+        doc.build().pack(file)?;
+
         Ok(())
     }
     pub async fn drop_index(
@@ -357,8 +451,60 @@ WHERE schema_name = '{}';",
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
-        Ok(GetColumnInfoForInsertSqlResponse::new())
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let sql = format!(
+            "SELECT c.column_name,
+       c.data_type,
+       c.is_nullable,
+       c.column_default,
+       CASE
+           WHEN pk.column_name IS NOT NULL THEN 'YES'
+           ELSE 'NO'
+       END AS is_primary_key
+FROM information_schema.columns c
+LEFT JOIN information_schema.key_column_usage pk
+    ON c.column_name = pk.column_name
+    AND c.table_name = pk.table_name
+    AND c.table_schema = pk.table_schema
+LEFT JOIN information_schema.table_constraints t
+    ON pk.constraint_name = t.constraint_name
+    AND t.constraint_type = 'PRIMARY KEY'
+WHERE c.table_schema = '{}'  
+  AND c.table_name = '{}';",
+            schema_name, table_name
+        );
+        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let mut response_rows = vec![];
+        info!("rows: {:?}", rows);
+        for item in rows.iter() {
+            let columns = item.columns();
+            let type_name = columns[0].type_info().name();
+            let column_name = serde_value_to_string(postgres_row_to_json(item, type_name, 0)?)
+                .unwrap_or_default();
+            let type_name = columns[1].type_info().name();
+            let column_type = serde_value_to_string(postgres_row_to_json(item, type_name, 1)?)
+                .unwrap_or_default();
+            let type_flag = ColumnTypeFlag::from(column_type.clone());
+
+            let key_type: String = item.try_get(4)?;
+            let is_primary = key_type == "YES";
+            let get_column_info_for_is_response_item = GetColumnInfoForInsertSqlResponseItem::from(
+                column_name,
+                column_type,
+                type_flag,
+                is_primary,
+            );
+
+            response_rows.push(get_column_info_for_is_response_item);
+        }
+        Ok(GetColumnInfoForInsertSqlResponse::from(response_rows))
     }
     pub async fn list_node_info(
         &self,
@@ -407,11 +553,10 @@ WHERE schema_name = '{}';",
             let test_url = self.connection_url_with_database(database_name);
             info!("test_url: {}", test_url);
             let mut connection = PgConnection::connect(&test_url).await?;
-            let sql = "SELECT schema_name
-FROM information_schema.schemata
-WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
-  AND schema_name NOT LIKE 'pg_%';";
-            let rows = sqlx::query(sql).fetch_all(&mut connection).await?;
+
+            let rows = sqlx::query(GET_SCHEMA_SQL)
+                .fetch_all(&mut connection)
+                .await?;
             if rows.is_empty() {
                 return Ok(ListNodeInfoResponse::new_with_empty());
             }
@@ -876,7 +1021,57 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<Vec<String>, anyhow::Error> {
-        Ok(vec![])
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut set = HashSet::new();
+
+        let schema_names = sqlx::query(GET_SCHEMA_SQL)
+            .fetch_all(&mut conn)
+            .await?
+            .iter()
+            .map(|row| -> Result<String, anyhow::Error> { Ok(row.try_get(0)?) })
+            .collect::<Result<Vec<String>, anyhow::Error>>()?;
+        for schema_name in schema_names {
+            let get_tables_sql = format!(
+                "SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = '{}'
+  AND table_type = 'BASE TABLE';",
+                schema_name
+            );
+            set.insert(schema_name.clone());
+            let table_names = sqlx::query(&get_tables_sql)
+                .fetch_all(&mut conn)
+                .await?
+                .iter()
+                .map(|row| -> Result<String, anyhow::Error> { Ok(row.try_get(0)?) })
+                .collect::<Result<Vec<String>, anyhow::Error>>()?;
+            for table_name in table_names {
+                set.insert(table_name.clone());
+                let get_column_sql = format!(
+                    "SELECT column_name
+FROM information_schema.columns
+WHERE table_schema = '{}'
+  AND table_name = '{}';",
+                    schema_name, table_name
+                );
+                let column_names = sqlx::query(&get_column_sql)
+                    .fetch_all(&mut conn)
+                    .await?
+                    .iter()
+                    .map(|row| -> Result<String, anyhow::Error> { Ok(row.try_get(0)?) })
+                    .collect::<Result<Vec<String>, anyhow::Error>>()?;
+                for column_name in column_names {
+                    set.insert(column_name);
+                }
+            }
+        }
+        let vec: Vec<String> = set.into_iter().collect();
+
+        Ok(vec)
     }
     pub async fn remove_column(
         &self,

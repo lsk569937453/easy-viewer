@@ -12,7 +12,10 @@ use chrono::Local;
 use docx_rs::*;
 use itertools::Itertools;
 use std::collections::HashSet;
+use tokio::io::BufReader;
+
 use std::path::Path;
+use tokio::fs::File;
 
 use crate::service::dump_data::dump_database_service::DumpTableList;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
@@ -43,6 +46,7 @@ use sqlx::Row;
 use sqlx::TypeInfo;
 use std::sync::OnceLock;
 use std::time::Duration;
+use tokio::io::AsyncBufReadExt;
 use tokio::time::timeout;
 static POSTGRESQL_DATABASE_DATA: OnceLock<LinkedHashMap<&'static str, &'static str>> =
     OnceLock::new();
@@ -193,6 +197,38 @@ WHERE table_schema = '{}'
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         info!("import_database_req: {:?}", import_database_req);
+        let level_infos = list_node_info_req.level_infos;
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let file = File::open(&import_database_req.file_path).await?;
+
+        let reader = BufReader::new(file);
+
+        let mut lines = reader.lines();
+
+        let mut sql_buffer = String::new();
+
+        while let Some(line) = lines.next_line().await? {
+            if line.trim().is_empty() {
+                if !sql_buffer.trim().is_empty() {
+                    info!("Executing SQL: {}", sql_buffer);
+                    conn.execute(&*sql_buffer).await?;
+                    sql_buffer.clear();
+                }
+            } else {
+                sql_buffer.push_str(&line);
+                sql_buffer.push('\n');
+            }
+        }
+
+        if !sql_buffer.trim().is_empty() {
+            info!("Executing final SQL: {}", sql_buffer);
+            conn.execute(&*sql_buffer).await?;
+        }
         Ok(())
     }
     pub async fn dump_database(

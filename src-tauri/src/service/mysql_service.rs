@@ -798,7 +798,7 @@ WHERE TABLE_SCHEMA = '{}'
         Ok(exe_sql_response)
     }
 
-    pub async fn update_sql(
+    pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,

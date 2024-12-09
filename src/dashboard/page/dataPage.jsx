@@ -176,7 +176,7 @@ export default function DataPage({
     }
     console.log(sqlStatements)
     const { response_code, response_msg } = JSON.parse(
-      await invoke("update_sql", {
+      await invoke("update_record", {
         listNodeInfoReq: listNodeInfoReq,
         sqls: sqlStatements,
       })

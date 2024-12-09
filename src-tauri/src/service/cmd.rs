@@ -26,7 +26,7 @@ use crate::service::cmd_service::move_column_with_error;
 use crate::service::cmd_service::remove_column_with_error;
 use crate::service::cmd_service::show_columns_with_error;
 use crate::service::cmd_service::truncate_table_with_error;
-use crate::service::cmd_service::update_sql_with_error;
+use crate::service::cmd_service::update_record_with_error;
 use crate::service::query_service::get_query_with_error;
 use crate::service::query_service::remove_query_with_error;
 use crate::service::query_service::rename_query_with_error;
@@ -176,14 +176,14 @@ pub async fn get_procedure_details(
 }
 #[tauri::command]
 
-pub async fn update_sql(
+pub async fn update_record(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     sqls: Vec<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(update_sql_with_error(state, list_node_info_req, sqls).await);
-    info!("update_sql: {:?}", time.elapsed());
+    let res = handle_response!(update_record_with_error(state, list_node_info_req, sqls).await);
+    info!("update_record: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

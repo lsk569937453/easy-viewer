@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog"
 import { reloadNode } from "../../lib/jsx-utils"
-import { SidebarContext } from "../page"
+import { MainPageDialogContext, SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
 const SqliteConfigComponent = ({
@@ -37,8 +37,9 @@ const SqliteConfigComponent = ({
   const [connectType, setConnectType] = useState("connectTypeHost")
   const [showLoading, setShowLoading] = useState(false)
   const { toast } = useToast()
-  const { treeRef, menulist, setMenulist, setShowEditConnectionDialog } =
-    useContext(SidebarContext)
+  const { treeRef, menulist, setMenulist } = useContext(SidebarContext)
+  const { setShowEditConnectionDialog } = useContext(MainPageDialogContext)
+
   const handleSelectPathClick = async () => {
     const selected = await open({
       directory: false,

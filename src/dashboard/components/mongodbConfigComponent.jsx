@@ -26,10 +26,10 @@ import { reloadNode } from "../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
-export function MysqlConfigComponent({
+export function MongodbConfigComponent({
   connectionName,
   initialHost = "localhost",
-  initialPort = "3306",
+  initialPort = "27017",
   initialDatabase = "mydb",
   initialUsername = "user",
   initialPassword = "password",
@@ -76,7 +76,7 @@ export function MysqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -97,7 +97,7 @@ export function MysqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),

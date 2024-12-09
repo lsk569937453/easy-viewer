@@ -255,6 +255,7 @@ export const formatMap = new Map([
   [0, "mysql"],
   [3, "sqlite"],
   [1, "postgresql"],
+  [4, "mongodb"],
 ])
 export function getIconNameByType(params) {
   return formatMap.get(params)

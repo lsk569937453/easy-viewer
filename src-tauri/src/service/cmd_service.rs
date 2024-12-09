@@ -519,12 +519,12 @@ pub async fn get_procedure_details_with_error(
 
     Ok(list)
 }
-pub async fn update_sql_with_error(
+pub async fn update_record_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     sql: Vec<String>,
 ) -> Result<(), anyhow::Error> {
-    info!("update_sql list_node_info_req: {:?}", list_node_info_req);
+    info!("update_record list_node_info_req: {:?}", list_node_info_req);
     let value = list_node_info_req.level_infos[0]
         .config_value
         .parse::<i32>()?;
@@ -537,7 +537,7 @@ pub async fn update_sql_with_error(
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     base_config
         .base_config_enum
-        .update_sql(list_node_info_req, state.inner(), sql)
+        .update_record(list_node_info_req, state.inner(), sql)
         .await?;
 
     Ok(())

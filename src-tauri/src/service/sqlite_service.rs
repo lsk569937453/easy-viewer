@@ -11,6 +11,7 @@ use crate::vojo::exe_sql_response::Header;
 use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
@@ -35,6 +36,9 @@ use sqlx::SqliteConnection;
 use sqlx::TypeInfo;
 use sqlx::ValueRef;
 use std::sync::OnceLock;
+use tokio::fs::File;
+use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 
 use super::dump_data::dump_database_service::DumpDatabaseRes;
 use super::dump_data::dump_database_service::DumpDatabaseResColumnItem;
@@ -67,6 +71,55 @@ pub struct SqliteConfig {
     pub file_path: String,
 }
 impl SqliteConfig {
+    pub async fn truncate_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        sqlx::query(&format!("DELETE FROM {};", level_infos[2].config_value))
+            .execute(&mut conn)
+            .await?;
+
+        Ok(())
+    }
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        info!("import_database_req: {:?}", import_database_req);
+        let level_infos = list_node_info_req.level_infos;
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let file = File::open(&import_database_req.file_path).await?;
+
+        let reader = BufReader::new(file);
+
+        let mut lines = reader.lines();
+
+        let mut sql_buffer = String::new();
+
+        while let Some(line) = lines.next_line().await? {
+            if line.trim().is_empty() {
+                if !sql_buffer.trim().is_empty() {
+                    info!("Executing SQL: {}", sql_buffer);
+                    conn.execute(&*sql_buffer).await?;
+                    sql_buffer.clear();
+                }
+            } else {
+                sql_buffer.push_str(&line);
+                sql_buffer.push('\n');
+            }
+        }
+
+        if !sql_buffer.trim().is_empty() {
+            info!("Executing final SQL: {}", sql_buffer);
+            conn.execute(&*sql_buffer).await?;
+        }
+        Ok(())
+    }
     pub async fn init_dump_data(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -559,7 +612,7 @@ WHERE type = 'view';",
 
         Ok(exe_sql_response)
     }
-    pub async fn update_sql(
+    pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,

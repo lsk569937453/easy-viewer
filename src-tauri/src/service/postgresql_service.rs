@@ -477,7 +477,17 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+
+        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+        let mut conn = PgConnection::connect(&connection_url).await?;
+
+        let drop_index_sql = format!("TRUNCATE  TABLE {}.{};", schema_name, table_name);
+        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
         Ok(())
     }
 
@@ -981,18 +991,33 @@ WHERE table_name = '{}'
         let ddl: String = row.try_get(0)?;
         Ok(ddl)
     }
-    pub async fn update_sql(
+    pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
         sqls: Vec<String>,
     ) -> Result<(), anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
-
         let level_infos = list_node_info_req.level_infos;
+
         let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
-        let node_name = level_infos[2].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut vec = vec![];
+        for sql in sqls {
+            info!("sql: {}", sql);
+            let result = conn.execute(&*sql).await.map_err(|e| anyhow!(e));
+            if let Err(err) = result {
+                vec.push(err.to_string())
+            }
+        }
+        if !vec.is_empty() {
+            let error_mes = vec.join(";");
+            return Err(anyhow!(error_mes));
+        }
         Ok(())
     }
     pub async fn show_columns(
@@ -1129,7 +1154,7 @@ WHERE table_schema = '{}'
 
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
-        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+        sqlx::query(&sql).execute(&mut conn).await?;
 
         Ok(())
     }

@@ -122,6 +122,7 @@ impl BaseConfigEnum {
                     .remove_column(list_node_info_req, appstate, column_name)
                     .await?;
             }
+            BaseConfigEnum::Sqlite(config) => Err(anyhow!("sqlite not support remove column"))?,
             _ => (),
         };
 
@@ -186,6 +187,11 @@ impl BaseConfigEnum {
                     .await?
             }
             BaseConfigEnum::Postgresql(config) => {
+                config
+                    .import_database(list_node_info_req, appstate, import_database_req)
+                    .await?
+            }
+            BaseConfigEnum::Sqlite(config) => {
                 config
                     .import_database(list_node_info_req, appstate, import_database_req)
                     .await?
@@ -305,6 +311,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => {
                 config.truncate_table(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Sqlite(config) => {
+                config.truncate_table(list_node_info_req, appstate).await?
+            }
             _ => (),
         }
         Ok(())
@@ -322,7 +331,7 @@ impl BaseConfigEnum {
                     .await?
             }
 
-            _ => "".to_string(),
+            _ => Err(anyhow!("Other type not support move column except mysql."))?,
         };
         Ok(data)
     }
@@ -367,7 +376,7 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
-    pub async fn update_sql(
+    pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
@@ -375,14 +384,20 @@ impl BaseConfigEnum {
     ) -> Result<(), anyhow::Error> {
         match self {
             BaseConfigEnum::Mysql(config) => {
-                config.update_sql(list_node_info_req, appstate, sql).await?
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
             }
 
             BaseConfigEnum::Sqlite(config) => {
-                config.update_sql(list_node_info_req, appstate, sql).await?
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
             }
             BaseConfigEnum::Postgresql(config) => {
-                config.update_sql(list_node_info_req, appstate, sql).await?
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
             }
             _ => (),
         };

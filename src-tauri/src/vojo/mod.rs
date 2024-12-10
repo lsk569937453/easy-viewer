@@ -1,4 +1,3 @@
-pub mod common_constants;
 pub mod dump_database_req;
 pub mod exe_sql_response;
 pub mod get_base_config_response;
@@ -11,6 +10,5 @@ pub mod menu_config;
 pub mod save_connection_req;
 pub mod show_column_response;
 pub mod sql_parse_result;
-pub mod static_connections;
 pub mod update_connection_req;
 pub mod update_sql_response;

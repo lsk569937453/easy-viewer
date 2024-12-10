@@ -68,16 +68,15 @@ impl SqlParseResult {
         let ast = self.ast.clone();
         let last = &ast[0];
 
-        let res = match last {
-            Statement::Insert(_) => false,
-            Statement::Update { .. } => false,
-            Statement::Delete(_) => false,
-            Statement::CreateDatabase { .. } => false,
-            Statement::CreateTable { .. } => false,
-            Statement::AlterTable { .. } => false,
-
-            _ => true,
-        };
+        let res = !matches!(
+            last,
+            Statement::Insert(_)
+                | Statement::Update { .. }
+                | Statement::Delete(_)
+                | Statement::CreateDatabase { .. }
+                | Statement::CreateTable { .. }
+                | Statement::AlterTable { .. }
+        );
         Ok(res)
     }
 }

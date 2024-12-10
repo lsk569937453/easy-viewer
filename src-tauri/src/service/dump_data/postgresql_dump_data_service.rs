@@ -9,11 +9,6 @@ pub struct PostgresqlDumpData {
     pub dump_data_list: Vec<PostgresqlDumpDataItem>,
 }
 impl PostgresqlDumpData {
-    pub fn empty() -> Self {
-        PostgresqlDumpData {
-            dump_data_list: Vec::new(),
-        }
-    }
     pub fn from(dump_data_list: Vec<PostgresqlDumpDataItem>) -> Self {
         PostgresqlDumpData { dump_data_list }
     }
@@ -21,7 +16,7 @@ impl PostgresqlDumpData {
         let file_path = dump_database_req.file_path.clone();
         info!("req:{:?}", dump_database_req);
         match dump_database_req.export_option {
-            ExportOption::ExportAll => {
+            ExportOption::All => {
                 let mut file = std::fs::File::create(file_path)?;
                 info!("file created success");
                 for schema in self.dump_data_list.clone() {
@@ -36,7 +31,7 @@ impl PostgresqlDumpData {
                     }
                 }
             }
-            ExportOption::ExportStruct => {
+            ExportOption::Struct => {
                 let mut file = std::fs::File::create(file_path)?;
                 info!("file created success");
                 for schema in self.dump_data_list.clone() {
@@ -48,7 +43,7 @@ impl PostgresqlDumpData {
                     }
                 }
             }
-            ExportOption::ExportData => {
+            ExportOption::Data => {
                 let mut merged_tables = Vec::new();
 
                 for schema in self.dump_data_list.clone() {

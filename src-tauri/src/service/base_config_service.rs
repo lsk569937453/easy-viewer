@@ -78,6 +78,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Mongodb(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
             _ => ListNodeInfoResponse::new_with_empty(),
         };
         Ok(vec)
@@ -127,7 +130,7 @@ impl BaseConfigEnum {
                     .remove_column(list_node_info_req, appstate, column_name)
                     .await?;
             }
-            BaseConfigEnum::Sqlite(config) => Err(anyhow!("sqlite not support remove column"))?,
+            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support remove column"))?,
             _ => (),
         };
 

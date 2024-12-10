@@ -27,7 +27,6 @@ use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use anyhow::Ok;
 use bigdecimal::BigDecimal;
-use chrono::DateTime;
 use chrono::Local;
 use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
@@ -89,11 +88,10 @@ impl MysqlConfig {
         &self,
 
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _: &AppState,
     ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -140,7 +138,6 @@ impl MysqlConfig {
         let mut vec = vec![];
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let timeout_duration = Duration::from_secs(1);
 
         match level_infos.len() {
             1 => {
@@ -149,7 +146,7 @@ impl MysqlConfig {
                     MySqlConnection::connect(&connection_url),
                 )
                 .await
-                .map_err(|e| anyhow!("Connect time out!"))??;
+                .map_err(|_| anyhow!("Connect time out!"))??;
 
                 let rows = sqlx::query(
                     "SELECT `schema_name`
@@ -410,7 +407,6 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                 }
             }
             5 => {
-                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
                 let database_name = level_infos[1].config_value.clone();
                 let table_name = level_infos[3].config_value.clone();
                 let node_name = level_infos[4].config_value.clone();
@@ -459,8 +455,6 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     info!("sql: {}", sql);
                     let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
                     for item in rows {
-                        let index_name: String = item.try_get(0)?;
-
                         let key_name: String = item.try_get(2)?;
                         if key_name == "PRIMARY" {
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
@@ -472,7 +466,6 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                             );
                             vec.push(list_node_info_response_item);
                         } else {
-                            // vec.push((index_name, "singleCommonIndex".to_string(), None));
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,
                                 true,
@@ -495,13 +488,12 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
     pub async fn import_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _: &AppState,
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         info!("import_database_req: {:?}", import_database_req);
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -538,12 +530,11 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
     pub async fn dump_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _: &AppState,
         dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -598,7 +589,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                         let columns = item.columns();
                         let len = columns.len();
                         let mut database_res_column_list = vec![];
-                        for i in 0..len {
+                        for (i, _) in columns.iter().enumerate().take(len) {
                             let column_name = columns[i].name();
                             let column_type = columns[i].type_info().name();
                             let column_value = mysql_row_to_json(item, column_type, i)?;
@@ -633,11 +624,10 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
     pub async fn init_dump_data(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -678,12 +668,11 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let mut conn = MySqlConnection::connect(&connection_url).await?;
 
         if level_infos.len() >= 2 {
@@ -779,7 +768,7 @@ WHERE TABLE_SCHEMA = '{}'
             let columns = item.columns();
             let len = columns.len();
             let mut row = vec![];
-            for i in 0..len {
+            for (i, _) in columns.iter().enumerate().take(len) {
                 let type_name = columns[i].type_info().name();
                 let val = mysql_row_to_json(item, type_name, i)?;
                 if val.is_string() {
@@ -801,14 +790,12 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         sqls: Vec<String>,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
-        let table_name = level_infos[3].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
@@ -832,11 +819,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<String, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -856,12 +842,11 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn generate_database_document(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         file_dir: String,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
@@ -903,11 +888,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn drop_column(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let column_name = level_infos[5].config_value.clone();
@@ -929,11 +913,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn drop_index(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let source_index_name = level_infos[5].config_value.clone();
@@ -971,11 +954,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn drop_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
 
@@ -992,11 +974,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn truncate_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
 
@@ -1013,11 +994,10 @@ WHERE TABLE_SCHEMA = '{}'
     pub async fn show_columns(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -1030,13 +1010,12 @@ WHERE TABLE_SCHEMA = '{}'
     }
     pub async fn move_column(
         &self,
-        appstate: &AppState,
+        _appstate: &AppState,
         list_node_info_req: ListNodeInfoReq,
         move_direction: i32,
     ) -> Result<String, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[3].config_value.clone();
         let source_column_name = level_infos[5].config_value.clone();
@@ -1109,7 +1088,6 @@ WHERE TABLE_SCHEMA = '{}'
                 .await?;
         if let Some(row) = row_option {
             let words: String = row.try_get(0)?;
-            let datatime: DateTime<Local> = row.try_get(1)?;
             let word_list = words.split(",").map(|item| item.to_string()).collect();
             return Ok(word_list);
         }
@@ -1166,15 +1144,11 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
     pub async fn get_procedure_details(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<String, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
         let procedure_name = level_infos[3].config_value.clone();
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-        let conn = MySqlConnection::connect(&connection_url).await?;
-
         let database_name = level_infos[1].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;
@@ -1194,16 +1168,12 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
     pub async fn remove_column(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         column_name: String,
     ) -> Result<(), anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
         let table_name = level_infos[3].config_value.clone();
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-        let conn = MySqlConnection::connect(&connection_url).await?;
-
         let database_name = level_infos[1].config_value.clone();
 
         let mut conn = MySqlConnection::connect(&connection_url).await?;

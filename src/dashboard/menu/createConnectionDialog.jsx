@@ -222,7 +222,7 @@ const CreateConnectionDialog = ({
                 "localhost"
               }
               initialPort={
-                connectionData?.base_config_enum?.mysql?.config?.port || "3306"
+                connectionData?.base_config_enum?.mysql?.config?.port || "27017"
               }
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??

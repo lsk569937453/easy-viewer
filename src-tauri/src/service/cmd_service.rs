@@ -159,6 +159,10 @@ pub async fn list_node_info_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<ListNodeInfoResponse, anyhow::Error> {
+    info!(
+        "list_node_info list_node_info_req: {:?}",
+        list_node_info_req
+    );
     let value = list_node_info_req.level_infos[0]
         .config_value
         .parse::<i64>()?;

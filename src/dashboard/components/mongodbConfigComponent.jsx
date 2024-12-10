@@ -42,7 +42,7 @@ export function MongodbConfigComponent({
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
   const [currentUrl, setCurrentUrl] = useState(
-    `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+    `mongodb://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
   )
   const [currentHost, setCurrentHost] = useState(initialHost)
   const [currentPort, setCurrentPort] = useState(initialPort)
@@ -59,7 +59,7 @@ export function MongodbConfigComponent({
     setCurrentUsername(initialUsername)
     setCurrentPassword(initialPassword)
     setCurrentUrl(
-      `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+      `mongodb://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
     )
   }, [
     initialHost,
@@ -170,7 +170,7 @@ export function MongodbConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -191,7 +191,7 @@ export function MongodbConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
@@ -245,7 +245,7 @@ export function MongodbConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -266,7 +266,7 @@ export function MongodbConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),

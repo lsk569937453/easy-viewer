@@ -77,7 +77,7 @@ custom-protocol = ["tauri/custom-protocol"]
 
 # Optimized for bundle size. If you want faster builds comment out/delete this section.
 [profile.release]
-lto = true        # Enable Link Time Optimization
+lto = "thin"
 opt-level = "z"   # Optimize for size.
 codegen-units = 1 # Reduce number of codegen units to increase optimizations.
 strip = true      # Automatically strip symbols from the binary.

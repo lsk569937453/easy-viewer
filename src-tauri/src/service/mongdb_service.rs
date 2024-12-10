@@ -19,10 +19,7 @@ fn get_mysql_database_data() -> &'static LinkedHashMap<&'static str, &'static st
     MONGODB_DATABASE_DATA.get_or_init(|| {
         let mut map = LinkedHashMap::new();
         map.insert("Query", "query");
-        map.insert("Tables", "tables");
-        map.insert("Views", "views");
-        map.insert("Functions", "functions");
-        map.insert("Procedures", "procedures");
+        map.insert("Collections", "collections");
         map
     })
 }
@@ -66,6 +63,34 @@ impl MongodbConfig {
                         "database".to_string(),
                         database_specification.name,
                         Some(human_bytes(database_specification.size_on_disk as f64)),
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
+            2 => {
+                let client = self.get_connection().await?;
+                let database_name = level_infos[1].config_value.clone();
+                let database = client.database(&database_name);
+
+                let collection_count = database
+                    .list_collection_names()
+                    .await
+                    .map_err(|e| anyhow!(e))?
+                    .len();
+                for (name, icon_name) in get_mysql_database_data().iter() {
+                    let description = if *name == "Collections" && collection_count > 0 {
+                        Some(format!("({})", collection_count))
+                    } else {
+                        None
+                    };
+                    info!("description: {}", collection_count);
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        icon_name.to_string(),
+                        name.to_string(),
+                        description,
                     );
                     vec.push(list_node_info_response_item);
                 }

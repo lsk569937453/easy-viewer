@@ -1344,6 +1344,7 @@ dependencies = [
  "docx-rs",
  "elasticsearch",
  "hex",
+ "human_bytes",
  "image 0.25.5",
  "itertools 0.13.0",
  "linked-hash-map",
@@ -2308,6 +2309,12 @@ name = "httparse"
 version = "1.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d71d3574edd2771538b901e6549113b4006ece66150fb69c0fb6d9a2adae946"
+
+[[package]]
+name = "human_bytes"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91f255a4535024abf7640cb288260811fc14794f62b063652ed349f9a6c2348e"
 
 [[package]]
 name = "hyper"

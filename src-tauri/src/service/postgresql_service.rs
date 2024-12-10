@@ -138,11 +138,9 @@ impl PostgresqlConfig {
     pub async fn init_dump_data(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
 
@@ -193,12 +191,11 @@ WHERE table_schema = '{}'
     pub async fn import_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         info!("import_database_req: {:?}", import_database_req);
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
 
@@ -234,12 +231,10 @@ WHERE table_schema = '{}'
     pub async fn dump_database(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
 
@@ -305,7 +300,7 @@ WHERE schema_name = '{}';",
                             let columns = item.columns();
                             let len = columns.len();
                             let mut database_res_column_list = vec![];
-                            for i in 0..len {
+                            for (i, _) in columns.iter().enumerate().take(len) {
                                 let column_name = columns[i].name();
                                 let column_type = columns[i].type_info().name();
                                 let column_value = postgres_row_to_json(item, column_type, i)?;
@@ -344,12 +339,10 @@ WHERE schema_name = '{}';",
     pub async fn generate_database_document(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         file_dir: String,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
 
         let connection_url = self.connection_url_with_database(database_name.clone());
@@ -396,7 +389,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
                 let first_row = rows.first().ok_or(anyhow!(""))?;
                 let mut headers = vec![];
 
-                for (index, item) in first_row.columns().iter().enumerate() {
+                for item in first_row.columns().iter() {
                     let type_name = item.type_info().name();
                     let column_name = item.name();
                     headers.push(ShowColumnHeader {
@@ -409,7 +402,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
                     let columns = item.columns();
                     let len = columns.len();
                     let mut row = vec![];
-                    for i in 0..len {
+                    for (i, _) in columns.iter().enumerate().take(len) {
                         let type_name = columns[i].type_info().name();
                         let val = postgres_row_to_json(item, type_name, i)?;
                         if val.is_string() {
@@ -439,11 +432,9 @@ WHERE table_name = '{}' AND table_schema = '{}';",
     pub async fn drop_index(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let index_name = level_infos[6].config_value.clone();
@@ -457,11 +448,10 @@ WHERE table_name = '{}' AND table_schema = '{}';",
     pub async fn drop_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
@@ -475,11 +465,10 @@ WHERE table_name = '{}' AND table_schema = '{}';",
     pub async fn truncate_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
@@ -495,11 +484,10 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         &self,
 
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
@@ -621,8 +609,6 @@ WHERE c.table_schema = '{}'
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 3 {
             let level_infos = list_node_info_req.level_infos;
-
-            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
             let database_name = level_infos[1].config_value.clone();
             let schema_name = level_infos[2].config_value.clone();
             let connection_url = self.connection_url_with_database(database_name);
@@ -742,8 +728,6 @@ WHERE schemaname = '{}';",
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 6 {
             let level_infos = list_node_info_req.level_infos;
-
-            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
             let database_name = level_infos[1].config_value.clone();
             let schema_name = level_infos[2].config_value.clone();
             let table_name = level_infos[4].config_value.clone();
@@ -841,12 +825,10 @@ WHERE
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
-        let connection_url = self.config.to_url("mysql".to_string());
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
 
         let connect_url = if level_infos.len() >= 2 {
             let database_name = level_infos[1].config_value.clone();
@@ -951,7 +933,7 @@ WHERE table_name = '{}'
             let columns = item.columns();
             let len = columns.len();
             let mut row = vec![];
-            for i in 0..len {
+            for (i, _) in columns.iter().enumerate().take(len) {
                 let type_name = columns[i].type_info().name();
                 let val = postgres_row_to_json(item, type_name, i)?;
                 if val.is_string() {
@@ -972,11 +954,9 @@ WHERE table_name = '{}'
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<String, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
@@ -994,15 +974,11 @@ WHERE table_name = '{}'
     pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         sqls: Vec<String>,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
-        let schema_name = level_infos[2].config_value.clone();
-        let table_name = level_infos[4].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
 
         let mut conn = PgConnection::connect(&connection_url).await?;
@@ -1023,11 +999,9 @@ WHERE table_name = '{}'
     pub async fn show_columns(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
@@ -1047,7 +1021,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let first_row = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
 
-        for (index, item) in first_row.columns().iter().enumerate() {
+        for item in first_row.columns().iter() {
             let type_name = item.type_info().name();
             let column_name = item.name();
             headers.push(ShowColumnHeader {
@@ -1060,7 +1034,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
             let columns = item.columns();
             let len = columns.len();
             let mut row = vec![];
-            for i in 0..len {
+            for (i, _) in columns.iter().enumerate().take(len) {
                 let type_name = columns[i].type_info().name();
                 let val = postgres_row_to_json(item, type_name, i)?;
                 if val.is_string() {
@@ -1080,10 +1054,9 @@ WHERE table_name = '{}' AND table_schema = '{}';",
     pub async fn get_complete_words(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<Vec<String>, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
         let connection_url = self.connection_url_with_database(database_name);
         let mut conn = PgConnection::connect(&connection_url).await?;
@@ -1137,16 +1110,13 @@ WHERE table_schema = '{}'
     pub async fn remove_column(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
         column_name: String,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
-        let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        // let column_name = level_infos[6].config_value.clone();
 
         let connection_url = self.connection_url_with_database(database_name);
 
@@ -1161,24 +1131,17 @@ WHERE table_schema = '{}'
     pub async fn drop_column(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
         let database_name = level_infos[1].config_value.clone();
-        let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
         let column_name = level_infos[6].config_value.clone();
-
         let connection_url = self.connection_url_with_database(database_name);
-
         let mut conn = PgConnection::connect(&connection_url).await?;
-
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
         let _ = sqlx::query(&sql).execute(&mut conn).await?;
-
         Ok(())
     }
 }

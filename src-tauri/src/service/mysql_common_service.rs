@@ -38,7 +38,7 @@ pub async fn show_column_info(
         let columns = item.columns();
         let len = columns.len();
         let mut row = vec![];
-        for i in 0..len {
+        for (i, _) in columns.iter().enumerate().take(len) {
             let type_name = columns[i].type_info().name();
             let val = mysql_row_to_json(item, type_name, i)?;
             if val.is_string() {

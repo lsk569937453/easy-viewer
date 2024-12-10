@@ -26,10 +26,10 @@ import { reloadNode } from "../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
-export function MysqlConfigComponent({
+export function MongodbConfigComponent({
   connectionName,
   initialHost = "localhost",
-  initialPort = "3306",
+  initialPort = "27017",
   initialDatabase = "mydb",
   initialUsername = "user",
   initialPassword = "password",
@@ -42,7 +42,7 @@ export function MysqlConfigComponent({
   const { t, i18n } = useTranslation()
   const [currentLinkType, setCurrentLinkType] = useState("mysql")
   const [currentUrl, setCurrentUrl] = useState(
-    `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+    `mongodb://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
   )
   const [currentHost, setCurrentHost] = useState(initialHost)
   const [currentPort, setCurrentPort] = useState(initialPort)
@@ -59,7 +59,7 @@ export function MysqlConfigComponent({
     setCurrentUsername(initialUsername)
     setCurrentPassword(initialPassword)
     setCurrentUrl(
-      `mysql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+      `mongodb://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
     )
   }, [
     initialHost,
@@ -76,7 +76,7 @@ export function MysqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -97,7 +97,7 @@ export function MysqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
@@ -170,7 +170,7 @@ export function MysqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -191,7 +191,7 @@ export function MysqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
@@ -245,7 +245,7 @@ export function MysqlConfigComponent({
         const { ip, port, database, userName, password } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mysql: {
+          mongodb: {
             config: {
               host: ip,
               port: parseInt(port),
@@ -266,7 +266,7 @@ export function MysqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mysql: {
+        mongodb: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import { set } from "date-fns"
+import moment from "moment"
 import { useFieldArray } from "react-hook-form"
 import { useTranslation } from "react-i18next"
 
@@ -24,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog"
+import { MongodbConfigComponent } from "../components/mongodbConfigComponent"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
 import { PostGresqlConfigComponent } from "../components/postGresqlConfigComponent"
 import { LoadingSpinner } from "../components/spinner"
@@ -65,6 +67,7 @@ const CreateConnectionDialog = ({
 
   const [currentLinkName, setCurrentLinkName] = useState("")
   const [connectionData, setConnectionData] = useState(null)
+  const [userTypeNameFlag, setUserTypeNameFlag] = useState(false)
 
   useEffect(() => {
     console.log(baseCongfigId)
@@ -72,8 +75,10 @@ const CreateConnectionDialog = ({
       console.log("initData")
       initData()
     } else {
+      const currentDateTime = moment().format("YYYYMMDD")
+
       setConnectionData(null)
-      setCurrentLinkName("")
+      setCurrentLinkName("mysql" + "-" + currentDateTime)
       setCurrentLinkType("mysql")
     }
   }, [isOpen])
@@ -97,7 +102,18 @@ const CreateConnectionDialog = ({
       setConnectionData(parsedData)
     }
   }
+  const handleTitleOnInput = (e) => {
+    setUserTypeNameFlag(true)
+    setCurrentLinkName(e.target.value)
+  }
+  const handleTypeOnSelect = (e) => {
+    setCurrentLinkType(e)
+    if (!userTypeNameFlag) {
+      const currentDateTime = moment().format("YYYYMMDD")
 
+      setCurrentLinkName(`${e}-${currentDateTime}`)
+    }
+  }
   return (
     <>
       <DialogContent className="max-w-4xl overflow-clip ">
@@ -113,7 +129,7 @@ const CreateConnectionDialog = ({
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="连接名称"
-              onChange={(e) => setCurrentLinkName(e.target.value)}
+              onChange={(e) => handleTitleOnInput(e)}
               value={currentLinkName}
             ></Input>
           </div>
@@ -121,7 +137,7 @@ const CreateConnectionDialog = ({
             <p className="basis-2/12 text-right">连接类型:</p>
             <Select
               defaultValue={connectionType}
-              onValueChange={(e) => setCurrentLinkType(e)}
+              onValueChange={(e) => handleTypeOnSelect(e)}
             >
               <SelectTrigger className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0">
                 <SelectValue />
@@ -129,8 +145,8 @@ const CreateConnectionDialog = ({
               <SelectContent>
                 <SelectItem value="mysql">Mysql</SelectItem>
                 <SelectItem value="sqlite">Sqlite</SelectItem>
-
                 <SelectItem value="postgresql">PostGresql</SelectItem>
+                <SelectItem value="mongodb">MongoDB</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -185,6 +201,32 @@ const CreateConnectionDialog = ({
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??
                 "mydb"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "user"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "password"
+              }
+              isSave={isSave}
+            />
+          )}
+          {currentLinkType === "mongodb" && (
+            <MongodbConfigComponent
+              connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "27017"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ??
+                "mongodb"
               }
               initialUsername={
                 connectionData?.base_config_enum?.mysql?.config?.user_name ||

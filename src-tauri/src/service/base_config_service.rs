@@ -1,4 +1,5 @@
 use super::mysql_service::MysqlConfig;
+use crate::service::mongdb_service::MongodbConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
 use crate::service::sqlite_service::SqliteConfig;
 use crate::sql_lite::connection::AppState;
@@ -19,10 +20,12 @@ pub enum BaseConfigEnum {
     Mysql(MysqlConfig),
     #[serde(rename = "postgresql")]
     Postgresql(PostgresqlConfig),
-    #[serde(rename = "sqlite")]
-    Sqlite(SqliteConfig),
     #[serde(rename = "kafka")]
     Kafka(KafkaConfig),
+    #[serde(rename = "sqlite")]
+    Sqlite(SqliteConfig),
+    #[serde(rename = "mongodb")]
+    Mongodb(MongodbConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -32,6 +35,7 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
             BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
+            BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
 
             _ => {}
         }
@@ -54,6 +58,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(_) => 1,
             BaseConfigEnum::Kafka(_) => 2,
             BaseConfigEnum::Sqlite(_) => 3,
+            BaseConfigEnum::Mongodb(_) => 4,
         }
     }
     pub async fn list_node_info(
@@ -71,6 +76,9 @@ impl BaseConfigEnum {
             }
 
             BaseConfigEnum::Sqlite(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Mongodb(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),
@@ -122,7 +130,7 @@ impl BaseConfigEnum {
                     .remove_column(list_node_info_req, appstate, column_name)
                     .await?;
             }
-            BaseConfigEnum::Sqlite(config) => Err(anyhow!("sqlite not support remove column"))?,
+            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support remove column"))?,
             _ => (),
         };
 

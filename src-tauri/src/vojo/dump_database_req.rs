@@ -84,17 +84,17 @@ pub enum ExportType {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub enum ExportOption {
     #[serde(rename = "dumapAll")]
-    ExportAll,
+    All,
     #[serde(rename = "dumpData")]
-    ExportData,
+    Data,
     #[serde(rename = "dumpStructure")]
-    ExportStruct,
+    Struct,
 }
 impl ExportOption {
     pub fn is_export_struct(&self) -> bool {
-        matches!(self, ExportOption::ExportAll | ExportOption::ExportStruct)
+        matches!(self, ExportOption::All | ExportOption::Struct)
     }
     pub fn is_export_data(&self) -> bool {
-        matches!(self, ExportOption::ExportAll | ExportOption::ExportData)
+        matches!(self, ExportOption::All | ExportOption::Data)
     }
 }

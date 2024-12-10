@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "../../components/ui/dialog"
 import { reloadNode } from "../../lib/jsx-utils"
-import { SidebarContext } from "../page"
+import { MainPageDialogContext, SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
 export function PostGresqlConfigComponent({
@@ -36,8 +36,8 @@ export function PostGresqlConfigComponent({
   isSave = false,
   baseCongfigId = null,
 }) {
-  const { treeRef, menulist, setMenulist, setShowEditConnectionDialog } =
-    useContext(SidebarContext)
+  const { treeRef, menulist, setMenulist } = useContext(SidebarContext)
+  const { setShowEditConnectionDialog } = useContext(MainPageDialogContext)
 
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
@@ -221,6 +221,8 @@ export function PostGresqlConfigComponent({
         title: "操作信息",
         description: "保存成功。",
       })
+      setShowEditConnectionDialog(false)
+
       reloadNode(treeRef.current.root, menulist, setMenulist)
     } else {
       toast({
@@ -229,7 +231,6 @@ export function PostGresqlConfigComponent({
         description: response_msg,
       })
     }
-    setShowEditConnectionDialog(false)
   }
   const handleSaveButtonOnClick = async () => {
     if (connectionName === undefined || connectionName === "") {

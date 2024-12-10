@@ -1,14 +1,10 @@
 use crate::service::base_config_service::BaseConfig;
-use crate::sql_lite::connection::AppState;
 
-use crate::vojo::static_connections::Connections;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_repr::Deserialize_repr;
 use serde_repr::Serialize_repr;
-use sqlx::Row;
 use std::fmt::{Display, Formatter};
-use tauri::State;
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
 pub enum DateBaseType {
@@ -17,15 +13,7 @@ pub enum DateBaseType {
     Sqlite = 1,
     Postgresql = 2,
 }
-impl DateBaseType {
-    pub fn protocal(&self) -> String {
-        match self {
-            DateBaseType::Mysql => "mysql".to_string(),
-            DateBaseType::Sqlite => "sqlite".to_string(),
-            DateBaseType::Postgresql => "postgres".to_string(),
-        }
-    }
-}
+impl DateBaseType {}
 #[derive(Deserialize, Serialize)]
 pub struct TestDatabaseRequest {
     pub database_type: DateBaseType,
@@ -93,31 +81,7 @@ pub async fn test_url_with_error(
             anyhow!("连接数据库失败:{}", e)
         })
 }
-pub async fn list_database_with_error(
-    state: State<'_, AppState>,
-    state2: State<'_, Connections>,
-    id: i32,
-) -> Result<Vec<String>, anyhow::Error> {
-    let statement = sqlx::query("select config_type,connection_json from base_config where id=?")
-        .bind(id)
-        .fetch_one(&state.pool)
-        .await?;
-    let json_str: String = statement.try_get("connection_json")?;
-    let base_config: BaseConfig = serde_json::from_str(&json_str)?;
 
-    let vec = Vec::new();
-
-    Ok(vec)
-}
-
-async fn connection_with_database(
-    base_config: BaseConfig,
-    state2: State<'_, Connections>,
-) -> Result<(), anyhow::Error> {
-    let lock = state2.map.lock().await;
-
-    Ok(())
-}
 #[test]
 fn test() -> Result<(), anyhow::Error> {
     let test_database_request = TestDatabaseRequest {

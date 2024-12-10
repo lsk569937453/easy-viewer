@@ -38,11 +38,11 @@ impl ShowColumnsResponse {
         info!("row len:{}", self.rows.len());
         for item in self.rows.iter() {
             let mut cells = vec![];
-            for i in 0..item.len() {
+            for column in item {
                 cells.push(
                     TableCell::new().add_paragraph(
                         Paragraph::new()
-                            .add_run(Run::new().add_text(item[i].clone().unwrap_or("".to_string())))
+                            .add_run(Run::new().add_text(column.clone().unwrap_or("".to_string())))
                             .align(AlignmentType::Center),
                     ),
                 );

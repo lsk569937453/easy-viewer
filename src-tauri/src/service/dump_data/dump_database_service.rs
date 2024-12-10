@@ -20,7 +20,7 @@ impl DumpDatabaseRes {
         let file_path = dump_database_req.file_path.clone();
         info!("req:{:?}", dump_database_req);
         match dump_database_req.export_option {
-            ExportOption::ExportAll => {
+            ExportOption::All => {
                 let mut file = std::fs::File::create(file_path)?;
                 info!("file created success");
                 for i in 0..self.data_list.0.len() {
@@ -32,7 +32,7 @@ impl DumpDatabaseRes {
                     writeln!(file)?;
                 }
             }
-            ExportOption::ExportStruct => {
+            ExportOption::Struct => {
                 let mut file = std::fs::File::create(file_path)?;
 
                 for i in 0..self.data_list.0.len() {
@@ -41,7 +41,7 @@ impl DumpDatabaseRes {
                     writeln!(file)?;
                 }
             }
-            ExportOption::ExportData => {
+            ExportOption::Data => {
                 self.data_list.export_data(dump_database_req)?;
             }
         }
@@ -107,7 +107,7 @@ impl DumpTableList {
                     }
                     row += 1;
 
-                    for (row_index, column_list) in item.column_list.iter().enumerate() {
+                    for column_list in item.column_list.iter() {
                         for (column_index, column_item) in column_list.iter().enumerate() {
                             sheet.write_string(
                                 row,
@@ -140,19 +140,7 @@ impl DumpDatabaseResItem {
             column_structs: vec![],
         }
     }
-    pub fn from(
-        table_struct: String,
-        column_list: Vec<Vec<DumpDatabaseResColumnItem>>,
-        table_name: String,
-        column_structs: Vec<DumpDatabaseResColumnStructItem>,
-    ) -> Self {
-        DumpDatabaseResItem {
-            table_struct,
-            column_list,
-            table_name,
-            column_structs,
-        }
-    }
+
     pub fn get_data_for_sql(&self) -> Result<String, anyhow::Error> {
         let mut sql = format!("INSERT INTO `{}` VALUES", self.table_name.clone());
         for (index, item) in self.column_list.iter().enumerate() {
@@ -182,7 +170,7 @@ impl DumpDatabaseResItem {
     }
     pub fn get_data_for_json(&self) -> Result<String, anyhow::Error> {
         let mut res_array = vec![];
-        for (index, item) in self.column_list.iter().enumerate() {
+        for item in self.column_list.iter() {
             let mut row = vec![];
             for (column_index, column_item) in item.iter().enumerate() {
                 let column_name = self.column_structs[column_index].column_name.clone();
@@ -197,7 +185,7 @@ impl DumpDatabaseResItem {
     }
     pub fn get_data_for_xml(&self) -> Result<String, anyhow::Error> {
         let mut res_array = vec![];
-        for (index, item) in self.column_list.iter().enumerate() {
+        for item in self.column_list.iter() {
             let mut row = vec![];
             for (column_index, column_item) in item.iter().enumerate() {
                 let column_name = self.column_structs[column_index].column_name.clone();

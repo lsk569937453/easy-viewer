@@ -23,8 +23,6 @@ use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use anyhow::Ok;
-use chrono::DateTime;
-use chrono::Local;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
@@ -74,7 +72,7 @@ impl SqliteConfig {
     pub async fn truncate_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
@@ -86,12 +84,11 @@ impl SqliteConfig {
     }
     pub async fn import_database(
         &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
         import_database_req: ImportDatabaseReq,
     ) -> Result<(), anyhow::Error> {
         info!("import_database_req: {:?}", import_database_req);
-        let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let file = File::open(&import_database_req.file_path).await?;
 
@@ -122,10 +119,9 @@ impl SqliteConfig {
     }
     pub async fn init_dump_data(
         &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
-        let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let sql = "SELECT name 
 FROM sqlite_master 
@@ -157,11 +153,10 @@ WHERE type = 'table' and name !='sqlite_sequence';"
     }
     pub async fn dump_database(
         &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
         dump_database_req: DumpDatabaseReq,
     ) -> Result<(), anyhow::Error> {
-        let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let common_data = dump_database_req.source_data.get_common_data()?;
         let mut dump_data_list = vec![];
@@ -199,7 +194,7 @@ WHERE type = 'table' AND name = '{}';",
                         let columns = item.columns();
                         let len = columns.len();
                         let mut database_res_column_list = vec![];
-                        for i in 0..len {
+                        for (i, _) in columns.iter().enumerate().take(len) {
                             let column_name = columns[i].name();
                             let column_type = columns[i].type_info().name();
                             info!(
@@ -236,7 +231,7 @@ WHERE type = 'table' AND name = '{}';",
     pub async fn drop_table(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
@@ -248,7 +243,7 @@ WHERE type = 'table' AND name = '{}';",
     pub async fn drop_index(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
@@ -261,7 +256,7 @@ WHERE type = 'table' AND name = '{}';",
         &self,
 
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
@@ -448,8 +443,6 @@ WHERE type = 'view';",
                 vec.push(list_node_info_response_item);
             }
         } else if level_infos.len() == 4 {
-            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-            let database_name = level_infos[1].config_value.clone();
             let table_name = level_infos[2].config_value.clone();
             let node_name = level_infos[3].config_value.clone();
 
@@ -520,12 +513,11 @@ WHERE type = 'view';",
     }
     pub async fn exe_sql(
         &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         info!("sql: {}", sql);
-        let data = ExeSqlResponse::new();
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let sql_parse_result = SqlParseResult::new(sql.clone())?;
         let is_simple_select_option = sql_parse_result.is_simple_select()?;
@@ -614,11 +606,10 @@ WHERE type = 'view';",
     }
     pub async fn update_record(
         &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
         sqls: Vec<String>,
     ) -> Result<(), anyhow::Error> {
-        let data = ExeSqlResponse::new();
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let mut vec = vec![];
         for sql in sqls {
@@ -638,11 +629,10 @@ WHERE type = 'view';",
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<String, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
-        let base_config_id = level_infos[0].config_value.parse::<i32>()?;
-        let database_name = level_infos[1].config_value.clone();
+
         let table_name: String = level_infos[2].config_value.clone();
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
 
@@ -660,7 +650,7 @@ WHERE type = 'view';",
     pub async fn show_columns(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<ShowColumnsResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
 
@@ -737,7 +727,6 @@ WHERE type = 'view';",
                 .await?;
         if let Some(row) = row_option {
             let words: String = row.try_get(0)?;
-            let datatime: DateTime<Local> = row.try_get(1)?;
             let word_list = words.split(",").map(|item| item.to_string()).collect();
             return Ok(word_list);
         }

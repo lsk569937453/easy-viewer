@@ -3,7 +3,10 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
+use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
+use mongodb::bson::Document;
+use mongodb::Collection;
 use std::sync::OnceLock;
 
 use linked_hash_map::LinkedHashMap;
@@ -78,6 +81,10 @@ impl MongodbConfig {
                     .await
                     .map_err(|e| anyhow!(e))?
                     .len();
+                info!(
+                    "database:{},collection_count: {}",
+                    database_name, collection_count
+                );
                 for (name, icon_name) in get_mysql_database_data().iter() {
                     let description = if *name == "Collections" && collection_count > 0 {
                         Some(format!("({})", collection_count))
@@ -94,6 +101,35 @@ impl MongodbConfig {
                     );
                     vec.push(list_node_info_response_item);
                 }
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
+            3 => {
+                let client = self.get_connection().await?;
+                let database_name = level_infos[1].config_value.clone();
+                let database = client.database(&database_name);
+
+                let collection_names = database
+                    .list_collection_names()
+                    .await
+                    .map_err(|e| anyhow!(e))?;
+                for collection_name in collection_names {
+                    let collection: Collection<Document> = database.collection(&collection_name);
+                    let record_count = collection.count_documents(Document::new()).await?;
+                    let description = if record_count > 0 {
+                        Some(format!("{}", record_count))
+                    } else {
+                        None
+                    };
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "singleTable".to_string(),
+                        collection_name,
+                        description,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+
                 return Ok(ListNodeInfoResponse::new(vec));
             }
             _ => {

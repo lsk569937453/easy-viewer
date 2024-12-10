@@ -21,6 +21,7 @@ colorsys = { version = "*", default-features = false }
 dirs = "5.0.1"
 docx-rs = "0.4.17"
 elasticsearch = "8.16.0-alpha.1"
+futures-util = "0.3.31"
 hex = "0.4.3"
 human_bytes = "0.4.3"
 image = "0.25.5"

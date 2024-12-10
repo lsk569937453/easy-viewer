@@ -1162,24 +1162,32 @@ const IconDiv = ({ node, selectedRows }) => {
           {node.data.showSecondIcon && (
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
+              width={iconWidth}
+              height={iconHeight}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-baseline-density-medium"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-baseline-density-medium stroke-blue-500"
             >
-              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path stroke="none" d="M0 0h24v24H0z" />
               <path d="M4 20h16" />
               <path d="M4 12h16" />
               <path d="M4 4h16" />
             </svg>
           )}
           <p className="text-sm">{node.data.name}</p>
-
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]

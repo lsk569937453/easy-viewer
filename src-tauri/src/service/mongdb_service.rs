@@ -31,6 +31,10 @@ pub struct MongodbConfig {
     pub config: DatabaseHostStruct,
 }
 impl MongodbConfig {
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let description = format!("{}:{}", self.config.host, self.config.port);
+        Ok(description)
+    }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("mongodb".to_string());
         let client_options = ClientOptions::parse(&test_url).await?;

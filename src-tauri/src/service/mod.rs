@@ -5,6 +5,7 @@ pub mod dump_data;
 pub mod mongdb_service;
 pub mod mysql_common_service;
 pub mod mysql_service;
+pub mod oracledb_service;
 pub mod postgresql_service;
 pub mod query_service;
 pub mod sqlite_service;

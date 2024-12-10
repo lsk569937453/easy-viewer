@@ -27,6 +27,7 @@ import {
 } from "../../components/ui/dialog"
 import { MongodbConfigComponent } from "../components/mongodbConfigComponent"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
+import { OracleDbConfigComponent } from "../components/oracledbConfigComponent"
 import { PostGresqlConfigComponent } from "../components/postGresqlConfigComponent"
 import { LoadingSpinner } from "../components/spinner"
 import SqliteConfigComponent from "../components/sqliteConfigComponent"
@@ -147,6 +148,7 @@ const CreateConnectionDialog = ({
                 <SelectItem value="sqlite">Sqlite</SelectItem>
                 <SelectItem value="postgresql">PostGresql</SelectItem>
                 <SelectItem value="mongodb">MongoDB</SelectItem>
+                <SelectItem value="oracledb">Oracle</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -227,6 +229,32 @@ const CreateConnectionDialog = ({
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??
                 "mongodb"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "user"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "password"
+              }
+              isSave={isSave}
+            />
+          )}
+          {currentLinkType === "oracledb" && (
+            <OracleDbConfigComponent
+              connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "27017"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ??
+                "oracledb"
               }
               initialUsername={
                 connectionData?.base_config_enum?.mysql?.config?.user_name ||

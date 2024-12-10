@@ -17,6 +17,7 @@ anyhow = "1.0.94"
 base64 = "0.22.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
 chrono = { version = "0.4.39", features = ["serde"] }
+clickhouse = "0.13.1"
 colorsys = { version = "*", default-features = false }
 dirs = "5.0.1"
 docx-rs = "0.4.17"
@@ -31,6 +32,7 @@ linked-hash-map = "0.5.6"
 log = "0.4.22"
 mongodb = "3.1.0"
 num = "0.4.3"
+oracle = "0.6.2"
 percent-encoding = "2.3.0"
 redis = "0.27.6"
 serde = { version = "1.0.215", features = ["derive"] }

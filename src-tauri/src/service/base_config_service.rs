@@ -1,4 +1,5 @@
 use super::mysql_service::MysqlConfig;
+use super::oracledb_service::OracledbConfig;
 use crate::service::mongdb_service::MongodbConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
 use crate::service::sqlite_service::SqliteConfig;
@@ -26,6 +27,8 @@ pub enum BaseConfigEnum {
     Sqlite(SqliteConfig),
     #[serde(rename = "mongodb")]
     Mongodb(MongodbConfig),
+    #[serde(rename = "oracledb")]
+    Oracledb(OracledbConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -36,6 +39,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
             BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
+            BaseConfigEnum::Oracledb(config) => config.test_connection()?,
 
             _ => {}
         }
@@ -47,6 +51,8 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mysql(config) => config.get_description()?,
             BaseConfigEnum::Sqlite(config) => config.get_description()?,
             BaseConfigEnum::Postgresql(config) => config.get_description()?,
+            BaseConfigEnum::Mongodb(config) => config.get_description()?,
+            BaseConfigEnum::Oracledb(config) => config.get_description()?,
 
             _ => "".to_string(),
         };
@@ -59,6 +65,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Kafka(_) => 2,
             BaseConfigEnum::Sqlite(_) => 3,
             BaseConfigEnum::Mongodb(_) => 4,
+            BaseConfigEnum::Oracledb(_) => 5,
         }
     }
     pub async fn list_node_info(
@@ -79,6 +86,9 @@ impl BaseConfigEnum {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Mongodb(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Oracledb(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),

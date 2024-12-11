@@ -633,8 +633,8 @@ const IconDiv = ({ node, selectedRows }) => {
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               id="Postgresql--Streamline-Svg-Logos"
-              width={iconWidth}
-              height={iconHeight}
+              width={iconWidth - 4}
+              height={iconHeight - 4}
               viewBox="0 0 24 24"
             >
               <path
@@ -747,6 +747,270 @@ const IconDiv = ({ node, selectedRows }) => {
                     sideOffset={5}
                   >
                     <p>Delete Connection</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "mssql" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              fill="#000000"
+              width={iconWidth - 4}
+              height={iconHeight - 4}
+              viewBox="0 0 32 32"
+              version="1.1"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                {" "}
+                <title>microsoftsqlserver</title>{" "}
+                <path d="M16.776 27.848h0.008c0.019 0.047-0.719 2.087-0.987 2.734-0.061 0.145-0.082 0.181-0.115 0.179q-0.897-0.113-1.791-0.25c-1.132-0.172-3.028-0.504-3.506-0.612l-0.111-0.025 0.679-0.152c1.455-0.327 2.153-0.504 2.862-0.721 1.059-0.328 1.944-0.677 2.797-1.083l-0.125 0.054c0.076-0.039 0.173-0.080 0.271-0.116l0.020-0.006zM11.124 26.522c0.006 0.006-0.316 0.522-0.882 1.415-0.24 0.376-0.511 0.806-0.604 0.952-0.094 0.147-0.23 0.372-0.302 0.5l-0.134 0.231-0.067-0.017c-0.162-0.044-1.311-0.45-1.613-0.57-0.429-0.17-0.777-0.333-1.114-0.514l0.057 0.028c-0.299-0.149-0.555-0.314-0.793-0.503l0.009 0.007 1.381-0.377c1.989-0.542 3.090-0.854 3.811-1.080 0.136-0.041 0.249-0.074 0.25-0.071zM11.926 26.5c0.004-0.004 0.206 0.067 0.452 0.16 0.447 0.178 1.009 0.357 1.584 0.501l0.099 0.021c0.713 0.185 1.579 0.34 2.463 0.435l0.083 0.007c0.1 0.008 0.152 0.020 0.137 0.030-0.031 0.020-0.7 0.242-1.191 0.397q-2.889 0.879-5.793 1.703c-0.003 0-0.007 0-0.011 0-0.068 0-0.132-0.019-0.187-0.051l0.002 0.001c0.080-0.115 0.16-0.215 0.244-0.311l-0.003 0.003c0.613-0.73 1.22-1.538 1.781-2.379l0.063-0.1q0.137-0.21 0.275-0.419zM8.302 23.909l0.146 0.164c0.605 0.684 1.308 1.264 2.092 1.72l0.040 0.022c0.093 0.047 0.173 0.1 0.245 0.161l-0.002-0.001q-2.698 0.978-5.411 1.912-0.046-0.028-0.090-0.060l-0.084-0.060 0.131-0.19c0.425-0.616 0.96-1.293 2.131-2.702zM7.721 23.687c0.011 0.011-0.567 0.838-1.375 1.969l-0.734 1.028c-0.121 0.174-0.306 0.447-0.411 0.61l-0.191 0.295-0.202-0.171c-0.305-0.268-0.581-0.55-0.836-0.851l-0.010-0.012c-0.346-0.409-0.609-0.901-0.753-1.441l-0.006-0.026c-0.047-0.217-0.050-0.327-0.004-0.341q1.207-0.291 2.417-0.569l1.625-0.381c0.261-0.063 0.477-0.113 0.48-0.111zM18.077 23.333l0.003 0.004c0 0.1-0.229 1.035-0.42 1.712-0.16 0.566-0.295 1.010-0.544 1.796q-0.095 0.318-0.21 0.63c-1.418-0.246-2.677-0.611-3.875-1.096l0.126 0.045q-0.407-0.159-0.799-0.354c0.163-0.092 0.363-0.189 0.569-0.273l0.038-0.014c2.068-0.901 4.21-1.928 4.942-2.369 0.048-0.035 0.104-0.062 0.165-0.079l0.004-0.001zM13.591 21.767c-0.025 0.084-0.052 0.154-0.083 0.222l0.004-0.011c-0.538 1.267-1.066 2.309-1.651 3.314l0.075-0.14q-0.15 0.275-0.315 0.541c-0.006 0-0.142-0.082-0.305-0.181-0.921-0.554-1.705-1.225-2.363-2.007l-0.012-0.014-0.080-0.1 0.415-0.114c1.572-0.423 2.898-0.894 4.176-1.452l-0.19 0.074c0.178-0.075 0.325-0.136 0.327-0.132zM14.313 21.53c0.099 0.047 0.179 0.092 0.257 0.14l-0.011-0.006c1.001 0.57 2.161 1.034 3.385 1.332l0.093 0.019 0.105 0.025-0.144 0.079c-0.602 0.335-2.588 1.161-4.616 1.921q-0.321 0.12-0.641 0.242c-0.030 0.015-0.064 0.027-0.1 0.033l-0.002 0c0-0.005 0.084-0.165 0.186-0.357 0.501-0.908 0.983-1.983 1.381-3.098l0.049-0.157c0.029-0.091 0.055-0.169 0.059-0.172zM7.229 20.261c0.019 0 0.014 0.035-0.015 0.201q-0.037 0.242-0.051 0.487c-0.005 0.069-0.008 0.149-0.008 0.229 0 0.585 0.151 1.135 0.416 1.612l-0.009-0.017c0.092 0.187 0.165 0.342 0.161 0.345-0.034 0.029-3.037 0.907-3.981 1.166l-0.544 0.15c-0.034 0.010-0.036 0.003-0.025-0.075 0.231-0.9 0.694-1.671 1.32-2.273l0.002-0.002c0.426-0.449 0.918-0.83 1.462-1.128l0.031-0.015q0.614-0.352 1.24-0.681zM18.491 18.92v0.192c-0.014 1.331-0.129 2.624-0.339 3.885l0.020-0.146c-0.907-0.265-1.694-0.598-2.432-1.008l0.060 0.030c-0.412-0.217-0.759-0.434-1.090-0.671l0.028 0.019c0.004-0.005 0.192-0.104 0.417-0.221 0.984-0.509 1.797-0.993 2.58-1.517l-0.096 0.060c0.277-0.185 0.694-0.486 0.786-0.567zM10.658 18.602c-0.156 0.381-0.305 0.689-0.47 0.988l0.025-0.050c-0.439 0.857-0.924 1.701-1.566 2.73l-0.227 0.36c-0.023 0.034-0.033 0.023-0.102-0.117-0.153-0.304-0.274-0.656-0.346-1.026l-0.004-0.026c-0.027-0.18-0.043-0.388-0.043-0.599 0-0.267 0.025-0.527 0.072-0.78l-0.004 0.026c0.059-0.284 0.056-0.277 0.19-0.345 0.577-0.296 2.457-1.177 2.475-1.161zM11.568 18.227l0.012 0.005c0.025 0.046 0.048 0.1 0.068 0.156l0.002 0.008c0.21 0.515 0.462 0.96 0.764 1.366l-0.012-0.016c0.378 0.497 0.795 0.932 1.258 1.314l0.013 0.011c0.029 0.025 0.037 0.020-0.702 0.3q-1.421 0.536-2.867 1c-0.409 0.132-0.755 0.244-0.769 0.25-0.041 0.014-0.029-0.011 0.091-0.197 0.625-1.019 1.226-2.208 1.732-3.446l0.061-0.168c0.077-0.2 0.152-0.4 0.166-0.445 0.010-0.054 0.048-0.098 0.099-0.115l0.001-0c0.024-0.013 0.051-0.020 0.081-0.021h0zM14.536 17.057c0.006 0.137 0.010 0.299 0.010 0.46 0 0.302-0.013 0.602-0.038 0.898l0.003-0.039c-0.107 0.858-0.29 1.635-0.547 2.376l0.024-0.081c-0.306-0.259-0.582-0.528-0.838-0.816l-0.007-0.008c-0.314-0.355-0.592-0.753-0.82-1.183l-0.016-0.033c-0.092-0.173-0.177-0.377-0.245-0.589l-0.008-0.027c0.070-0.050 2.463-0.975 2.481-0.959zM15.165 16.816c0.15 0.056 0.28 0.129 0.397 0.218l-0.004-0.003c0.753 0.486 1.653 0.995 2.582 1.456l0.167 0.075c0.17 0.075 0.189 0.045-0.2 0.309-0.892 0.596-1.917 1.156-2.991 1.626l-0.13 0.051q-0.205 0.094-0.414 0.177c0.010-0.093 0.029-0.178 0.056-0.259l-0.003 0.009c0.278-0.949 0.452-2.043 0.483-3.174l0-0.018c0.002-0.452 0.002-0.455 0.046-0.466h0.008zM18.224 15.813c0.131 0.671 0.216 1.455 0.238 2.255l0 0.020c0.005 0.041 0.008 0.088 0.008 0.136 0 0.061-0.005 0.121-0.014 0.179l0.001-0.006c-0.035 0-0.769-0.431-1.29-0.757q-0.738-0.465-1.452-0.965c-0.044-0.035-0.039-0.036 0.332-0.164 0.631-0.217 2.129-0.697 2.177-0.697zM19.599 15.007l-6.008 1.959-5.223 2.307-1.462 0.387q-0.559 0.529-1.185 1.075c-0.462 0.401-0.895 0.765-1.225 1.027-0.436 0.362-0.826 0.749-1.18 1.167l-0.011 0.014c-0.359 0.426-0.656 0.919-0.867 1.455l-0.012 0.036c-0.079 0.232-0.124 0.499-0.124 0.777 0 0.553 0.18 1.064 0.485 1.477l-0.005-0.007c0.853 1.079 1.957 1.921 3.227 2.445l0.053 0.019c0.788 0.341 1.749 0.672 2.738 0.934l0.149 0.034c1.786 0.425 3.893 0.737 6.048 0.869l0.108 0.005c0.113 0.007 0.244 0.010 0.377 0.010 0.148 0 0.294-0.005 0.439-0.014l-0.020 0.001c0.188-0.303 0.384-0.668 0.559-1.044l0.028-0.068c0.836-1.607 1.563-3.48 2.084-5.438l0.044-0.196c0.257-1.126 0.45-2.463 0.538-3.828l0.004-0.077c0.034-0.442 0.046-1.916 0.020-2.417-0.035-0.783-0.117-1.516-0.244-2.234l0.015 0.102c-0.011-0.041-0.017-0.088-0.017-0.136 0-0.018 0.001-0.036 0.003-0.053l-0 0.002c0.017-0.012 0.074-0.031 0.812-0.246zM14.214 4.5c0.019 0.001 0.040 0.040 0.096 0.164 0.155 0.34 0.637 1.26 0.754 1.437 0.037 0.059 0.1 0.062-0.541-0.041-1.537-0.247-2.036-0.331-2.036-0.341 0.030-0.026 0.064-0.049 0.101-0.066l0.003-0.001c0.524-0.297 0.977-0.614 1.396-0.969l-0.013 0.011 0.219-0.184zM8.776 3.414l0.639 0.797c0.352 0.437 0.705 0.873 0.782 0.967 0.047 0.052 0.092 0.109 0.132 0.17l0.003 0.005c-0.017 0.014-0.925-0.162-1.406-0.274q-0.508-0.108-1.003-0.265l-0.25-0.080 0.001-0.061c0.004-0.306 0.39-0.759 1.045-1.22zM8.955 3.271l0.176 0.060c1.353 0.403 2.955 0.72 4.601 0.89l0.116 0.010c0.15 0.013 0.277 0.026 0.281 0.030-0.078 0.049-0.171 0.099-0.268 0.145l-0.017 0.007c-0.644 0.322-1.353 0.716-1.844 1.023-0.085 0.059-0.181 0.113-0.283 0.157l-0.011 0.004q-0.107-0.015-0.212-0.034l-0.18-0.029-0.456-0.444c-0.801-0.775-1.426-1.375-1.668-1.6zM13.331 1.237h0.006c0.004 0.004 0.021 0.131 0.040 0.281 0.091 0.715 0.246 1.362 0.463 1.979l-0.020-0.067c0.167 0.5 0.17 0.471-0.030 0.415-0.462-0.129-2.539-0.485-4.041-0.694q-0.224-0.029-0.446-0.066c-0.019-0.019 1.083-0.596 1.572-0.825 0.626-0.29 2.333-1 2.457-1.023zM13.407 1.004c-0.1-0.012-1.713 0.569-2.749 0.988-1.215 0.464-2.258 0.999-3.234 1.63l0.067-0.041c-0.242 0.166-0.445 0.369-0.605 0.604l-0.005 0.008c-0.017 0.045-0.026 0.097-0.026 0.151 0 0.001 0 0.002 0 0.003v-0l0.61 0.575 1.447 0.462 3.448 0.617 3.94 0.677 0.040-0.337-0.035-0.006-0.519-0.083-0.106-0.185q-0.803-1.417-1.471-2.905c-0.223-0.49-0.448-1.098-0.634-1.722l-0.028-0.108c-0.085-0.304-0.094-0.322-0.14-0.329zM12.159 15.326c-0.275 0.353-0.553 0.667-0.85 0.962l-0.001 0.001c-0.829 0.851-1.753 1.602-2.757 2.239l-0.062 0.037c-0.135 0.086-0.257 0.162-0.275 0.172-0.029 0.017 0.010-0.027 0.482-0.542 0.297-0.324 0.525-0.592 0.785-0.928 0.121-0.174 0.272-0.318 0.446-0.429l0.006-0.004c0.671-0.485 2.208-1.526 2.226-1.508zM12.863 15.152c0.021-0.004 0.050 0.035 0.174 0.219 0.252 0.376 0.431 0.823 0.506 1.304l0.002 0.019 0.010 0.091-0.621 0.24c-1.112 0.432-2.138 0.858-2.832 1.175-0.194 0.090-0.535 0.252-0.759 0.365s-0.406 0.2-0.406 0.195 0.14-0.111 0.312-0.235c1.29-0.925 2.411-1.962 3.392-3.121l0.022-0.027c0.094-0.115 0.18-0.215 0.191-0.222l0.008-0.002zM11.335 13.952c0.387 0.187 0.72 0.403 1.023 0.654l-0.008-0.007c-0.077 0.081-0.163 0.152-0.257 0.212l-0.006 0.003c-0.431 0.311-1.087 0.805-1.466 1.107-0.4 0.319-0.414 0.329-0.369 0.259 0.208-0.3 0.41-0.643 0.586-1.002l0.021-0.047c0.125-0.254 0.253-0.568 0.363-0.891l0.017-0.059c0.023-0.087 0.056-0.163 0.098-0.232l-0.002 0.004zM17.071 12.546c0.011 0.011-0.615 0.887-0.986 1.382-0.445 0.591-1.237 1.581-1.782 2.224q-0.209 0.255-0.432 0.496c-0.012 0.004-0.019-0.062-0.020-0.166-0.005-0.596-0.147-1.157-0.395-1.657l0.010 0.022c-0.104-0.21-0.121-0.26-0.1-0.28 0.085-0.077 1.408-0.832 2.242-1.278 0.574-0.307 1.453-0.755 1.463-0.743zM18.019 12.309l0.221 0.144c0.597 0.393 1.109 0.773 1.598 1.179l-0.030-0.024c0.257 0.215 0.756 0.662 0.858 0.77l0.055 0.059-0.367 0.103q-2.818 0.769-5.561 1.779c-0.209 0.076-0.387 0.14-0.4 0.14-0.026 0-0.052 0.024 0.416-0.407 1.136-1.036 2.14-2.184 3.006-3.435l0.044-0.067zM14.41 10.824c-0.076 0.354-0.158 0.647-0.255 0.933l0.017-0.059c-0.293 0.865-0.646 1.612-1.072 2.309l0.028-0.050-0.112 0.184-0.254-0.246c-0.241-0.246-0.52-0.454-0.827-0.616l-0.018-0.009c-0.084-0.038-0.156-0.081-0.224-0.13l0.004 0.002c0-0.037 0.775-0.741 1.372-1.247 0.429-0.362 1.33-1.083 1.34-1.072zM15.004 10.719c0.064 0.012 0.654 0.287 1.098 0.51 0.406 0.204 1.022 0.532 1.053 0.561 0.004 0.004-0.212 0.116-0.482 0.251-0.854 0.427-1.585 0.83-2.347 1.296-0.219 0.134-0.4 0.242-0.406 0.242-0.019 0-0.012-0.016 0.11-0.239 0.395-0.721 0.713-1.557 0.91-2.438l0.012-0.064c0.018-0.077 0.037-0.125 0.051-0.121zM25.111 9.682c0.099 0.034 0.184 0.076 0.263 0.128l-0.004-0.003c1.152 0.666 2.147 1.421 3.038 2.283l-0.004-0.004c0.242 0.237 0.834 0.854 0.825 0.858l-0.454 0.036c-2.513 0.227-4.799 0.622-7.020 1.182l0.309-0.066c-0.16 0.037-0.297 0.070-0.307 0.070-0.009 0 0.166-0.175 0.389-0.39 1.136-1.011 2.063-2.229 2.726-3.598l0.030-0.069c0.11-0.222 0.204-0.416 0.207-0.427h0.003zM24.764 9.591c0.009 0.010-0.292 0.481-0.48 0.75-0.275 0.392-0.671 0.907-1.576 2.046l-1.192 1.502q-0.163 0.212-0.336 0.416c-0.042-0.053-0.084-0.112-0.124-0.174l-0.005-0.009c-0.525-0.777-1.132-1.445-1.821-2.018l-0.016-0.013q-0.166-0.139-0.337-0.272c-0.035-0.024-0.065-0.049-0.092-0.078l-0-0c0-0.012 0.771-0.342 1.36-0.582q1.71-0.687 3.471-1.237c0.552-0.169 1.14-0.337 1.148-0.33zM11.505 9.578c0.012-0.012 0.642 0.135 0.986 0.231 0.668 0.187 1.205 0.372 1.729 0.582l-0.115-0.040c0 0.005-0.121 0.111-0.269 0.235-0.594 0.496-1.167 1.016-1.853 1.678q-0.185 0.186-0.385 0.356c-0.009 0-0.012-0.029-0.008-0.062 0.040-0.341 0.063-0.736 0.063-1.136 0-0.566-0.045-1.122-0.133-1.663l0.008 0.059c-0.013-0.070-0.022-0.152-0.025-0.235l-0-0.003zM19.728 7.689c0.041 0 0.869 0.225 1.296 0.354 1.245 0.372 2.271 0.756 3.265 1.198l-0.172-0.068 0.331 0.15-0.234 0.054c-2.031 0.457-3.779 1.013-5.459 1.701l0.226-0.082c-0.134 0.055-0.25 0.1-0.259 0.1 0.025-0.088 0.057-0.165 0.097-0.237l-0.003 0.006c0.438-0.879 0.748-1.902 0.874-2.981l0.004-0.044c0.007-0.084 0.022-0.151 0.034-0.151zM19.383 7.635c-0.018 0.223-0.054 0.427-0.106 0.625l0.006-0.025c-0.297 0.999-0.686 1.869-1.171 2.675l0.029-0.052c-0.064 0.119-0.127 0.22-0.196 0.316l0.006-0.008c-0.106-0.045-0.196-0.093-0.281-0.148l0.007 0.004c-0.493-0.292-1.078-0.584-1.685-0.836l-0.096-0.035q-0.176-0.069-0.347-0.15c-0.030-0.027 1.428-0.993 2.202-1.457 0.619-0.371 1.615-0.926 1.632-0.908zM14.559 6.68c0.014-0.013 1.879 0.31 2.727 0.472 0.632 0.121 1.546 0.312 1.601 0.336 0.027 0.010-0.067 0.062-0.371 0.2-1.147 0.504-2.124 1.044-3.045 1.66l0.071-0.045c-0.232 0.155-0.426 0.282-0.43 0.282-0.006-0.063-0.009-0.136-0.009-0.209 0-0.027 0-0.055 0.001-0.082l-0 0.004c0-0.005 0-0.011 0-0.018 0-0.885-0.18-1.727-0.504-2.494l0.016 0.042c-0.021-0.042-0.040-0.092-0.055-0.144l-0.001-0.006zM14.247 6.635c0.075 0.146 0.132 0.316 0.16 0.495l0.001 0.010c0.14 0.544 0.22 1.168 0.22 1.811 0 0.232-0.010 0.462-0.031 0.689l0.002-0.029-0.015 0.047-0.234-0.075c-0.485-0.155-1.275-0.387-1.952-0.575q-0.354-0.091-0.7-0.212c0.256-0.284 0.518-0.546 0.793-0.794l0.009-0.008c0.519-0.453 1.088-0.899 1.68-1.314l0.066-0.044zM10.314 5.888c0.091 0.009 0.174 0.024 0.255 0.045l-0.011-0.002c0.774 0.17 2.156 0.437 3.043 0.587 0.101 0.012 0.192 0.032 0.28 0.062l-0.010-0.003c-0.035 0.031-0.075 0.057-0.12 0.076l-0.003 0.001c-0.149 0.075-0.752 0.436-0.953 0.571-0.482 0.319-0.903 0.657-1.29 1.029l0.003-0.003q-0.12 0.123-0.246 0.24c-0.019-0.047-0.037-0.105-0.050-0.163l-0.001-0.008c-0.244-0.87-0.521-1.608-0.851-2.316l0.039 0.093q-0.049-0.101-0.089-0.206zM8.077 5.271c0.068 0.016 0.126 0.035 0.181 0.056l-0.010-0.003c0.17 0.058 0.395 0.125 0.657 0.199 0.182 0.050 0.384 0.105 0.599 0.159 0.272 0.070 0.499 0.13 0.501 0.134 0.030 0.034 0.489 1.497 0.645 2.058 0.060 0.215 0.105 0.394 0.101 0.397-0.041-0.051-0.079-0.108-0.11-0.169l-0.003-0.006c-0.626-1.039-1.406-1.916-2.321-2.628l-0.021-0.016q-0.113-0.086-0.22-0.18zM6.908 4.135c-0.030 0.059-0.048 0.128-0.048 0.202 0 0.070 0.016 0.136 0.044 0.194l-0.001-0.003c0.114 0.197 0.256 0.364 0.422 0.502l0.003 0.002s2.018 1.969 2.266 2.254c1.023 1.118 1.65 2.613 1.65 4.254 0 0.021-0 0.043-0 0.064l0-0.003c0.001 0.050 0.002 0.109 0.002 0.168 0 1.128-0.265 2.193-0.736 3.138l0.018-0.041c-1.527 2.742-3.544 5.030-5.954 6.82l-0.057 0.040 0.45-0.15c0.456-0.317 0.985-0.635 1.533-0.919l0.081-0.038c2.067-1.14 4.539-2.27 7.096-3.225l0.4-0.131c4.265-1.603 9.372-3.016 14.634-3.989l0.991-0.152-0.062-0.1c-0.31-0.491-0.61-0.909-0.933-1.309l0.020 0.026c-0.886-1.084-1.955-1.981-3.165-2.653l-0.056-0.028c-2.024-1.075-4.373-1.893-6.854-2.328l-0.144-0.021q-1.365-0.257-2.738-0.469-2.456-0.377-4.904-0.8c-0.531-0.094-1.325-0.226-1.851-0.34-0.488-0.104-0.891-0.215-1.284-0.346l0.083 0.024c-0.335-0.131-0.806-0.259-0.907-0.643z"></path>{" "}
+              </g>
+            </svg>
+          )}
+          <p className="flex-none text-sm ">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleConnectionRemoveClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" />
+                    <path d="M14 11l0 6" />
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Delete Connection</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "oracledb" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              width={iconWidth - 4}
+              height={iconHeight - 4}
+              viewBox="-2.4 -2.4 28.80 28.80"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="#000000"
+            >
+              <g id="SVGRepo_bgCarrier" stroke-width="0">
+                <rect
+                  x="-2.4"
+                  y="-2.4"
+                  width="28.80"
+                  height="28.80"
+                  rx="0"
+                  fill="#878787"
+                  strokewidth="0"
+                ></rect>
+              </g>
+              <g
+                id="SVGRepo_tracerCarrier"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                {" "}
+                <path
+                  fill="#fffafa"
+                  fill-rule="evenodd"
+                  d="M7.957359,18.9123664 C4.11670252,18.9123664 1,15.803458 1,11.9617373 C1,8.12000773 4.11670252,5 7.957359,5 L16.0437948,5 C19.8855156,5 23,8.12000773 23,11.9617373 C23,15.803458 19.8855156,18.9123664 16.0437948,18.9123664 L7.957359,18.9123664 L7.957359,18.9123664 Z M15.8639176,16.4585488 C18.352201,16.4585488 20.3674397,14.448858 20.3674397,11.9617373 C20.3674397,9.47460595 18.352201,7.45381934 15.8639176,7.45381934 L8.1360824,7.45381934 C5.64895285,7.45381934 3.63255855,9.47460595 3.63255855,11.9617373 C3.63255855,14.448858 5.64895285,16.4585488 8.1360824,16.4585488 L15.8639176,16.4585488 L15.8639176,16.4585488 Z"
+                ></path>{" "}
+              </g>
+            </svg>
+          )}
+          <p className="flex-none text-sm ">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    onClick={handleAddNewDatabaseClick}
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>New Database</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleConnectionRemoveClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" />
+                    <path d="M14 11l0 6" />
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Remove Connection</p>
                     <Tooltip.Arrow className="fill-muted" />
                   </Tooltip.Content>
                 </Tooltip.Portal>
@@ -1084,6 +1348,110 @@ const IconDiv = ({ node, selectedRows }) => {
           )}
           <p className="text-sm">{node.data.name}</p>
 
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible group-hover/item:hover:bg-searchMarkerColor "
+                    onClick={handleNewQueryClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Create Query</p>
+                    <Tooltip.Arrow className="fill-white" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "collections" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-baseline-density-medium stroke-blue-500"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" />
+              <path d="M4 20h16" />
+              <path d="M4 12h16" />
+              <path d="M4 4h16" />
+            </svg>
+          )}
+          <p className="text-sm">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
           <div
             className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
               selectedRows[node.id]

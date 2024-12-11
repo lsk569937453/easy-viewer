@@ -3,7 +3,10 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
+use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
+use mongodb::bson::Document;
+use mongodb::Collection;
 use std::sync::OnceLock;
 
 use linked_hash_map::LinkedHashMap;
@@ -19,10 +22,7 @@ fn get_mysql_database_data() -> &'static LinkedHashMap<&'static str, &'static st
     MONGODB_DATABASE_DATA.get_or_init(|| {
         let mut map = LinkedHashMap::new();
         map.insert("Query", "query");
-        map.insert("Tables", "tables");
-        map.insert("Views", "views");
-        map.insert("Functions", "functions");
-        map.insert("Procedures", "procedures");
+        map.insert("Collections", "collections");
         map
     })
 }
@@ -31,6 +31,10 @@ pub struct MongodbConfig {
     pub config: DatabaseHostStruct,
 }
 impl MongodbConfig {
+    pub fn get_description(&self) -> Result<String, anyhow::Error> {
+        let description = format!("{}:{}", self.config.host, self.config.port);
+        Ok(description)
+    }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("mongodb".to_string());
         let client_options = ClientOptions::parse(&test_url).await?;
@@ -69,6 +73,67 @@ impl MongodbConfig {
                     );
                     vec.push(list_node_info_response_item);
                 }
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
+            2 => {
+                let client = self.get_connection().await?;
+                let database_name = level_infos[1].config_value.clone();
+                let database = client.database(&database_name);
+
+                let collection_count = database
+                    .list_collection_names()
+                    .await
+                    .map_err(|e| anyhow!(e))?
+                    .len();
+                info!(
+                    "database:{},collection_count: {}",
+                    database_name, collection_count
+                );
+                for (name, icon_name) in get_mysql_database_data().iter() {
+                    let description = if *name == "Collections" && collection_count > 0 {
+                        Some(format!("({})", collection_count))
+                    } else {
+                        None
+                    };
+                    info!("description: {}", collection_count);
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        icon_name.to_string(),
+                        name.to_string(),
+                        description,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
+            3 => {
+                let client = self.get_connection().await?;
+                let database_name = level_infos[1].config_value.clone();
+                let database = client.database(&database_name);
+
+                let collection_names = database
+                    .list_collection_names()
+                    .await
+                    .map_err(|e| anyhow!(e))?;
+                for collection_name in collection_names {
+                    let collection: Collection<Document> = database.collection(&collection_name);
+                    let record_count = collection.count_documents(Document::new()).await?;
+                    let description = if record_count > 0 {
+                        Some(format!("{}", record_count))
+                    } else {
+                        None
+                    };
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "singleTable".to_string(),
+                        collection_name,
+                        description,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+
                 return Ok(ListNodeInfoResponse::new(vec));
             }
             _ => {

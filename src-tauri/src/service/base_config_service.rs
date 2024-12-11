@@ -1,3 +1,4 @@
+use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
 use crate::service::mongdb_service::MongodbConfig;
@@ -29,6 +30,8 @@ pub enum BaseConfigEnum {
     Mongodb(MongodbConfig),
     #[serde(rename = "oracledb")]
     Oracledb(OracledbConfig),
+    #[serde(rename = "mssql")]
+    Mssql(MssqlConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -40,6 +43,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
             BaseConfigEnum::Oracledb(config) => config.test_connection()?,
+            BaseConfigEnum::Mssql(config) => config.test_connection().await?,
 
             _ => {}
         }
@@ -66,6 +70,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(_) => 3,
             BaseConfigEnum::Mongodb(_) => 4,
             BaseConfigEnum::Oracledb(_) => 5,
+            BaseConfigEnum::Mssql(_) => 6,
         }
     }
     pub async fn list_node_info(

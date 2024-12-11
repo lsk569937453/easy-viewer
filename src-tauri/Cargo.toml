@@ -56,12 +56,14 @@ sqlx = { version = "0.8.2", features = [
     "bit-vec",
     
 ] }
+tokio-util = "0.7.13"
 tauri = { version = "2.1.1", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-dialog = "2.2.0"
 tauri-plugin-fs = "2.2.0"
 tauri-plugin-log = { version = "2.2.0" }
 tauri-plugin-os = "2.2.0"
 tauri-plugin-shell = "2.2.0"
+tiberius = "0.12.3"  
 time = "0.3.37"
 tokio = { version = "1.42.0", features = ["full", "tracing", "time"] }
 uuid = { version = "1.11.0", features = [

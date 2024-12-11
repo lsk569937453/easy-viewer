@@ -93,6 +93,10 @@ async fn main() -> Result<(), anyhow::Error> {
                     "tao::platform_impl::platform::event_loop::runner",
                     log::LevelFilter::Error,
                 )
+                .level_for(
+                    "tiberius",
+                    log::LevelFilter::Off, // Disable logging for this module
+                )
                 .build(),
         )
         .on_window_event(|window, event| {

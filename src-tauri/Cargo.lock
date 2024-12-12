@@ -1474,6 +1474,7 @@ dependencies = [
  "oracle",
  "percent-encoding",
  "redis",
+ "rust_decimal",
  "serde",
  "serde-xml-rs",
  "serde_json",

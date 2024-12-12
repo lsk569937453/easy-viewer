@@ -96,6 +96,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Oracledb(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
             _ => ListNodeInfoResponse::new_with_empty(),
         };
         Ok(vec)

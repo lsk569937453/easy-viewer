@@ -29,9 +29,9 @@ import { LoadingSpinner } from "./spinner"
 export function MssqlConfigComponent({
   connectionName,
   initialHost = "localhost",
-  initialPort = "3306",
+  initialPort = "1433",
   initialDatabase = "mydb",
-  initialUsername = "user",
+  initialUsername = "sa",
   initialPassword = "password",
   isSave = false,
   baseCongfigId = null,

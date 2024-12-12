@@ -3,7 +3,6 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
-use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
 use mongodb::bson::Document;
 use mongodb::Collection;
@@ -55,7 +54,7 @@ impl MongodbConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let mut vec = vec![];
         let level_infos = list_node_info_req.level_infos;

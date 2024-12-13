@@ -310,6 +310,9 @@ WHERE table_name = '{}'
   );"#,
                 table_name, table_name
             );
+            let stream = conn.query(&sql, &[]).await?;
+            let mut row_stream = stream.into_row_stream();
+
             let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
             if let Some(row) = option_row {
                 let primary_column: String = row.try_get(0)?;

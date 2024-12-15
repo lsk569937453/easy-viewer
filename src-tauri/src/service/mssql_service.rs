@@ -17,6 +17,7 @@ use tiberius::numeric::Numeric;
 use tiberius::AuthMethod;
 use tiberius::Client;
 use tiberius::Config;
+use tiberius::QueryItem;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tokio_util::compat::Compat;
@@ -311,12 +312,11 @@ WHERE table_name = '{}'
                 table_name, table_name
             );
             let stream = conn.query(&sql, &[]).await?;
-            let mut row_stream = stream.into_row_stream();
+            let row_option = stream.into_row().await?;
 
-            let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
-            if let Some(row) = option_row {
-                let primary_column: String = row.try_get(0)?;
-                Some(primary_column)
+            if let Some(row) = row_option {
+                let primary_column = row.try_get::<&str, _>(0)?.ok_or(anyhow!(""))?;
+                Some(primary_column.to_string())
             } else {
                 None
             }
@@ -326,11 +326,11 @@ WHERE table_name = '{}'
 
         info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
-            let pg_query_result =
+            let mssql_query_result =
                 if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
-                    conn.execute(sql.as_str()).await?
+                    conn.execute(&sql, &[]).await?
                 } else {
-                    sqlx::query(&sql).execute(&mut conn).await?
+                    conn.execute(&sql, &[]).await?
                 };
             let headers = vec![
                 Header {
@@ -344,51 +344,58 @@ WHERE table_name = '{}'
                     is_primary_key: false,
                 },
             ];
-            let rows = vec![vec![Some(pg_query_result.rows_affected().to_string())]];
+            let row_affected = mssql_query_result
+                .rows_affected()
+                .iter()
+                .map(|num| num.to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+            let rows = vec![vec![Some(row_affected)]];
             return Ok(ExeSqlResponse {
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
             });
         }
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
-        if rows.is_empty() {
-            return Ok(ExeSqlResponse::new());
-        }
-        let first_item = rows.first().ok_or(anyhow!(""))?;
+        let mut rows = conn.query(&sql, &[]).await?;
         let mut headers = vec![];
-        for item in first_item.columns() {
-            let type_name = item.type_info().name();
-            let column_name = item.name();
-            let is_primary = if let Some(primary_column) = &primary_column_option {
-                column_name == primary_column
-            } else {
-                false
-            };
-            headers.push(Header {
-                name: column_name.to_string(),
-                type_name: type_name.to_string().to_uppercase(),
-                is_primary_key: is_primary,
-            });
-        }
         let mut response_rows = vec![];
-        for item in rows.iter() {
-            let columns = item.columns();
-            let len = columns.len();
-            let mut row = vec![];
-            for (i, _) in columns.iter().enumerate().take(len) {
-                let type_name = columns[i].type_info().name();
-                let val = postgres_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
+
+        while let Some(query_item) = rows.try_next().await? {
+            match query_item {
+                QueryItem::Row(row_data) => {
+                    // let columns = row.columns();
+                    // let len = columns.len();
+                    let mut row = vec![];
+
+                    for (column, column_data) in row_data.cells() {
+                        let column_type = column.column_type();
+                        let data = format!("{:?}", column_data);
+                        row.push(Some(data.to_string()));
+                    }
+                    response_rows.push(row);
+                }
+                QueryItem::Metadata(metadata) => {
+                    for item in metadata.columns().iter() {
+                        let type_name = item.column_type();
+                        let type_name_str = format!("{:?}", type_name);
+                        let column_name = item.name();
+                        let is_primary = if let Some(primary_column) = primary_column_option.clone()
+                        {
+                            column_name == primary_column.as_str()
+                        } else {
+                            false
+                        };
+                        headers.push(Header {
+                            name: column_name.to_string(),
+                            type_name: type_name_str.to_uppercase(),
+                            is_primary_key: is_primary,
+                        });
+                    }
                 }
             }
-            response_rows.push(row);
         }
+
         let exe_sql_response =
             ExeSqlResponse::from(headers, response_rows, is_simple_select_option);
 

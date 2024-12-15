@@ -170,6 +170,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
             _ => ExeSqlResponse::new(),
         };
         Ok(data)

@@ -1,7 +1,10 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::vojo::exe_sql_response::ExeSqlResponse;
+use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
+use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
@@ -14,6 +17,7 @@ use tiberius::numeric::Numeric;
 use tiberius::AuthMethod;
 use tiberius::Client;
 use tiberius::Config;
+use tiberius::QueryItem;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tokio_util::compat::Compat;
@@ -261,5 +265,140 @@ WHERE TABLE_SCHEMA = '{}'
             }
         }
         Ok(ListNodeInfoResponse::new_with_empty())
+    }
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        sql: String,
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let mut conn = if level_infos.len() >= 2 {
+            let database_name = level_infos[1].config_value.clone();
+            self.get_connection_with_database(database_name).await?
+        } else {
+            self.get_connection().await?
+        };
+
+        let should_parse_sql = !(sql.contains("CREATE DATABASE")
+            || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE"))
+            || sql.contains("CREATE FUNCTION") && !sql.contains("SHOW CREATE FUNCTION"));
+        info!(
+            "should_parse_sql: {},{}",
+            should_parse_sql,
+            !sql.contains("CREATE PROCEDURE")
+        );
+        let (is_simple_select_option, has_multi_rows) = if should_parse_sql {
+            let sql_parse_result = SqlParseResult::new(sql.clone())?;
+            (
+                sql_parse_result.is_simple_select()?,
+                sql_parse_result.has_multiple_rows()?,
+            )
+        } else {
+            (None, false)
+        };
+        let primary_column_option = if let Some(table_name) = &is_simple_select_option {
+            let sql = format!(
+                r#"SELECT column_name
+FROM information_schema.key_column_usage
+WHERE table_name = '{}'
+  AND constraint_name = (
+      SELECT constraint_name
+      FROM information_schema.table_constraints
+      WHERE table_name = '{}'
+        AND constraint_type = 'PRIMARY KEY'
+  );"#,
+                table_name, table_name
+            );
+            let stream = conn.query(&sql, &[]).await?;
+            let row_option = stream.into_row().await?;
+
+            if let Some(row) = row_option {
+                let primary_column = row.try_get::<&str, _>(0)?.ok_or(anyhow!(""))?;
+                Some(primary_column.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        info!("has_multi_rows: {}", has_multi_rows);
+        if !has_multi_rows {
+            let mssql_query_result =
+                if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
+                    conn.execute(&sql, &[]).await?
+                } else {
+                    conn.execute(&sql, &[]).await?
+                };
+            let headers = vec![
+                Header {
+                    name: "affected_rows".to_string(),
+                    type_name: "u64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+                Header {
+                    name: "last_insert_id".to_string(),
+                    type_name: "u64".to_string().to_uppercase(),
+                    is_primary_key: false,
+                },
+            ];
+            let row_affected = mssql_query_result
+                .rows_affected()
+                .iter()
+                .map(|num| num.to_string())
+                .collect::<Vec<String>>()
+                .join(", ");
+            let rows = vec![vec![Some(row_affected)]];
+            return Ok(ExeSqlResponse {
+                header: headers,
+                rows,
+                table_name: is_simple_select_option,
+            });
+        }
+        let mut rows = conn.query(&sql, &[]).await?;
+        let mut headers = vec![];
+        let mut response_rows = vec![];
+
+        while let Some(query_item) = rows.try_next().await? {
+            match query_item {
+                QueryItem::Row(row_data) => {
+                    // let columns = row.columns();
+                    // let len = columns.len();
+                    let mut row = vec![];
+
+                    for (column, column_data) in row_data.cells() {
+                        let column_type = column.column_type();
+                        let data = format!("{:?}", column_data);
+                        row.push(Some(data.to_string()));
+                    }
+                    response_rows.push(row);
+                }
+                QueryItem::Metadata(metadata) => {
+                    for item in metadata.columns().iter() {
+                        let type_name = item.column_type();
+                        let type_name_str = format!("{:?}", type_name);
+                        let column_name = item.name();
+                        let is_primary = if let Some(primary_column) = primary_column_option.clone()
+                        {
+                            column_name == primary_column.as_str()
+                        } else {
+                            false
+                        };
+                        headers.push(Header {
+                            name: column_name.to_string(),
+                            type_name: type_name_str.to_uppercase(),
+                            is_primary_key: is_primary,
+                        });
+                    }
+                }
+            }
+        }
+
+        let exe_sql_response =
+            ExeSqlResponse::from(headers, response_rows, is_simple_select_option);
+
+        Ok(exe_sql_response)
     }
 }

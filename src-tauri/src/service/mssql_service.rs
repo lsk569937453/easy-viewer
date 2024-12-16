@@ -43,7 +43,6 @@ fn get_mssql_table_data() -> &'static LinkedHashMap<&'static str, &'static str> 
         let mut map = LinkedHashMap::new();
         map.insert("Columns", "columns");
         map.insert("Index", "index");
-        map.insert("Partitions", "partitions");
         map
     })
 }
@@ -52,6 +51,48 @@ pub struct MssqlConfig {
     pub config: DatabaseHostStruct,
 }
 impl MssqlConfig {
+    pub async fn drop_index(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+
+        let table_name = level_infos[4].config_value.clone();
+        let column_name = level_infos[6].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = format!(
+            "ALTER TABLE {}.{} DROP COLUMN {};",
+            schema_name, table_name, column_name
+        );
+        info!("drop_column sql: {}", sql);
+        let _ = conn.execute(&sql, &[]).await?;
+        Ok(())
+    }
+    pub async fn drop_column(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+
+        let table_name = level_infos[4].config_value.clone();
+        let column_name = level_infos[6].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = format!(
+            "ALTER TABLE {}.{} DROP COLUMN {};",
+            schema_name, table_name, column_name
+        );
+        info!("drop_column sql: {}", sql);
+        let _ = conn.execute(&sql, &[]).await?;
+        Ok(())
+    }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         info!("test_connection{:?}", self.config);
         self.get_connection().await?;
@@ -257,6 +298,118 @@ WHERE TABLE_SCHEMA = '{}'
                         );
                         // info!("schema name is:{}", schema_name);
                         vec.push(list_node_info_response_item);
+                    }
+                    return Ok(ListNodeInfoResponse::new(vec));
+                }
+            }
+            5 => {
+                for (name, icon_name) in get_mssql_table_data().iter() {
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        icon_name.to_string(),
+                        name.to_string(),
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
+            6 => {
+                let database_name = level_infos[1].config_value.clone();
+                let schema_name = level_infos[2].config_value.clone();
+
+                let table_name = level_infos[4].config_value.clone();
+                let node_name = level_infos[5].config_value.clone();
+                if node_name == "Columns" {
+                    let show_column_sql = format!(
+                        "SELECT 
+    c.name AS ColumnName, 
+    t.name AS DataType, 
+    c.max_length AS MaxLength, 
+    c.is_nullable AS IsNullable, 
+    c.is_identity AS IsIdentity
+FROM sys.columns c
+JOIN sys.types t ON c.user_type_id = t.user_type_id
+WHERE c.object_id = OBJECT_ID('{}');",
+                        table_name
+                    );
+                    let mut conn = self.get_connection_with_database(database_name).await?;
+                    let vecs = conn
+                        .query(&show_column_sql, &[])
+                        .await?
+                        .into_first_result()
+                        .await?;
+                    for row in vecs {
+                        let column_name: &str = row.try_get(0)?.ok_or(anyhow!(""))?;
+                        let column_type: &str = row.try_get(1)?.ok_or(anyhow!(""))?;
+
+                        let key_type: bool = row.try_get(4)?.ok_or(anyhow!(""))?;
+                        if key_type {
+                            let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                                false,
+                                true,
+                                "primary".to_string(),
+                                column_name.to_string(),
+                                Some(column_type.to_string()),
+                            );
+                            vec.push(list_node_info_response_item);
+                        } else {
+                            let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                                false,
+                                true,
+                                "column".to_string(),
+                                column_name.to_string(),
+                                Some(column_type.to_string()),
+                            );
+                            vec.push(list_node_info_response_item);
+                        }
+                    }
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Index" {
+                    let sql = format!(
+                        "SELECT 
+    i.name AS IndexName,
+    i.type_desc AS IndexType,
+    c.name AS ColumnName,
+    ic.key_ordinal AS KeyOrdinal,
+    i.is_unique AS IsUnique,
+    i.is_primary_key AS IsPrimaryKey
+FROM 
+    sys.indexes i
+INNER JOIN 
+    sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN 
+    sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE 
+    i.object_id = OBJECT_ID('{}.{}');",
+                        schema_name, table_name
+                    );
+                    let mut conn = self.get_connection_with_database(database_name).await?;
+                    let vecs = conn.query(&sql, &[]).await?.into_first_result().await?;
+                    for row in vecs {
+                        let index_name: &str = row.try_get(0)?.ok_or(anyhow!(""))?;
+
+                        let key_type: bool = row.try_get(5)?.ok_or(anyhow!(""))?;
+                        if key_type {
+                            let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                                false,
+                                true,
+                                "singlePrimaryIndex".to_string(),
+                                index_name.to_string(),
+                                None,
+                            );
+                            vec.push(list_node_info_response_item);
+                        } else {
+                            let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                                false,
+                                true,
+                                "singleCommonIndex".to_string(),
+                                index_name.to_string(),
+                                None,
+                            );
+                            vec.push(list_node_info_response_item);
+                        }
                     }
                     return Ok(ListNodeInfoResponse::new(vec));
                 }

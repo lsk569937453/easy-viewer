@@ -305,6 +305,9 @@ impl BaseConfigEnum {
                 config.drop_column(list_node_info_req, appstate).await?;
             }
             BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support drop column"))?,
+            BaseConfigEnum::Mssql(config) => {
+                config.drop_column(list_node_info_req, appstate).await?
+            }
             _ => (),
         };
         Ok(())
@@ -322,6 +325,9 @@ impl BaseConfigEnum {
                 config.drop_index(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Sqlite(config) => {
+                config.drop_index(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Mssql(config) => {
                 config.drop_index(list_node_info_req, appstate).await?
             }
             _ => (),

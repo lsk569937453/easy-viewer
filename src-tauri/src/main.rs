@@ -12,6 +12,8 @@ use log::LevelFilter;
 extern crate anyhow;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate tiberius;
 use crate::sql_lite::connection::AppState;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::MouseButton;

@@ -64,7 +64,7 @@ tauri-plugin-fs = "2.2.0"
 tauri-plugin-log = { version = "2.2.0" }
 tauri-plugin-os = "2.2.0"
 tauri-plugin-shell = "2.2.0"
-tiberius = "0.12.3"  
+tiberius = {version="0.12.3",features = ["tds73","chrono"]  }
 time = "0.3.37"
 tokio = { version = "1.42.0", features = ["full", "tracing", "time"] }
 uuid = { version = "1.11.0", features = [

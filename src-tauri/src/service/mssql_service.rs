@@ -1,4 +1,5 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::util::sql_utils::mssql_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -364,14 +365,16 @@ WHERE table_name = '{}'
         while let Some(query_item) = rows.try_next().await? {
             match query_item {
                 QueryItem::Row(row_data) => {
-                    // let columns = row.columns();
-                    // let len = columns.len();
                     let mut row = vec![];
-
-                    for (column, column_data) in row_data.cells() {
-                        let column_type = column.column_type();
-                        let data = format!("{:?}", column_data);
-                        row.push(Some(data.to_string()));
+                    for (_, column_data) in row_data.cells() {
+                        let val = mssql_row_to_json(column_data)?;
+                        if val.is_string() {
+                            row.push(Some(val.as_str().unwrap_or_default().to_string()));
+                        } else if val.is_null() {
+                            row.push(None);
+                        } else {
+                            row.push(Some(val.to_string()));
+                        }
                     }
                     response_rows.push(row);
                 }

@@ -11,7 +11,7 @@ import { formatMap, getLevelInfos, getRootNode } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
 import CommonDumpDataPage from "../../page/commonDumpDataPage"
 import ImportDataPage from "../../page/importDataPage"
-import PostGresqlDumpDataPage from "../../page/postgresqlDumpDataPage"
+import PostGresqlDumpDataPage from "../../page/schemaDumpDataPage"
 
 const DatabaseNodeContextMenu = ({ node }) => {
   const { toast } = useToast()
@@ -120,7 +120,8 @@ const DatabaseNodeContextMenu = ({ node }) => {
         </svg>
       ),
       render: (tabIndex) => {
-        return rootNode.data.connectionType === 1 ? (
+        return rootNode.data.connectionType === 1 ||
+          rootNode.data.connectionType === 6 ? (
           <PostGresqlDumpDataPage node={node} />
         ) : (
           <CommonDumpDataPage node={node} />

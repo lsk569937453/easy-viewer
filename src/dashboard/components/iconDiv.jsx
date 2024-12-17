@@ -2372,7 +2372,7 @@ const IconDiv = ({ node, selectedRows }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-6 stroke-yellow-400"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-10 stroke-yellow-400"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />
@@ -2397,7 +2397,7 @@ const IconDiv = ({ node, selectedRows }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-6"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-sitemap  ml-10"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M3 15m0 2a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2z" />

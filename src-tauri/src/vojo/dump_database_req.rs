@@ -13,8 +13,8 @@ pub struct DumpDatabaseReq {
 pub enum DumpDatabaseSourceData {
     #[serde(rename = "commonData")]
     CommonData(CommonData),
-    #[serde(rename = "postgresqlData")]
-    PostgresqlData(PostgresqlData),
+    #[serde(rename = "schemaData")]
+    SchemaData(SchemaData),
 }
 impl DumpDatabaseSourceData {
     pub fn get_common_data(&self) -> Result<CommonData, anyhow::Error> {
@@ -23,9 +23,9 @@ impl DumpDatabaseSourceData {
             _ => Err(anyhow!("not common data")),
         }
     }
-    pub fn get_postgresql_data(&self) -> Result<PostgresqlData, anyhow::Error> {
+    pub fn get_postgresql_data(&self) -> Result<SchemaData, anyhow::Error> {
         match self {
-            DumpDatabaseSourceData::PostgresqlData(data) => Ok(data.clone()),
+            DumpDatabaseSourceData::SchemaData(data) => Ok(data.clone()),
             _ => Err(anyhow!("not postgresql data")),
         }
     }
@@ -38,7 +38,7 @@ pub struct CommonData {
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]
 
-pub struct PostgresqlData {
+pub struct SchemaData {
     pub list: Vec<PostgresqlSchemaData>,
 }
 #[derive(Deserialize, Serialize, Debug, Clone)]

@@ -26,7 +26,7 @@ const Filter = ({ column }: { column: Column<any, any> }) => {
 
   return (
     <input
-      className="w-36 rounded border bg-muted shadow"
+      className="w-36 rounded border bg-muted p-1 shadow"
       onChange={(e) => column.setFilterValue(e.target.value)}
       onClick={(e) => e.stopPropagation()}
       placeholder={`Search...`}

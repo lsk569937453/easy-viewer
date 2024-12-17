@@ -432,7 +432,11 @@ impl BaseConfigEnum {
                     .get_procedure_details(list_node_info_req, appstate)
                     .await?
             }
-
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .get_procedure_details(list_node_info_req, appstate)
+                    .await?
+            }
             _ => "vec![]".to_string(),
         };
         Ok(data)

@@ -36,6 +36,7 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Duration;
+use std::vec;
 use tiberius::numeric::Numeric;
 use tiberius::AuthMethod;
 use tiberius::Client;
@@ -172,6 +173,29 @@ pub struct MssqlConfig {
 }
 
 impl MssqlConfig {
+    pub async fn get_procedure_details(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let procedure_name = level_infos[4].config_value.clone();
+
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = format!("EXEC sp_helptext '{}.{}';", schema_name, procedure_name);
+
+        let res_row = conn.query(&sql, &[]).await?.into_first_result().await?;
+        let mut vecs = vec![];
+        for item in res_row.iter() {
+            let query: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+            vecs.push(query);
+        }
+
+        Ok(vecs.join(""))
+    }
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -452,20 +476,6 @@ WHERE TABLE_NAME = '{}'
             }
 
             let schema_name = schema.schema_name;
-            //             let create_schema_sql = format!(
-            //                 "SELECT 'CREATE SCHEMA ['{}'];' AS create_schema_sql
-            // FROM sys.schemas s
-            // WHERE s.name = '{}';",
-            //                 schema_name.clone(),
-            //                 schema_name.clone()
-            //             );
-            //             let row = conn
-            //                 .query(&create_schema_sql, &[])
-            //                 .await?
-            //                 .into_row()
-            //                 .await?
-            //                 .ok_or(anyhow!(""))?;
-            //             let create_schema: &str = row.try_get(0)?.ok_or(anyhow!(""))?;
             let create_schema = format!("CREATE SCHEMA ['{}'];", schema_name.clone());
             let mut dump_data_list = vec![];
 
@@ -864,13 +874,12 @@ WHERE TABLE_SCHEMA = '{}'
                 return Ok(ListNodeInfoResponse::new(vec));
             }
             4 => {
-                let mut conn = self.get_connection().await?;
                 let db_name = level_infos[1].config_value.clone();
                 let schema_name = level_infos[2].config_value.clone();
                 let node_name = level_infos[3].config_value.clone();
+                let mut conn = self.get_connection_with_database(db_name.clone()).await?;
+
                 if node_name == "Tables" {
-                    let use_database_sql = format!("use {};", db_name);
-                    conn.execute(&use_database_sql, &[]).await?;
                     let sql = format!(
                         "SELECT TABLE_NAME
 FROM INFORMATION_SCHEMA.TABLES
@@ -898,6 +907,115 @@ WHERE TABLE_SCHEMA = '{}'
                         // info!("schema name is:{}", schema_name);
                         vec.push(list_node_info_response_item);
                     }
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Views" {
+                    let sql = format!(
+                        "SELECT TABLE_NAME AS ViewName
+FROM INFORMATION_SCHEMA.VIEWS
+WHERE TABLE_SCHEMA = '{}';",
+                        schema_name
+                    );
+                    let rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+
+                    for item in rows {
+                        let table_name: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+                        let sql = format!(
+                            "select count(*) from {}.{}",
+                            schema_name.clone(),
+                            table_name
+                        );
+                        info!("sql: {}", sql);
+                        let row = conn
+                            .query(&sql, &[])
+                            .await?
+                            .into_row()
+                            .await?
+                            .ok_or(anyhow!(""))?;
+                        let record_count: i32 = row.try_get(0)?.ok_or(anyhow!(""))?;
+                        let description = if record_count > 0 {
+                            Some(format!("{}", record_count))
+                        } else {
+                            None
+                        };
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            true,
+                            true,
+                            "singleTable".to_string(),
+                            table_name.to_string(),
+                            description,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Functions" {
+                    let list_functions_sql = format!(
+                        "SELECT 
+    o.name AS ROUTINE_NAME,
+    CASE 
+        WHEN o.type = 'FN' THEN 'FUNCTION'
+        WHEN o.type = 'IF' THEN 'FUNCTION' 
+        WHEN o.type = 'TF' THEN 'FUNCTION'
+        ELSE 'UNKNOWN'
+    END AS ROUTINE_TYPE,
+    sm.definition AS DATA_TYPE,
+    o.create_date AS CREATED,
+    o.modify_date AS LAST_ALTERED
+FROM 
+    sys.objects o
+JOIN 
+    sys.sql_modules sm ON o.object_id = sm.object_id
+WHERE 
+    o.type IN ('FN', 'IF', 'TF')  -- 'FN' = Scalar Function, 'IF' = Inline Table-Valued Function, 'TF' = Table-Valued Function
+    AND SCHEMA_NAME(o.schema_id) = '{}';
+",
+                        schema_name.clone()
+                    );
+                    let rows = conn
+                        .query(&list_functions_sql, &[])
+                        .await?
+                        .into_first_result()
+                        .await?;
+                    for item in rows {
+                        let function_name: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleFunction".to_string(),
+                            function_name.to_string(),
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    info!("list_node_info: {:?}", vec);
+                    return Ok(ListNodeInfoResponse::new(vec));
+                } else if node_name == "Procedures" {
+                    let list_functions_sql = format!(
+                        "SELECT name AS ProcedureName
+FROM sys.procedures
+WHERE SCHEMA_NAME(schema_id) = '{}'
+ORDER BY name;",
+                        schema_name.clone()
+                    );
+                    let rows = conn
+                        .query(&list_functions_sql, &[])
+                        .await?
+                        .into_first_result()
+                        .await?;
+                    for item in rows {
+                        let function_name: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleProcedure".to_string(),
+                            function_name.to_string(),
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    info!("list_node_info: {:?}", vec);
                     return Ok(ListNodeInfoResponse::new(vec));
                 }
             }

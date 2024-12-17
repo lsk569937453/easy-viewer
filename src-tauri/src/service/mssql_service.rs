@@ -7,6 +7,8 @@ use crate::util::sql_utils::mssql_row_to_json;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::get_column_info_for_is_response::ColumnTypeFlag;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
 use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::init_dump_data_response::InitDumpSchemaResponseItem;
@@ -14,6 +16,8 @@ use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
+use crate::vojo::show_column_response::ShowColumnHeader;
+use crate::vojo::show_column_response::ShowColumnsResponse;
 use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use futures_util::TryStreamExt;
@@ -21,10 +25,15 @@ use human_bytes::human_bytes;
 
 use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
 use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpData;
+use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use chrono::Local;
+use docx_rs::*;
 use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashSet;
+use std::path::Path;
 use std::sync::OnceLock;
 use std::time::Duration;
 use tiberius::numeric::Numeric;
@@ -67,12 +76,13 @@ WHERE TABLE_SCHEMA = '{}'
 }
 fn get_ddl_sql(schema_name: String, table_name: String) -> String {
     format!("SELECT  
-    'CREATE TABLE [' + s.name + '].[' + so.name + '] (' + o.list + ')' + 
+    'CREATE TABLE [' + s.name + '].[' + so.name + '] (' + 
+    REPLACE(o.list, ', ', ',' + CHAR(13) + CHAR(10) + '    ') + ')' + CHAR(13) + CHAR(10) + 
     CASE 
         WHEN tc.Constraint_Name IS NULL THEN '' 
         ELSE 
-            'ALTER TABLE [' + s.name + '].[' + so.Name + '] ADD CONSTRAINT ' + tc.Constraint_Name + 
-            ' PRIMARY KEY (' + LEFT(j.List, LEN(j.List) - 1) + ')' 
+            'ALTER TABLE [' + s.name + '].[' + so.Name + '] ADD CONSTRAINT ' + tc.Constraint_Name + CHAR(13) + CHAR(10) +
+            '    PRIMARY KEY (' + LEFT(j.List, LEN(j.List) - 1) + ')' 
     END AS CreateTableScript
 FROM sysobjects so
 JOIN sys.schemas s ON so.uid = s.schema_id  -- Join with schemas to get schema name
@@ -136,10 +146,6 @@ fn get_mssql_table_data() -> &'static LinkedHashMap<&'static str, &'static str> 
         map
     })
 }
-#[derive(Deserialize, Serialize, Clone)]
-pub struct MssqlConfig {
-    pub config: DatabaseHostStruct,
-}
 fn get_index_sql(schema_name: String, table_name: String) -> String {
     format!(
         "SELECT 
@@ -160,7 +166,273 @@ WHERE
         schema_name, table_name
     )
 }
+#[derive(Deserialize, Serialize, Clone)]
+pub struct MssqlConfig {
+    pub config: DatabaseHostStruct,
+}
+
 impl MssqlConfig {
+    pub async fn get_ddl(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = get_ddl_sql(schema_name, table_name);
+        let row = conn
+            .query(&sql, &[])
+            .await?
+            .into_row()
+            .await?
+            .ok_or(anyhow!(""))?;
+        let ddl: &str = row.try_get(0)?.ok_or(anyhow!(""))?;
+        Ok(ddl.to_string())
+    }
+    pub async fn get_complete_words(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<Vec<String>, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let mut conn = self
+            .get_connection_with_database(database_name.clone())
+            .await?;
+
+        let mut set = HashSet::new();
+
+        let schema_names_res = conn
+            .query(get_schema_sql(database_name), &[])
+            .await?
+            .into_first_result()
+            .await?;
+        let schema_names = schema_names_res
+            .iter()
+            .map(|item| -> Result<&str, anyhow::Error> {
+                item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+            });
+        for item in schema_names {
+            let schema_name = item?;
+
+            set.insert(schema_name.to_string());
+            let table_names_res = conn
+                .query(get_table_sql(schema_name.to_string()), &[])
+                .await?
+                .into_first_result()
+                .await?;
+            let table_names = table_names_res
+                .iter()
+                .map(|item| -> Result<&str, anyhow::Error> {
+                    item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+                });
+            for table_name_item in table_names {
+                let table_name = table_name_item?;
+                set.insert(table_name.to_string());
+                let get_column_sql = format!(
+                    "SELECT COLUMN_NAME
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_SCHEMA = '{}'
+  AND TABLE_NAME = '{}';",
+                    schema_name, table_name
+                );
+                let column_names_res = conn
+                    .query(get_column_sql, &[])
+                    .await?
+                    .into_first_result()
+                    .await?;
+                let column_names =
+                    column_names_res
+                        .iter()
+                        .map(|item| -> Result<&str, anyhow::Error> {
+                            item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+                        });
+
+                for column_name_item in column_names {
+                    let column_name = column_name_item?;
+                    set.insert(column_name.to_string());
+                }
+            }
+        }
+        let vec: Vec<String> = set.into_iter().collect();
+
+        Ok(vec)
+    }
+    pub async fn get_column_info_for_is(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+        let sql = format!(
+            "SELECT 
+    c.COLUMN_NAME,
+    c.DATA_TYPE,
+    c.IS_NULLABLE,
+    c.COLUMN_DEFAULT,
+    CASE
+        WHEN pk.COLUMN_NAME IS NOT NULL THEN 'YES'
+        ELSE 'NO'
+    END AS is_primary_key
+FROM INFORMATION_SCHEMA.COLUMNS c
+LEFT JOIN (
+    SELECT 
+        kcu.COLUMN_NAME,
+        kcu.TABLE_NAME,
+        kcu.TABLE_SCHEMA
+    FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+    JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+        ON kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+        AND kcu.TABLE_NAME = tc.TABLE_NAME
+        AND kcu.TABLE_SCHEMA = tc.TABLE_SCHEMA
+        AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+) pk
+    ON c.COLUMN_NAME = pk.COLUMN_NAME
+    AND c.TABLE_NAME = pk.TABLE_NAME
+    AND c.TABLE_SCHEMA = pk.TABLE_SCHEMA
+WHERE c.TABLE_SCHEMA = '{}' 
+  AND c.TABLE_NAME = '{}';",
+            schema_name, table_name
+        );
+        let rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+        let mut response_rows = vec![];
+        info!("rows: {:?}", rows);
+        for item in rows.iter() {
+            let column_name: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+            let column_type: &str = item.try_get(1)?.ok_or(anyhow!(""))?;
+            let key_type: &str = item.try_get(4)?.ok_or(anyhow!(""))?;
+            let is_primary = key_type == "YES";
+
+            let type_flag = ColumnTypeFlag::from(column_type.to_string().clone());
+
+            let get_column_info_for_is_response_item = GetColumnInfoForInsertSqlResponseItem::from(
+                column_name.to_string(),
+                column_type.to_string(),
+                type_flag,
+                is_primary,
+            );
+
+            response_rows.push(get_column_info_for_is_response_item);
+        }
+        Ok(GetColumnInfoForInsertSqlResponse::from(response_rows))
+    }
+    pub async fn generate_database_document(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        file_dir: String,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = self
+            .get_connection_with_database(database_name.clone())
+            .await?;
+
+        let rows = conn
+            .query(&get_schema_sql(database_name.clone()), &[])
+            .await?
+            .into_first_result()
+            .await?;
+        let schema_names = rows.iter().map(|row| -> Result<&str, anyhow::Error> {
+            row.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+        });
+        let dir_path = Path::new(&file_dir);
+        let now = Local::now();
+        let formatted_time = now.format("%Y-%m-%d-%H-%M-%S").to_string();
+        let file_name = format!("{}-{}.docx", database_name, formatted_time);
+        let full_path = dir_path.join(file_name);
+        info!("full_path: {}", full_path.display());
+        let file = std::fs::File::create(full_path)?;
+
+        let style3 = Style::new("Table1", StyleType::Table)
+            .name("Table test")
+            .table_align(TableAlignmentType::Center);
+        let mut doc = Docx::new().add_style(style3);
+        for item in schema_names {
+            let schema_name = item?.to_string();
+            let get_table_sql = get_table_sql(schema_name.clone());
+
+            let rows = conn
+                .query(&get_table_sql, &[])
+                .await?
+                .into_first_result()
+                .await?;
+            let table_rows = rows.iter().map(|item| -> Result<&str, anyhow::Error> {
+                item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+            });
+
+            for table_rows_item in table_rows {
+                let table_name = table_rows_item?.to_string();
+                let show_column_sql = format!(
+                    "SELECT 
+    COLUMN_NAME AS column_name, 
+    DATA_TYPE AS data_type, 
+    IS_NULLABLE AS is_nullable, 
+    COLUMN_DEFAULT AS column_default
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = '{}' 
+  AND TABLE_SCHEMA = '{}';",
+                    table_name, schema_name
+                );
+                let mut rows = conn.query(&show_column_sql, &[]).await?;
+                let mut headers = vec![];
+                let mut response_rows = vec![];
+
+                while let Some(query_item) = rows.try_next().await? {
+                    match query_item {
+                        QueryItem::Row(row_data) => {
+                            let mut row = vec![];
+                            for (_, column_data) in row_data.cells() {
+                                let val = mssql_row_to_json(column_data)?;
+                                if val.is_string() {
+                                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
+                                } else if val.is_null() {
+                                    row.push(None);
+                                } else {
+                                    row.push(Some(val.to_string()));
+                                }
+                            }
+                            response_rows.push(row);
+                        }
+                        QueryItem::Metadata(metadata) => {
+                            for item in metadata.columns().iter() {
+                                let type_name = item.column_type();
+                                let type_name_str = format!("{:?}", type_name);
+                                let column_name = item.name();
+                                headers.push(ShowColumnHeader {
+                                    name: column_name.to_string(),
+                                    type_name: type_name_str.to_uppercase(),
+                                });
+                            }
+                        }
+                    }
+                }
+
+                let show_column_response = ShowColumnsResponse::from(headers, response_rows);
+                doc = doc.add_paragraph(
+                    Paragraph::new()
+                        .add_run(Run::new().add_text(format!("{}.{}", schema_name, table_name))),
+                );
+                let table = show_column_response.into_docx_table()?;
+                doc = doc.add_table(table);
+                doc = doc.add_paragraph(Paragraph::new().add_run(Run::new().add_text("")));
+            }
+        }
+        doc.build().pack(file)?;
+
+        Ok(())
+    }
     pub async fn dump_database(
         &self,
         list_node_info_req: ListNodeInfoReq,

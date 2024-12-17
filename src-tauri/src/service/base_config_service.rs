@@ -199,6 +199,11 @@ impl BaseConfigEnum {
                     .dump_database(list_node_info_req, appstate, dump_database_req)
                     .await?;
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .dump_database(list_node_info_req, appstate, dump_database_req)
+                    .await?;
+            }
             _ => (),
         }
         Ok(())
@@ -245,6 +250,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.init_dump_data(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config.init_dump_data(list_node_info_req, appstate).await?
+            }
             _ => InitDumpDataResponse::new(),
         };
         Ok(data)
@@ -286,6 +294,9 @@ impl BaseConfigEnum {
                 config.drop_table(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Sqlite(config) => {
+                config.drop_table(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Mssql(config) => {
                 config.drop_table(list_node_info_req, appstate).await?
             }
             _ => (),

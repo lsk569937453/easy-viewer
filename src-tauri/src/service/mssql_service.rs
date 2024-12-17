@@ -1,7 +1,16 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnItem;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResItem;
+use crate::service::dump_data::dump_database_service::DumpTableList;
+use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpDataItem;
 use crate::util::sql_utils::mssql_row_to_json;
+use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
+use crate::vojo::init_dump_data_response::InitDumpDataColumnItem;
+use crate::vojo::init_dump_data_response::InitDumpDataResponse;
+use crate::vojo::init_dump_data_response::InitDumpSchemaResponseItem;
+use crate::vojo::init_dump_data_response::InitDumpTableResponseItem;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -9,6 +18,10 @@ use crate::vojo::sql_parse_result::SqlParseResult;
 use crate::AppState;
 use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
+
+use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
+use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpData;
+use itertools::Itertools;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
@@ -38,6 +51,83 @@ fn get_mssql_database_data() -> &'static LinkedHashMap<&'static str, &'static st
         map
     })
 }
+fn get_schema_sql(database: String) -> String {
+    format!("SELECT schema_name
+    FROM {}.information_schema.schemata WHERE schema_name NOT IN ('INFORMATION_SCHEMA', 'guest', 'db_accessadmin', 'db_owner', 'sys',   'db_denydatareader', 
+    'db_denydatawriter', 'db_datareader', 'db_datawriter', 'db_ddladmin', 'db_securityadmin', 'db_backupoperator');",database)
+}
+fn get_table_sql(schema_name: String) -> String {
+    format!(
+        "SELECT TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = '{}'
+      AND TABLE_TYPE = 'BASE TABLE';",
+        schema_name
+    )
+}
+fn get_ddl_sql(schema_name: String, table_name: String) -> String {
+    format!("SELECT  
+    'CREATE TABLE [' + s.name + '].[' + so.name + '] (' + o.list + ')' + 
+    CASE 
+        WHEN tc.Constraint_Name IS NULL THEN '' 
+        ELSE 
+            'ALTER TABLE [' + s.name + '].[' + so.Name + '] ADD CONSTRAINT ' + tc.Constraint_Name + 
+            ' PRIMARY KEY (' + LEFT(j.List, LEN(j.List) - 1) + ')' 
+    END AS CreateTableScript
+FROM sysobjects so
+JOIN sys.schemas s ON so.uid = s.schema_id  -- Join with schemas to get schema name
+CROSS APPLY (
+    SELECT 
+        '  [' + column_name + '] ' + 
+        data_type + 
+        CASE data_type
+            WHEN 'sql_variant' THEN ''
+            WHEN 'text' THEN ''
+            WHEN 'ntext' THEN ''
+            WHEN 'xml' THEN ''
+            WHEN 'decimal' THEN '(' + CAST(numeric_precision AS VARCHAR) + ', ' + CAST(numeric_scale AS VARCHAR) + ')'
+            ELSE COALESCE(
+                '(' + CASE 
+                          WHEN character_maximum_length = -1 THEN 'MAX' 
+                          ELSE CAST(character_maximum_length AS VARCHAR) 
+                      END + ')', 
+                ''
+            ) 
+        END + ' ' +
+        CASE 
+            WHEN EXISTS ( 
+                SELECT id 
+                FROM syscolumns
+                WHERE object_name(id) = so.name
+                AND name = column_name
+                AND columnproperty(id, name, 'IsIdentity') = 1 
+            ) THEN 'IDENTITY(' + CAST(ident_seed(so.name) AS VARCHAR) + ',' + CAST(ident_incr(so.name) AS VARCHAR) + ')' 
+            ELSE '' 
+        END + ' ' +
+        (CASE WHEN UPPER(IS_NULLABLE) = 'NO' THEN 'NOT ' ELSE '' END) + 'NULL ' + 
+        CASE 
+            WHEN information_schema.columns.COLUMN_DEFAULT IS NOT NULL THEN 'DEFAULT ' + information_schema.columns.COLUMN_DEFAULT 
+            ELSE '' 
+        END + ', ' 
+    FROM information_schema.columns 
+    WHERE table_name = so.name
+    ORDER BY ordinal_position
+    FOR XML PATH('')
+) o (list)
+LEFT JOIN information_schema.table_constraints tc
+    ON tc.Table_name = so.Name
+    AND tc.Constraint_Type = 'PRIMARY KEY'
+CROSS APPLY (
+    SELECT '[' + Column_Name + '], '
+    FROM information_schema.key_column_usage kcu
+    WHERE kcu.Constraint_Name = tc.Constraint_Name
+    ORDER BY ORDINAL_POSITION
+    FOR XML PATH('')
+) j (list)
+WHERE so.xtype = 'U'
+AND s.name = '{}'
+AND so.name = '{}';",schema_name,table_name)
+}
 fn get_mssql_table_data() -> &'static LinkedHashMap<&'static str, &'static str> {
     MSSQL_TABLE_DATA.get_or_init(|| {
         let mut map = LinkedHashMap::new();
@@ -50,7 +140,227 @@ fn get_mssql_table_data() -> &'static LinkedHashMap<&'static str, &'static str> 
 pub struct MssqlConfig {
     pub config: DatabaseHostStruct,
 }
+fn get_index_sql(schema_name: String, table_name: String) -> String {
+    format!(
+        "SELECT 
+    i.name AS IndexName,
+    i.type_desc AS IndexType,
+    c.name AS ColumnName,
+    ic.key_ordinal AS KeyOrdinal,
+    i.is_unique AS IsUnique,
+    i.is_primary_key AS IsPrimaryKey
+FROM 
+    sys.indexes i
+INNER JOIN 
+    sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+INNER JOIN 
+    sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+WHERE 
+    i.object_id = OBJECT_ID('{}.{}');",
+        schema_name, table_name
+    )
+}
 impl MssqlConfig {
+    pub async fn dump_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        dump_database_req: DumpDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let common_data = dump_database_req.source_data.get_postgresql_data()?;
+        let mut vecs = vec![];
+        for schema in common_data.list {
+            let schema_checked = schema.checked;
+            if !schema_checked {
+                continue;
+            }
+
+            let schema_name = schema.schema_name;
+            //             let create_schema_sql = format!(
+            //                 "SELECT 'CREATE SCHEMA ['{}'];' AS create_schema_sql
+            // FROM sys.schemas s
+            // WHERE s.name = '{}';",
+            //                 schema_name.clone(),
+            //                 schema_name.clone()
+            //             );
+            //             let row = conn
+            //                 .query(&create_schema_sql, &[])
+            //                 .await?
+            //                 .into_row()
+            //                 .await?
+            //                 .ok_or(anyhow!(""))?;
+            //             let create_schema: &str = row.try_get(0)?.ok_or(anyhow!(""))?;
+            let create_schema = format!("CREATE SCHEMA ['{}'];", schema_name.clone());
+            let mut dump_data_list = vec![];
+
+            for table in schema.table_list {
+                let table_checked = table.checked;
+                if !table_checked {
+                    continue;
+                }
+                let table_name = table.table_name;
+                let create_table_sql = get_ddl_sql(schema_name.clone(), table_name.clone());
+                info!("create_table_sql: {}", create_table_sql);
+                let creat_table_row = conn
+                    .query(&create_table_sql, &[])
+                    .await?
+                    .into_row()
+                    .await?
+                    .ok_or(anyhow!(""))?;
+                let create_table: &str = creat_table_row.try_get(0)?.ok_or(anyhow!(""))?;
+
+                let mut dump_database_res_item = DumpDatabaseResItem::new();
+                dump_database_res_item.table_name = table_name.clone();
+                dump_database_res_item.table_struct = create_table.to_string();
+                if dump_database_req.export_option.is_export_data() {
+                    let selected_column = table
+                        .columns
+                        .iter()
+                        .filter(|x| x.checked)
+                        .map(|x| x.column_name.clone())
+                        .join(",");
+                    let sql = format!(
+                        "select {} from {}.{}",
+                        selected_column,
+                        schema_name.clone(),
+                        table_name.clone()
+                    );
+                    info!("sql: {}", sql);
+                    let rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+                    if !rows.is_empty() {
+                        let mut vec = vec![];
+                        let mut column_structs = vec![];
+                        for (row_index, item) in rows.iter().enumerate() {
+                            let mut database_res_column_list = vec![];
+                            for (column, column_data) in item.cells() {
+                                let column_name = column.name();
+                                let column_type = column.column_type();
+                                let type_name_str = format!("{:?}", column_type);
+
+                                let column_value = mssql_row_to_json(column_data)?;
+                                let database_res_column_item =
+                                    DumpDatabaseResColumnItem::from(column_value);
+                                database_res_column_list.push(database_res_column_item);
+
+                                if row_index == 0 {
+                                    let database_res_column_struct_item =
+                                        DumpDatabaseResColumnStructItem::from(
+                                            column_name.to_string(),
+                                            type_name_str.to_string(),
+                                        );
+                                    column_structs.push(database_res_column_struct_item);
+                                }
+                            }
+
+                            vec.push(database_res_column_list);
+                        }
+
+                        dump_database_res_item.column_list = vec;
+                        dump_database_res_item.column_structs = column_structs;
+                        dump_database_res_item.table_name =
+                            format!("{}.{}", schema_name, table_name);
+                    }
+                }
+                dump_data_list.push(dump_database_res_item);
+            }
+            let postgresql_dump_data_item = PostgresqlDumpDataItem::from(
+                create_schema.to_string(),
+                DumpTableList::from(dump_data_list),
+            );
+            vecs.push(postgresql_dump_data_item);
+        }
+        info!("dump_data_list: {:#?}", vecs);
+        let dump_database_res = PostgresqlDumpData::from(vecs);
+        dump_database_res.export_to_file(dump_database_req)?;
+        Ok(())
+    }
+    pub async fn init_dump_data(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<InitDumpDataResponse, anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = self
+            .get_connection_with_database(database_name.clone())
+            .await?;
+        let sql = get_schema_sql(database_name);
+
+        let schema_rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+        let schema_names = schema_rows
+            .iter()
+            .map(|item| -> Result<&str, anyhow::Error> {
+                item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+            });
+
+        let mut init_dump_data_response = vec![];
+        for item in schema_names {
+            let schema_name = item?;
+            let mut sql = get_table_sql(schema_name.to_string());
+            let table_rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+            let table_names = table_rows
+                .iter()
+                .map(|item| -> Result<&str, anyhow::Error> {
+                    item.try_get::<&str, _>(0)?.ok_or(anyhow!(""))
+                });
+
+            let mut init_dump_tables_responses = vec![];
+
+            for table_item in table_names {
+                let table_name = table_item?;
+                sql = format!(
+                    "SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = '{}'  
+  AND table_name = '{}';",
+                    schema_name, table_name
+                );
+                let rows = conn.query(&sql, &[]).await?.into_first_result().await?;
+
+                let mut vec = vec![];
+                for item in rows.iter() {
+                    let column_name: &str = item.try_get(0)?.ok_or(anyhow!(""))?;
+                    let column_type: &str = item.try_get(1)?.ok_or(anyhow!(""))?;
+                    let init_column_item = InitDumpDataColumnItem::from(
+                        column_name.to_string(),
+                        column_type.to_string(),
+                    );
+                    vec.push(init_column_item);
+                }
+                let init_dump_tables = InitDumpTableResponseItem::from(table_name.to_string(), vec);
+                init_dump_tables_responses.push(init_dump_tables);
+            }
+            let init_dump_schema = InitDumpSchemaResponseItem::from(
+                schema_name.to_string(),
+                init_dump_tables_responses,
+            );
+            init_dump_data_response.push(init_dump_schema);
+        }
+        Ok(InitDumpDataResponse::from_schema_list(
+            init_dump_data_response,
+        ))
+    }
+    pub async fn drop_table(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+
+        let table_name = level_infos[4].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+        let drop_table_sql = format!("DROP TABLE {}.{};", schema_name, table_name);
+        let _ = conn.execute(&drop_table_sql, &[]).await?;
+
+        Ok(())
+    }
     pub async fn drop_index(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -61,15 +371,37 @@ impl MssqlConfig {
         let schema_name = level_infos[2].config_value.clone();
 
         let table_name = level_infos[4].config_value.clone();
-        let column_name = level_infos[6].config_value.clone();
+        let index_name = level_infos[6].config_value.clone();
         let mut conn = self.get_connection_with_database(database_name).await?;
+        let show_index_sql = get_index_sql(schema_name.clone(), table_name.clone());
+        let rows = conn
+            .query(&show_index_sql, &[])
+            .await?
+            .into_first_result()
+            .await?;
+        let row = rows
+            .iter()
+            .find(|item| {
+                item.try_get(0)
+                    .ok()
+                    .flatten()
+                    .map_or(false, |value: &str| value == index_name)
+            })
+            .ok_or(anyhow!("Not found index"))?;
+        let is_primary: bool = row.try_get(5)?.ok_or(anyhow!(""))?;
+        let is_unique: bool = row.try_get(4)?.ok_or(anyhow!(""))?;
 
-        let sql = format!(
-            "ALTER TABLE {}.{} DROP COLUMN {};",
-            schema_name, table_name, column_name
-        );
-        info!("drop_column sql: {}", sql);
-        let _ = conn.execute(&sql, &[]).await?;
+        let drop_sql = if is_primary || is_unique {
+            format!(
+                "ALTER TABLE {}.{} DROP CONSTRAINT {};",
+                schema_name, table_name, index_name
+            )
+        } else {
+            format!("DROP INDEX {}.{}.{};", schema_name, table_name, index_name)
+        };
+
+        info!("drop_sql sql: {}", drop_sql);
+        let _ = conn.execute(&drop_sql, &[]).await?;
         Ok(())
     }
     pub async fn drop_column(
@@ -198,12 +530,7 @@ impl MssqlConfig {
             2 => {
                 let mut conn = self.get_connection().await?;
                 let db_name = level_infos[1].config_value.clone();
-                let sql = format!(
-                    "SELECT schema_name
-    FROM {}.information_schema.schemata WHERE schema_name NOT IN ('INFORMATION_SCHEMA', 'guest', 'db_accessadmin', 'db_owner', 'sys',   'db_denydatareader', 
-    'db_denydatawriter', 'db_datareader', 'db_datawriter', 'db_ddladmin', 'db_securityadmin', 'db_backupoperator');",
-                    db_name
-                );
+                let sql = get_schema_sql(db_name);
                 let stream = conn.query(&sql, &[]).await?;
                 let mut row_stream = stream.into_row_stream();
 
@@ -367,24 +694,7 @@ WHERE c.object_id = OBJECT_ID('{}');",
                     }
                     return Ok(ListNodeInfoResponse::new(vec));
                 } else if node_name == "Index" {
-                    let sql = format!(
-                        "SELECT 
-    i.name AS IndexName,
-    i.type_desc AS IndexType,
-    c.name AS ColumnName,
-    ic.key_ordinal AS KeyOrdinal,
-    i.is_unique AS IsUnique,
-    i.is_primary_key AS IsPrimaryKey
-FROM 
-    sys.indexes i
-INNER JOIN 
-    sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
-INNER JOIN 
-    sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
-WHERE 
-    i.object_id = OBJECT_ID('{}.{}');",
-                        schema_name, table_name
-                    );
+                    let sql = get_index_sql(schema_name, table_name);
                     let mut conn = self.get_connection_with_database(database_name).await?;
                     let vecs = conn.query(&sql, &[]).await?.into_first_result().await?;
                     for row in vecs {

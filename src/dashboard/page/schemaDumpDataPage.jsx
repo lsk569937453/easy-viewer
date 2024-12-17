@@ -49,7 +49,7 @@ import {
   TableRow,
 } from "../components/scorllableTable"
 
-const PostGresqlDumpDataPage = ({
+const SchemaDumpDataPage = ({
   node,
   selectedSchemaName = null,
   selectedTableName = null,
@@ -219,7 +219,7 @@ const PostGresqlDumpDataPage = ({
     }
     const dumpDatabaseReq = {
       source_data: {
-        postgresqlData: {
+        schemaData: {
           list: allData,
         },
       },
@@ -489,4 +489,4 @@ const PostGresqlDumpDataPage = ({
   )
 }
 
-export default PostGresqlDumpDataPage
+export default SchemaDumpDataPage

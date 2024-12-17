@@ -126,6 +126,11 @@ impl BaseConfigEnum {
                     .get_column_info_for_is(list_node_info_req, appstate)
                     .await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .get_column_info_for_is(list_node_info_req, appstate)
+                    .await?
+            }
             _ => GetColumnInfoForInsertSqlResponse::new(),
         };
         Ok(vec)
@@ -277,6 +282,11 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(_) => {
                 Err(anyhow!("sqlite not support generate_database_document"))?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .generate_database_document(list_node_info_req, appstate, file_dir)
+                    .await?
+            }
             _ => (),
         }
         Ok(())
@@ -402,6 +412,11 @@ impl BaseConfigEnum {
                     .get_complete_words(list_node_info_req, appstate)
                     .await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .get_complete_words(list_node_info_req, appstate)
+                    .await?
+            }
             _ => vec![],
         };
         Ok(data)
@@ -417,7 +432,11 @@ impl BaseConfigEnum {
                     .get_procedure_details(list_node_info_req, appstate)
                     .await?
             }
-
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .get_procedure_details(list_node_info_req, appstate)
+                    .await?
+            }
             _ => "vec![]".to_string(),
         };
         Ok(data)
@@ -480,7 +499,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => {
                 config.get_ddl(list_node_info_req, appstate).await?
             }
-
+            BaseConfigEnum::Mssql(config) => config.get_ddl(list_node_info_req, appstate).await?,
             _ => "ExeSqlResponse::new()".to_string(),
         };
         Ok(data)

@@ -153,6 +153,11 @@ impl BaseConfigEnum {
                     .remove_column(list_node_info_req, appstate, column_name)
                     .await?;
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .remove_column(list_node_info_req, appstate, column_name)
+                    .await?;
+            }
             BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support remove column"))?,
             _ => (),
         };
@@ -375,6 +380,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.truncate_table(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config.truncate_table(list_node_info_req, appstate).await?
+            }
             _ => (),
         }
         Ok(())
@@ -469,6 +477,11 @@ impl BaseConfigEnum {
                     .update_record(list_node_info_req, appstate, sql)
                     .await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
             _ => (),
         };
         Ok(())
@@ -486,6 +499,9 @@ impl BaseConfigEnum {
                 config.show_columns(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Sqlite(config) => {
+                config.show_columns(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Mssql(config) => {
                 config.show_columns(list_node_info_req, appstate).await?
             }
             _ => ShowColumnsResponse::new(),

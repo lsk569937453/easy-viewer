@@ -32,8 +32,6 @@ impl DumpDatabaseResItemTrait for MssqlDumpData {
                 let type_name = dump_database_res_item.column_structs[column_index]
                     .column_type
                     .clone();
-                // let mut pretty_string =
-                //     serde_json::to_string_pretty(&column_item.column_value)?.replace("\"", "'");
                 info!("type_name:{}", type_name);
                 let pretty_string = if type_name == "Int4" {
                     format!("'{}'", column_item.column_value)

@@ -235,6 +235,11 @@ impl BaseConfigEnum {
                     .import_database(list_node_info_req, appstate, import_database_req)
                     .await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .import_database(list_node_info_req, appstate, import_database_req)
+                    .await?
+            }
 
             _ => (),
         }

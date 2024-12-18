@@ -348,10 +348,12 @@ pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Erro
         ColumnData::Binary(value) => json!(value.clone()),
         ColumnData::Bit(value) => json!(value.clone()),
         ColumnData::Date(value) => json!(value.map(|item| from_days(item.days() as i64, 1))),
-        ColumnData::DateTime(value) => json!(value.map(|item| NaiveDateTime::new(
-            from_days(item.days() as i64, 1900),
-            from_sec_fragments(item.seconds_fragments() as i64)
-        ))),
+        ColumnData::DateTime(value) => json!(value
+            .map(|item| NaiveDateTime::new(
+                from_days(item.days() as i64, 1900),
+                from_sec_fragments(item.seconds_fragments() as i64)
+            ))
+            .map(|item| item.format("%Y-%m-%d %H:%M:%S").to_string())),
         ColumnData::DateTime2(value) => json!(value.map(|item| NaiveDateTime::new(
             from_days(item.date().days() as i64, 1),
             NaiveTime::from_hms_opt(0, 0, 0).unwrap()

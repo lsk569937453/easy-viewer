@@ -27,7 +27,7 @@ impl DumpDatabaseRes {
                     let item = &self.data_list.0[i];
                     writeln!(file, "{};", item.table_struct.clone())?;
                     writeln!(file)?;
-                    let sql = item.get_data_for_sql()?;
+                    let sql = item.get_data_for_sql(item)?;
                     writeln!(file, "{};", sql)?;
                     writeln!(file)?;
                 }
@@ -63,7 +63,7 @@ impl DumpTableList {
 
                 for i in 0..self.0.len() {
                     let item = &self.0[i];
-                    let sql = item.get_data_for_sql()?;
+                    let sql = item.get_data_for_sql(item)?;
                     writeln!(file, "{};", sql)?;
                     writeln!(file)?;
                 }
@@ -131,22 +131,21 @@ pub struct DumpDatabaseResItem {
     pub table_name: String,
     pub column_structs: Vec<DumpDatabaseResColumnStructItem>,
 }
-impl DumpDatabaseResItem {
-    pub fn new() -> DumpDatabaseResItem {
-        DumpDatabaseResItem {
-            table_struct: "".to_string(),
-            column_list: vec![],
-            table_name: "".to_string(),
-            column_structs: vec![],
-        }
-    }
-
-    pub fn get_data_for_sql(&self) -> Result<String, anyhow::Error> {
-        let mut sql = format!("INSERT INTO `{}` VALUES", self.table_name.clone());
-        for (index, item) in self.column_list.iter().enumerate() {
+pub trait DumpDatabaseResItemTrait {
+    fn get_data_for_sql(
+        &self,
+        dump_database_res_item: &DumpDatabaseResItem,
+    ) -> Result<String, anyhow::Error> {
+        let mut sql = format!(
+            "INSERT INTO `{}` VALUES",
+            dump_database_res_item.table_name.clone()
+        );
+        for (index, item) in dump_database_res_item.column_list.iter().enumerate() {
             let mut row = vec![];
             for (column_index, column_item) in item.iter().enumerate() {
-                let type_name = self.column_structs[column_index].column_type.clone();
+                let type_name = dump_database_res_item.column_structs[column_index]
+                    .column_type
+                    .clone();
                 let mut pretty_string = serde_json::to_string_pretty(&column_item.column_value)?;
                 if type_name == "LONGBLOB"
                     || type_name == "BINARY"
@@ -168,6 +167,18 @@ impl DumpDatabaseResItem {
 
         Ok(sql)
     }
+}
+impl DumpDatabaseResItemTrait for DumpDatabaseResItem {}
+impl DumpDatabaseResItem {
+    pub fn new() -> DumpDatabaseResItem {
+        DumpDatabaseResItem {
+            table_struct: "".to_string(),
+            column_list: vec![],
+            table_name: "".to_string(),
+            column_structs: vec![],
+        }
+    }
+
     pub fn get_data_for_json(&self) -> Result<String, anyhow::Error> {
         let mut res_array = vec![];
         for item in self.column_list.iter() {

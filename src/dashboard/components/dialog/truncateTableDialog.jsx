@@ -47,7 +47,10 @@ const TruncateTableDialog = ({ node }) => {
       })
       return
     } else {
-      reloadNode(node, menulist, setMenulist)
+      toast({
+        title: "Success",
+        description: "Truncate Table Success",
+      })
     }
   }
   return (

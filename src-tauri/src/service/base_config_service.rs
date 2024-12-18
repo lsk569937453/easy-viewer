@@ -1,3 +1,4 @@
+use super::clickhouse_service::ClickhouseConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
@@ -32,6 +33,8 @@ pub enum BaseConfigEnum {
     Oracledb(OracledbConfig),
     #[serde(rename = "mssql")]
     Mssql(MssqlConfig),
+    #[serde(rename = "clickhouse")]
+    Clickhouse(ClickhouseConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -71,6 +74,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mongodb(_) => 4,
             BaseConfigEnum::Oracledb(_) => 5,
             BaseConfigEnum::Mssql(_) => 6,
+            BaseConfigEnum::Clickhouse(_) => 7,
         }
     }
     pub async fn list_node_info(
@@ -149,6 +153,11 @@ impl BaseConfigEnum {
                     .await?;
             }
             BaseConfigEnum::Postgresql(config) => {
+                config
+                    .remove_column(list_node_info_req, appstate, column_name)
+                    .await?;
+            }
+            BaseConfigEnum::Mssql(config) => {
                 config
                     .remove_column(list_node_info_req, appstate, column_name)
                     .await?;
@@ -375,6 +384,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Sqlite(config) => {
                 config.truncate_table(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config.truncate_table(list_node_info_req, appstate).await?
+            }
             _ => (),
         }
         Ok(())
@@ -469,6 +481,11 @@ impl BaseConfigEnum {
                     .update_record(list_node_info_req, appstate, sql)
                     .await?
             }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
             _ => (),
         };
         Ok(())
@@ -486,6 +503,9 @@ impl BaseConfigEnum {
                 config.show_columns(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Sqlite(config) => {
+                config.show_columns(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Mssql(config) => {
                 config.show_columns(list_node_info_req, appstate).await?
             }
             _ => ShowColumnsResponse::new(),

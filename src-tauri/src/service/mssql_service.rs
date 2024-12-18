@@ -2,7 +2,8 @@ use crate::service::base_config_service::DatabaseHostStruct;
 use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnItem;
 use crate::service::dump_data::dump_database_service::DumpDatabaseResItem;
 use crate::service::dump_data::dump_database_service::DumpTableList;
-use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpDataItem;
+use crate::service::dump_data::mssql_dump_data_service::MssqlDumpData;
+use crate::service::dump_data::mssql_dump_data_service::MssqlDumpDataItem;
 use crate::util::sql_utils::mssql_row_to_json;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
@@ -24,8 +25,8 @@ use futures_util::TryStreamExt;
 use human_bytes::human_bytes;
 
 use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
-use crate::service::dump_data::postgresql_dump_data_service::PostgresqlDumpData;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponseItem;
+use crate::vojo::import_database_req::ImportDatabaseReq;
 use chrono::Local;
 use docx_rs::*;
 use itertools::Itertools;
@@ -42,6 +43,9 @@ use tiberius::AuthMethod;
 use tiberius::Client;
 use tiberius::Config;
 use tiberius::QueryItem;
+use tokio::fs::File;
+use tokio::io::AsyncBufReadExt;
+use tokio::io::BufReader;
 use tokio::net::TcpStream;
 use tokio::time::timeout;
 use tokio_util::compat::Compat;
@@ -167,12 +171,60 @@ WHERE
         schema_name, table_name
     )
 }
+async fn run_sql(conn: &mut Client<Compat<TcpStream>>, sql: &str) -> Result<(), anyhow::Error> {
+    if sql.contains("CREATE SCHEMA") {
+        conn.simple_query(sql).await?;
+    } else {
+        conn.execute(sql, &[]).await?;
+    }
+    Ok(())
+}
 #[derive(Deserialize, Serialize, Clone)]
 pub struct MssqlConfig {
     pub config: DatabaseHostStruct,
 }
 
 impl MssqlConfig {
+    pub async fn import_database(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        import_database_req: ImportDatabaseReq,
+    ) -> Result<(), anyhow::Error> {
+        info!("import_database_req: {:?}", import_database_req);
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let file = File::open(&import_database_req.file_path).await?;
+
+        let reader = BufReader::new(file);
+
+        let mut lines = reader.lines();
+
+        let mut sql_buffer = String::new();
+
+        while let Some(line) = lines.next_line().await? {
+            if line.trim().is_empty() {
+                if !sql_buffer.trim().is_empty() {
+                    info!("Executing SQL: {}", sql_buffer);
+                    run_sql(&mut conn, &sql_buffer).await?;
+                    sql_buffer.clear();
+                }
+            } else {
+                sql_buffer.push_str(&line);
+                sql_buffer.push('\n');
+            }
+        }
+
+        if !sql_buffer.trim().is_empty() {
+            info!("Executing final SQL: {}", sql_buffer);
+            // conn.execute(&*sql_buffer, &[]).await?;
+            run_sql(&mut conn, &sql_buffer).await?;
+        }
+        Ok(())
+    }
+
     pub async fn get_procedure_details(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -476,7 +528,7 @@ WHERE TABLE_NAME = '{}'
             }
 
             let schema_name = schema.schema_name;
-            let create_schema = format!("CREATE SCHEMA ['{}'];", schema_name.clone());
+            let create_schema = format!("CREATE SCHEMA [{}];", schema_name.clone());
             let mut dump_data_list = vec![];
 
             for table in schema.table_list {
@@ -549,14 +601,14 @@ WHERE TABLE_NAME = '{}'
                 }
                 dump_data_list.push(dump_database_res_item);
             }
-            let postgresql_dump_data_item = PostgresqlDumpDataItem::from(
+            let mssql_dump_data_item = MssqlDumpDataItem::from(
                 create_schema.to_string(),
                 DumpTableList::from(dump_data_list),
             );
-            vecs.push(postgresql_dump_data_item);
+            vecs.push(mssql_dump_data_item);
         }
         info!("dump_data_list: {:#?}", vecs);
-        let dump_database_res = PostgresqlDumpData::from(vecs);
+        let dump_database_res = MssqlDumpData::from(vecs);
         dump_database_res.export_to_file(dump_database_req)?;
         Ok(())
     }
@@ -1137,7 +1189,8 @@ WHERE c.object_id = OBJECT_ID('{}');",
 
         let should_parse_sql = !(sql.contains("CREATE DATABASE")
             || (sql.contains("CREATE PROCEDURE") && !sql.contains("SHOW CREATE PROCEDURE"))
-            || sql.contains("CREATE FUNCTION") && !sql.contains("SHOW CREATE FUNCTION"));
+            || sql.contains("CREATE FUNCTION") && !sql.contains("SHOW CREATE FUNCTION")
+            || sql.contains("CREATE SCHEMA"));
         info!(
             "should_parse_sql: {},{}",
             should_parse_sql,
@@ -1180,12 +1233,18 @@ WHERE table_name = '{}'
 
         info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
-            let mssql_query_result =
-                if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
-                    conn.execute(&sql, &[]).await?
-                } else {
-                    conn.execute(&sql, &[]).await?
-                };
+            let row_affected = if sql.contains("CREATE SCHEMA") {
+                let _ = conn.simple_query(&sql).await?;
+                "0".to_string()
+            } else {
+                let exe_res = conn.execute(&sql, &[]).await?;
+                exe_res
+                    .rows_affected()
+                    .iter()
+                    .map(|item| item.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            };
             let headers = vec![
                 Header {
                     name: "affected_rows".to_string(),
@@ -1198,12 +1257,7 @@ WHERE table_name = '{}'
                     is_primary_key: false,
                 },
             ];
-            let row_affected = mssql_query_result
-                .rows_affected()
-                .iter()
-                .map(|num| num.to_string())
-                .collect::<Vec<String>>()
-                .join(", ");
+
             let rows = vec![vec![Some(row_affected)]];
             return Ok(ExeSqlResponse {
                 header: headers,

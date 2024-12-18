@@ -1,4 +1,5 @@
 use super::dump_database_service::DumpTableList;
+use crate::service::dump_data::dump_database_service::DumpDatabaseResItemTrait;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::dump_database_req::ExportOption;
 use serde::{Deserialize, Serialize};
@@ -25,7 +26,7 @@ impl PostgresqlDumpData {
                     for table in schema.table_list.0 {
                         writeln!(file, "{}", table.table_struct.clone())?;
                         writeln!(file)?;
-                        let sql = table.get_data_for_sql()?;
+                        let sql = table.get_data_for_sql(&table)?;
                         writeln!(file, "{};", sql)?;
                         writeln!(file)?;
                     }

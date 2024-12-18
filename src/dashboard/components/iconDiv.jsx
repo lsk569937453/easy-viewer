@@ -1177,6 +1177,140 @@ const IconDiv = ({ node, selectedRows }) => {
             </Tooltip.Provider>
           </div>
         </>
+      ) : node.data.iconName === "clickhouse" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              width={iconWidth - 4}
+              height={iconHeight - 4}
+              fill="#000000"
+            >
+              <path
+                fill="#517181"
+                d="M21.333 10H24v4h-2.667ZM16 1.335h2.667v21.33H16Zm-5.333 0h2.666v21.33h-2.666ZM0 22.665V1.335h2.667v21.33zm5.333-21.33H8v21.33H5.333Z"
+              />
+            </svg>
+          )}
+          <p className=" flex-none text-sm">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    onClick={handleAddNewDatabaseClick}
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-plus group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M12 5l0 14" />
+                    <path d="M5 12l14 0" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>New Database</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleConnectionRemoveClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" />
+                    <path d="M14 11l0 6" />
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Remove Connection</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
       ) : node.data.iconName === "database" ? (
         <>
           {node.data.showSecondIcon && (

@@ -1,3 +1,4 @@
+use super::clickhouse_service::ClickhouseConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
@@ -32,6 +33,8 @@ pub enum BaseConfigEnum {
     Oracledb(OracledbConfig),
     #[serde(rename = "mssql")]
     Mssql(MssqlConfig),
+    #[serde(rename = "clickhouse")]
+    Clickhouse(ClickhouseConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -71,6 +74,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mongodb(_) => 4,
             BaseConfigEnum::Oracledb(_) => 5,
             BaseConfigEnum::Mssql(_) => 6,
+            BaseConfigEnum::Clickhouse(_) => 7,
         }
     }
     pub async fn list_node_info(

@@ -1,4 +1,5 @@
 pub mod base_config_service;
+pub mod clickhouse_service;
 pub mod cmd;
 pub mod cmd_service;
 pub mod dump_data;

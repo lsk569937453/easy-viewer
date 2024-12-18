@@ -25,6 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog"
+import { ClickhouseConfigComponent } from "../components/clickhouseConfigComponent"
 import { MongodbConfigComponent } from "../components/mongodbConfigComponent"
 import { MssqlConfigComponent } from "../components/mssqlConfigComponent"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
@@ -149,8 +150,9 @@ const CreateConnectionDialog = ({
                 <SelectItem value="sqlite">Sqlite</SelectItem>
                 <SelectItem value="postgresql">PostGresql</SelectItem>
                 <SelectItem value="mongodb">MongoDB</SelectItem>
-                <SelectItem value="oracledb">Oracle</SelectItem>
+                {/* <SelectItem value="oracledb">Oracle</SelectItem> */}
                 <SelectItem value="mssql">Mssql</SelectItem>
+                <SelectItem value="clickhouse">Clickhouse</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -283,6 +285,32 @@ const CreateConnectionDialog = ({
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??
                 "oracledb"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "sa"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "password"
+              }
+              isSave={isSave}
+            />
+          )}
+          {currentLinkType === "clickhouse" && (
+            <ClickhouseConfigComponent
+              connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "1433"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ??
+                "clickhouse"
               }
               initialUsername={
                 connectionData?.base_config_enum?.mysql?.config?.user_name ||

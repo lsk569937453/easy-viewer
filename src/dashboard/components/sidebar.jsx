@@ -37,9 +37,11 @@ const Sidebar = ({ treeRef }) => {
 
   // Toggle selection for a specific row
   const toggleRowSelection = (node) => {
-    setSelectedRows((prevSelectedRows) => ({
-      [node.id]: !prevSelectedRows[node.id],
-    }))
+    setSelectedRows((prevSelectedRows) => {
+      const newSelectedRows = {}
+      newSelectedRows[node.id] = true // Set the current row as selected (true)
+      return newSelectedRows // Return the new state with only the current row selected
+    })
   }
   const { t, i18n } = useTranslation()
   const { toast } = useToast()

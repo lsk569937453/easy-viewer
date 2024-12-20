@@ -47,7 +47,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
             BaseConfigEnum::Oracledb(config) => config.test_connection()?,
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
-
+            BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             _ => {}
         }
 

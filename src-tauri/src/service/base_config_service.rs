@@ -47,7 +47,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
             BaseConfigEnum::Oracledb(config) => config.test_connection()?,
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
-
+            BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             _ => {}
         }
 
@@ -101,6 +101,9 @@ impl BaseConfigEnum {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Mssql(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),
@@ -185,6 +188,9 @@ impl BaseConfigEnum {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Mssql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),

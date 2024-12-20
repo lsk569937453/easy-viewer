@@ -103,6 +103,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mssql(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Clickhouse(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
             _ => ListNodeInfoResponse::new_with_empty(),
         };
         Ok(vec)
@@ -185,6 +188,9 @@ impl BaseConfigEnum {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Mssql(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),

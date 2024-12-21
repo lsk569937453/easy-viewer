@@ -83,6 +83,10 @@ const generateSql = (node = "", limit = 100) => {
   if (rootNode.data.connectionType === 1) {
     const table = `${node.parent.parent.data.name}.${node.data.name}`
     return `SELECT * FROM ${table} LIMIT ${limit}`
+  } else if (rootNode.data.connectionType === 4) {
+    const table = `${node.data.name}`
+    const database = node.parent.parent.data.name
+    return `db('${database}').collection('${table}').find({}).limit(100).toArray()`
   } else if (rootNode.data.connectionType === 6) {
     const table = `${node.parent.parent.data.name}.${node.data.name}`
     return `SELECT  TOP ${limit} * FROM ${table}`

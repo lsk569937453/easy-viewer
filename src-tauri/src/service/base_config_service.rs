@@ -193,6 +193,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::Clickhouse(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
+            BaseConfigEnum::Mongodb(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
             _ => ExeSqlResponse::new(),
         };
         Ok(data)

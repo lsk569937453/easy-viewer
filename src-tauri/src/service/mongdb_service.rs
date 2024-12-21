@@ -1,4 +1,5 @@
 use crate::service::base_config_service::DatabaseHostStruct;
+use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -30,6 +31,15 @@ pub struct MongodbConfig {
     pub config: DatabaseHostStruct,
 }
 impl MongodbConfig {
+    pub async fn exe_sql(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        sql: String,
+    ) -> Result<ExeSqlResponse, anyhow::Error> {
+        let connection = self.get_connection().await?;
+        Ok(ExeSqlResponse::new())
+    }
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
         let description = format!("{}:{}", self.config.host, self.config.port);
         Ok(description)

@@ -149,10 +149,10 @@ const CreateConnectionDialog = ({
                 <SelectItem value="mysql">Mysql</SelectItem>
                 <SelectItem value="sqlite">Sqlite</SelectItem>
                 <SelectItem value="postgresql">PostGresql</SelectItem>
-                <SelectItem value="mongodb">MongoDB</SelectItem>
+                {/* <SelectItem value="mongodb">MongoDB</SelectItem> */}
                 {/* <SelectItem value="oracledb">Oracle</SelectItem> */}
                 <SelectItem value="mssql">Mssql</SelectItem>
-                <SelectItem value="clickhouse">Clickhouse</SelectItem>
+                {/* <SelectItem value="clickhouse">Clickhouse</SelectItem> */}
               </SelectContent>
             </Select>
           </div>

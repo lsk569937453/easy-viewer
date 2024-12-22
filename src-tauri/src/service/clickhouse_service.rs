@@ -37,8 +37,6 @@ impl ClickhouseConfig {
         _appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
-        let conn = self.get_connection().await?;
-        let res = conn.query(&sql).fetch().await?;
         Ok(ExeSqlResponse::new())
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {

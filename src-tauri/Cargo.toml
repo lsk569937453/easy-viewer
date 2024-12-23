@@ -13,7 +13,10 @@ edition = "2021"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-anyhow = "1.0.94"
+anyhow = "1.0.95"
+aws-config = { version = "1.5.11", features = ["behavior-version-latest"] }
+aws-credential-types = {version="1.2.1",features = ["hardcoded-credentials"] }
+aws-sdk-s3 = { version = "1.66.0", features = ["behavior-version-latest"] }
 base64 = "0.22.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
 chrono = { version = "0.4.39", features = ["serde"] }
@@ -30,18 +33,18 @@ itertools = "0.13.0"
 
 linked-hash-map = "0.5.6"
 log = "0.4.22"
-mongodb = "3.1.0"
+mongodb = "3.1.1"
 num = "0.4.3"
 oracle = "0.6.2"
 percent-encoding = "2.3.0"
 redis = "0.27.6"
 rust_decimal = "1.36.0"
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.216", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 serde_json = "1.0.133"
 serde_repr = "0.1.19"
 serde_yaml = "0.9.34"
-sqlparser = "0.52.0"
+sqlparser = "0.53.0"
 sqlx = { version = "0.8.2", features = [
     "runtime-tokio",
     "tls-native-tls",

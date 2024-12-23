@@ -26,13 +26,13 @@ import { reloadNode } from "../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../page"
 import { LoadingSpinner } from "./spinner"
 
-export function MssqlConfigComponent({
+export function S3ConfigComponent({
   connectionName,
   initialHost = "localhost",
   initialPort = "1433",
   initialDatabase = "mydb",
   initialUsername = "sa",
-  initialPassword = "password",
+  initialsecret_key = "secret_key",
   isSave = false,
   baseCongfigId = null,
 }) {
@@ -40,73 +40,46 @@ export function MssqlConfigComponent({
   const { setShowEditConnectionDialog } = useContext(MainPageDialogContext)
   const { toast } = useToast()
   const { t, i18n } = useTranslation()
-  const [currentLinkType, setCurrentLinkType] = useState("mssql")
+  const [currentLinkType, setCurrentLinkType] = useState("s3")
   const [currentUrl, setCurrentUrl] = useState(
-    `mssql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+    `s3://${initialUsername}:${initialsecret_key}@${initialHost}:${initialPort}/${initialDatabase}`
   )
   const [currentHost, setCurrentHost] = useState(initialHost)
   const [currentPort, setCurrentPort] = useState(initialPort)
-  const [currentDatabase, setCurrentDatabase] = useState(initialDatabase)
-  const [currentUsername, setCurrentUsername] = useState(initialUsername)
-  const [currentPassword, setCurrentPassword] = useState(initialPassword)
-  const [connectType, setConnectType] = useState("connectTypeHost")
+  const [currentRegion, setCurrentRegion] = useState(initialDatabase)
+  const [currentAccessKey, setCurrentAccessKey] = useState(initialUsername)
+  const [currentSecretKey, setCurrentSecretKey] = useState(initialsecret_key)
   const [showLoading, setShowLoading] = useState(false)
 
   useEffect(() => {
     setCurrentHost(initialHost)
     setCurrentPort(initialPort)
-    setCurrentDatabase(initialDatabase)
-    setCurrentUsername(initialUsername)
-    setCurrentPassword(initialPassword)
+    setCurrentRegion(initialDatabase)
+    setCurrentAccessKey(initialUsername)
+    setCurrentSecretKey(initialsecret_key)
     setCurrentUrl(
-      `mssql://${initialUsername}:${initialPassword}@${initialHost}:${initialPort}/${initialDatabase}`
+      `s3://${initialUsername}:${initialsecret_key}@${initialHost}:${initialPort}/${initialDatabase}`
     )
   }, [
     initialHost,
     initialPort,
     initialDatabase,
     initialUsername,
-    initialPassword,
+    initialsecret_key,
   ])
 
   const handleTestLinkButtonClick = async () => {
     let testHostStruct = null
-    if (connectType == "connectTypeUrl") {
-      try {
-        const { ip, port, database, userName, password } =
-          parseConnectionUrl(currentUrl)
-        testHostStruct = {
-          mssql: {
-            config: {
-              host: ip,
-              port: parseInt(port),
-              database: database,
-              user_name: userName,
-              password: password,
-            },
-          },
-        }
-        console.log(JSON.stringify(testHostStruct))
-      } catch (err) {
-        toast({
-          variant: "destructive",
-          title: err.toString(),
-          description: currentUrl,
-        })
-        return
-      }
-    } else {
-      testHostStruct = {
-        mssql: {
-          config: {
-            host: currentHost,
-            port: parseInt(currentPort),
-            database: currentDatabase,
-            user_name: currentUsername,
-            password: currentPassword,
-          },
+    testHostStruct = {
+      s3: {
+        config: {
+          host: currentHost,
+          port: parseInt(currentPort),
+          region: currentRegion,
+          access_key: currentAccessKey,
+          secret_key: currentSecretKey,
         },
-      }
+      },
     }
 
     const testDatabaseRequest = {
@@ -145,14 +118,14 @@ export function MssqlConfigComponent({
   }
   const parseConnectionUrl = (connectionUrl) => {
     const regex =
-      /mssql:\/\/(?<userName>[^:]+):(?<password>[^@]+)@(?<ip>[^:]+):(?<port>\d+)(?:\/(?<database>[^?]+))?/
+      /s3:\/\/(?<userName>[^:]+):(?<secret_key>[^@]+)@(?<ip>[^:]+):(?<port>\d+)(?:\/(?<database>[^?]+))?/
     const match = connectionUrl.match(regex)
 
     if (match) {
-      const { userName, password, ip, port, database } = match.groups
-      return { userName, password, ip, port, database: database || null }
+      const { userName, secret_key, ip, port, database } = match.groups
+      return { userName, secret_key, ip, port, database: database || null }
     } else {
-      throw new Error("Invalid mssql URL format")
+      throw new Error("Invalid s3 URL format")
     }
   }
   const handleCreateLinkButtonClick = async () => {
@@ -165,42 +138,16 @@ export function MssqlConfigComponent({
       return
     }
     let testHostStruct = null
-    if (connectType == "connectTypeUrl") {
-      try {
-        const { ip, port, database, userName, password } =
-          parseConnectionUrl(currentUrl)
-        testHostStruct = {
-          mssql: {
-            config: {
-              host: ip,
-              port: parseInt(port),
-              database: database,
-              user_name: userName,
-              password: password,
-            },
-          },
-        }
-        console.log(JSON.stringify(testHostStruct))
-      } catch (err) {
-        toast({
-          variant: "destructive",
-          title: err.toString(),
-          description: currentUrl,
-        })
-        return
-      }
-    } else {
-      testHostStruct = {
-        mssql: {
-          config: {
-            host: currentHost,
-            port: parseInt(currentPort),
-            database: currentDatabase,
-            user_name: currentUsername,
-            password: currentPassword,
-          },
+    testHostStruct = {
+      s3: {
+        config: {
+          host: currentHost,
+          port: parseInt(currentPort),
+          region: currentRegion,
+          access_key: currentAccessKey,
+          secret_key: currentSecretKey,
         },
-      }
+      },
     }
 
     const SaveConnectionRequest = {
@@ -242,16 +189,16 @@ export function MssqlConfigComponent({
     let testHostStruct = null
     if (connectType == "connectTypeUrl") {
       try {
-        const { ip, port, database, userName, password } =
+        const { ip, port, database, userName, secret_key } =
           parseConnectionUrl(currentUrl)
         testHostStruct = {
-          mssql: {
+          s3: {
             config: {
               host: ip,
               port: parseInt(port),
-              database: database,
-              user_name: userName,
-              password: password,
+              region: database,
+              access_key: userName,
+              secret_key: secret_key,
             },
           },
         }
@@ -266,13 +213,13 @@ export function MssqlConfigComponent({
       }
     } else {
       testHostStruct = {
-        mssql: {
+        s3: {
           config: {
             host: currentHost,
             port: parseInt(currentPort),
-            database: currentDatabase,
-            user_name: currentUsername,
-            password: currentPassword,
+            region: currentRegion,
+            access_key: currentUsername,
+            secret_key: currentSecretKey,
           },
         },
       }
@@ -313,84 +260,52 @@ export function MssqlConfigComponent({
           <LoadingSpinner size={48} color="indigo" />
         </AlertDialogContent>
       </AlertDialog>
-      <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">连接方式:</p>
-        <RadioGroup
-          defaultValue="connectTypeHost"
-          orientation="horizontal"
-          className="grid-flow-col"
-          onValueChange={(e) => setConnectType(e)}
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="connectTypeHost" id="option-two" />
-            <Label htmlFor="connectTypeHost">主机</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="connectTypeUrl" id="option-one" />
-            <Label htmlFor="connectTypeUrl">连接串</Label>
-          </div>
-        </RadioGroup>
-      </div>
-      {connectType === "connectTypeUrl" && (
-        <div className="flex flex-row items-center gap-5">
-          <p className="basis-2/12 text-right">连接串:</p>
-          <Input
-            className="basis-10/12 border border-foreground/50"
-            placeholder="jdbc:mssql://localhost:3306/"
-            onChange={(e) => setCurrentUrl(e.target.value)}
-            value={currentUrl}
-          ></Input>
-        </div>
-      )}
-      {connectType === "connectTypeHost" && (
-        <>
-          <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">服务器地址:</p>
-            <Input
-              className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="主机地址"
-              onChange={(e) => setCurrentHost(e.target.value)}
-              value={currentHost}
-            ></Input>
-            <p className="basis-1/12 text-right">端口:</p>
-            <Input
-              className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="端口"
-              onChange={(e) => setCurrentPort(e.target.value)}
-              value={currentPort}
-            ></Input>
-          </div>
 
-          <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">用户名:</p>
-            <Input
-              className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="用户名"
-              onChange={(e) => setCurrentUsername(e.target.value)}
-              value={currentUsername}
-            ></Input>
-          </div>
-          <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">密码:</p>
-            <Input
-              className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="密码"
-              type="password"
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              value={currentPassword}
-            ></Input>
-          </div>
-          <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">数据库:</p>
-            <Input
-              className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="数据库名"
-              onChange={(e) => setCurrentDatabase(e.target.value)}
-              value={currentDatabase}
-            ></Input>
-          </div>
-        </>
-      )}
+      <div className="flex flex-row items-center gap-5">
+        <p className="basis-2/12 text-right">服务器地址:</p>
+        <Input
+          className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
+          placeholder="主机地址"
+          onChange={(e) => setCurrentHost(e.target.value)}
+          value={currentHost}
+        ></Input>
+        <p className="basis-1/12 text-right">端口:</p>
+        <Input
+          className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
+          placeholder="端口"
+          onChange={(e) => setCurrentPort(e.target.value)}
+          value={currentPort}
+        ></Input>
+      </div>
+
+      <div className="flex flex-row items-center gap-5">
+        <p className="basis-2/12 text-right">Access Key:</p>
+        <Input
+          className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
+          placeholder="Access Key"
+          onChange={(e) => setCurrentAccessKey(e.target.value)}
+          value={currentAccessKey}
+        ></Input>
+      </div>
+      <div className="flex flex-row items-center gap-5">
+        <p className="basis-2/12 text-right">Secret Key:</p>
+        <Input
+          className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
+          placeholder="Secret Key"
+          type="secret_key"
+          onChange={(e) => setCurrentSecretKey(e.target.value)}
+          value={currentSecretKey}
+        ></Input>
+      </div>
+      <div className="flex flex-row items-center gap-5">
+        <p className="basis-2/12 text-right">数据库:</p>
+        <Input
+          className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
+          placeholder="数据库名"
+          onChange={(e) => setCurrentRegion(e.target.value)}
+          value={currentRegion}
+        ></Input>
+      </div>
 
       <div className="flex flex-row items-center gap-5">
         {!isSave && (

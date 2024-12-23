@@ -903,7 +903,8 @@ WHERE table_schema = '{}'
             Duration::from_millis(500),
             TcpStream::connect(config.get_addr()),
         )
-        .await??;
+        .await
+        .map_err(|e| anyhow!("Connect timeout in 500ms."))??;
         tcp.set_nodelay(true)?;
 
         let client = timeout(

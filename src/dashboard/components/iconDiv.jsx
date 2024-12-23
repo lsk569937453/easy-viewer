@@ -626,6 +626,199 @@ const IconDiv = ({ node, selectedRows }) => {
             </Tooltip.Provider>
           </div>
         </>
+      ) : node.data.iconName === "s3" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              viewBox="-31 -31 372.00 372.00"
+              version="1.1"
+              preserveAspectRatio="xMidYMid"
+              fill="#000000"
+              width={iconWidth - 4}
+              height={iconHeight - 4}
+            >
+              <g id="SVGRepo_bgCarrier" stroke-width="0">
+                <rect
+                  x="-31"
+                  y="-31"
+                  width="372.00"
+                  height="372.00"
+                  rx="0"
+                  fill="#dbe0e1"
+                  strokewidth="0"
+                ></rect>
+              </g>
+              <g
+                id="SVGRepo_tracerCarrier"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                {" "}
+                <g>
+                  {" "}
+                  <path
+                    d="M20.624,53.686 L0,64 L0,245.02 L20.624,255.274 L20.748,255.125 L20.748,53.828 L20.624,53.686"
+                    fill="#8C3123"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M131,229 L20.624,255.274 L20.624,53.686 L131,79.387 L131,229"
+                    fill="#E05243"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M81.178,187.866 L127.996,193.826 L128.29,193.148 L128.553,116.378 L127.996,115.778 L81.178,121.652 L81.178,187.866"
+                    fill="#8C3123"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M127.996,229.295 L235.367,255.33 L235.536,255.061 L235.533,53.866 L235.363,53.686 L127.996,79.682 L127.996,229.295"
+                    fill="#8C3123"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M174.827,187.866 L127.996,193.826 L127.996,115.778 L174.827,121.652 L174.827,187.866"
+                    fill="#E05243"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M174.827,89.631 L127.996,98.166 L81.178,89.631 L127.937,77.375 L174.827,89.631"
+                    fill="#5E1F18"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M174.827,219.801 L127.996,211.21 L81.178,219.801 L127.939,232.854 L174.827,219.801"
+                    fill="#F2B0A9"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M81.178,89.631 L127.996,78.045 L128.375,77.928 L128.375,0.313 L127.996,0 L81.178,23.413 L81.178,89.631"
+                    fill="#8C3123"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M174.827,89.631 L127.996,78.045 L127.996,0 L174.827,23.413 L174.827,89.631"
+                    fill="#E05243"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M127.996,309.428 L81.173,286.023 L81.173,219.806 L127.996,231.388 L128.685,232.171 L128.498,308.077 L127.996,309.428"
+                    fill="#8C3123"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M127.996,309.428 L174.823,286.023 L174.823,219.806 L127.996,231.388 L127.996,309.428"
+                    fill="#E05243"
+                  >
+                    {" "}
+                  </path>{" "}
+                  <path
+                    d="M235.367,53.686 L256,64 L256,245.02 L235.367,255.33 L235.367,53.686"
+                    fill="#E05243"
+                  >
+                    {" "}
+                  </path>{" "}
+                </g>{" "}
+              </g>
+            </svg>
+          )}
+          <p className="flex-none text-sm ">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+
+            <Tooltip.Provider>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth - 4}
+                    height={iconHeight - 4}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-trash  group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleConnectionRemoveClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M4 7l16 0" />
+                    <path d="M10 11l0 6" />
+                    <path d="M14 11l0 6" />
+                    <path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" />
+                    <path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Delete Connection</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
       ) : node.data.iconName === "postgresql" ? (
         <>
           {node.data.showSecondIcon && (
@@ -1328,6 +1521,78 @@ const IconDiv = ({ node, selectedRows }) => {
               viewBox="0 0 16 16"
             >
               <path d="M4.318 2.687C5.234 2.271 6.536 2 8 2s2.766.27 3.682.687C12.644 3.125 13 3.627 13 4c0 .374-.356.875-1.318 1.313C10.766 5.729 9.464 6 8 6s-2.766-.27-3.682-.687C3.356 4.875 3 4.373 3 4c0-.374.356-.875 1.318-1.313M13 5.698V7c0 .374-.356.875-1.318 1.313C10.766 8.729 9.464 9 8 9s-2.766-.27-3.682-.687C3.356 7.875 3 7.373 3 7V5.698c.271.202.58.378.904.525C4.978 6.711 6.427 7 8 7s3.022-.289 4.096-.777A5 5 0 0 0 13 5.698M14 4c0-1.007-.875-1.755-1.904-2.223C11.022 1.289 9.573 1 8 1s-3.022.289-4.096.777C2.875 2.245 2 2.993 2 4v9c0 1.007.875 1.755 1.904 2.223C4.978 15.71 6.427 16 8 16s3.022-.289 4.096-.777C13.125 14.755 14 14.007 14 13zm-1 4.698V10c0 .374-.356.875-1.318 1.313C10.766 11.729 9.464 12 8 12s-2.766-.27-3.682-.687C3.356 10.875 3 10.373 3 10V8.698c.271.202.58.378.904.525C4.978 9.71 6.427 10 8 10s3.022-.289 4.096-.777A5 5 0 0 0 13 8.698m0 3V13c0 .374-.356.875-1.318 1.313C10.766 14.729 9.464 15 8 15s-2.766-.27-3.682-.687C3.356 13.875 3 13.373 3 13v-1.302c.271.202.58.378.904.525C4.978 12.71 6.427 13 8 13s3.022-.289 4.096-.777c.324-.147.633-.323.904-.525" />
+            </svg>
+          )}
+          <p className="flex-none text-sm">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "bucket" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              fill="#000000"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+            >
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                <path d="M2,8H3.132L5.01,21.142A1,1,0,0,0,6,22H18a1,1,0,0,0,.99-.858L20.868,8H22a1,1,0,0,0,0-2H16.78l-.621-2.485A2,2,0,0,0,14.219,2H9.781a2,2,0,0,0-1.94,1.515L7.22,6H2A1,1,0,0,0,2,8ZM17.133,20H6.867l-.285-2H17.418ZM9.781,4H14.22l.5,2H9.281Zm9.066,4L17.7,16H6.3L5.153,8Z"></path>
+              </g>
             </svg>
           )}
           <p className="flex-none text-sm">{node.data.name}</p>

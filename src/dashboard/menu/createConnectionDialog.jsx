@@ -31,6 +31,7 @@ import { MssqlConfigComponent } from "../components/mssqlConfigComponent"
 import { MysqlConfigComponent } from "../components/mysqlConfigComponent"
 import { OracleDbConfigComponent } from "../components/oracledbConfigComponent"
 import { PostGresqlConfigComponent } from "../components/postGresqlConfigComponent"
+import { S3ConfigComponent } from "../components/s3ConfigComponenet"
 import { LoadingSpinner } from "../components/spinner"
 import SqliteConfigComponent from "../components/sqliteConfigComponent"
 
@@ -153,6 +154,7 @@ const CreateConnectionDialog = ({
                 {/* <SelectItem value="oracledb">Oracle</SelectItem> */}
                 <SelectItem value="mssql">Mssql</SelectItem>
                 {/* <SelectItem value="clickhouse">Clickhouse</SelectItem> */}
+                <SelectItem value="s3">S3</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -311,6 +313,32 @@ const CreateConnectionDialog = ({
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??
                 "clickhouse"
+              }
+              initialUsername={
+                connectionData?.base_config_enum?.mysql?.config?.user_name ||
+                "root"
+              }
+              initialPassword={
+                connectionData?.base_config_enum?.mysql?.config?.password ||
+                "root"
+              }
+              isSave={isSave}
+            />
+          )}
+          {currentLinkType === "s3" && (
+            <S3ConfigComponent
+              connectionName={currentLinkName}
+              baseCongfigId={baseCongfigId}
+              initialHost={
+                connectionData?.base_config_enum?.mysql?.config?.host ||
+                "localhost"
+              }
+              initialPort={
+                connectionData?.base_config_enum?.mysql?.config?.port || "9000"
+              }
+              initialDatabase={
+                connectionData?.base_config_enum?.mysql?.config?.database ??
+                "s3"
               }
               initialUsername={
                 connectionData?.base_config_enum?.mysql?.config?.user_name ||

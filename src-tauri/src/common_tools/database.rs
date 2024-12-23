@@ -78,7 +78,7 @@ pub async fn test_url_with_error(
         .await
         .map_err(|e| {
             error!("{}", e);
-            anyhow!("连接数据库失败:{}", e)
+            anyhow!("Connection error:{}", e)
         })
 }
 

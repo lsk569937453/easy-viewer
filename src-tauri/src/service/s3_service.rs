@@ -1,6 +1,7 @@
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
+use aws_sdk_s3::config::endpoint::Endpoint;
 use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::config::Region;
 use aws_sdk_s3::config::SharedCredentialsProvider;
@@ -91,9 +92,11 @@ impl S3Config {
         let region = self.config.region.clone();
         let credentials = Credentials::from_keys(access_key.clone(), secret_key, None);
 
-        let endpoint = format!("http://{}:{}", self.config.host, self.config.port);
+        let endpoint = Endpoint::builder()
+            .url(format!("http://{}:{}", self.config.host, self.config.port))
+            .build();
         let config = Config::builder()
-            .endpoint_url(endpoint)
+            .endpoint_url(format!("http://{}:{}", self.config.host, self.config.port))
             .region(Region::new(region))
             .credentials_provider(SharedCredentialsProvider::new(credentials))
             .build();

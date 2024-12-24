@@ -98,6 +98,7 @@ impl S3Config {
         let config = Config::builder()
             .endpoint_url(format!("http://{}:{}", self.config.host, self.config.port))
             .region(Region::new(region))
+            .force_path_style(true)
             .credentials_provider(SharedCredentialsProvider::new(credentials))
             .build();
 

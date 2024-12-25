@@ -1720,6 +1720,146 @@ const IconDiv = ({ node, selectedRows }) => {
             </Tooltip.Provider>
           </div>
         </>
+      ) : node.data.iconName === "textFile" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-file-text ml-6"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+              <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z" />
+              <path d="M9 9l1 0" />
+              <path d="M9 13l6 0" />
+              <path d="M9 17l6 0" />
+            </svg>
+          )}
+          <p className="flex-none text-sm">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
+      ) : node.data.iconName === "folder" ? (
+        <>
+          {node.data.showSecondIcon && (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={iconWidth}
+              height={iconHeight}
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              class="icon icon-tabler icons-tabler-filled icon-tabler-folder"
+            >
+              <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+              <path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z" />
+            </svg>
+          )}
+          <p className="flex-none text-sm">{node.data.name}</p>
+          <p
+            className={`flex-none text-xs ${
+              selectedRows[node.id]
+                ? "bg-accent text-accent-foreground"
+                : "hover:bg-muted/50"
+            }`}
+          >
+            {node.data.description}
+          </p>
+          <div
+            className={`absolute right-0 ml-auto flex flex-row  pr-3 ${
+              selectedRows[node.id]
+                ? "group-hover/item:bg-accent"
+                : "group-hover/item:bg-muted"
+            }`}
+          >
+            <Tooltip.Provider delayDuration={delayDuration}>
+              <Tooltip.Root>
+                <Tooltip.Trigger asChild>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={iconWidth}
+                    height={iconHeight}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
+                    onClick={handleRefreshClick}
+                  >
+                    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
+                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                  </svg>
+                </Tooltip.Trigger>
+                <Tooltip.Portal>
+                  <Tooltip.Content
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    sideOffset={5}
+                  >
+                    <p>Refresh</p>
+                    <Tooltip.Arrow className="fill-muted" />
+                  </Tooltip.Content>
+                </Tooltip.Portal>
+              </Tooltip.Root>
+            </Tooltip.Provider>
+          </div>
+        </>
       ) : node.data.iconName === "schema" ? (
         <>
           {node.data.showSecondIcon && (

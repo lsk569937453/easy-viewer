@@ -2,6 +2,7 @@ use super::clickhouse_service::ClickhouseConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
+use super::s3_service::S3Config;
 use crate::service::mongdb_service::MongodbConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
 use crate::service::sqlite_service::SqliteConfig;
@@ -35,6 +36,8 @@ pub enum BaseConfigEnum {
     Mssql(MssqlConfig),
     #[serde(rename = "clickhouse")]
     Clickhouse(ClickhouseConfig),
+    #[serde(rename = "s3")]
+    S3(S3Config),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -48,6 +51,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Oracledb(config) => config.test_connection()?,
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
             BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
+            BaseConfigEnum::S3(config) => config.test_connection().await?,
             _ => {}
         }
 
@@ -75,6 +79,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Oracledb(_) => 5,
             BaseConfigEnum::Mssql(_) => 6,
             BaseConfigEnum::Clickhouse(_) => 7,
+            BaseConfigEnum::S3(_) => 8,
         }
     }
     pub async fn list_node_info(
@@ -104,6 +109,9 @@ impl BaseConfigEnum {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Clickhouse(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::S3(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),

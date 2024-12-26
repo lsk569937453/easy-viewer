@@ -137,7 +137,7 @@ impl S3Config {
                         .await?
                         .content_type
                         .unwrap_or_default();
-                    info!("head_object: {}", head_object);
+                    info!("head_objects: {}", head_object);
                     let list_node_item = ListNodeInfoResponseItem::new(
                         false,
                         true,

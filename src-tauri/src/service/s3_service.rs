@@ -109,14 +109,15 @@ impl S3Config {
 
                 let prefix = list
                     .iter()
-                    .skip(1)
+                    .skip(2)
                     .map(|item| item.config_value.clone())
                     .join("/");
                 info!("level_infos: {}", list.len());
                 info!("prefix: {}", prefix);
+                let prefix = format!("{}/", prefix);
                 let resp = client
                     .list_objects_v2()
-                    .prefix(prefix)
+                    .prefix(prefix.clone())
                     .delimiter("/")
                     .bucket(bucket_name.clone())
                     .send()
@@ -125,6 +126,9 @@ impl S3Config {
 
                 for object in resp.contents() {
                     let key = object.key().unwrap_or_default();
+                    if key == prefix {
+                        continue;
+                    }
                     let head_object = client
                         .head_object()
                         .bucket(bucket_name.clone())
@@ -133,7 +137,7 @@ impl S3Config {
                         .await?
                         .content_type
                         .unwrap_or_default();
-                    info!("head_object: {}", head_object);
+                    info!("head_objects: {}", head_object);
                     let list_node_item = ListNodeInfoResponseItem::new(
                         false,
                         true,

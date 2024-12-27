@@ -58,7 +58,6 @@ impl S3Config {
                 let bucket_name = list[1].config_value.clone();
                 info!("bucket_name: {}", bucket_name);
                 let client = self.get_connection().await?;
-                info!("before list_objects_v2");
                 let resp = client
                     .list_objects_v2()
                     .delimiter("/")

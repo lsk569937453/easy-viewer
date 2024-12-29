@@ -63,7 +63,6 @@ impl S3Config {
                     .bucket(bucket_name.clone())
                     .send()
                     .await?;
-                info!("after list_objects_v2");
 
                 for object in resp.contents() {
                     let key = object.key().unwrap_or_default();

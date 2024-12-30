@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react"
 import * as Tooltip from "@radix-ui/react-tooltip"
 import { menu } from "@tauri-apps/api"
 import { invoke } from "@tauri-apps/api/core"
+import { save } from "@tauri-apps/plugin-dialog"
 
 import { useToast } from "@/components/ui/use-toast"
 
@@ -367,6 +368,41 @@ const IconDiv = ({ node, selectedRows }) => {
     console.log(node, menulist)
     e.stopPropagation()
     clickNode(node, menulist, setMenulist)
+  }
+  const handleDownloadFileClick = async (e) => {
+    e.stopPropagation()
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+    const selected = await save({
+      defaultPath: node.data.name,
+      filters: [{ name: "All Files", extensions: [] }],
+    })
+    console.log(selected)
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("download_file", {
+        listNodeInfoReq: listNodeInfoReq,
+        destination: selected,
+      })
+    )
+    if (response_code !== 0) {
+      toast({
+        variant: "destructive",
+        title: "操作信息",
+        description: response_msg,
+      })
+    } else {
+      toast({
+        title: "操作信息",
+        description: "下载成功",
+      })
+    }
   }
   return (
     <>
@@ -1774,11 +1810,12 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={handleRefreshClick}
+                    onClick={handleDownloadFileClick}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                    <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4" />
-                    <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+                    <path d="M12 18.004h-5.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.38 0 2.573 .813 3.13 1.99" />
+                    <path d="M19 16v6" />
+                    <path d="M22 19l-3 3l-3 -3" />
                   </svg>
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
@@ -1786,7 +1823,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
                     sideOffset={5}
                   >
-                    <p>Refresh</p>
+                    <p>Download</p>
                     <Tooltip.Arrow className="fill-muted" />
                   </Tooltip.Content>
                 </Tooltip.Portal>

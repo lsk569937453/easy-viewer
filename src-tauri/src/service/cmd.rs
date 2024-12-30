@@ -1,5 +1,3 @@
-use std::time::Instant;
-
 use super::cmd_service::delete_base_config_with_error;
 use super::cmd_service::exe_sql_with_error;
 use super::cmd_service::get_base_config_by_id_with_error;
@@ -12,6 +10,7 @@ use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
+use crate::service::cmd_service::download_file_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
 use crate::service::cmd_service::drop_table_with_error;
@@ -37,6 +36,7 @@ use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
+use std::time::Instant;
 use tauri::State;
 macro_rules! handle_response {
     ($result:expr) => {
@@ -93,6 +93,7 @@ pub async fn delete_base_config(
     let res = handle_response!(delete_base_config_with_error(state, base_config_id).await);
     Ok(res)
 }
+
 #[tauri::command]
 pub async fn get_base_config(state: State<'_, AppState>) -> Result<String, ()> {
     let res = handle_response!(get_base_config_with_error(state).await);
@@ -149,6 +150,18 @@ pub async fn exe_sql(
     let time = Instant::now();
     let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
     info!("exe_sql: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn download_file(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    destination: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res =
+        handle_response!(download_file_with_error(state, list_node_info_req, destination).await);
+    info!("download_file: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

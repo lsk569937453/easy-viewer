@@ -8,9 +8,12 @@ use aws_sdk_s3::config::Region;
 use aws_sdk_s3::config::SharedCredentialsProvider;
 use aws_sdk_s3::Client;
 use aws_sdk_s3::Config;
+use human_bytes::human_bytes;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 #[derive(Deserialize, Serialize, Clone)]
 pub struct S3Config {
     pub config: S3Struct,
@@ -25,6 +28,42 @@ pub struct S3Struct {
     pub region: String,
 }
 impl S3Config {
+    pub async fn download_file(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        local_file_path: String,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            "download_file: {:?},local_file_path:{}",
+            list_node_info_req, local_file_path
+        );
+        let list = list_node_info_req.level_infos;
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+
+        let object_key = list
+            .iter()
+            .skip(2)
+            .map(|item| item.config_value.clone())
+            .join("/");
+        info!("object_path: {}", object_key);
+        let get_object_output = s3_client
+            .get_object()
+            .bucket(bucket_name)
+            .key(object_key)
+            .send()
+            .await?;
+        let byte_stream = get_object_output.body;
+        let data = byte_stream.collect().await?;
+
+        let mut file = File::create(local_file_path.clone()).await?;
+        file.write_all(data.to_vec().as_slice()).await?;
+
+        info!("File downloaded to {}", local_file_path);
+        Ok(())
+    }
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -56,34 +95,31 @@ impl S3Config {
             }
             2 => {
                 let bucket_name = list[1].config_value.clone();
-                info!("bucket_name: {}", bucket_name);
                 let client = self.get_connection().await?;
-                info!("before list_objects_v2");
                 let resp = client
                     .list_objects_v2()
                     .delimiter("/")
                     .bucket(bucket_name.clone())
                     .send()
                     .await?;
-                info!("after list_objects_v2");
 
                 for object in resp.contents() {
                     let key = object.key().unwrap_or_default();
-                    let head_object = client
+                    let content_length = client
                         .head_object()
                         .bucket(bucket_name.clone())
                         .key(key)
                         .send()
                         .await?
-                        .content_type
+                        .content_length()
                         .unwrap_or_default();
-                    info!("head_object: {}", head_object);
+                    info!("content_length: {}", content_length);
                     let list_node_item = ListNodeInfoResponseItem::new(
                         false,
                         true,
                         "textFile".to_string(),
                         key.to_string(),
-                        None,
+                        Some(human_bytes(content_length as f64)),
                     );
 
                     vecs.push(list_node_item);
@@ -129,21 +165,21 @@ impl S3Config {
                     if key == prefix {
                         continue;
                     }
-                    let head_object = client
+                    let content_length = client
                         .head_object()
                         .bucket(bucket_name.clone())
                         .key(key)
                         .send()
                         .await?
-                        .content_type
+                        .content_length()
                         .unwrap_or_default();
-                    info!("head_objects: {}", head_object);
+                    info!("content_length: {}", content_length);
                     let list_node_item = ListNodeInfoResponseItem::new(
                         false,
                         true,
                         "textFile".to_string(),
                         key.to_string(),
-                        None,
+                        Some(human_bytes(content_length as f64)),
                     );
 
                     vecs.push(list_node_item);

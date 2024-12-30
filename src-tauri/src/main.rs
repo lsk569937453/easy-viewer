@@ -107,6 +107,7 @@ async fn main() -> Result<(), anyhow::Error> {
         .invoke_handler(tauri::generate_handler![
             delete_base_config,
             download_file,
+            upload_file,
             drop_column,
             drop_index,
             drop_table,

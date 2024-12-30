@@ -28,6 +28,14 @@ pub struct S3Struct {
     pub region: String,
 }
 impl S3Config {
+    pub async fn upload_file(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        local_file_path: String,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
     pub async fn download_file(
         &self,
         list_node_info_req: ListNodeInfoReq,

@@ -424,9 +424,9 @@ const IconDiv = ({ node, selectedRows }) => {
     } else {
     }
     const { response_code, response_msg } = JSON.parse(
-      await invoke("download_file", {
+      await invoke("upload_file", {
         listNodeInfoReq: listNodeInfoReq,
-        destination: selected,
+        localFilePath: selected,
       })
     )
     if (response_code !== 0) {
@@ -438,7 +438,7 @@ const IconDiv = ({ node, selectedRows }) => {
     } else {
       toast({
         title: "操作信息",
-        description: "下载成功",
+        description: "上传成功",
       })
     }
   }

@@ -19,6 +19,7 @@ import {
 import { clickNode } from "../../lib/node.jsx"
 import QueryPage from "../page/queryPage.jsx"
 import TablePage from "../page/tablePage.jsx"
+import BucketNodeContextMenu from "./contextMenu/bucketNodeContextMenu.jsx"
 import DatabaseNodeContextMenu from "./contextMenu/databaseNodeContextMenu.jsx"
 import SingleColumnNodeContextMenu from "./contextMenu/singleColumnNodeContextMenu.jsx"
 import SingleIndexNodeContextMenu from "./contextMenu/singleIndexNodeContextMenu.jsx"
@@ -269,6 +270,8 @@ const TreeNode = ({
       "primary",
       "singlePrimaryIndex",
       "singleCommonIndex",
+      "bucket",
+      "folder",
     ]
     if (contextMenuArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
@@ -315,6 +318,9 @@ const TreeNode = ({
         {(node.data.iconName == "singlePrimaryIndex" ||
           node.data.iconName == "singleCommonIndex") && (
           <SingleIndexNodeContextMenu node={node} />
+        )}
+        {(node.data.iconName == "bucket" || node.data.iconName == "folder") && (
+          <BucketNodeContextMenu node={node} />
         )}
       </ControlledMenu>
       {node.data.showFirstIcon && node.isOpen && (

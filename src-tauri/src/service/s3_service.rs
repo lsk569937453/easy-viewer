@@ -6,14 +6,21 @@ use aws_sdk_s3::config::endpoint::Endpoint;
 use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::config::Region;
 use aws_sdk_s3::config::SharedCredentialsProvider;
+// use aws_sdk_s3::model::PutObjectRequest;
+// use aws_sdk_s3::types::ByteStream;
+use aws_sdk_s3::primitives::ByteStream;
 use aws_sdk_s3::Client;
 use aws_sdk_s3::Config;
 use human_bytes::human_bytes;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
+use std::path::Path;
 use tokio::fs::File;
+use tokio::io::AsyncReadExt;
+
 use tokio::io::AsyncWriteExt;
+
 #[derive(Deserialize, Serialize, Clone)]
 pub struct S3Config {
     pub config: S3Struct,
@@ -34,6 +41,47 @@ impl S3Config {
         _appstate: &AppState,
         local_file_path: String,
     ) -> Result<(), anyhow::Error> {
+        info!(
+            "uploadfile: {:?},local_file_path:{}",
+            list_node_info_req, local_file_path
+        );
+        let list = list_node_info_req.level_infos;
+        let path = Path::new(&local_file_path);
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+
+        let object_key_prefix = list
+            .iter()
+            .skip(2)
+            .map(|item| item.config_value.clone())
+            .join("/");
+
+        let object_key = format!(
+            "{}/{}",
+            object_key_prefix,
+            path.file_name()
+                .ok_or(anyhow!(""))?
+                .to_str()
+                .ok_or(anyhow!(""))?
+        );
+        info!(
+            "object_path_prefix: {},object_key:{}",
+            object_key_prefix, object_key
+        );
+        let mut file = File::open(local_file_path).await?;
+        let mut file_contents = Vec::new();
+        file.read_to_end(&mut file_contents).await?;
+
+        let byte_stream = ByteStream::from(file_contents);
+
+        s3_client
+            .put_object()
+            .bucket(bucket_name)
+            .key(object_key)
+            .body(byte_stream)
+            .send()
+            .await?;
         Ok(())
     }
     pub async fn download_file(
@@ -182,11 +230,12 @@ impl S3Config {
                         .content_length()
                         .unwrap_or_default();
                     info!("content_length: {}", content_length);
+                    let file_name = key.split("/").last().unwrap_or_default();
                     let list_node_item = ListNodeInfoResponseItem::new(
                         false,
                         true,
                         "textFile".to_string(),
-                        key.to_string(),
+                        file_name.to_string(),
                         Some(human_bytes(content_length as f64)),
                     );
 

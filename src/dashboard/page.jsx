@@ -43,6 +43,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
+import CreateFolderDialog from "./components/dialog/createFolderDialog"
 import DropColumnDialog from "./components/dialog/dropColumnDialog"
 import DropDatabaseDialog from "./components/dialog/dropDatabaseDialog"
 import DropIndexDialog from "./components/dialog/dropIndexDialog"
@@ -89,6 +90,7 @@ const useDialog = () => {
   const [showTruncateTableDialog, setShowTruncateTableDialog] = useState(false)
   const [showDropColumnDialog, setShowDropColumnDialog] = useState(false)
   const [showDropIndexDialog, setShowDropIndexDialog] = useState(false)
+  const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false)
   return {
     showDropDatabaseDialog,
     setShowDropDatabaseDialog,
@@ -112,6 +114,8 @@ const useDialog = () => {
     setShowDropColumnDialog,
     showDropIndexDialog,
     setShowDropIndexDialog,
+    showCreateFolderDialog,
+    setShowCreateFolderDialog,
   }
 }
 export const MainPageDialogContext = createContext({
@@ -126,12 +130,14 @@ export const MainPageDialogContext = createContext({
   setShowTruncateTableDialog: () => {},
   setShowDropColumnDialog: () => {},
   setShowDropIndexDialog: () => {},
+  setShowCreateFolderDialog: () => {},
   showTruncateDatabaseDialog: false,
   showDropDatabaseDialog: false,
   showDropTableDialog: false,
   showTruncateTableDialog: false,
   showDropColumnDialog: false,
   showDropIndexDialog: false,
+  showCreateFolderDialog: false,
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -168,6 +174,8 @@ const DashboardPage = () => {
     setShowDropColumnDialog,
     showDropIndexDialog,
     setShowDropIndexDialog,
+    showCreateFolderDialog,
+    setShowCreateFolderDialog,
   } = useDialog()
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
@@ -395,6 +403,8 @@ const DashboardPage = () => {
             setShowDropColumnDialog,
             showDropIndexDialog,
             setShowDropIndexDialog,
+            setShowCreateFolderDialog,
+            showCreateFolderDialog,
           }}
         >
           <div className="flex h-screen flex-col overflow-hidden ">
@@ -448,7 +458,7 @@ const DashboardPage = () => {
                   <TruncateTableDialog node={nodeForUpdate} />
                   <DropColumnDialog node={nodeForUpdate} />
                   <DropIndexDialog node={nodeForUpdate} />
-
+                  <CreateFolderDialog node={nodeForUpdate} />
                   <Dialog
                     open={showEditConnectionDialog}
                     onOpenChange={setShowEditConnectionDialog}

@@ -520,6 +520,57 @@ pub async fn move_column_with_error(
         .await?;
     Ok(list)
 }
+pub async fn create_folder_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    folder_name: String,
+) -> Result<(), anyhow::Error> {
+    info!(
+        " create_folder list_node_info_req: {:?}",
+        list_node_info_req
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .create_folder(state.inner(), list_node_info_req, folder_name)
+        .await?;
+    Ok(())
+}
+
+pub async fn delete_bucket_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<(), anyhow::Error> {
+    info!(
+        " delete_bucket_with_error list_node_info_req: {:?}",
+        list_node_info_req
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .delete_bucket(state.inner(), list_node_info_req)
+        .await?;
+    Ok(())
+}
+
 pub async fn get_complete_words_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

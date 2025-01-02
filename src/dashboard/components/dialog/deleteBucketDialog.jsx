@@ -12,7 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { useToast } from "@/components/ui/use-toast"
 
 import {
@@ -24,55 +23,52 @@ import {
 } from "../../../lib/jsx-utils"
 import { MainPageDialogContext, SidebarContext } from "../../page"
 
-const CreateFolderDialog = ({ node }) => {
+const DeleteBucketDialog = ({ node }) => {
   const { toast } = useToast()
-  const [folderName, setFolderName] = useState("")
-  const { showCreateFolderDialog, setShowCreateFolderDialog } = useContext(
+
+  const { showDeleteBucketDialog, setShowDeleteBucketDialog } = useContext(
     MainPageDialogContext
   )
   const { menulist, setMenulist } = useContext(SidebarContext)
-  const handleCreateFolderOnClick = async (e) => {
+  const handleDeleteBucketOnClick = async (e) => {
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
     console.log(listNodeInfoReq)
     const { response_code, response_msg } = JSON.parse(
-      await invoke("create_folder", {
-        listNodeInfoReq: listNodeInfoReq,
-        folderName: folderName,
-      })
+      await invoke("delete_bucket", { listNodeInfoReq: listNodeInfoReq })
     )
     console.log(response_code, response_msg)
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "Drop Column Error",
+        title: "Delete Error",
         description: response_msg,
       })
       return
     } else {
       toast({
         title: "Success",
-        description: "Drop Column Success",
+        description: "Delete Success",
       })
       reloadNode(node, menulist, setMenulist)
     }
   }
   return (
     <Dialog
-      open={showCreateFolderDialog}
-      onOpenChange={setShowCreateFolderDialog}
+      open={showDeleteBucketDialog}
+      onOpenChange={setShowDeleteBucketDialog}
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Folder</DialogTitle>
-          <div className="p-4">
-            <Input
-              placeholder="Folder name"
-              value={folderName}
-              onChange={(e) => setFolderName(e.target.value)}
-            />
-          </div>
+          <DialogTitle>Delete The Bucket</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete the{" "}
+            <span className="font-bold">{node?.data?.name}?</span>
+          </DialogDescription>
+          <DialogDescription>
+            A bucket can only be deleted if it's empty.
+          </DialogDescription>
         </DialogHeader>
 
         <DialogFooter className="sm:justify-end">
@@ -81,8 +77,12 @@ const CreateFolderDialog = ({ node }) => {
               <Button type="button" variant="secondary">
                 Cancel
               </Button>
-              <Button type="button" onClick={handleCreateFolderOnClick}>
-                Create
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDeleteBucketOnClick}
+              >
+                Delete
               </Button>
             </div>
           </DialogClose>
@@ -91,4 +91,4 @@ const CreateFolderDialog = ({ node }) => {
     </Dialog>
   )
 }
-export default CreateFolderDialog
+export default DeleteBucketDialog

@@ -44,6 +44,7 @@ import { useToast } from "@/components/ui/use-toast"
 import { getIconNameByType, uuid } from "../lib/jsx-utils"
 import { clickNode } from "../lib/node"
 import CreateFolderDialog from "./components/dialog/createFolderDialog"
+import DeleteBucketDialog from "./components/dialog/deleteBucketDialog"
 import DropColumnDialog from "./components/dialog/dropColumnDialog"
 import DropDatabaseDialog from "./components/dialog/dropDatabaseDialog"
 import DropIndexDialog from "./components/dialog/dropIndexDialog"
@@ -91,6 +92,7 @@ const useDialog = () => {
   const [showDropColumnDialog, setShowDropColumnDialog] = useState(false)
   const [showDropIndexDialog, setShowDropIndexDialog] = useState(false)
   const [showCreateFolderDialog, setShowCreateFolderDialog] = useState(false)
+  const [showDeleteBucketDialog, setShowDeleteBucketDialog] = useState(false)
   return {
     showDropDatabaseDialog,
     setShowDropDatabaseDialog,
@@ -116,6 +118,8 @@ const useDialog = () => {
     setShowDropIndexDialog,
     showCreateFolderDialog,
     setShowCreateFolderDialog,
+    showDeleteBucketDialog,
+    setShowDeleteBucketDialog,
   }
 }
 export const MainPageDialogContext = createContext({
@@ -131,6 +135,7 @@ export const MainPageDialogContext = createContext({
   setShowDropColumnDialog: () => {},
   setShowDropIndexDialog: () => {},
   setShowCreateFolderDialog: () => {},
+  setShowDeleteBucketDialog: () => {},
   showTruncateDatabaseDialog: false,
   showDropDatabaseDialog: false,
   showDropTableDialog: false,
@@ -138,6 +143,7 @@ export const MainPageDialogContext = createContext({
   showDropColumnDialog: false,
   showDropIndexDialog: false,
   showCreateFolderDialog: false,
+  showDeleteBucketDialog: false,
 })
 const DashboardPage = () => {
   const { t, i18n } = useTranslation()
@@ -176,6 +182,8 @@ const DashboardPage = () => {
     setShowDropIndexDialog,
     showCreateFolderDialog,
     setShowCreateFolderDialog,
+    showDeleteBucketDialog,
+    setShowDeleteBucketDialog,
   } = useDialog()
   const [saveQueryTabIndex, setSaveQueryTabIndex] = useState(0)
   const [event, setEvent] = useState({})
@@ -405,6 +413,8 @@ const DashboardPage = () => {
             setShowDropIndexDialog,
             setShowCreateFolderDialog,
             showCreateFolderDialog,
+            setShowDeleteBucketDialog,
+            showDeleteBucketDialog,
           }}
         >
           <div className="flex h-screen flex-col overflow-hidden ">
@@ -459,6 +469,7 @@ const DashboardPage = () => {
                   <DropColumnDialog node={nodeForUpdate} />
                   <DropIndexDialog node={nodeForUpdate} />
                   <CreateFolderDialog node={nodeForUpdate} />
+                  <DeleteBucketDialog node={nodeForUpdate} />
                   <Dialog
                     open={showEditConnectionDialog}
                     onOpenChange={setShowEditConnectionDialog}

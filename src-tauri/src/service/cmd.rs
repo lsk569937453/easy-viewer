@@ -10,6 +10,8 @@ use crate::common_tools::about::get_about_version_with_error;
 use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
+use crate::service::cmd_service::create_folder_with_error;
+use crate::service::cmd_service::delete_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
@@ -258,6 +260,31 @@ pub async fn move_column(
     let res =
         handle_response!(move_column_with_error(state, list_node_info_req, move_direction).await);
     info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn create_folder(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    folder_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res =
+        handle_response!(create_folder_with_error(state, list_node_info_req, folder_name).await);
+    info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+
+pub async fn delete_bucket(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(delete_bucket_with_error(state, list_node_info_req).await);
+    info!("save_query:  {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

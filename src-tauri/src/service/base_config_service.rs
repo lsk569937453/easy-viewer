@@ -451,6 +451,38 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn create_folder(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        folder_name: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => {
+                config
+                    .create_folder(list_node_info_req, appstate, folder_name)
+                    .await?
+            }
+
+            _ => Err(anyhow!("Other type not support move column except mysql."))?,
+        };
+        Ok(())
+    }
+
+    pub async fn delete_bucket(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => {
+                config.delete_bucket(list_node_info_req, appstate).await?
+            }
+
+            _ => Err(anyhow!("Other type not support move column except mysql."))?,
+        };
+        Ok(())
+    }
     pub async fn get_complete_words(
         &self,
         list_node_info_req: ListNodeInfoReq,

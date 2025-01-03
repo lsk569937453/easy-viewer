@@ -35,6 +35,109 @@ pub struct S3Struct {
     pub region: String,
 }
 impl S3Config {
+    pub async fn delete_bucket(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<(), anyhow::Error> {
+        info!("delete_bucket: {:?}", list_node_info_req);
+
+        let list = list_node_info_req.level_infos;
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+        self.download_s3_bucket(&s3_client, &bucket_name, "d:\\test\\test")
+            .await?;
+        s3_client.delete_bucket().bucket(bucket_name).send().await?;
+        Ok(())
+    }
+    async fn download_s3_bucket(
+        &self,
+        client: &Client,
+        bucket_name: &str,
+        local_path: &str,
+    ) -> Result<(), anyhow::Error> {
+        let objects = client.list_objects_v2().bucket(bucket_name).send().await?;
+
+        for object in objects.contents() {
+            info!("key: {}", object.key().ok_or(anyhow!(""))?);
+            // if let Some(key) = object.key() {
+            //     let new_key = key.to_string().replace("/", "\\");
+            //     info!("key: {}", key);
+            //     let local_file_path = format!("{}\\{}", local_path, new_key);
+            //     info!("local_file_path: {}", local_file_path);
+            //     let parent_dir = Path::new(&local_file_path).parent().unwrap();
+            //     info!("parent path: {:?}", parent_dir);
+
+            //     std::fs::create_dir_all(parent_dir)?;
+
+            //     let resp = client
+            //         .get_object()
+            //         .bucket(bucket_name)
+            //         .key(key)
+            //         .send()
+            //         .await?;
+            //     let content_type = resp.content_type().ok_or(anyhow!(""))?;
+            //     let metadata = std::fs::metadata(local_file_path.clone())?;
+            //     if metadata.is_dir() ||metadata.is_file() {
+            //         continue;
+            //     }
+
+            //     info!("content_type: {}", content_type);
+            //     if content_type.contains("text/html") || content_type.contains("text/plain") {
+            //         let metadata = std::fs::metadata(local_file_path.clone())?;
+            //         if metadata.is_dir() {
+            //             info!("create dir");
+            //             std::fs::create_dir_all(local_file_path)?;
+            //         }
+
+            //         continue;
+            //     }
+
+            //     let mut file = tokio::fs::File::create(local_file_path.clone()).await?;
+            //     let mut stream = resp.body;
+            //     info!("file: {}", local_file_path);
+            //     while let Some(bytes) = stream.try_next().await? {
+            //         file.write_all(&bytes).await?;
+            //     }
+            // }
+        }
+
+        Ok(())
+    }
+    pub async fn create_folder(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        folder_name: String,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            "create_folder: {:?},folder_name:{}",
+            list_node_info_req, folder_name
+        );
+        let list = list_node_info_req.level_infos;
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+
+        let object_key_prefix = list
+            .iter()
+            .skip(2)
+            .map(|item| item.config_value.clone())
+            .join("/");
+        let object_key = format!("{}/{}/", object_key_prefix, folder_name);
+        info!(
+            "object_path_prefix: {},object_key:{}",
+            object_key_prefix, object_key
+        );
+        s3_client
+            .put_object()
+            .bucket(bucket_name)
+            .key(object_key)
+            .send()
+            .await?;
+        Ok(())
+    }
     pub async fn upload_file(
         &self,
         list_node_info_req: ListNodeInfoReq,

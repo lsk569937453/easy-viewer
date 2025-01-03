@@ -50,9 +50,14 @@ const BucketNodeContextMenu = ({ node }) => {
     setMenulist,
   } = useContext(SidebarContext)
 
-  const { setShowDropIndexDialog, setShowCreateFolderDialog } = useContext(
-    MainPageDialogContext
-  )
+  const {
+    setShowDeleteBucketDialog,
+    showDeleteBucketDialog,
+    setShowCreateFolderDialog,
+    showCreateFolderDialog,
+    setShowRenameBucketDialog,
+    showRenameBucketDialog,
+  } = useContext(MainPageDialogContext)
 
   const handleDropColumnOnClick = (e) => {
     e.syntheticEvent.stopPropagation()
@@ -75,6 +80,13 @@ const BucketNodeContextMenu = ({ node }) => {
     setShowCreateFolderDialog(true)
     setNodeForUpdate(node)
   }
+  const handleDeleteBucketOnClick = (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    setShowDeleteBucketDialog(true)
+    setNodeForUpdate(node)
+  }
+
   return (
     <>
       <MenuItem onClick={(e) => handleCopyNameOnClick(e)} className="text-xs">
@@ -85,12 +97,13 @@ const BucketNodeContextMenu = ({ node }) => {
         New Folder
       </MenuItem>
       <Separator />
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDeleteBucketOnClick(e)}
+        className="text-xs"
+      >
         Delete
       </MenuItem>
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
-        Rename
-      </MenuItem>
+
       <Separator />
       <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
         Download

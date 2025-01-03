@@ -109,6 +109,7 @@ async fn main() -> Result<(), anyhow::Error> {
             delete_base_config,
             delete_bucket,
             download_file,
+            download_bucket,
             upload_file,
             drop_column,
             drop_index,

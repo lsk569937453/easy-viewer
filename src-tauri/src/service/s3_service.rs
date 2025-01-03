@@ -16,6 +16,7 @@ use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
+use std::path::PathBuf;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 
@@ -35,6 +36,52 @@ pub struct S3Struct {
     pub region: String,
 }
 impl S3Config {
+    pub async fn download_bucket(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        local_file_path: String,
+    ) -> Result<(), anyhow::Error> {
+        info!("delete_bucket: {:?}", list_node_info_req);
+
+        let list = list_node_info_req.level_infos;
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+        let objects = s3_client
+            .list_objects_v2()
+            .bucket(bucket_name.clone())
+            .send()
+            .await?;
+
+        for object in objects.contents() {
+            let key = object.key().ok_or(anyhow!(""))?;
+
+            if key.ends_with("/") {
+                let s3_path: Vec<&str> = key.split("/").collect();
+                let mut local_path = PathBuf::from(&local_file_path);
+                local_path.extend(s3_path.iter());
+                std::fs::create_dir_all(local_path.as_path())?;
+                continue;
+            }
+            let s3_path: Vec<&str> = key.split("/").collect();
+            let mut local_path = PathBuf::from(&local_file_path);
+            local_path.extend(s3_path.iter());
+            let mut file = tokio::fs::File::create(local_path).await?;
+            let resp = s3_client
+                .get_object()
+                .bucket(bucket_name.clone())
+                .key(key)
+                .send()
+                .await?;
+            let mut stream = resp.body;
+            info!("file: {}", local_file_path);
+            while let Some(bytes) = stream.try_next().await? {
+                file.write_all(&bytes).await?;
+            }
+        }
+        Ok(())
+    }
     pub async fn delete_bucket(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -55,52 +102,35 @@ impl S3Config {
         &self,
         client: &Client,
         bucket_name: &str,
-        local_path: &str,
+        local_file_path: &str,
     ) -> Result<(), anyhow::Error> {
         let objects = client.list_objects_v2().bucket(bucket_name).send().await?;
 
         for object in objects.contents() {
-            info!("key: {}", object.key().ok_or(anyhow!(""))?);
-            // if let Some(key) = object.key() {
-            //     let new_key = key.to_string().replace("/", "\\");
-            //     info!("key: {}", key);
-            //     let local_file_path = format!("{}\\{}", local_path, new_key);
-            //     info!("local_file_path: {}", local_file_path);
-            //     let parent_dir = Path::new(&local_file_path).parent().unwrap();
-            //     info!("parent path: {:?}", parent_dir);
+            let key = object.key().ok_or(anyhow!(""))?;
 
-            //     std::fs::create_dir_all(parent_dir)?;
-
-            //     let resp = client
-            //         .get_object()
-            //         .bucket(bucket_name)
-            //         .key(key)
-            //         .send()
-            //         .await?;
-            //     let content_type = resp.content_type().ok_or(anyhow!(""))?;
-            //     let metadata = std::fs::metadata(local_file_path.clone())?;
-            //     if metadata.is_dir() ||metadata.is_file() {
-            //         continue;
-            //     }
-
-            //     info!("content_type: {}", content_type);
-            //     if content_type.contains("text/html") || content_type.contains("text/plain") {
-            //         let metadata = std::fs::metadata(local_file_path.clone())?;
-            //         if metadata.is_dir() {
-            //             info!("create dir");
-            //             std::fs::create_dir_all(local_file_path)?;
-            //         }
-
-            //         continue;
-            //     }
-
-            //     let mut file = tokio::fs::File::create(local_file_path.clone()).await?;
-            //     let mut stream = resp.body;
-            //     info!("file: {}", local_file_path);
-            //     while let Some(bytes) = stream.try_next().await? {
-            //         file.write_all(&bytes).await?;
-            //     }
-            // }
+            if key.ends_with("/") {
+                let s3_path: Vec<&str> = key.split("/").collect();
+                let mut local_path = PathBuf::from(&local_file_path);
+                local_path.extend(s3_path.iter());
+                std::fs::create_dir_all(local_path.as_path())?;
+                continue;
+            }
+            let s3_path: Vec<&str> = key.split("/").collect();
+            let mut local_path = PathBuf::from(&local_file_path);
+            local_path.extend(s3_path.iter());
+            let mut file = tokio::fs::File::create(local_path).await?;
+            let resp = client
+                .get_object()
+                .bucket(bucket_name)
+                .key(key)
+                .send()
+                .await?;
+            let mut stream = resp.body;
+            info!("file: {}", local_file_path);
+            while let Some(bytes) = stream.try_next().await? {
+                file.write_all(&bytes).await?;
+            }
         }
 
         Ok(())
@@ -261,6 +291,17 @@ impl S3Config {
                     .bucket(bucket_name.clone())
                     .send()
                     .await?;
+                let prefixes = resp.common_prefixes();
+                for prefix in prefixes {
+                    let prefix = prefix.prefix().unwrap_or_default().replace("/", "");
+                    vecs.push(ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "folder".to_string(),
+                        prefix.to_string(),
+                        None,
+                    ));
+                }
 
                 for object in resp.contents() {
                     let key = object.key().unwrap_or_default();
@@ -282,18 +323,6 @@ impl S3Config {
                     );
 
                     vecs.push(list_node_item);
-                }
-                let prefixes = resp.common_prefixes();
-                for prefix in prefixes {
-                    let prefix = prefix.prefix().unwrap_or_default().replace("/", "");
-                    vecs.push(ListNodeInfoResponseItem::new(
-                        true,
-                        true,
-                        "folder".to_string(),
-                        prefix.to_string(),
-                        None,
-                    ));
-                    println!("Directory (prefix): {}", prefix);
                 }
 
                 return Ok(ListNodeInfoResponse::new(vecs));
@@ -318,7 +347,25 @@ impl S3Config {
                     .send()
                     .await?;
                 info!("after list_objects_v2");
-
+                let prefixes = resp.common_prefixes();
+                for prefix in prefixes {
+                    let prefix_str = prefix.prefix().unwrap_or_default().to_string();
+                    let prefix = prefix
+                        .prefix()
+                        .unwrap_or_default()
+                        .to_string()
+                        .pop()
+                        .split("/")
+                        .last()
+                        .unwrap();
+                    vecs.push(ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        "folder".to_string(),
+                        prefix.to_string(),
+                        None,
+                    ));
+                }
                 for object in resp.contents() {
                     let key = object.key().unwrap_or_default();
                     if key == prefix {
@@ -343,18 +390,6 @@ impl S3Config {
                     );
 
                     vecs.push(list_node_item);
-                }
-                let prefixes = resp.common_prefixes();
-                for prefix in prefixes {
-                    let prefix = prefix.prefix().unwrap_or_default().replace("/", "");
-                    vecs.push(ListNodeInfoResponseItem::new(
-                        true,
-                        true,
-                        "folder".to_string(),
-                        prefix.to_string(),
-                        None,
-                    ));
-                    println!("Directory (prefix): {}", prefix);
                 }
 
                 return Ok(ListNodeInfoResponse::new(vecs));

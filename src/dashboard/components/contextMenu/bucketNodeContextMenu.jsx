@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useRef, useState } from "react"
 import { ControlledMenu, MenuItem, SubMenu } from "@szhsin/react-menu"
 import { invoke } from "@tauri-apps/api/core"
+import { open } from "@tauri-apps/plugin-dialog"
 
 import {
   Menubar,
@@ -86,7 +87,88 @@ const BucketNodeContextMenu = ({ node }) => {
     setShowDeleteBucketDialog(true)
     setNodeForUpdate(node)
   }
+  const handleDownloadBucketOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    const selected = await open({
+      directory: true,
+      multiple: false,
+    })
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
 
+    console.log(selected)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("download_bucket", {
+        listNodeInfoReq: listNodeInfoReq,
+        destination: selected,
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Download bucket success",
+        duration: 1000,
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+        duration: 1000,
+      })
+    }
+  }
+  const handleUploadFileOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    const selected = await open({
+      directory: false,
+      multiple: false,
+    })
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
+
+    console.log(selected)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("upload_file", {
+        listNodeInfoReq: listNodeInfoReq,
+        localFilePath: selected,
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Upload File success",
+        duration: 1000,
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+        duration: 1000,
+      })
+    }
+  }
   return (
     <>
       <MenuItem onClick={(e) => handleCopyNameOnClick(e)} className="text-xs">
@@ -105,10 +187,13 @@ const BucketNodeContextMenu = ({ node }) => {
       </MenuItem>
 
       <Separator />
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDownloadBucketOnClick(e)}
+        className="text-xs"
+      >
         Download
       </MenuItem>
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
+      <MenuItem onClick={(e) => handleUploadFileOnClick(e)} className="text-xs">
         Upload File
       </MenuItem>
       <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">

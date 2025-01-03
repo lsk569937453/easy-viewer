@@ -12,6 +12,7 @@ use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
 use crate::service::cmd_service::delete_bucket_with_error;
+use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
@@ -165,6 +166,18 @@ pub async fn download_file(
     let res =
         handle_response!(download_file_with_error(state, list_node_info_req, destination).await);
     info!("download_file: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn download_bucket(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    destination: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res =
+        handle_response!(download_bucket_with_error(state, list_node_info_req, destination).await);
+    info!("download_bucket: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

@@ -42,7 +42,7 @@ impl S3Config {
         _appstate: &AppState,
         local_file_path: String,
     ) -> Result<(), anyhow::Error> {
-        info!("delete_bucket: {:?}", list_node_info_req);
+        info!("delete_bucket:  {:?}", list_node_info_req);
 
         let list = list_node_info_req.level_infos;
 

@@ -134,6 +134,29 @@ pub async fn upload_file_with_error(
 
     Ok(())
 }
+pub async fn upload_folder_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    destination: String,
+) -> Result<(), anyhow::Error> {
+    info!("upload_folder_with_error: {:?}", list_node_info_req);
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .upload_folder(list_node_info_req, state.inner(), destination)
+        .await?;
+
+    Ok(())
+}
 pub async fn get_base_config_with_error(
     state: State<'_, AppState>,
 ) -> Result<GetBaseConnectionResponse, anyhow::Error> {

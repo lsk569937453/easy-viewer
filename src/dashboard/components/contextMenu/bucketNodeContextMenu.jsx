@@ -169,6 +169,47 @@ const BucketNodeContextMenu = ({ node }) => {
       })
     }
   }
+  const handleUploadFolferOnClick = async (e) => {
+    e.syntheticEvent.stopPropagation()
+    e.syntheticEvent.preventDefault()
+    const selected = await open({
+      directory: true,
+      multiple: false,
+    })
+    if (Array.isArray(selected)) {
+      return
+    } else if (selected === null) {
+      return
+    } else {
+    }
+
+    console.log(selected)
+    const listNodeInfoReq = {
+      level_infos: getLevelInfos(node),
+    }
+
+    const { response_code, response_msg } = JSON.parse(
+      await invoke("upload_folder", {
+        listNodeInfoReq: listNodeInfoReq,
+        localFilePath: selected,
+      })
+    )
+    if (response_code === 0) {
+      toast({
+        variant: "default",
+        title: "Success",
+        description: "Upload File success",
+        duration: 1000,
+      })
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: response_msg,
+        duration: 1000,
+      })
+    }
+  }
   return (
     <>
       <MenuItem onClick={(e) => handleCopyNameOnClick(e)} className="text-xs">
@@ -196,7 +237,10 @@ const BucketNodeContextMenu = ({ node }) => {
       <MenuItem onClick={(e) => handleUploadFileOnClick(e)} className="text-xs">
         Upload File
       </MenuItem>
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleUploadFolferOnClick(e)}
+        className="text-xs"
+      >
         Upload Folder
       </MenuItem>
     </>

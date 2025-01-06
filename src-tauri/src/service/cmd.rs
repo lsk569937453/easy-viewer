@@ -30,6 +30,7 @@ use crate::service::cmd_service::show_columns_with_error;
 use crate::service::cmd_service::truncate_table_with_error;
 use crate::service::cmd_service::update_record_with_error;
 use crate::service::cmd_service::upload_file_with_error;
+use crate::service::cmd_service::upload_folder_with_error;
 use crate::service::query_service::get_query_with_error;
 use crate::service::query_service::remove_query_with_error;
 use crate::service::query_service::rename_query_with_error;
@@ -190,6 +191,19 @@ pub async fn upload_file(
     let res =
         handle_response!(upload_file_with_error(state, list_node_info_req, local_file_path).await);
     info!("upload_file: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn upload_folder(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        upload_folder_with_error(state, list_node_info_req, local_file_path).await
+    );
+    info!("upload_folder: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

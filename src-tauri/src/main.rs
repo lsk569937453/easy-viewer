@@ -111,6 +111,7 @@ async fn main() -> Result<(), anyhow::Error> {
             download_file,
             download_bucket,
             upload_file,
+            upload_folder,
             drop_column,
             drop_index,
             drop_table,

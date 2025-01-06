@@ -218,6 +218,19 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn upload_folder(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        destination: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::S3(config) = self {
+            config
+                .upload_folder(list_node_info_req, appstate, destination)
+                .await?
+        };
+        Ok(())
+    }
     pub async fn exe_sql(
         &self,
         list_node_info_req: ListNodeInfoReq,

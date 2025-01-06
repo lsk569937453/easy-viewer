@@ -46,14 +46,14 @@ const CreateFolderDialog = ({ node }) => {
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "Drop Column Error",
+        title: "Create Folder Error",
         description: response_msg,
       })
       return
     } else {
       toast({
         title: "Success",
-        description: "Drop Column Success",
+        description: "Create Folder Success",
       })
       reloadNode(node, menulist, setMenulist)
     }

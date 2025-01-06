@@ -14,9 +14,9 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 anyhow = "1.0.95"
-aws-config = { version = "1.5.12", features = ["behavior-version-latest"] }
+aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
 aws-credential-types = { version = "1.2.1", features = ["hardcoded-credentials"] }
-aws-sdk-s3 = { version = "1.67.0", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.68.0", features = ["behavior-version-latest"] }
 base64 = "0.22.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
 chrono = { version = "0.4.39", features = ["serde"] }
@@ -29,7 +29,7 @@ futures-util = "0.3.31"
 hex = "0.4.3"
 human_bytes = "0.4.3"
 image = "0.25.5"
-itertools = "0.13.0"
+itertools = "0.14.0"
 
 linked-hash-map = "0.5.6"
 log = "0.4.22"
@@ -39,6 +39,7 @@ oracle = "0.6.2"
 percent-encoding = "2.3.0"
 redis = "0.27.6"
 rust_decimal = "1.36.0"
+
 serde = { version = "1.0.217", features = ["derive"] }
 serde-xml-rs = "0.6.0"
 serde_json = "1.0.134"
@@ -60,7 +61,7 @@ sqlx = { version = "0.8.2", features = [
     "bit-vec",
     
 ] }
-tauri = { version = "2.1.1", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "2.2.0", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-dialog = "2.2.0"
 tauri-plugin-fs = "2.2.0"
 tauri-plugin-log = { version = "2.2.0" }
@@ -75,6 +76,7 @@ uuid = { version = "1.11.0", features = [
     "fast-rng",
     "macro-diagnostics",
 ] }
+walkdir = "2.5.0"
 xlsxwriter = "0.6.1"
 [features]
 # by default Tauri runs in production mode

@@ -192,6 +192,19 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn download_bucket(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        destination: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::S3(config) = self {
+            config
+                .download_bucket(list_node_info_req, appstate, destination)
+                .await?
+        };
+        Ok(())
+    }
     pub async fn upload_file(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -201,6 +214,19 @@ impl BaseConfigEnum {
         if let BaseConfigEnum::S3(config) = self {
             config
                 .upload_file(list_node_info_req, appstate, destination)
+                .await?
+        };
+        Ok(())
+    }
+    pub async fn upload_folder(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        destination: String,
+    ) -> Result<(), anyhow::Error> {
+        if let BaseConfigEnum::S3(config) = self {
+            config
+                .upload_folder(list_node_info_req, appstate, destination)
                 .await?
         };
         Ok(())

@@ -51,7 +51,7 @@ const DeleteBucketDialog = ({ node }) => {
         title: "Success",
         description: "Delete Success",
       })
-      reloadNode(node, menulist, setMenulist)
+      // reloadNode(node, menulist, setMenulist)
     }
   }
   return (

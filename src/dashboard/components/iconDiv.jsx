@@ -1807,7 +1807,7 @@ const IconDiv = ({ node, selectedRows }) => {
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
-              class="icon icon-tabler icons-tabler-outline icon-tabler-file-text ml-6"
+              class="icon icon-tabler icons-tabler-outline icon-tabler-file-text ml-6 flex-none"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M14 3v4a1 1 0 0 0 1 1h4" />
@@ -1878,7 +1878,7 @@ const IconDiv = ({ node, selectedRows }) => {
               height={iconHeight}
               viewBox="0 0 24 24"
               fill="currentColor"
-              class="icon icon-tabler icons-tabler-filled icon-tabler-folder"
+              class="icon icon-tabler icons-tabler-filled icon-tabler-folder flex-none"
             >
               <path stroke="none" d="M0 0h24v24H0z" fill="none" />
               <path d="M9 3a1 1 0 0 1 .608 .206l.1 .087l2.706 2.707h6.586a3 3 0 0 1 2.995 2.824l.005 .176v8a3 3 0 0 1 -2.824 2.995l-.176 .005h-14a3 3 0 0 1 -2.995 -2.824l-.005 -.176v-11a3 3 0 0 1 2.824 -2.995l.176 -.005h4z" />

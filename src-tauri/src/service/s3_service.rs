@@ -183,6 +183,7 @@ impl S3Config {
 
         let bucket_name = list[1].config_value.clone();
         let s3_client = self.get_connection().await?;
+
         let mut continuation_token: Option<String> = None;
 
         loop {
@@ -190,19 +191,21 @@ impl S3Config {
                 .list_objects_v2()
                 .bucket(bucket_name.clone())
                 .max_keys(i32::MAX);
+            if list.len() > 2 {
+                let object_key = list
+                    .iter()
+                    .skip(2)
+                    .map(|item| item.config_value.clone())
+                    .join("/");
+                builder = builder.prefix(object_key.clone());
+            }
             if let Some(token) = continuation_token {
                 builder = builder.continuation_token(token);
             }
             let res = builder.send().await?;
 
-            let mut count = 0;
-            let mut total = 0;
-
             for object in res.contents() {
-                total += 1;
                 if let Some(key) = object.key() {
-                    count += 1;
-                    info!("key: {}", key);
                     s3_client
                         .delete_object()
                         .bucket(bucket_name.clone())
@@ -214,11 +217,12 @@ impl S3Config {
             if let Some(next_token) = res.next_continuation_token() {
                 continuation_token = Some(next_token.to_string());
             } else {
-                break; // No more pages
+                break;
             }
-            info!("total: {},count: {}", total, count);
         }
-        // s3_client.delete_bucket().bucket(bucket_name).send().await?;
+        if list.len() == 2 {
+            s3_client.delete_bucket().bucket(bucket_name).send().await?;
+        }
         Ok(())
     }
 

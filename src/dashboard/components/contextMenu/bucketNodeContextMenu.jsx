@@ -60,12 +60,6 @@ const BucketNodeContextMenu = ({ node }) => {
     showRenameBucketDialog,
   } = useContext(MainPageDialogContext)
 
-  const handleDropColumnOnClick = (e) => {
-    e.syntheticEvent.stopPropagation()
-    e.syntheticEvent.preventDefault()
-    setShowDropIndexDialog(true)
-    setNodeForUpdate(node)
-  }
   const handleCopyNameOnClick = (e) => {
     e.syntheticEvent.stopPropagation()
     e.syntheticEvent.preventDefault()

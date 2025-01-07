@@ -55,7 +55,7 @@ const DeleteBucketDialog = ({ node }) => {
     }
   }
   const getTitle = () => {
-    if (node.data.iconName === "bucket") {
+    if (node?.data?.iconName === "bucket") {
       return "Delete The Bucket"
     } else {
       return "Delete The Folder"
@@ -73,7 +73,7 @@ const DeleteBucketDialog = ({ node }) => {
             Are you sure you want to delete the{" "}
             <span className=" font-bold">{node?.data?.name}?</span>
           </DialogDescription>
-          {node.data.iconName === "bucket" && (
+          {node?.data?.iconName === "bucket" && (
             <DialogDescription className="font-bold text-red-500">
               A bucket can only be deleted if it's empty.
             </DialogDescription>

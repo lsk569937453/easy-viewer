@@ -118,6 +118,7 @@ async fn main() -> Result<(), anyhow::Error> {
             dump_database,
             exe_sql,
             generate_database_document,
+            get_object_info,
             get_about_version,
             get_base_config,
             get_base_config_by_id,

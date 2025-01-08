@@ -57,8 +57,10 @@ const DeleteBucketDialog = ({ node }) => {
   const getTitle = () => {
     if (node?.data?.iconName === "bucket") {
       return "Delete The Bucket"
-    } else {
+    } else if (node?.data?.iconName === "folder") {
       return "Delete The Folder"
+    } else {
+      return "Delete The Object"
     }
   }
   return (

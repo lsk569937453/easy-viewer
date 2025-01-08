@@ -21,6 +21,7 @@ use crate::service::cmd_service::dump_database_with_error;
 use crate::service::cmd_service::generate_database_document_with_error;
 use crate::service::cmd_service::get_complete_words_with_error;
 use crate::service::cmd_service::get_ddl_with_error;
+use crate::service::cmd_service::get_object_info_with_error;
 use crate::service::cmd_service::get_procedure_details_with_error;
 use crate::service::cmd_service::import_database_with_error;
 use crate::service::cmd_service::init_dump_data_with_error;
@@ -162,10 +163,12 @@ pub async fn download_file(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     destination: String,
+    is_folder: bool,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res =
-        handle_response!(download_file_with_error(state, list_node_info_req, destination).await);
+    let res = handle_response!(
+        download_file_with_error(state, list_node_info_req, destination, is_folder).await
+    );
     info!("download_file: {:?}", time.elapsed());
     Ok(res)
 }
@@ -300,6 +303,19 @@ pub async fn create_folder(
     let res =
         handle_response!(create_folder_with_error(state, list_node_info_req, folder_name).await);
     info!("save_query: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+
+pub async fn get_object_info(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    is_folder: bool,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res =
+        handle_response!(get_object_info_with_error(state, list_node_info_req, is_folder).await);
+    info!("get_object_info: {:?}", time.elapsed());
     Ok(res)
 }
 

@@ -1,3 +1,4 @@
+use crate::vojo::get_object_info_res::GetObjectInfoRes;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -39,6 +40,45 @@ pub struct S3Struct {
     pub region: String,
 }
 impl S3Config {
+    pub async fn get_object_info(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        is_folder: bool,
+    ) -> Result<GetObjectInfoRes, anyhow::Error> {
+        info!("get_object_info:   {:?}", list_node_info_req);
+        let list = list_node_info_req.level_infos;
+
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+
+        let mut object_key = list
+            .iter()
+            .skip(2)
+            .map(|item| item.config_value.clone())
+            .join("/");
+        if is_folder {
+            object_key.push('/');
+        }
+        let head_req_res = s3_client
+            .head_object()
+            .bucket(bucket_name.clone())
+            .key(object_key.clone())
+            .send()
+            .await?;
+        let content_length = head_req_res.content_length.unwrap_or_default();
+        let last_modified_datetime = head_req_res.last_modified().ok_or(anyhow!(""))?;
+
+        let name = object_key;
+        let size = human_bytes(content_length as f64);
+        let last_modified = format!("{}", last_modified_datetime);
+        let etag = head_req_res.e_tag().unwrap_or_default().to_string();
+        let content_type = head_req_res.content_type().unwrap_or_default().to_string();
+        let res = GetObjectInfoRes::new(name, size, last_modified, etag, content_type);
+        info!("{:?}", head_req_res);
+
+        Ok(res)
+    }
     pub async fn upload_folder(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -132,7 +172,7 @@ impl S3Config {
         _appstate: &AppState,
         local_file_path: String,
     ) -> Result<(), anyhow::Error> {
-        info!("delete_bucket:   {:?}", list_node_info_req);
+        info!("download_bucket:   {:?}", list_node_info_req);
 
         let list = list_node_info_req.level_infos;
 
@@ -313,6 +353,7 @@ impl S3Config {
         list_node_info_req: ListNodeInfoReq,
         _appstate: &AppState,
         local_file_path: String,
+        is_folder: bool,
     ) -> Result<(), anyhow::Error> {
         info!(
             "download_file: {:?},local_file_path:{}",
@@ -322,26 +363,72 @@ impl S3Config {
 
         let bucket_name = list[1].config_value.clone();
         let s3_client = self.get_connection().await?;
+        if list.len() == 2 {
+            //download bucket
+            return Ok(());
+        }
 
-        let object_key = list
+        let mut object_key = list
             .iter()
             .skip(2)
             .map(|item| item.config_value.clone())
             .join("/");
-        info!("object_path: {}", object_key);
-        let get_object_output = s3_client
-            .get_object()
-            .bucket(bucket_name)
-            .key(object_key)
+        if !is_folder {
+            info!("object_path: {}", object_key);
+            let dst_file_path = format!(
+                "{}/{}",
+                local_file_path,
+                list.last().ok_or(anyhow!(""))?.config_value
+            );
+            let get_object_output = s3_client
+                .get_object()
+                .bucket(bucket_name)
+                .key(object_key)
+                .send()
+                .await?;
+            let byte_stream = get_object_output.body;
+            let data = byte_stream.collect().await?;
+
+            let mut file = File::create(dst_file_path.clone()).await?;
+            file.write_all(data.to_vec().as_slice()).await?;
+
+            info!("File downloaded to {}", dst_file_path);
+            return Ok(());
+        }
+        object_key.push('/');
+        let objects = s3_client
+            .list_objects_v2()
+            .prefix(object_key)
+            .bucket(bucket_name.clone())
             .send()
             .await?;
-        let byte_stream = get_object_output.body;
-        let data = byte_stream.collect().await?;
 
-        let mut file = File::create(local_file_path.clone()).await?;
-        file.write_all(data.to_vec().as_slice()).await?;
-
-        info!("File downloaded to {}", local_file_path);
+        for object in objects.contents() {
+            let key = object.key().ok_or(anyhow!(""))?;
+            info!("key:{}", key);
+            if key.ends_with("/") {
+                let s3_path: Vec<&str> = key.split("/").collect();
+                let mut local_path = PathBuf::from(&local_file_path);
+                local_path.extend(s3_path.iter());
+                std::fs::create_dir_all(local_path.as_path())?;
+                continue;
+            }
+            let s3_path: Vec<&str> = key.split("/").collect();
+            let mut local_path = PathBuf::from(&local_file_path);
+            local_path.extend(s3_path.iter());
+            let mut file = tokio::fs::File::create(local_path).await?;
+            let resp = s3_client
+                .get_object()
+                .bucket(bucket_name.clone())
+                .key(key)
+                .send()
+                .await?;
+            let mut stream = resp.body;
+            info!("file: {}", local_file_path);
+            while let Some(bytes) = stream.try_next().await? {
+                file.write_all(&bytes).await?;
+            }
+        }
         Ok(())
     }
     pub async fn list_node_info(

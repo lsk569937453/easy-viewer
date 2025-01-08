@@ -159,6 +159,7 @@ const IconDiv = ({ node, selectedRows }) => {
       tabName: localQueryName,
     })
   }
+
   const handleAddNewTableClick = (e) => {
     e.stopPropagation()
     let rootNode = getRootNode(node)
@@ -369,13 +370,15 @@ const IconDiv = ({ node, selectedRows }) => {
     e.stopPropagation()
     clickNode(node, menulist, setMenulist)
   }
-  const handleDownloadFileClick = async (e) => {
+  const handleDownloadFileClick = async (e, flag) => {
     e.stopPropagation()
+    const isFolder = flag
     const listNodeInfoReq = {
       level_infos: getLevelInfos(node),
     }
-    const selected = await save({
-      defaultPath: node.data.name,
+    const selected = await open({
+      directory: true,
+      multiple: false,
       filters: [{ name: "All Files", extensions: [] }],
       canCreateDirectories: false,
     })
@@ -391,6 +394,7 @@ const IconDiv = ({ node, selectedRows }) => {
       await invoke("download_file", {
         listNodeInfoReq: listNodeInfoReq,
         destination: selected,
+        isFolder: isFolder,
       })
     )
     if (response_code !== 0) {
@@ -1848,7 +1852,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={handleDownloadFileClick}
+                    onClick={(e) => handleDownloadFileClick(e, false)}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M12 18.004h-5.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.38 0 2.573 .813 3.13 1.99" />
@@ -1980,7 +1984,7 @@ const IconDiv = ({ node, selectedRows }) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     class="icon icon-tabler icons-tabler-outline icon-tabler-refresh group/edit invisible  group-hover/item:visible   group-hover/item:hover:bg-searchMarkerColor"
-                    onClick={handleDownloadFileClick}
+                    onClick={(e) => handleDownloadFileClick(e, true)}
                   >
                     <path stroke="none" d="M0 0h24v24H0z" fill="none" />
                     <path d="M12 18.004h-5.343c-2.572 -.004 -4.657 -2.011 -4.657 -4.487c0 -2.475 2.085 -4.482 4.657 -4.482c.393 -1.762 1.794 -3.2 3.675 -3.773c1.88 -.572 3.956 -.193 5.444 1c1.488 1.19 2.162 3.007 1.77 4.769h.99c1.38 0 2.573 .813 3.13 1.99" />

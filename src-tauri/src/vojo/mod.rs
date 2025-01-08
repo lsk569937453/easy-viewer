@@ -2,6 +2,7 @@ pub mod dump_database_req;
 pub mod exe_sql_response;
 pub mod get_base_config_response;
 pub mod get_column_info_for_is_response;
+pub mod get_object_info_res;
 pub mod import_database_req;
 pub mod init_dump_data_response;
 pub mod list_node_info_req;

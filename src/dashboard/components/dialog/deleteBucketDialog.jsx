@@ -51,7 +51,16 @@ const DeleteBucketDialog = ({ node }) => {
         title: "Success",
         description: "Delete Success",
       })
-      // reloadNode(node, menulist, setMenulist)
+      reloadNode(node, menulist, setMenulist)
+    }
+  }
+  const getTitle = () => {
+    if (node?.data?.iconName === "bucket") {
+      return "Delete The Bucket"
+    } else if (node?.data?.iconName === "folder") {
+      return "Delete The Folder"
+    } else {
+      return "Delete The Object"
     }
   }
   return (
@@ -61,14 +70,16 @@ const DeleteBucketDialog = ({ node }) => {
     >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Delete The Bucket</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>{getTitle()}</DialogTitle>
+          <DialogDescription className="text-nowrap">
             Are you sure you want to delete the{" "}
-            <span className="font-bold">{node?.data?.name}?</span>
+            <span className=" font-bold">{node?.data?.name}?</span>
           </DialogDescription>
-          <DialogDescription>
-            A bucket can only be deleted if it's empty.
-          </DialogDescription>
+          {node?.data?.iconName === "bucket" && (
+            <DialogDescription className="font-bold text-red-500">
+              A bucket can only be deleted if it's empty.
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <DialogFooter className="sm:justify-end">

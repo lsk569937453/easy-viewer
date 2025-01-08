@@ -6,6 +6,7 @@ use crate::vojo::get_base_config_response::GetBaseConnectionByIdResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponse;
 use crate::vojo::get_base_config_response::GetBaseConnectionResponseItem;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::get_object_info_res::GetObjectInfoRes;
 use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -69,6 +70,7 @@ pub async fn download_file_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     destination: String,
+    is_folder: bool,
 ) -> Result<(), anyhow::Error> {
     info!(" download_file_with_error: {:?}", list_node_info_req);
     let value = list_node_info_req.level_infos[0]
@@ -83,7 +85,7 @@ pub async fn download_file_with_error(
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     base_config
         .base_config_enum
-        .download_file(list_node_info_req, state.inner(), destination)
+        .download_file(list_node_info_req, state.inner(), destination, is_folder)
         .await?;
 
     Ok(())
@@ -591,7 +593,31 @@ pub async fn create_folder_with_error(
         .await?;
     Ok(())
 }
-
+pub async fn get_object_info_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    is_folder: bool,
+) -> Result<GetObjectInfoRes, anyhow::Error> {
+    info!(
+        " create_folder list_node_info_req: {:?}",
+        list_node_info_req
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    let res = base_config
+        .base_config_enum
+        .get_object_info(state.inner(), list_node_info_req, is_folder)
+        .await?;
+    Ok(res)
+}
 pub async fn delete_bucket_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

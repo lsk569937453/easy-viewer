@@ -10,6 +10,7 @@ use crate::sql_lite::connection::AppState;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
+use crate::vojo::get_object_info_res::GetObjectInfoRes;
 use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::init_dump_data_response::InitDumpDataResponse;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -184,10 +185,11 @@ impl BaseConfigEnum {
         list_node_info_req: ListNodeInfoReq,
         appstate: &AppState,
         destination: String,
+        is_folder: bool,
     ) -> Result<(), anyhow::Error> {
         if let BaseConfigEnum::S3(config) = self {
             config
-                .download_file(list_node_info_req, appstate, destination)
+                .download_file(list_node_info_req, appstate, destination, is_folder)
                 .await?
         };
         Ok(())
@@ -494,7 +496,23 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn get_object_info(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        is_folder: bool,
+    ) -> Result<GetObjectInfoRes, anyhow::Error> {
+        let res = match self {
+            BaseConfigEnum::S3(config) => {
+                config
+                    .get_object_info(list_node_info_req, appstate, is_folder)
+                    .await?
+            }
 
+            _ => Err(anyhow!("Other type not support move column except mysql."))?,
+        };
+        Ok(res)
+    }
     pub async fn delete_bucket(
         &self,
         appstate: &AppState,

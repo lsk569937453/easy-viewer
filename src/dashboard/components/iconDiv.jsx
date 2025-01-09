@@ -672,8 +672,8 @@ const IconDiv = ({ node, selectedRows }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth - 4}
-                    height={iconHeight - 4}
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -924,8 +924,8 @@ const IconDiv = ({ node, selectedRows }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth - 4}
-                    height={iconHeight - 4}
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"

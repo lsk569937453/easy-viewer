@@ -104,11 +104,8 @@ export default function DataPage({
   const { toast } = useToast()
   const [sql, setSql] = useState(inputSql || generateSql(node))
   const [timeCost, setTimeCost] = useState(0)
-  //渲染用
   const [header, setHeader] = useState([])
-  //组装update用
   const [sourceHeader, setSourceHeader] = useState([])
-  //组装update用
   const [sourceRows, setSourceRows] = useState([])
   const [rows, setRows] = useState([])
   const [currentRows, setCurrentRows] = useState([])

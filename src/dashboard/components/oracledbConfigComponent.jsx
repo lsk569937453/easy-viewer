@@ -126,7 +126,7 @@ export function OracleDbConfigComponent({
       if (response_code === 0) {
         toast({
           title: "Operation Message",
-          description: "数据库连接成功。",
+          description: "Connect successful.",
         })
       } else {
         toast({
@@ -161,7 +161,7 @@ export function OracleDbConfigComponent({
       toast({
         variant: "destructive",
         title: "Operation Message",
-        description: "连接名称不能为空",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -219,7 +219,7 @@ export function OracleDbConfigComponent({
     if (response_code === 0) {
       toast({
         title: "Operation Message",
-        description: "保存成功。",
+        description: "Save successful.",
       })
       setShowEditConnectionDialog(false)
 
@@ -237,7 +237,7 @@ export function OracleDbConfigComponent({
       toast({
         variant: "destructive",
         title: "Operation Message",
-        description: "连接名称不能为空",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -296,7 +296,7 @@ export function OracleDbConfigComponent({
     if (response_code === 0) {
       toast({
         title: "Operation Message",
-        description: "保存成功。",
+        description: "Save successful.",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
       setShowEditConnectionDialog(false)
@@ -316,7 +316,7 @@ export function OracleDbConfigComponent({
         </AlertDialogContent>
       </AlertDialog>
       <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">连接方式:</p>
+        <p className="basis-2/12 text-right">Connection Type:</p>
         <RadioGroup
           defaultValue="connectTypeHost"
           orientation="horizontal"
@@ -325,17 +325,17 @@ export function OracleDbConfigComponent({
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="connectTypeHost" id="option-two" />
-            <Label htmlFor="connectTypeHost">主机</Label>
+            <Label htmlFor="connectTypeHost">Host</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="connectTypeUrl" id="option-one" />
-            <Label htmlFor="connectTypeUrl">连接串</Label>
+            <Label htmlFor="connectTypeUrl">Url</Label>
           </div>
         </RadioGroup>
       </div>
       {connectType === "connectTypeUrl" && (
         <div className="flex flex-row items-center gap-5">
-          <p className="basis-2/12 text-right">连接串:</p>
+          <p className="basis-2/12 text-right">Url:</p>
           <Input
             className="basis-10/12 border border-foreground/50"
             placeholder="jdbc:mysql://localhost:3306/"
@@ -347,46 +347,46 @@ export function OracleDbConfigComponent({
       {connectType === "connectTypeHost" && (
         <>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">服务器地址:</p>
+            <p className="basis-2/12 text-right">Host:</p>
             <Input
               className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="主机地址"
+              placeholder="Host"
               onChange={(e) => setCurrentHost(e.target.value)}
               value={currentHost}
             ></Input>
-            <p className="basis-1/12 text-right">端口:</p>
+            <p className="basis-1/12 text-right">Port:</p>
             <Input
               className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="端口"
+              placeholder="Port"
               onChange={(e) => setCurrentPort(e.target.value)}
               value={currentPort}
             ></Input>
           </div>
 
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">用户名:</p>
+            <p className="basis-2/12 text-right">User:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="用户名"
+              placeholder="User"
               onChange={(e) => setCurrentUsername(e.target.value)}
               value={currentUsername}
             ></Input>
           </div>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">密码:</p>
+            <p className="basis-2/12 text-right">Password:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="密码"
+              placeholder="Password"
               type="password"
               onChange={(e) => setCurrentPassword(e.target.value)}
               value={currentPassword}
             ></Input>
           </div>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">数据库:</p>
+            <p className="basis-2/12 text-right">Database:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="数据库名"
+              placeholder="database"
               onChange={(e) => setCurrentDatabase(e.target.value)}
               value={currentDatabase}
             ></Input>
@@ -397,12 +397,12 @@ export function OracleDbConfigComponent({
       <div className="flex flex-row items-center gap-5">
         {!isSave && (
           <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
-            创建连接
+            Create Connection
           </Button>
         )}
         {isSave && (
           <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
-            保存连接
+            Save Connection
           </Button>
         )}
         <Button
@@ -410,7 +410,7 @@ export function OracleDbConfigComponent({
           variant="outline"
           onClick={handleTestLinkButtonClick}
         >
-          测试连接
+          Test Connection
         </Button>
       </div>
     </div>

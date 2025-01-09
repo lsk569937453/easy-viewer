@@ -354,7 +354,7 @@ const IconDiv = ({ node, selectedRows }) => {
       })
     )
     if (response_code == 0) {
-      console.log("保存成功")
+      console.log("Save success")
       clickNode(node.parent, menulist, setMenulist)
     } else {
       toast({
@@ -406,7 +406,7 @@ const IconDiv = ({ node, selectedRows }) => {
     } else {
       toast({
         title: "Operation Message",
-        description: "下载成功",
+        description: "Download Success",
       })
     }
   }
@@ -442,7 +442,7 @@ const IconDiv = ({ node, selectedRows }) => {
     } else {
       toast({
         title: "Operation Message",
-        description: "上传成功",
+        description: "Upload Success",
       })
     }
   }
@@ -1715,7 +1715,6 @@ const IconDiv = ({ node, selectedRows }) => {
         <>
           {node.data.showSecondIcon && (
             <svg
-              fill="#000000"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}

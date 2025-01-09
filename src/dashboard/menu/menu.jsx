@@ -64,10 +64,10 @@ export function Menu() {
           </MenubarContent>
         </MenubarMenu>
         <MenubarMenu>
-          <MenubarTrigger className="font-bold">配置</MenubarTrigger>
+          <MenubarTrigger className="font-bold">Config</MenubarTrigger>
           <MenubarContent>
             <MenubarItem onClick={() => handleNewConnectionButtonClick()}>
-              创建连接
+              Create Connection
             </MenubarItem>
             {/* <MenubarSeparator />
         <MenubarItem onClick={() => setShowPreferenceDialog(true)}>

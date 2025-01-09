@@ -130,6 +130,30 @@ impl PostgresqlConfig {
             database
         )
     }
+    async fn get_connection(&self) -> Result<PgConnection, anyhow::Error> {
+        let connection_url = self.connection_url();
+        let conn = timeout(
+            Duration::from_millis(500),
+            PgConnection::connect(&connection_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))??;
+
+        Ok(conn)
+    }
+    async fn get_connection_with_database(
+        &self,
+        database_name: String,
+    ) -> Result<PgConnection, anyhow::Error> {
+        let connection_url = self.connection_url_with_database(database_name);
+
+        let conn = timeout(
+            Duration::from_millis(500),
+            PgConnection::connect(&connection_url),
+        )
+        .await??;
+        Ok(conn)
+    }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("postgres".to_string());
         PgConnection::connect(&test_url).await.map(|_| ())?;
@@ -142,9 +166,8 @@ impl PostgresqlConfig {
     ) -> Result<InitDumpDataResponse, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
 
         let rows = sqlx::query(GET_SCHEMA_SQL).fetch_all(&mut conn).await?;
         let schema_names: Vec<String> = rows.iter().map(|row| row.get("schema_name")).collect();
@@ -197,9 +220,8 @@ WHERE table_schema = '{}'
         info!("import_database_req: {:?}", import_database_req);
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
 
         let file = File::open(&import_database_req.file_path).await?;
 
@@ -236,10 +258,8 @@ WHERE table_schema = '{}'
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
-
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let common_data = dump_database_req.source_data.get_postgresql_data()?;
         let mut vecs = vec![];
         for schema in common_data.list {
@@ -345,9 +365,9 @@ WHERE schema_name = '{}';",
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
 
-        let connection_url = self.connection_url_with_database(database_name.clone());
-
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self
+            .get_connection_with_database(database_name.clone())
+            .await?;
         let rows = sqlx::query(GET_SCHEMA_SQL).fetch_all(&mut conn).await?;
         let schema_names: Vec<String> = rows.iter().map(|row| row.get("schema_name")).collect();
         let dir_path = Path::new(&file_dir);
@@ -438,9 +458,8 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let index_name = level_infos[6].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
 
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let drop_index_sql = format!("DROP INDEX IF EXISTS {}.{};", schema_name, index_name);
         sqlx::query(&drop_index_sql).execute(&mut conn).await?;
         Ok(())
@@ -455,8 +474,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
 
         let drop_index_sql = format!("DROP TABLE {}.{};", schema_name, table_name);
         sqlx::query(&drop_index_sql).execute(&mut conn).await?;
@@ -472,8 +490,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
 
         let drop_index_sql = format!("TRUNCATE  TABLE {}.{};", schema_name, table_name);
         sqlx::query(&drop_index_sql).execute(&mut conn).await?;
@@ -491,8 +508,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let sql = format!(
             "SELECT c.column_name,
        c.data_type,
@@ -540,6 +556,7 @@ WHERE c.table_schema = '{}'
         }
         Ok(GetColumnInfoForInsertSqlResponse::from(response_rows))
     }
+
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -548,10 +565,8 @@ WHERE c.table_schema = '{}'
         let mut vec = vec![];
 
         if list_node_info_req.level_infos.len() == 1 {
-            let test_url = self.connection_url();
-            info!("test_url: {}", test_url);
-            let mut connection =
-                timeout(Duration::from_millis(500), PgConnection::connect(&test_url)).await??;
+            let mut connection = self.get_connection().await?;
+
             let rows = sqlx::query("SELECT datname FROM pg_database WHERE datistemplate = false;")
                 .fetch_all(&mut connection)
                 .await?;
@@ -584,10 +599,7 @@ WHERE c.table_schema = '{}'
             return Ok(ListNodeInfoResponse::new(vec));
         } else if list_node_info_req.level_infos.len() == 2 {
             let database_name = list_node_info_req.level_infos[1].config_value.clone();
-            let test_url = self.connection_url_with_database(database_name);
-            info!("test_url: {}", test_url);
-            let mut connection = PgConnection::connect(&test_url).await?;
-
+            let mut connection = self.get_connection_with_database(database_name).await?;
             let rows = sqlx::query(GET_SCHEMA_SQL)
                 .fetch_all(&mut connection)
                 .await?;
@@ -611,9 +623,8 @@ WHERE c.table_schema = '{}'
             let level_infos = list_node_info_req.level_infos;
             let database_name = level_infos[1].config_value.clone();
             let schema_name = level_infos[2].config_value.clone();
-            let connection_url = self.connection_url_with_database(database_name);
 
-            let mut conn = PgConnection::connect(&connection_url).await?;
+            let mut conn = self.get_connection_with_database(database_name).await?;
             let sql = format!(
                 "SELECT COUNT(*) AS table_count
 FROM information_schema.tables
@@ -651,9 +662,7 @@ WHERE table_schema = '{}';",
 
             if node_name == "Tables" {
                 let database_name = list_node_info_req.level_infos[1].config_value.clone();
-                let test_url = self.connection_url_with_database(database_name);
-                info!("test_url: {}", test_url);
-                let mut connection = PgConnection::connect(&test_url).await?;
+                let mut connection = self.get_connection_with_database(database_name).await?;
                 let sql = format!(
                     "SELECT tablename
 FROM pg_catalog.pg_tables
@@ -734,9 +743,7 @@ WHERE schemaname = '{}';",
             let node_name = level_infos[5].config_value.clone();
 
             if node_name == "Columns" {
-                let connection_url = self.connection_url_with_database(database_name);
-
-                let mut conn = PgConnection::connect(&connection_url).await?;
+                let mut conn = self.get_connection_with_database(database_name).await?;
 
                 let sql = format!("select c.column_name, c.data_type,  t.constraint_type
                 from   information_schema.columns c
@@ -774,9 +781,7 @@ WHERE schemaname = '{}';",
                 }
                 return Ok(ListNodeInfoResponse::new(vec));
             } else if node_name == "Index" {
-                let connection_url = self.connection_url_with_database(database_name);
-
-                let mut conn = PgConnection::connect(&connection_url).await?;
+                let mut conn = self.get_connection_with_database(database_name).await?;
 
                 let sql = format!(
                     "SELECT 
@@ -960,9 +965,8 @@ WHERE table_name = '{}'
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let sql = generate_ddl(schema_name, table_name);
         let row = sqlx::query(&sql)
             .fetch_optional(&mut conn)
@@ -979,9 +983,8 @@ WHERE table_name = '{}'
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let mut vec = vec![];
         for sql in sqls {
             info!("sql: {}", sql);
@@ -1005,9 +1008,8 @@ WHERE table_name = '{}'
         let database_name = level_infos[1].config_value.clone();
         let schema_name = level_infos[2].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
 
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let show_column_sql = format!(
             "SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
@@ -1058,8 +1060,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
     ) -> Result<Vec<String>, anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let mut set = HashSet::new();
 
         let schema_names = sqlx::query(GET_SCHEMA_SQL)
@@ -1118,9 +1119,7 @@ WHERE table_schema = '{}'
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
 
-        let connection_url = self.connection_url_with_database(database_name);
-
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
 
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
@@ -1137,8 +1136,7 @@ WHERE table_schema = '{}'
         let database_name = level_infos[1].config_value.clone();
         let table_name = level_infos[4].config_value.clone();
         let column_name = level_infos[6].config_value.clone();
-        let connection_url = self.connection_url_with_database(database_name);
-        let mut conn = PgConnection::connect(&connection_url).await?;
+        let mut conn = self.get_connection_with_database(database_name).await?;
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
         let _ = sqlx::query(&sql).execute(&mut conn).await?;

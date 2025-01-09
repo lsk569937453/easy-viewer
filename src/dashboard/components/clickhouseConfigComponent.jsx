@@ -125,13 +125,13 @@ export function ClickhouseConfigComponent({
       console.log(response_msg)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
+          title: "Operation Message",
           description: "数据库连接成功。",
         })
       } else {
         toast({
           variant: "destructive",
-          title: "操作信息",
+          title: "Operation Message",
           description: response_msg,
         })
       }
@@ -139,7 +139,7 @@ export function ClickhouseConfigComponent({
       setShowLoading(false)
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: err.toString(),
       })
     }
@@ -160,7 +160,7 @@ export function ClickhouseConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -218,7 +218,7 @@ export function ClickhouseConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       setShowEditConnectionDialog(false)
@@ -227,7 +227,7 @@ export function ClickhouseConfigComponent({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -236,7 +236,7 @@ export function ClickhouseConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -295,7 +295,7 @@ export function ClickhouseConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
@@ -303,7 +303,7 @@ export function ClickhouseConfigComponent({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }

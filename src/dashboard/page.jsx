@@ -284,7 +284,7 @@ const DashboardPage = () => {
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }

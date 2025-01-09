@@ -124,13 +124,13 @@ export function MysqlConfigComponent({
       console.log(response_msg)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
+          title: "Operation Message",
           description: "数据库连接成功。",
         })
       } else {
         toast({
           variant: "destructive",
-          title: "操作信息",
+          title: "Operation Message",
           description: response_msg,
         })
       }
@@ -138,7 +138,7 @@ export function MysqlConfigComponent({
       setShowLoading(false)
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: err.toString(),
       })
     }
@@ -159,7 +159,7 @@ export function MysqlConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -217,7 +217,7 @@ export function MysqlConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
@@ -225,7 +225,7 @@ export function MysqlConfigComponent({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -234,7 +234,7 @@ export function MysqlConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -293,7 +293,7 @@ export function MysqlConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
@@ -301,7 +301,7 @@ export function MysqlConfigComponent({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }

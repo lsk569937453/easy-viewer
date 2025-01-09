@@ -58,7 +58,7 @@ const SqliteConfigComponent = ({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -81,14 +81,14 @@ const SqliteConfigComponent = ({
     )
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -98,7 +98,7 @@ const SqliteConfigComponent = ({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: "连接名称不能为空",
       })
       return
@@ -120,7 +120,7 @@ const SqliteConfigComponent = ({
     )
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "保存成功。",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
@@ -128,7 +128,7 @@ const SqliteConfigComponent = ({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -152,13 +152,13 @@ const SqliteConfigComponent = ({
       const { response_code, response_msg } = JSON.parse(datass)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
+          title: "Operation Message",
           description: "数据库连接成功。",
         })
       } else {
         toast({
           variant: "destructive",
-          title: "操作信息",
+          title: "Operation Message",
           description: response_msg,
         })
       }

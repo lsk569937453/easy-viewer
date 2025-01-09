@@ -359,7 +359,7 @@ const IconDiv = ({ node, selectedRows }) => {
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -400,12 +400,12 @@ const IconDiv = ({ node, selectedRows }) => {
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     } else {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "下载成功",
       })
     }
@@ -436,12 +436,12 @@ const IconDiv = ({ node, selectedRows }) => {
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     } else {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "上传成功",
       })
     }

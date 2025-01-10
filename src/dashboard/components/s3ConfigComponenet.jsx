@@ -97,8 +97,8 @@ export function S3ConfigComponent({
       console.log(response_msg)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
-          description: "数据库连接成功。",
+          title: "Operation Message",
+          description: "Connect successful.",
         })
       } else {
         toast({
@@ -111,7 +111,7 @@ export function S3ConfigComponent({
       setShowLoading(false)
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: err.toString(),
       })
     }
@@ -132,8 +132,8 @@ export function S3ConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -164,15 +164,15 @@ export function S3ConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save successful.",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
       setShowEditConnectionDialog(false)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -181,8 +181,8 @@ export function S3ConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -240,15 +240,15 @@ export function S3ConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save successful.",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
       setShowEditConnectionDialog(false)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -262,17 +262,17 @@ export function S3ConfigComponent({
       </AlertDialog>
 
       <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">服务器地址:</p>
+        <p className="basis-2/12 text-right">Host:</p>
         <Input
           className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-          placeholder="主机地址"
+          placeholder="Host"
           onChange={(e) => setCurrentHost(e.target.value)}
           value={currentHost}
         ></Input>
-        <p className="basis-1/12 text-right">端口:</p>
+        <p className="basis-1/12 text-right">Port:</p>
         <Input
           className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-          placeholder="端口"
+          placeholder="Port"
           onChange={(e) => setCurrentPort(e.target.value)}
           value={currentPort}
         ></Input>
@@ -298,10 +298,10 @@ export function S3ConfigComponent({
         ></Input>
       </div>
       <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">数据库:</p>
+        <p className="basis-2/12 text-right">Database:</p>
         <Input
           className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-          placeholder="数据库名"
+          placeholder="database"
           onChange={(e) => setCurrentRegion(e.target.value)}
           value={currentRegion}
         ></Input>
@@ -310,12 +310,12 @@ export function S3ConfigComponent({
       <div className="flex flex-row items-center gap-5">
         {!isSave && (
           <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
-            创建连接
+            Create Connection
           </Button>
         )}
         {isSave && (
           <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
-            保存连接
+            Save Connection
           </Button>
         )}
         <Button
@@ -323,7 +323,7 @@ export function S3ConfigComponent({
           variant="outline"
           onClick={handleTestLinkButtonClick}
         >
-          测试连接
+          Test Connection
         </Button>
       </div>
     </div>

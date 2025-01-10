@@ -125,13 +125,13 @@ export function ClickhouseConfigComponent({
       console.log(response_msg)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
-          description: "数据库连接成功。",
+          title: "Operation Message",
+          description: "Database connection successful.",
         })
       } else {
         toast({
           variant: "destructive",
-          title: "操作信息",
+          title: "Operation Message",
           description: response_msg,
         })
       }
@@ -139,7 +139,7 @@ export function ClickhouseConfigComponent({
       setShowLoading(false)
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: err.toString(),
       })
     }
@@ -160,8 +160,8 @@ export function ClickhouseConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -218,8 +218,8 @@ export function ClickhouseConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save success",
       })
       setShowEditConnectionDialog(false)
 
@@ -227,7 +227,7 @@ export function ClickhouseConfigComponent({
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -236,8 +236,8 @@ export function ClickhouseConfigComponent({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -295,15 +295,15 @@ export function ClickhouseConfigComponent({
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save success",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
       setShowEditConnectionDialog(false)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -316,7 +316,7 @@ export function ClickhouseConfigComponent({
         </AlertDialogContent>
       </AlertDialog>
       <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">连接方式:</p>
+        <p className="basis-2/12 text-right">Connection Type:</p>
         <RadioGroup
           defaultValue="connectTypeHost"
           orientation="horizontal"
@@ -325,17 +325,17 @@ export function ClickhouseConfigComponent({
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="connectTypeHost" id="option-two" />
-            <Label htmlFor="connectTypeHost">主机</Label>
+            <Label htmlFor="connectTypeHost">Host</Label>
           </div>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="connectTypeUrl" id="option-one" />
-            <Label htmlFor="connectTypeUrl">连接串</Label>
+            <Label htmlFor="connectTypeUrl">Url</Label>
           </div>
         </RadioGroup>
       </div>
       {connectType === "connectTypeUrl" && (
         <div className="flex flex-row items-center gap-5">
-          <p className="basis-2/12 text-right">连接串:</p>
+          <p className="basis-2/12 text-right">Connection Url:</p>
           <Input
             className="basis-10/12 border border-foreground/50"
             placeholder="jdbc:mysql://localhost:3306/"
@@ -347,46 +347,46 @@ export function ClickhouseConfigComponent({
       {connectType === "connectTypeHost" && (
         <>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">服务器地址:</p>
+            <p className="basis-2/12 text-right">Server Details:</p>
             <Input
               className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="主机地址"
+              placeholder="Host"
               onChange={(e) => setCurrentHost(e.target.value)}
               value={currentHost}
             ></Input>
-            <p className="basis-1/12 text-right">端口:</p>
+            <p className="basis-1/12 text-right">Port:</p>
             <Input
               className="basis-1/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="端口"
+              placeholder="Port"
               onChange={(e) => setCurrentPort(e.target.value)}
               value={currentPort}
             ></Input>
           </div>
 
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">用户名:</p>
+            <p className="basis-2/12 text-right">User:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="用户名"
+              placeholder="User Name"
               onChange={(e) => setCurrentUsername(e.target.value)}
               value={currentUsername}
             ></Input>
           </div>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">密码:</p>
+            <p className="basis-2/12 text-right">Password:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="密码"
+              placeholder="password"
               type="password"
               onChange={(e) => setCurrentPassword(e.target.value)}
               value={currentPassword}
             ></Input>
           </div>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">数据库:</p>
+            <p className="basis-2/12 text-right">Database:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="数据库名"
+              placeholder="Database Name"
               onChange={(e) => setCurrentDatabase(e.target.value)}
               value={currentDatabase}
             ></Input>
@@ -397,12 +397,12 @@ export function ClickhouseConfigComponent({
       <div className="flex flex-row items-center gap-5">
         {!isSave && (
           <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
-            创建连接
+            Create Connection
           </Button>
         )}
         {isSave && (
           <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
-            保存连接
+            Save Connection
           </Button>
         )}
         <Button
@@ -410,7 +410,7 @@ export function ClickhouseConfigComponent({
           variant="outline"
           onClick={handleTestLinkButtonClick}
         >
-          测试连接
+          Test Connection
         </Button>
       </div>
     </div>

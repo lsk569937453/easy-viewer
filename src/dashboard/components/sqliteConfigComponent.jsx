@@ -58,8 +58,8 @@ const SqliteConfigComponent = ({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -81,14 +81,14 @@ const SqliteConfigComponent = ({
     )
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save successful.",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -98,8 +98,8 @@ const SqliteConfigComponent = ({
     if (connectionName === undefined || connectionName === "") {
       toast({
         variant: "destructive",
-        title: "操作信息",
-        description: "连接名称不能为空",
+        title: "Operation Message",
+        description: "Connection name cannot be empty",
       })
       return
     }
@@ -120,15 +120,15 @@ const SqliteConfigComponent = ({
     )
     if (response_code === 0) {
       toast({
-        title: "操作信息",
-        description: "保存成功。",
+        title: "Operation Message",
+        description: "Save successful.",
       })
       reloadNode(treeRef.current.root, menulist, setMenulist)
       setShowEditConnectionDialog(false)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -152,13 +152,13 @@ const SqliteConfigComponent = ({
       const { response_code, response_msg } = JSON.parse(datass)
       if (response_code === 0) {
         toast({
-          title: "操作信息",
-          description: "数据库连接成功。",
+          title: "Operation Message",
+          description: "Connect successful.",
         })
       } else {
         toast({
           variant: "destructive",
-          title: "操作信息",
+          title: "Operation Message",
           description: response_msg,
         })
       }
@@ -170,7 +170,7 @@ const SqliteConfigComponent = ({
   return (
     <div className="flex flex-col gap-5 border-2 border-dashed border-indigo-600  p-4">
       <div className="flex flex-row items-center gap-5">
-        <p className="basis-2/12 text-right">连接方式:</p>
+        <p className="basis-2/12 text-right">Connection Type:</p>
         <RadioGroup
           defaultValue="connectTypeHost"
           orientation="horizontal"
@@ -179,7 +179,7 @@ const SqliteConfigComponent = ({
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="connectTypeHost" id="option-two" />
-            <Label htmlFor="connectTypeHost">本地文件</Label>
+            <Label htmlFor="connectTypeHost">Local File</Label>
           </div>
         </RadioGroup>
       </div>
@@ -187,10 +187,10 @@ const SqliteConfigComponent = ({
       {connectType === "connectTypeHost" && (
         <>
           <div className="flex flex-row items-center gap-5">
-            <p className="basis-2/12 text-right">数据库路径:</p>
+            <p className="basis-2/12 text-right">Database Path:</p>
             <Input
               className="basis-6/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="路径"
+              placeholder="path"
               onChange={(e) => setFilePath(e.target.value)}
               value={filePath}
             ></Input>
@@ -213,12 +213,12 @@ const SqliteConfigComponent = ({
       <div className="flex flex-row items-center gap-5">
         {!isSave && (
           <Button className="basis-6/12" onClick={handleCreateLinkButtonClick}>
-            创建连接
+            Create Connection
           </Button>
         )}
         {isSave && (
           <Button className="basis-6/12" onClick={handleSaveButtonOnClick}>
-            保存连接
+            Save Connection
           </Button>
         )}
         <Button
@@ -226,7 +226,7 @@ const SqliteConfigComponent = ({
           variant="outline"
           onClick={handleTestLinkButtonClick}
         >
-          测试连接
+          Test Connection
         </Button>
       </div>
     </div>

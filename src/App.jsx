@@ -9,7 +9,7 @@ import { cn } from "./lib/utils"
 
 function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem>
       <DashboardPage />
     </ThemeProvider>
   )

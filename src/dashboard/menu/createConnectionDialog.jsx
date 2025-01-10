@@ -123,22 +123,22 @@ const CreateConnectionDialog = ({
       <DialogContent className="max-w-4xl overflow-clip ">
         <DialogHeader className="flex items-center text-center">
           <DialogTitle className="flex flex-col items-center">
-            配置连接
+            Config Connection
           </DialogTitle>
           <Separator />
         </DialogHeader>
         <div className="flex flex-col gap-5">
           <div className="flex flex-row items-center gap-5 px-4">
-            <p className="basis-2/12 text-right">连接名称:</p>
+            <p className="basis-2/12 text-right">Connection Name:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
-              placeholder="连接名称"
+              placeholder="connection name"
               onChange={(e) => handleTitleOnInput(e)}
               value={currentLinkName}
             ></Input>
           </div>
           <div className="flex flex-row items-center gap-5 px-4">
-            <p className="basis-2/12 text-right">连接类型:</p>
+            <p className="basis-2/12 text-right">Connection Type:</p>
             <Select
               defaultValue={connectionType}
               onValueChange={(e) => handleTypeOnSelect(e)}

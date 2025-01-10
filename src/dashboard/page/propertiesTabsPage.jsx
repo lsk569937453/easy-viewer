@@ -5,20 +5,24 @@ import "ace-builds/src-noconflict/mode-sql"
 import "ace-builds/src-noconflict/theme-github"
 import "ace-builds/src-noconflict/theme-iplastic"
 import "ace-builds/src-noconflict/theme-xcode"
+import "ace-builds/src-noconflict/theme-monokai"
 
 import { useEffect, useRef, useState } from "react"
 import { invoke } from "@tauri-apps/api/core"
 import beautify from "ace-builds/src-noconflict/ext-beautify"
 import { set } from "date-fns"
+import { useTheme } from "next-themes"
 
 import { Button } from "@/components/ui/button"
 
-import { getLevelInfos, uuid } from "../../lib/jsx-utils"
+import { getEditorTheme, getLevelInfos, uuid } from "../../lib/jsx-utils"
 import DataPage from "./dataPage"
 import PropertiesColumnPage from "./propertiesColumnPage"
 import PropertiesPage from "./propertiesPage"
 
 const PropertiesTabsPage = ({ node }) => {
+  const { setTheme, theme } = useTheme()
+
   const [sql, setSql] = useState("select *from test limit 100")
   const [tabValue, setTabValue] = useState("column")
 
@@ -168,7 +172,7 @@ const PropertiesTabsPage = ({ node }) => {
       >
         <div className=" h-full w-full ">
           <AceEditor
-            className="min-h-[22px]   basis-11/12 border 	  border-input bg-background bg-muted px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50 "
+            className="min-h-[22px]   basis-11/12 border 	  border-input bg-background  px-3  text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50 "
             ref={editorRef}
             commands={beautify.commands}
             mode="sql"
@@ -180,7 +184,7 @@ const PropertiesTabsPage = ({ node }) => {
             readOnly={true}
             enableLiveAutocompletion={true}
             showPrintMargin={false}
-            theme="xcode"
+            theme={getEditorTheme(theme)}
             name="UNIQUE_ID_OF_DIV"
             fontSize={16}
             value={sql}

@@ -23,7 +23,7 @@ export function PreferenceDialog() {
     console.log(response_msg)
     if (response_code === 0) {
       toast({
-        title: "操作信息",
+        title: "Operation Message",
         description: "菜单项已经重置成功。",
       })
       await delay(2000)

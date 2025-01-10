@@ -255,7 +255,7 @@ const DashboardPage = () => {
       })
     )
     if (response_code == 0) {
-      console.log("保存成功")
+      console.log("Save success")
       setShowQueryLoading(false)
       clickNode(nodeForUpdate, menulist, setMenulist)
     }
@@ -284,7 +284,7 @@ const DashboardPage = () => {
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -297,7 +297,7 @@ const DashboardPage = () => {
       })
     )
     if (response_code == 0) {
-      console.log("删除成功")
+      console.log("Delete success")
       setShowDeleteConnectionDialog(false)
       const updatedData = menulist.filter(
         (item) => item.baseConfigId !== baseConfigId
@@ -343,7 +343,7 @@ const DashboardPage = () => {
       })
     )
     if (response_code == 0) {
-      console.log("删除成功")
+      console.log("Delete Success")
       setShowRemoveQueryDialog(false)
       clickNode(nodeForUpdate, menulist, setMenulist)
     }
@@ -486,7 +486,7 @@ const DashboardPage = () => {
                     onOpenChange={setShowQueryLoading}
                   >
                     <DialogContent className="w-30 bg-slate-200">
-                      <DialogTitle>创建新的Query</DialogTitle>
+                      <DialogTitle>Create New Query</DialogTitle>
                       <div className="flex flex-col gap-4 p-4">
                         <div className="flex flex-row items-center justify-center">
                           <p className="flex-[1]">Name:</p>

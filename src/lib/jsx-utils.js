@@ -377,3 +377,16 @@ export const getDeleteSql = (
   )})`
   return sql
 }
+export const editorMap = new Map([
+  ["light", "xcode"],
+  ["blueLight", "xcode"],
+  ["midnightTokyo", "xcode"],
+  ["purpleDarkV2", "xcode"],
+  ["eviloma2", "xcode"],
+
+  ["dark", "monokai"],
+  ["yuzuMarmalade", "monokai"],
+  ["purpleillusionist", "monokai"],
+  ["vscodeMonkaiPro", "monokai"],
+])
+export const getEditorTheme = (theme) => editorMap.get(theme)

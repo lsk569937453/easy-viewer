@@ -354,12 +354,12 @@ const IconDiv = ({ node, selectedRows }) => {
       })
     )
     if (response_code == 0) {
-      console.log("保存成功")
+      console.log("Save success")
       clickNode(node.parent, menulist, setMenulist)
     } else {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     }
@@ -400,13 +400,13 @@ const IconDiv = ({ node, selectedRows }) => {
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     } else {
       toast({
-        title: "操作信息",
-        description: "下载成功",
+        title: "Operation Message",
+        description: "Download Success",
       })
     }
   }
@@ -436,13 +436,13 @@ const IconDiv = ({ node, selectedRows }) => {
     if (response_code !== 0) {
       toast({
         variant: "destructive",
-        title: "操作信息",
+        title: "Operation Message",
         description: response_msg,
       })
     } else {
       toast({
-        title: "操作信息",
-        description: "上传成功",
+        title: "Operation Message",
+        description: "Upload Success",
       })
     }
   }
@@ -672,8 +672,8 @@ const IconDiv = ({ node, selectedRows }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth - 4}
-                    height={iconHeight - 4}
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -711,7 +711,6 @@ const IconDiv = ({ node, selectedRows }) => {
               viewBox="-31 -31 372.00 372.00"
               version="1.1"
               preserveAspectRatio="xMidYMid"
-              fill="#000000"
               width={iconWidth - 4}
               height={iconHeight - 4}
             >
@@ -722,8 +721,8 @@ const IconDiv = ({ node, selectedRows }) => {
                   width="372.00"
                   height="372.00"
                   rx="0"
-                  fill="#dbe0e1"
                   strokewidth="0"
+                  className="fill-muted"
                 ></rect>
               </g>
               <g
@@ -738,72 +737,132 @@ const IconDiv = ({ node, selectedRows }) => {
                   <path
                     d="M20.624,53.686 L0,64 L0,245.02 L20.624,255.274 L20.748,255.125 L20.748,53.828 L20.624,53.686"
                     fill="#8C3123"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#8C3123]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M131,229 L20.624,255.274 L20.624,53.686 L131,79.387 L131,229"
                     fill="#E05243"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#E05243]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M81.178,187.866 L127.996,193.826 L128.29,193.148 L128.553,116.378 L127.996,115.778 L81.178,121.652 L81.178,187.866"
                     fill="#8C3123"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#8C3123]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M127.996,229.295 L235.367,255.33 L235.536,255.061 L235.533,53.866 L235.363,53.686 L127.996,79.682 L127.996,229.295"
                     fill="#8C3123"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#8C3123]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M174.827,187.866 L127.996,193.826 L127.996,115.778 L174.827,121.652 L174.827,187.866"
                     fill="#E05243"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#E05243]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M174.827,89.631 L127.996,98.166 L81.178,89.631 L127.937,77.375 L174.827,89.631"
                     fill="#5E1F18"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#5E1F18]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M174.827,219.801 L127.996,211.21 L81.178,219.801 L127.939,232.854 L174.827,219.801"
                     fill="#F2B0A9"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#F2B0A9]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M81.178,89.631 L127.996,78.045 L128.375,77.928 L128.375,0.313 L127.996,0 L81.178,23.413 L81.178,89.631"
                     fill="#8C3123"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#8C3123]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M174.827,89.631 L127.996,78.045 L127.996,0 L174.827,23.413 L174.827,89.631"
                     fill="#E05243"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#E05243]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M127.996,309.428 L81.173,286.023 L81.173,219.806 L127.996,231.388 L128.685,232.171 L128.498,308.077 L127.996,309.428"
                     fill="#8C3123"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#8C3123]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M127.996,309.428 L174.823,286.023 L174.823,219.806 L127.996,231.388 L127.996,309.428"
                     fill="#E05243"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#E05243]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
                   <path
                     d="M235.367,53.686 L256,64 L256,245.02 L235.367,255.33 L235.367,53.686"
                     fill="#E05243"
+                    className={`${
+                      node.children && node.children.length
+                        ? "fill-[#E05243]"
+                        : "fill-slate-500"
+                    }`}
                   >
                     {" "}
                   </path>{" "}
@@ -865,8 +924,8 @@ const IconDiv = ({ node, selectedRows }) => {
                 <Tooltip.Trigger asChild>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width={iconWidth - 4}
-                    height={iconHeight - 4}
+                    width={iconWidth}
+                    height={iconHeight}
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -1656,7 +1715,6 @@ const IconDiv = ({ node, selectedRows }) => {
         <>
           {node.data.showSecondIcon && (
             <svg
-              fill="#000000"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
               width={iconWidth}

@@ -26,7 +26,7 @@ const Filter = ({ column }: { column: Column<any, any> }) => {
 
   return (
     <input
-      className="w-36 rounded border bg-muted p-1 shadow"
+      className="w-36 rounded border bg-background p-1 shadow"
       onChange={(e) => column.setFilterValue(e.target.value)}
       onClick={(e) => e.stopPropagation()}
       placeholder={`Search...`}
@@ -46,14 +46,14 @@ export const DataTable = <TValue,>({
 }) => {
   return (
     <Table style={{ width: table.getTotalSize() }}>
-      <TableHeader className="sticky top-0 bg-muted">
+      <TableHeader className="sticky top-0 bg-background">
         {table.getHeaderGroups().map((headerGroup: any) => (
           <TableRow key={headerGroup.id}>
             {headerGroup.headers.map((header: any) => {
               return (
                 <TableHead
                   key={header.id}
-                  className="relative  w-6 border border-background"
+                  className="relative  w-6 border "
                   style={{
                     width: header.getSize(),
                   }}
@@ -91,7 +91,7 @@ export const DataTable = <TValue,>({
                     width: cell.column.getSize(),
                     minWidth: cell.column.columnDef.minSize,
                   }}
-                  className="border border-background"
+                  className="border "
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>

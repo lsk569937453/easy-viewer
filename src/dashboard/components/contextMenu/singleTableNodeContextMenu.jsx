@@ -485,45 +485,78 @@ const SingleTableNodeContextMenu = ({ node }) => {
     <>
       <MenuItem
         onClick={(e) => handleCopyConnectionOnClick(e)}
-        className="text-xs"
+        className="text-xs text-foreground hover:bg-muted"
       >
         Copy Name
       </MenuItem>
       <Separator />
-      <MenuItem onClick={(e) => handleEditTableOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleEditTableOnClick(e)}
+        className="text-xs text-foreground hover:bg-muted"
+      >
         Edit Table
       </MenuItem>
-      <MenuItem onClick={(e) => handleShowDDLOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleShowDDLOnClick(e)}
+        className="text-xs text-foreground hover:bg-muted"
+      >
         Show Table DDL
       </MenuItem>
       <Separator />
-      <SubMenu label={<>SQL Template</>} className="text-xs">
-        <MenuItem onClick={(e) => handleSelectOnClick(e)}>SELECT</MenuItem>
-        <MenuItem onClick={(e) => handleInsertOnClick(e)}>INSERT</MenuItem>
-        <MenuItem onClick={(e) => handleUpdateOnClick(e)}>UPDATE</MenuItem>
-        <MenuItem onClick={(e) => handleDeleteOnClick(e)}>DELETE</MenuItem>
+      <SubMenu
+        label={<>SQL Template</>}
+        className="bg-background text-xs text-foreground hover:bg-muted"
+        menuClassName="bg-background text-foreground "
+      >
+        <MenuItem
+          onClick={(e) => handleSelectOnClick(e)}
+          className="text-xs text-foreground hover:bg-muted"
+        >
+          SELECT
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => handleInsertOnClick(e)}
+          className="text-xs text-foreground hover:bg-muted"
+        >
+          INSERT
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => handleUpdateOnClick(e)}
+          className="text-xs text-foreground hover:bg-muted"
+        >
+          UPDATE
+        </MenuItem>
+        <MenuItem
+          onClick={(e) => handleDeleteOnClick(e)}
+          className="text-xs text-foreground hover:bg-muted"
+        >
+          DELETE
+        </MenuItem>
       </SubMenu>
       <MenuItem
         onClick={(e) => handleDumpStructureOnClick(e)}
-        className="text-xs"
+        className="text-xs text-foreground hover:bg-muted"
       >
         Dump Struct
       </MenuItem>
       <MenuItem
         onClick={(e) => handleDumpStructureOnClick(e)}
-        className="text-xs"
+        className="text-xs text-foreground hover:bg-muted"
       >
         Dump Struct And Data
       </MenuItem>
 
       <Separator />
-      <MenuItem onClick={(e) => handleDropTableOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDropTableOnClick(e)}
+        className="text-xs text-foreground hover:bg-muted"
+      >
         Drop
       </MenuItem>
 
       <MenuItem
         onClick={(e) => handleTruncateTableOnClick(e)}
-        className="text-xs"
+        className="text-xs text-foreground hover:bg-muted"
       >
         Truncate Table
       </MenuItem>

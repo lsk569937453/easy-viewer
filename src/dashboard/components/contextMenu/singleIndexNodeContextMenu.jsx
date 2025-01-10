@@ -60,7 +60,10 @@ const SingleIndexNodeContextMenu = ({ node }) => {
   }
   return (
     <>
-      <MenuItem onClick={(e) => handleDropColumnOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDropColumnOnClick(e)}
+        className="text-xs text-foreground hover:bg-muted"
+      >
         Drop Index
       </MenuItem>
     </>

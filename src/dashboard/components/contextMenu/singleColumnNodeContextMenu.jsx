@@ -171,7 +171,7 @@ const SingleColumnNodeContextMenu = ({ node }) => {
     <>
       <MenuItem
         onClick={(e) => handleCopyConnectionOnClick(e)}
-        className="text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Copy Name
       </MenuItem>
@@ -184,7 +184,7 @@ const SingleColumnNodeContextMenu = ({ node }) => {
 
       <MenuItem
         onClick={(e) => handleCreateIndexOnClick(e)}
-        className="text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Create Index
       </MenuItem>
@@ -192,7 +192,7 @@ const SingleColumnNodeContextMenu = ({ node }) => {
       {getRootNodeType() !== 3 && (
         <MenuItem
           onClick={(e) => handleDropColumnOnClick(e)}
-          className="text-xs text-foreground hover:bg-muted"
+          className="bg-muted text-xs text-foreground hover:bg-popover"
         >
           Drop Column
         </MenuItem>

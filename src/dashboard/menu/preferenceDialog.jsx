@@ -38,10 +38,10 @@ export function PreferenceDialog() {
         </DialogTitle>
         <Separator />
 
-        <Button onClick={handleResetButtonOnClick}>
+        {/* <Button onClick={handleResetButtonOnClick}>
           {" "}
           {t("preferenceDialog.resetMenuIndexButtonText")}
-        </Button>
+        </Button> */}
       </DialogHeader>
     </DialogContent>
   )

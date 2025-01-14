@@ -54,23 +54,23 @@ const TreeRootNodeContextMenu = ({ node }) => {
     })
   }
   return (
-    <div className="h-full w-full bg-background">
+    <div className="h-full w-full bg-muted">
       <MenuItem
         onClick={(e) => handleCopyConnectionOnClick(e)}
-        className="text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Copy Name
       </MenuItem>
       <Separator />
       <MenuItem
         onClick={(e) => handleEditConnectionClick(e)}
-        className="text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Edit Connection
       </MenuItem>
       <MenuItem
         onClick={(e) => handleDeleteConnectionClick(e)}
-        className="text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Delete Connection
       </MenuItem>

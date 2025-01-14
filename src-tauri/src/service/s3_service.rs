@@ -46,7 +46,7 @@ impl S3Config {
         _appstate: &AppState,
         is_folder: bool,
     ) -> Result<GetObjectInfoRes, anyhow::Error> {
-        info!("get_object_info:   {:?}", list_node_info_req);
+        info!("get_object_info:     {:?}", list_node_info_req);
         let list = list_node_info_req.level_infos;
 
         let bucket_name = list[1].config_value.clone();
@@ -405,7 +405,7 @@ impl S3Config {
 
         for object in objects.contents() {
             let key = object.key().ok_or(anyhow!(""))?;
-            info!("key:{}", key);
+            info!("key :{}", key);
             if key.ends_with("/") {
                 let s3_path: Vec<&str> = key.split("/").collect();
                 let mut local_path = PathBuf::from(&local_file_path);

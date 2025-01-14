@@ -206,17 +206,23 @@ const BucketNodeContextMenu = ({ node }) => {
   }
   return (
     <>
-      <MenuItem onClick={(e) => handleCopyNameOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleCopyNameOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         Copy Name
       </MenuItem>
       <Separator />
-      <MenuItem onClick={(e) => handleNewFolderOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleNewFolderOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         New Folder
       </MenuItem>
       <Separator />
       <MenuItem
         onClick={(e) => handleDeleteBucketOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Delete
       </MenuItem>
@@ -224,16 +230,19 @@ const BucketNodeContextMenu = ({ node }) => {
       <Separator />
       <MenuItem
         onClick={(e) => handleDownloadBucketOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Download
       </MenuItem>
-      <MenuItem onClick={(e) => handleUploadFileOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleUploadFileOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         Upload File
       </MenuItem>
       <MenuItem
         onClick={(e) => handleUploadFolferOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Upload Folder
       </MenuItem>

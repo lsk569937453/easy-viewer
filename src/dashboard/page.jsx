@@ -445,10 +445,11 @@ const DashboardPage = () => {
                   direction="right"
                   onClose={() => setOpen(false)}
                   className="p-1"
+                  menuClassName="bg-muted text-foreground"
                 >
                   <MenuItem
                     onClick={handleNewConnectionButtonClick}
-                    className="text-sm"
+                    className="bg-muted text-sm hover:bg-popover"
                   >
                     New Connection
                   </MenuItem>
@@ -456,7 +457,7 @@ const DashboardPage = () => {
                     onClick={() =>
                       reloadNode(treeRef.current.root, menulist, setMenulist)
                     }
-                    className="text-sm"
+                    className="bg-muted text-sm hover:bg-popover"
                   >
                     Refresh
                   </MenuItem>
@@ -485,7 +486,7 @@ const DashboardPage = () => {
                     open={showQueryLoading}
                     onOpenChange={setShowQueryLoading}
                   >
-                    <DialogContent className="w-30 bg-slate-200">
+                    <DialogContent className="w-30 bg-background">
                       <DialogTitle>Create New Query</DialogTitle>
                       <div className="flex flex-col gap-4 p-4">
                         <div className="flex flex-row items-center justify-center">
@@ -504,7 +505,7 @@ const DashboardPage = () => {
                     open={showRenameQueryDialog}
                     onOpenChange={setShowRenameQueryDialog}
                   >
-                    <DialogContent className="w-30 bg-slate-200 p-4">
+                    <DialogContent className="w-30 bg-background p-4">
                       <DialogTitle>Rename Query</DialogTitle>
                       <div className="flex flex-col gap-4 p-4">
                         <div className="flex flex-row items-center justify-center">

@@ -21,9 +21,10 @@ import "ace-builds/src-noconflict/theme-iplastic"
 
 import { invoke } from "@tauri-apps/api/core"
 import { sq, ta } from "date-fns/locale"
+import { useTheme } from "next-themes"
 import { useHotkeys } from "react-hotkeys-hook"
 
-import { getRootNode } from "../../lib/jsx-utils.js"
+import { getEditorTheme, getRootNode } from "../../lib/jsx-utils.js"
 
 const QueryPage = ({
   node,
@@ -40,6 +41,7 @@ const QueryPage = ({
   const { setShowSaveQueryDialog } = useContext(MainPageDialogContext)
   const [clickFlag, setClickFlag] = useState(false)
   const hasMounted = useRef(false)
+  const { setTheme, theme } = useTheme()
 
   useEffect(() => {
     setCurrentQueryName(queryName)
@@ -134,7 +136,7 @@ const QueryPage = ({
   return (
     <ResizablePanelGroup direction="vertical">
       <ResizablePanel defaultSize={50} className="min-h-[200px]">
-        <div className="flex h-full flex-col items-start justify-start bg-muted">
+        <div className="flex h-full flex-col items-start justify-start bg-background">
           <div
             className="flex cursor-pointer flex-row items-start p-2 "
             onClick={() => setClickFlag(!clickFlag)}
@@ -151,7 +153,7 @@ const QueryPage = ({
             <span className="select-none"> Run</span>
           </div>
           <AceEditor
-            className=" resize-y	   border-input bg-muted px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
+            className=" resize-y	   border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground  focus-visible:ring-ring  disabled:cursor-not-allowed disabled:opacity-50"
             mode="sql"
             width="100%"
             ref={textAreaRef}
@@ -162,7 +164,7 @@ const QueryPage = ({
             onLoad={handleEditorLoad}
             enableLiveAutocompletion={true}
             showPrintMargin={false}
-            theme="xcode"
+            theme={getEditorTheme(theme)}
             onChange={handleOnChange}
             name="UNIQUE_ID_OF_DIV"
             fontSize={16}

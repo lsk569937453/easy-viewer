@@ -331,7 +331,8 @@ const TreeNode = ({
         state={isOpen ? "open" : "closed"}
         direction="right"
         onClose={() => setOpen(false)}
-        className="p-1"
+        className=""
+        menuClassName="bg-muted text-foreground"
       >
         {(node.data.iconName == "mysql" || node.data.iconName == "sqlite") && (
           <TreeRootNodeContextMenu node={node} />

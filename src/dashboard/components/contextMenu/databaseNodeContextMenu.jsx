@@ -164,36 +164,45 @@ const DatabaseNodeContextMenu = ({ node }) => {
     <>
       <MenuItem
         onClick={(e) => handleCopyConnectionOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Copy Name
       </MenuItem>
       <Separator />
       <MenuItem
         onClick={(e) => handleDropDatabaseOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Drop
       </MenuItem>
       <MenuItem
         onClick={(e) => handleTruncateDatabaseOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Truncate
       </MenuItem>
       <Separator />
-      <MenuItem onClick={(e) => handleDumpStructOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDumpStructOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         Dump Struct
       </MenuItem>
-      <MenuItem onClick={(e) => handleDumpStructOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleDumpStructOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         Dump Struct And Data
       </MenuItem>
-      <MenuItem onClick={(e) => handleImportSqlOnClick(e)} className="text-xs">
+      <MenuItem
+        onClick={(e) => handleImportSqlOnClick(e)}
+        className="bg-muted text-xs text-foreground hover:bg-popover"
+      >
         Import SQL
       </MenuItem>
       <MenuItem
         onClick={(e) => handleGenerateDocumentOnClick(e)}
-        className="text-xs"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
       >
         Generate Document
       </MenuItem>

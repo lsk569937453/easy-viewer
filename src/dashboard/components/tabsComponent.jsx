@@ -122,20 +122,36 @@ const TabsComponent = () => {
         onClose={() => setIsTabContextMenuOpen(false)}
         portal
         className="p-1"
+        menuClassName="bg-muted text-foreground"
       >
-        <MenuItem onClick={handleCloseTab} className="text-sm">
+        <MenuItem
+          onClick={handleCloseTab}
+          className="bg-muted text-sm text-foreground hover:bg-popover"
+        >
           Close
         </MenuItem>
-        <MenuItem onClick={handleCloseOtherTabs} className="text-sm">
+        <MenuItem
+          onClick={handleCloseOtherTabs}
+          className="bg-muted text-sm text-foreground hover:bg-popover"
+        >
           Close Others Without Save
         </MenuItem>
-        <MenuItem onClick={handleCloseTabToLeft} className="text-sm">
+        <MenuItem
+          onClick={handleCloseTabToLeft}
+          className="bg-muted text-sm text-foreground hover:bg-popover"
+        >
           Close Tabs to the Left Without Save
         </MenuItem>
-        <MenuItem onClick={handleCloseTabToRight} className="text-sm">
+        <MenuItem
+          onClick={handleCloseTabToRight}
+          className="bg-muted text-sm text-foreground hover:bg-popover"
+        >
           Close Tabs to the right Without Save
         </MenuItem>
-        <MenuItem onClick={handleCloseAllTabs} className="text-sm">
+        <MenuItem
+          onClick={handleCloseAllTabs}
+          className="bg-muted text-sm text-foreground hover:bg-popover"
+        >
           Close All Without Save
         </MenuItem>
       </ControlledMenu>
@@ -236,7 +252,7 @@ const TabsComponent = () => {
                 </Tooltip.Trigger>
                 <Tooltip.Portal>
                   <Tooltip.Content
-                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-white px-[15px] py-2.5 text-[15px] leading-none shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
+                    className="text-violet11 data-[state=delayed-open]:data-[side=bottom]:animate-slideUpAndFade data-[state=delayed-open]:data-[side=left]:animate-slideRightAndFade data-[state=delayed-open]:data-[side=right]:animate-slideLeftAndFade data-[state=delayed-open]:data-[side=top]:animate-slideDownAndFade select-none rounded bg-muted px-[15px] py-2.5 text-[15px] leading-none text-foreground shadow-[hsl(206_22%_7%_/_35%)_0px_10px_38px_-10px,_hsl(206_22%_7%_/_20%)_0px_10px_20px_-15px] will-change-[transform,opacity]"
                     sideOffset={5}
                   >
                     <p> {item.tabName}</p>

@@ -31,7 +31,10 @@ export function PreferenceDialog() {
     }
   }
   return (
-    <DialogContent className="overflow-clip">
+    <DialogContent
+      className="overflow-clip"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+    >
       <DialogHeader className="flex items-center text-center">
         <DialogTitle className="flex flex-col items-center">
           Setting

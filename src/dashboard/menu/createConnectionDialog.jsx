@@ -129,7 +129,7 @@ const CreateConnectionDialog = ({
         </DialogHeader>
         <div className="flex flex-col gap-5">
           <div className="flex flex-row items-center gap-5 px-4">
-            <p className="basis-2/12 text-right">Connection Name:</p>
+            <p className="basis-2/12 text-right">Name:</p>
             <Input
               className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
               placeholder="connection name"
@@ -143,7 +143,7 @@ const CreateConnectionDialog = ({
               defaultValue={connectionType}
               onValueChange={(e) => handleTypeOnSelect(e)}
             >
-              <SelectTrigger className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0">
+              <SelectTrigger className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-1">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

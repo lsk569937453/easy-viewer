@@ -17,6 +17,7 @@ import { Dialog } from "../../components/ui/dialog"
 import { MainPageDialogContext, SidebarContext } from "../page"
 import { AboutDialog } from "./about-dialog"
 import { CreateConnectionDialog } from "./createConnectionDialog"
+import { HelpMenu } from "./helpMenu"
 import { LanguageMenu } from "./languageMenu"
 import { PreferenceDialog } from "./preferenceDialog"
 import { MenuModeToggle } from "./themModeMenu"
@@ -77,6 +78,7 @@ export function Menu() {
         </MenubarMenu>
         <MenuModeToggle />
         <LanguageMenu />
+        <HelpMenu />
       </Menubar>
     </div>
   )

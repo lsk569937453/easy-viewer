@@ -33,7 +33,10 @@ export function AboutDialog() {
     }
   }
   return (
-    <DialogContent className="overflow-clip pb-2">
+    <DialogContent
+      className="overflow-clip pb-2"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+    >
       <DialogHeader className="flex items-center text-center">
         <DialogTitle className="flex flex-col items-center gap-2 pt-2">
           EasyViewer
@@ -54,15 +57,11 @@ export function AboutDialog() {
         <div className="mr-auto flex flex-row gap-2">
           <HomeIcon
             className="h-5 w-5 cursor-pointer transition hover:text-slate-300"
-            onClick={() =>
-              open("https://github.com/lsk569937453/code-magic-public")
-            }
+            onClick={() => open("https://github.com/lsk569937453/easy-viewer")}
           />
           <GithubIcon
             className="h-5 w-5 cursor-pointer transition hover:text-slate-300 "
-            onClick={() =>
-              open("https://github.com/lsk569937453/code-magic-public")
-            }
+            onClick={() => open("https://github.com/lsk569937453/easy-viewer")}
           />
         </div>
 

@@ -332,7 +332,7 @@ const TreeNode = ({
         direction="right"
         onClose={() => setOpen(false)}
         className=""
-        menuClassName="bg-background text-foreground"
+        menuClassName="bg-muted text-foreground"
       >
         {(node.data.iconName == "mysql" || node.data.iconName == "sqlite") && (
           <TreeRootNodeContextMenu node={node} />

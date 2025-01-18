@@ -26,12 +26,12 @@ export function LanguageMenu() {
           >
             <span>{t("toolBar.language.english")}</span>
           </MenubarRadioItem>
-          <MenubarRadioItem
+          {/* <MenubarRadioItem
             value="zh"
             onClick={() => i18n.changeLanguage("zh")}
           >
             <span>{t("toolBar.language.chinese")}</span>
-          </MenubarRadioItem>
+          </MenubarRadioItem> */}
         </MenubarRadioGroup>
       </MenubarContent>
     </MenubarMenu>

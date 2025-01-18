@@ -392,7 +392,7 @@ impl S3Config {
             let mut file = File::create(dst_file_path.clone()).await?;
             file.write_all(data.to_vec().as_slice()).await?;
 
-            info!("File downloaded to {}", dst_file_path);
+            info!("File downloaded to {} .", dst_file_path);
             return Ok(());
         }
         object_key.push('/');
@@ -405,7 +405,7 @@ impl S3Config {
 
         for object in objects.contents() {
             let key = object.key().ok_or(anyhow!(""))?;
-            info!("key:{}", key);
+            info!("key :{}", key);
             if key.ends_with("/") {
                 let s3_path: Vec<&str> = key.split("/").collect();
                 let mut local_path = PathBuf::from(&local_file_path);

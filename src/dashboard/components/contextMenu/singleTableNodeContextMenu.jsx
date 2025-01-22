@@ -505,7 +505,7 @@ const SingleTableNodeContextMenu = ({ node }) => {
       <Separator />
       <SubMenu
         label={<>SQL Template</>}
-        className="bg-background text-xs text-foreground hover:bg-muted"
+        className="bg-muted text-xs text-foreground hover:bg-popover"
         menuClassName="bg-background text-foreground "
       >
         <MenuItem

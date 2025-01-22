@@ -46,7 +46,7 @@ impl S3Config {
         _appstate: &AppState,
         is_folder: bool,
     ) -> Result<GetObjectInfoRes, anyhow::Error> {
-        info!("get_object_info:     {:?}", list_node_info_req);
+        info!("get_object_info:  {:?}", list_node_info_req);
         let list = list_node_info_req.level_infos;
 
         let bucket_name = list[1].config_value.clone();
@@ -392,7 +392,7 @@ impl S3Config {
             let mut file = File::create(dst_file_path.clone()).await?;
             file.write_all(data.to_vec().as_slice()).await?;
 
-            info!("File downloaded to {}", dst_file_path);
+            info!("File downloaded to{}.", dst_file_path);
             return Ok(());
         }
         object_key.push('/');

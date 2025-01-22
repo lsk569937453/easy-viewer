@@ -33,7 +33,10 @@ export function AboutDialog() {
     }
   }
   return (
-    <DialogContent className="overflow-clip pb-2">
+    <DialogContent
+      className="overflow-clip pb-2"
+      onOpenAutoFocus={(e) => e.preventDefault()}
+    >
       <DialogHeader className="flex items-center text-center">
         <DialogTitle className="flex flex-col items-center gap-2 pt-2">
           EasyViewer

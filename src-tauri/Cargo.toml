@@ -14,9 +14,9 @@ tauri-build = { version = "2.0.5", features = [] }
 
 [dependencies]
 anyhow = "1.0.95"
-aws-config = { version = "1.5.13", features = ["behavior-version-latest"] }
+aws-config = { version = "1.5.16", features = ["behavior-version-latest"] }
 aws-credential-types = { version = "1.2.1", features = ["hardcoded-credentials"] }
-aws-sdk-s3 = { version = "1.69.0", features = ["behavior-version-latest"] }
+aws-sdk-s3 = { version = "1.73.0", features = ["behavior-version-latest"] }
 base64 = "0.22.1"
 bigdecimal = { version = "0.4.7", features = ["serde"] }
 chrono = { version = "0.4.39", features = ["serde"] }
@@ -33,11 +33,11 @@ itertools = "0.14.0"
 
 linked-hash-map = "0.5.6"
 log = "0.4.25"
-mongodb = "3.2.0"
+mongodb = "3.2.1"
 num = "0.4.3"
 oracle = "0.6.3"
 percent-encoding = "2.3.0"
-redis = "0.28.1"
+redis = "0.28.2"
 rust_decimal = "1.36.0"
 
 serde = { version = "1.0.217", features = ["derive"] }
@@ -45,7 +45,7 @@ serde-xml-rs = "0.6.0"
 serde_json = "1.0.137"
 serde_repr = "0.1.19"
 serde_yaml = "0.9.34"
-sqlparser = "0.53.0"
+sqlparser = "0.54.0"
 sqlx = { version = "0.8.3", features = [
     "runtime-tokio",
     "tls-native-tls",
@@ -61,17 +61,17 @@ sqlx = { version = "0.8.3", features = [
     "bit-vec",
     
 ] }
-tauri = { version = "2.2.2", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "2.2.5", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-dialog = "2.2.0"
 tauri-plugin-fs = "2.2.0"
-tauri-plugin-log = { version = "2.2.0" }
+tauri-plugin-log = { version = "2.2.1" }
 tauri-plugin-os = "2.2.0"
 tauri-plugin-shell = "2.2.0"
 tiberius = { version = "0.12.3", features = ["tds73", "chrono"] }
 time = "0.3.37"
 tokio = { version = "1.43.0", features = ["full", "tracing", "time"] }
 tokio-util = "0.7.13"
-uuid = { version = "1.11.1", features = [
+uuid = { version = "1.13.1", features = [
     "v4",
     "fast-rng",
     "macro-diagnostics",

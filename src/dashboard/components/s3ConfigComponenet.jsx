@@ -297,7 +297,7 @@ export function S3ConfigComponent({
           value={currentSecretKey}
         ></Input>
       </div>
-      <div className="flex flex-row items-center gap-5">
+      {/* <div className="flex flex-row items-center gap-5">
         <p className="basis-2/12 text-right">Database:</p>
         <Input
           className="basis-10/12 border border-foreground/50 focus:border-transparent focus:ring-0"
@@ -305,7 +305,7 @@ export function S3ConfigComponent({
           onChange={(e) => setCurrentRegion(e.target.value)}
           value={currentRegion}
         ></Input>
-      </div>
+      </div> */}
 
       <div className="flex flex-row items-center gap-5">
         {!isSave && (

@@ -293,8 +293,6 @@ const TreeNode = ({
     e.stopPropagation()
 
     const contextMenuArray = [
-      "mysql",
-      "sqlite",
       "database",
       "singleTable",
       "column",
@@ -304,7 +302,9 @@ const TreeNode = ({
       "bucket",
       "folder",
     ]
-    if (contextMenuArray.includes(node.data.iconName)) {
+    const mergedArray = [...contextMenuArray, ...Array.from(formatMap.values())]
+
+    if (mergedArray.includes(node.data.iconName)) {
       if (typeof document.hasFocus === "function" && !document.hasFocus())
         return
 
@@ -334,7 +334,7 @@ const TreeNode = ({
         className=""
         menuClassName="bg-muted text-foreground"
       >
-        {(node.data.iconName == "mysql" || node.data.iconName == "sqlite") && (
+        {Array.from(formatMap.values()).includes(node.data.iconName) && (
           <TreeRootNodeContextMenu node={node} />
         )}
         {node.data.iconName == "database" && (

@@ -147,12 +147,12 @@ const CreateConnectionDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="mysql">Mysql</SelectItem>
-                <SelectItem value="sqlite">Sqlite</SelectItem>
-                <SelectItem value="postgresql">PostGresql</SelectItem>
+                <SelectItem value="mysql">MySQL</SelectItem>
+                <SelectItem value="sqlite">SQLite</SelectItem>
+                <SelectItem value="postgresql">PostgreSQL</SelectItem>
                 {/* <SelectItem value="mongodb">MongoDB</SelectItem> */}
                 {/* <SelectItem value="oracledb">Oracle</SelectItem> */}
-                <SelectItem value="mssql">Mssql</SelectItem>
+                <SelectItem value="mssql">MSSQL</SelectItem>
                 {/* <SelectItem value="clickhouse">Clickhouse</SelectItem> */}
                 <SelectItem value="s3">S3</SelectItem>
               </SelectContent>
@@ -286,7 +286,7 @@ const CreateConnectionDialog = ({
               }
               initialDatabase={
                 connectionData?.base_config_enum?.mysql?.config?.database ??
-                "oracledb"
+                "mssqlDatabase"
               }
               initialUsername={
                 connectionData?.base_config_enum?.mysql?.config?.user_name ||

@@ -392,7 +392,7 @@ impl S3Config {
             let mut file = File::create(dst_file_path.clone()).await?;
             file.write_all(data.to_vec().as_slice()).await?;
 
-            info!("File downloaded to{}.", dst_file_path);
+            info!("File downloaded to {}.", dst_file_path);
             return Ok(());
         }
         object_key.push('/');

@@ -104,7 +104,7 @@ export const DataTable = <TValue,>({
               colSpan={columns.length}
               className=" w-full text-center "
             >
-              No results.
+              <p className="text-nowrap">No results.</p>
             </TableCell>
           </TableRow>
         )}

@@ -1127,6 +1127,25 @@ WHERE table_schema = '{}'
 
         Ok(())
     }
+    pub async fn update_comment(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        new_comment: String,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[4].config_value.clone();
+
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = format!("COMMENT ON TABLE {} IS '{}';", table_name, new_comment);
+        info!("update comment sql: {}", sql);
+        sqlx::query(&sql).execute(&mut conn).await?;
+
+        Ok(())
+    }
     pub async fn drop_column(
         &self,
         list_node_info_req: ListNodeInfoReq,

@@ -1190,4 +1190,25 @@ DROP COLUMN {};",
 
         Ok(())
     }
+    pub async fn update_comment(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        new_comment: String,
+    ) -> Result<(), anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let level_infos = list_node_info_req.level_infos;
+        let table_name = level_infos[3].config_value.clone();
+        let database_name = level_infos[1].config_value.clone();
+
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let use_database_sql = format!("use {}", database_name);
+        info!("use_database_sql: {}", use_database_sql);
+        conn.execute(&*use_database_sql).await?;
+
+        let sql = format!("ALTER TABLE {} COMMENT = '{}';", table_name, new_comment);
+        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+
+        Ok(())
+    }
 }

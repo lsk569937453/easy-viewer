@@ -309,6 +309,31 @@ WHERE TABLE_NAME = '{}' AND TABLE_SCHEMA = '{}';",
         let _ = conn.execute(&sql, &[]).await?;
         Ok(())
     }
+    pub async fn update_comment(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        new_comment: String,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = list_node_info_req.level_infos;
+        let database_name = level_infos[1].config_value.clone();
+        let schema_name = level_infos[2].config_value.clone();
+
+        let table_name = level_infos[4].config_value.clone();
+        let mut conn = self.get_connection_with_database(database_name).await?;
+
+        let sql = format!(
+            "EXEC sp_updateextendedproperty 
+    @name = N'MS_Description', 
+    @value = '{}', 
+    @level0type = N'Schema', @level0name = '{}', 
+    @level1type = N'Table', @level1name = '{}';",
+            new_comment, schema_name, table_name
+        );
+        info!("update comment sql: {}", sql);
+        let _ = conn.execute(&sql, &[]).await?;
+        Ok(())
+    }
     pub async fn import_database(
         &self,
         list_node_info_req: ListNodeInfoReq,

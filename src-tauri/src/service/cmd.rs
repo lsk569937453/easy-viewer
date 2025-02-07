@@ -29,6 +29,7 @@ use crate::service::cmd_service::move_column_with_error;
 use crate::service::cmd_service::remove_column_with_error;
 use crate::service::cmd_service::show_columns_with_error;
 use crate::service::cmd_service::truncate_table_with_error;
+use crate::service::cmd_service::update_comment_with_error;
 use crate::service::cmd_service::update_record_with_error;
 use crate::service::cmd_service::upload_file_with_error;
 use crate::service::cmd_service::upload_folder_with_error;
@@ -148,6 +149,17 @@ pub async fn remove_column(
 }
 #[tauri::command]
 
+pub async fn update_comment(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    new_comment: String,
+) -> Result<String, ()> {
+    let res =
+        handle_response!(update_comment_with_error(state, list_node_info_req, new_comment).await);
+    Ok(res)
+}
+#[tauri::command]
+
 pub async fn exe_sql(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -210,7 +222,6 @@ pub async fn upload_folder(
     Ok(res)
 }
 #[tauri::command]
-
 pub async fn get_complete_words(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -222,7 +233,6 @@ pub async fn get_complete_words(
 }
 
 #[tauri::command]
-
 pub async fn get_procedure_details(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -233,7 +243,6 @@ pub async fn get_procedure_details(
     Ok(res)
 }
 #[tauri::command]
-
 pub async fn update_record(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -245,7 +254,6 @@ pub async fn update_record(
     Ok(res)
 }
 #[tauri::command]
-
 pub async fn show_columns(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -256,7 +264,6 @@ pub async fn show_columns(
     Ok(res)
 }
 #[tauri::command]
-
 pub async fn get_ddl(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -267,7 +274,6 @@ pub async fn get_ddl(
     Ok(res)
 }
 #[tauri::command]
-
 pub async fn save_query(
     state: State<'_, AppState>,
     connection_id: i32,

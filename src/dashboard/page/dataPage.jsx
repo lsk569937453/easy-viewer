@@ -119,7 +119,7 @@ export default function DataPage({
   const [tableHeight, setTableHeight] = useState(10)
   const [showLoading, setShowLoading] = useState(false)
   const [container, setContainer] = useState(null)
-  //将所有的表的修改都存储到editState中
+  //Save all the change of tables to the editState
   const [editState, setEditState] = useState([])
   const [tableNameFromSql, setTableNameFromSql] = useState("")
   const [rowSelection, setRowSelection] = useState({})

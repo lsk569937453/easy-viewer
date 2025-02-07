@@ -151,6 +151,35 @@ impl BaseConfigEnum {
         };
         Ok(vec)
     }
+    pub async fn update_comment(
+        &self,
+
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        new_comment: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mysql(config) => {
+                config
+                    .update_comment(list_node_info_req, appstate, new_comment)
+                    .await?;
+            }
+            BaseConfigEnum::Postgresql(config) => {
+                config
+                    .update_comment(list_node_info_req, appstate, new_comment)
+                    .await?;
+            }
+            BaseConfigEnum::Mssql(config) => {
+                config
+                    .update_comment(list_node_info_req, appstate, new_comment)
+                    .await?;
+            }
+            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support update comment"))?,
+            _ => (),
+        };
+
+        Ok(())
+    }
     pub async fn remove_column(
         &self,
 

@@ -867,8 +867,7 @@ WHERE table_schema = '{}'
             .find(|item| {
                 item.try_get(0)
                     .ok()
-                    .flatten()
-                    .map_or(false, |value: &str| value == index_name)
+                    .flatten().is_some_and(|value: &str| value == index_name)
             })
             .ok_or(anyhow!("Not found index"))?;
         let is_primary: bool = row.try_get(5)?.ok_or(anyhow!(""))?;

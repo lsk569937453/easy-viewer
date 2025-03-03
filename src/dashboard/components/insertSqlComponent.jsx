@@ -215,7 +215,7 @@ const InsertSqlComponent = ({ node, setShowInsertDialog, exeSql }) => {
             )
           })}
         </div>
-        <div className="flex h-full flex-row items-center justify-center">
+        <div className="flex h-full flex-row items-center justify-center ">
           <SyntaxHighlighter
             language="sql"
             style={coy}

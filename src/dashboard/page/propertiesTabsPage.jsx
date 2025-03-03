@@ -106,7 +106,7 @@ const PropertiesTabsPage = ({ node }) => {
             <p>Column</p>
           </div>
         </Tabs.Trigger>
-        <Tabs.Trigger
+        {/* <Tabs.Trigger
           value="foreignKey"
           className="inline-flex items-center justify-center whitespace-nowrap  px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:border-b-2 data-[state=active]:border-muted data-[state=active]:bg-background/60 data-[state=active]:text-foreground "
         >
@@ -163,7 +163,7 @@ const PropertiesTabsPage = ({ node }) => {
             </svg>
             <p>Index</p>
           </div>
-        </Tabs.Trigger>
+        </Tabs.Trigger> */}
       </Tabs.List>
 
       <Tabs.Content
@@ -198,7 +198,7 @@ const PropertiesTabsPage = ({ node }) => {
       >
         <PropertiesColumnPage node={node} />
       </Tabs.Content>
-      <Tabs.Content
+      {/* <Tabs.Content
         value="foreignKey"
         className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
@@ -209,7 +209,7 @@ const PropertiesTabsPage = ({ node }) => {
         className="mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
       >
         <p>sss3</p>
-      </Tabs.Content>
+      </Tabs.Content> */}
     </Tabs.Root>
   )
 }

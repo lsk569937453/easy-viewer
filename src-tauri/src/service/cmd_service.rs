@@ -325,6 +325,30 @@ pub async fn remove_column_with_error(
 
     Ok(())
 }
+pub async fn update_comment_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    new_comment: String,
+) -> Result<(), anyhow::Error> {
+    info!("remove_column list_node_info_req: {:?}", list_node_info_req);
+
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .update_comment(list_node_info_req, state.inner(), new_comment)
+        .await?;
+
+    Ok(())
+}
 pub async fn exe_sql_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

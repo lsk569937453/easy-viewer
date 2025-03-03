@@ -45,7 +45,7 @@ async fn main() -> Result<(), anyhow::Error> {
             let _ = TrayIconBuilder::new()
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
-                .menu_on_left_click(true)
+                .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
                     "quit" => {
                         info!("quit menu item was clicked");
@@ -141,6 +141,7 @@ async fn main() -> Result<(), anyhow::Error> {
             truncate_table,
             update_base_config,
             update_record,
+            update_comment,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

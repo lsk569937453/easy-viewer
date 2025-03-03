@@ -1,4 +1,4 @@
-name: 'publish'
+name: "publish"
 
 # This will trigger the action on each push to the `release` branch.
 on:
@@ -13,64 +13,144 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-          include:
-              - target: aarch64-apple-darwin
-                platform: macos-latest
-              - target: x86_64-apple-darwin
-                platform: macos-latest
-              - target: x86_64-unknown-linux-gnu
-                platform: ubuntu-latest
+        include:
+          - platform: "macos-latest" # for Arm based macs (M1 and above).
+            args: "--target aarch64-apple-darwin"
+            target: aarch64-apple-darwin
+          - platform: "macos-latest" # for Intel based macs.
+            args: "--target x86_64-apple-darwin"
+            target: x86_64-apple-darwin
 
-              - target: aarch64-unknown-linux-gnu
-                platform: ubuntu-latest
-                image: rayproject/ray:7f6d5c-py311-aarch64
-              - target: x86_64-pc-windows-msvc
-                platform: windows-latest
+          - platform: "ubuntu-22.04" # for Tauri v1 you could replace this with ubuntu-20.04.
+            args: "--target x86_64-unknown-linux-gnu"
+            target: x86_64-unknown-linux-gnu
+          # - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
+          #   args: '--target aarch64-unknown-linux-gnu'
+          #   target: aarch64-unknown-linux-gnu
 
-                # ghcr.io/cross-rs/aarch64-unknown-linux-gnu:main
+          - platform: "windows-latest"
+            args: ""
+            target: x86_64-pc-windows-msvc
+
     runs-on: ${{ matrix.platform }}
-    container:
-      image: ${{ matrix.image }}
     steps:
-
-
       - uses: actions/checkout@v4
+
       - name: setup node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: lts/*
 
       - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
-
-      - name: install dependencies 
-        if: matrix.platform == 'ubuntu-latest'
+      - name: install dependencies
+        run: |
+          rustup target add ${{ matrix.target }}
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential curl  wget  libssl-dev libgtk-3-dev libayatana-appindicator3-dev libwebkit2gtk-4.0-dev librsvg2-dev patchelf libsoup2.4-dev
-          rustup target add aarch64-unknown-linux-gnu
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
+      # - name: Create /etc/apt/sources.list
+      #   if: matrix.target == 'aarch64-unknown-linux-gnu' # This must match the platform value defined above.
+      #   run: |
+      #     sudo tee /etc/apt/sources.list > /dev/null << 'EOF'
+      #     # See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+      #     # newer versions of the distribution.
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy main restricted
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy main restricted
 
-      - name: install dependencies (mac only)
-        if: matrix.platform == 'macos-latest'
-        run: |
-            rustup target add aarch64-apple-darwin
+      #     ## Major bug fix updates produced after the final release of the
+      #     ## distribution.
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted
 
+      #     ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+      #     ## team. Also, please note that software in universe WILL NOT receive any
+      #     ## review or updates from the Ubuntu security team.
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy universe
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy universe
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates universe
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy-updates universe
+
+      #     ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+      #     ## team, and may not be under a free licence. Please satisfy yourself as to
+      #     ## your rights to use the software. Also, please note that software in
+      #     ## multiverse WILL NOT receive any review or updates from the Ubuntu
+      #     ## security team.
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy multiverse
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy multiverse
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-updates multiverse
+
+      #     ## N.B. software from this repository may not have been tested as
+      #     ## extensively as that contained in the main release, although it includes
+      #     ## newer versions of some applications which may provide useful features.
+      #     ## Also, please note that software in backports WILL NOT receive any review
+      #     ## or updates from the Ubuntu security team.
+      #     deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+      #     # deb-src http://archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+      #     deb [arch=amd64] http://security.ubuntu.com/ubuntu/ jammy-security main restricted
+      #     # deb-src http://security.ubuntu.com/ubuntu/ jammy-security main restricted
+      #     deb [arch=amd64] http://security.ubuntu.com/ubuntu/ jammy-security universe
+      #     # deb-src http://security.ubuntu.com/ubuntu/ jammy-security universe
+      #     deb [arch=amd64] http://security.ubuntu.com/ubuntu/ jammy-security multiverse
+      #     # deb-src http://security.ubuntu.com/ubuntu/ jammy-security multiverse
+
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy universe
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates universe
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy multiverse
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates multiverse
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-backports main restricted universe multiverse
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security universe
+      #     deb [arch=armhf,arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security multiverse
+      #     EOF
+      #   # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
+      #   # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
+      # - name: install dependencies (ubuntu arm64 only)
+      #   if: matrix.target == 'aarch64-unknown-linux-gnu' # This must match the platform value defined above.
+      #   run: |
+      #     rustup target add aarch64-unknown-linux-gnu
+      #     sudo apt-get update
+      #     sudo apt-get install -y  gcc-aarch64-linux-gnu
+      #     sudo dpkg --add-architecture arm64
+      #     sudo apt install libwebkit2gtk-4.0-dev:arm64
+      #     sudo apt install libssl-dev:arm64
+      #     export PKG_CONFIG_SYSROOT_DIR=/usr/aarch64-linux-gnu/
       - name: Install pnpm
         run: npm install -g pnpm
-        
       - name: install frontend dependencies
-        run: pnpm install # change this to npm or pnpm depending on which one you use
+        run: pnpm install # change this to npm, pnpm or bun depending on which one you use.
+      - name: Get app version
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: |
+          cd .\src-tauri
+          $APP_VERSION = (cargo pkgid | ForEach-Object { ($_ -split "@")[1] })
+          "APP_VERSION=$APP_VERSION" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-      - name: Build Tauri
-        uses: tauri-apps/tauri-action@v0
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
         with:
-          tagName: v__VERSION__
-          releaseName: v__VERSION__
-          args: --target ${{matrix.target}}
-          releaseBody: 'See the assets to download and install this version.'
+          tagName: __VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          releaseName: "Git Statistic __VERSION__"
+          releaseBody: "See the assets to download this version and install."
           releaseDraft: true
           prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: Build Portable Binaries (Windows)
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: |
+          pnpm run tauri build
+          mv ./src-tauri/target/release/easy-viewer.exe ./src-tauri/target/release/easy-viewer_${{ env.APP_VERSION }}_x64-portable.exe
+
+      - name: Upload Portable Binaries (Windows)
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: bash -c 'gh release upload ${{ env.APP_VERSION }} ./src-tauri/target/release/easy-viewer_${{ env.APP_VERSION }}_x64-portable.exe --clobber'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

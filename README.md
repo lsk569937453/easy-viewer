@@ -9,14 +9,13 @@ pnpm i
 pnpm run tauri dev
 ```
 
-https://youtu.be/z759ab5_xO0
-
 # Easy Viewer
 
 ## Overview
 
 Easy Viewer is a modern database management tool inspired by DBeaver, but built on the Tauri framework. It provides a lightweight, fast, and secure way to manage your databases with a user-friendly interface. Whether you're a developer, database administrator, or just someone who needs to interact with databases, Easy Viewer is designed to simplify your workflow.
-Features
+
+### Features
 
 - Cross-Platform: Built with Tauri, Easy Viewer runs on Windows, macOS, and Linux.
 - Lightweight: Thanks to Tauri's efficient architecture, Easy Viewer is lightweight and fast.

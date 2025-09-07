@@ -54,10 +54,11 @@
         "title": "easyviewer",
         "center": true,
         "resizable": true,
-        "decorations": true,
-        "transparent": true,
+      
         "height": 920,
-        "width": 1300
+        "width": 1300,
+        "decorations": false, 
+        "transparent": true   
       }
     ],
     "withGlobalTauri": false,

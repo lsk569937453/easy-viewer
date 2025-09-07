@@ -1,17 +1,17 @@
-import "./i18n"
-
-import { Menu } from "@/dashboard/menu/menu"
-
-import { TailwindIndicator } from "./dashboard/menu/tailwind-indicator"
-import { ThemeProvider } from "./dashboard/menu/theme-provider"
-import DashboardPage from "./dashboard/page"
-import { cn } from "./lib/utils"
+import ProjectDataViewer from "./components/ProjectDataViewer";
+import "./App.css";
+import AppMenu from "./components/AppMenu"; // 导入新的菜单组件
 
 function App() {
+  
   return (
-    <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem>
-      <DashboardPage />
-    </ThemeProvider>
-  )
+    <div className="App flex h-screen flex-col bg-base-300">
+      <AppMenu />
+      <main className="main-content flex-grow p-4">
+        <ProjectDataViewer />
+      </main>
+    </div>
+  );
 }
-export default App
+
+export default App;

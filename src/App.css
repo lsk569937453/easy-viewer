@@ -17,33 +17,14 @@ body,
 
 /* 假设你有一个 Header 和 Main Content 区域 */
 .main-content {
-   height: 100%; /* 继承来自 #root 的 100% 高度 */
+  height: 100%; /* 继承来自 #root 的 100% 高度 */
   width: 100%;
 }
 @import "tailwindcss";
-@plugin "daisyui" {
-  themes: all;
-  root: ":root";
-  include: ;
-  exclude: ;
-  prefix: ;
-  logs: true;
-}
-.input:focus,
-.textarea:focus,
-.select:focus,
-.btn:focus {
-  /* 
-    将 outline-offset 设置为你想要的值。
-    - 1px 会有一个很细的缝隙。
-    - 0px 会让辉光紧贴边框，完全没有缝隙。
-  */
-  outline-offset: 0px; /* <-- 推荐值 */
-}
-
+@plugin "daisyui";
 
 .input-bordered:focus,
 .textarea-bordered:focus,
 .select-bordered:focus {
-   outline-offset: 0px; /* <-- 推荐值 */
+  outline-offset: 0px; /* <-- 推荐值 */
 }

@@ -1,9 +1,7 @@
 import ProjectDataViewer from "./components/ProjectDataViewer";
-import "./App.css";
 import AppMenu from "./components/AppMenu"; // 导入新的菜单组件
 
 function App() {
-  
   return (
     <div className="App flex h-screen flex-col bg-base-300">
       <AppMenu />

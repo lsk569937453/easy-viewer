@@ -15,10 +15,7 @@ body,
 }
 
 @import "tailwindcss";
-@plugin "daisyui";
-
-.input-bordered:focus,
-.textarea-bordered:focus,
-.select-bordered:focus {
-  outline-offset: 0px; /* <-- 推荐值 */
+@plugin "daisyui" {
+  themes: all;
 }
+

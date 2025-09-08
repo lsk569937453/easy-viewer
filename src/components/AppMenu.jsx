@@ -6,10 +6,56 @@ import NewConnectionModal from "./NewConnectionModal"; // 导入 NewConnectionMo
 
 const appWindow = getCurrentWindow();
 
-function AppMenu() {
+// 定义一个可选的主题列表
+const themes = [
+  "light",
+  "dark",
+  "cupcake",
+  "bumblebee",
+  "emerald",
+  "corporate",
+  "synthwave",
+  "retro",
+  "cyberpunk",
+  "valentine",
+  "halloween",
+  "garden",
+  "forest",
+  "aqua",
+  "lofi",
+  "pastel",
+  "fantasy",
+  "wireframe",
+  "black",
+  "luxury",
+  "dracula",
+  "cmyk",
+  "autumn",
+  "business",
+  "acid",
+  "lemonade",
+  "night",
+  "coffee",
+  "winter",
+];
+
+function AppMenu({ onConnectionCreated }) {
   const menuRef = useRef(null);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [showNewConnectionModal, setShowNewConnectionModal] = useState(false); // 控制“新建连接”模态框的显示状态
+  
+  // 新增: 使用 state 来管理当前主题
+  // 尝试从 localStorage 读取已保存的主题，如果没有则默认为 'light'
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+
+  // 新增: 使用 useEffect 来应用主题变化
+  // 当 theme state 发生变化时，会执行此 effect
+  useEffect(() => {
+    // 1. 将主题设置到 <html> 元素的 data-theme 属性上
+    document.documentElement.setAttribute("data-theme", theme);
+    // 2. 将当前主题保存到 localStorage，以便下次打开应用时保持一致
+    localStorage.setItem("theme", theme);
+  }, [theme]); // 依赖数组中放入 theme，表示仅在 theme 变化时执行
 
   const handleItemClick = () => {
     console.log("菜单项被点击了。", { timestamp: new Date().toISOString() });
@@ -26,6 +72,13 @@ function AppMenu() {
       console.log("失去焦点的元素：", document.activeElement);
     }
   };
+  
+  // 新增: 处理主题切换的函数
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme); // 更新主题 state
+    handleItemClick(); // 关闭下拉菜单
+  };
+
 
   // 处理“关于”菜单项点击事件
   const handleAboutClick = () => {
@@ -47,14 +100,6 @@ function AppMenu() {
   // 关闭“新建连接”模态框的回调
   const handleCloseNewConnectionModal = () => {
     setShowNewConnectionModal(false);
-  };
-
-  // 处理创建连接的逻辑（从 NewConnectionModal 传入）
-  const handleCreateConnection = ({ dbType, connectionString }) => {
-    // 实际的连接创建逻辑将在这里处理
-    console.log(`成功创建连接：类型 - ${dbType}, 字符串 - ${connectionString}`);
-    // 可以在这里触发全局状态更新，将新连接添加到数据库导航树中
-    alert(`连接创建成功！\n类型: ${dbType}\n字符串: ${connectionString}`);
   };
 
   useEffect(() => {
@@ -122,13 +167,11 @@ function AppMenu() {
         ".dropdown.dropdown-open"
       );
 
-      // 如果没有打开的下拉菜单，直接返回
       if (!openDropdowns || openDropdowns.length === 0) {
         console.log("没有打开的下拉菜单。");
         return;
       }
 
-      // 检查点击是否发生在模态框内部（关于模态框或新建连接模态框）
       const clickedInsideAboutModal = event.target.closest(
         "#about_modal .modal-box"
       );
@@ -141,7 +184,6 @@ function AppMenu() {
         return;
       }
 
-      // 如果点击发生在整个菜单栏外部，则关闭所有打开的下拉菜单
       if (!menuRef.current.contains(event.target)) {
         console.log("点击发生在整个菜单栏外部，确保所有下拉菜单关闭。");
         openDropdowns.forEach((dropdown) => {
@@ -149,7 +191,6 @@ function AppMenu() {
           console.log("最终关闭了下拉菜单:", dropdown);
         });
       } else if (clickedInsideAnyDropdown) {
-        // 如果点击在某个下拉菜单内部，关闭其他打开的下拉菜单
         const clickedDropdown = clickedInsideAnyDropdown;
         openDropdowns.forEach((dropdown) => {
           if (dropdown !== clickedDropdown) {
@@ -209,7 +250,7 @@ function AppMenu() {
           DB Viewer
         </a>
         <ul className="menu menu-horizontal p-0" data-tauri-no-drag>
-          {/* 连接菜单 (原“文件”菜单) */}
+          {/* 连接菜单 */}
           <li>
             <div className="dropdown dropdown-hover">
               <label
@@ -217,17 +258,15 @@ function AppMenu() {
                 className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
                 data-tauri-no-drag
               >
-                连接 {/* 菜单名已更改 */}
+                连接
               </label>
               <ul
                 tabIndex={0}
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
               >
-                {/* 新增“新建连接...”菜单项 */}
                 <li onClick={handleNewConnectionClick}>
                   <a>新建连接...</a>
                 </li>
-                {/* 其他文件相关的菜单项如果需要可以重新添加，或者直接移除 */}
                 <li onClick={handleItemClick}>
                   <a>打开连接...</a>
                 </li>
@@ -243,6 +282,7 @@ function AppMenu() {
             </div>
           </li>
 
+          {/* -- 修改开始: 将“编辑”菜单替换为“主题”菜单 -- */}
           <li>
             <div className="dropdown dropdown-hover">
               <label
@@ -250,32 +290,26 @@ function AppMenu() {
                 className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
                 data-tauri-no-drag
               >
-                编辑
+                主题
               </label>
               <ul
                 tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-56 max-h-96 overflow-y-auto"
               >
-                <li onClick={handleItemClick}>
-                  <a>撤销</a>
-                </li>
-                <li onClick={handleItemClick}>
-                  <a>重做</a>
-                </li>
-                <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li onClick={handleItemClick}>
-                  <a>剪切</a>
-                </li>
-                <li onClick={handleItemClick}>
-                  <a>复制</a>
-                </li>
-                <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li onClick={handleItemClick}>
-                  <a>粘贴</a>
-                </li>
+                {themes.map((themeName) => (
+                  <li
+                    key={themeName}
+                    onClick={() => handleThemeChange(themeName)}
+                  >
+                    <a className={theme === themeName ? "active" : ""}>
+                      {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
           </li>
+          {/* -- 修改结束 -- */}
 
           <li>
             <div className="dropdown dropdown-hover">
@@ -326,21 +360,18 @@ function AppMenu() {
       </div>
 
       <div className="flex-none" data-tauri-no-drag>
-        {/* 最小化按钮 */}
         <button
           className="btn btn-square btn-ghost"
           onClick={() => appWindow.minimize()}
         >
           _
         </button>
-        {/* 最大化/恢复按钮 */}
         <button
           className="btn btn-square btn-ghost"
           onClick={() => appWindow.toggleMaximize()}
         >
           □
         </button>
-        {/* 关闭按钮 */}
         <button
           className="btn btn-square btn-ghost"
           onClick={() => appWindow.close()}
@@ -349,14 +380,12 @@ function AppMenu() {
         </button>
       </div>
 
-      {/* 渲染 AboutModal 组件 */}
       <AboutModal isOpen={showAboutModal} onClose={handleCloseAboutModal} />
 
-      {/* 渲染 NewConnectionModal 组件 */}
       <NewConnectionModal
         isOpen={showNewConnectionModal}
         onClose={handleCloseNewConnectionModal}
-        onCreateConnection={handleCreateConnection}
+        onCreationSuccess={onConnectionCreated}
       />
     </div>
   );

@@ -5,7 +5,7 @@ function App() {
   return (
     <div className="App flex h-screen flex-col bg-base-300">
       <AppMenu />
-      <main className="main-content flex-grow p-4">
+      <main className="main-content flex-grow p-4 h-full w-full overflow-hidden ">
         <ProjectDataViewer />
       </main>
     </div>

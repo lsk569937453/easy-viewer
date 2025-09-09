@@ -4,6 +4,8 @@ import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx"; // 1. 导入 TabPanel 组件
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import { DiMysql } from "react-icons/di";
+import TableDetailPage from "./TableDetailPage.jsx"; // 1. Import the new component
+
 import { SiOracle, SiSqlite } from "react-icons/si";
 import {
   FaTable,
@@ -240,7 +242,28 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
   const handleDeleteConnection = (node) => {
     console.log("删除连接:", node);
   };
+ const handleEditNode = (node) => {
+    if (node.iconName !== "singleTable") return;
 
+    const tabId = `${node.id}-details`; // Create a unique ID for the detail tab
+    const existingTab = tabs.find((tab) => tab.id === tabId);
+
+    if (existingTab) {
+      setActiveTabId(tabId);
+    } else {
+      const newTab = {
+        id: tabId,
+        name: `${node.name} [Details]`, // Differentiate the tab name
+        icon: node.icon,
+        // We don't need 'details' here as the new component will fetch its own data
+        // but we pass the full node and connection info via component props.
+        type: 'tableDetail', // 2. Add a type to identify this special tab
+        node: node, // Pass the full node data
+      };
+      setTabs([...tabs, newTab]);
+      setActiveTabId(tabId);
+    }
+  };
   return (
     <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-[minmax(350px,_1fr)_2fr]">
       <div className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg">
@@ -260,6 +283,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
                   onToggle={handleToggleNode}
                   onRefresh={handleRefreshNode}
                   onAdd={handleAddNode}
+                  onEdit={handleEditNode }
                   onEditConnection={handleEditConnection}
                   onDeleteConnection={handleDeleteConnection}
                 />

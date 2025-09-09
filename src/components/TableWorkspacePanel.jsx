@@ -120,7 +120,7 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
   );
 };
 
-function TableDetailPanel({ initialSql, activeTabNode, connectionDetails }) {
+function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   const [activeSubTab, setActiveSubTab] = useState("data");
   const [sqlQuery, setSqlQuery] = useState(initialSql || "");
   const [tableData, setTableData] = useState([]);
@@ -658,4 +658,4 @@ function TableDetailPanel({ initialSql, activeTabNode, connectionDetails }) {
   );
 }
 
-export default TableDetailPanel;
+export default TableWorkspacePanel;

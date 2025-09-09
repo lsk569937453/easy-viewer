@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
-import TableDetailPanel from "./TableDetailPanel.jsx";
+import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
+import TableDetailPage from "./TableDetailPage.jsx"; // 1. Import the new component
 
 // 辅助函数：根据节点ID在树中查找完整的节点对象
 const findNodeInTree = (nodes, nodeId) => {
@@ -145,7 +146,21 @@ function TabPanel({
           (() => {
             const activeTab = tabs.find((tab) => tab.id === activeTabId);
             if (!activeTab) return null;
-
+            
+            if (activeTab.type === 'tableDetail') {
+              const activeNode = activeTab.node; // Use the node data we stored in the tab
+              const rootConfigId = activeNode.path[0].config_value;
+              const connection = connections.find(
+                (conn) => conn.base_config_id.toString() === rootConfigId
+              );
+              
+              return (
+                <TableDetailPage 
+                  activeTabNode={activeNode}
+                  connectionDetails={connection}
+                />
+              );
+            }
             const activeNode = findNodeInTree(treeData, activeTabId);
 
             if (activeNode && activeNode.iconName === "singleTable") {
@@ -155,7 +170,7 @@ function TabPanel({
               );
 
               return (
-                <TableDetailPanel
+                <TableWorkspacePanel
                   initialSql={activeTab.details}
                   activeTabNode={activeNode}
                   connectionDetails={connection}

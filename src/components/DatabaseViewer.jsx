@@ -16,6 +16,7 @@ import {
   FaStar,
   FaTimes,
 } from "react-icons/fa";
+import TableDetailPanel from "./TableDetailPanel.jsx";
 
 const ICON_MAP = {
   mysql: <DiMysql size="1.2em" color="#00758F" />,
@@ -26,7 +27,7 @@ const ICON_MAP = {
   query: <FaSearch />,
   tables: <FaColumns />,
   views: <FaEye />,
-  singletable: <FaTable />,
+  singleTable: <FaTable />,
   partitions: <FaLayerGroup />,
   columns: <FaColumns />,
   index: <FaKey />,
@@ -36,7 +37,7 @@ const ICON_MAP = {
 };
 
 const getNodeIcon = (nodeType, iconName) => {
-  const key = iconName?.toLowerCase() || nodeType?.toLowerCase() || "default";
+  const key = iconName?.toString() || nodeType?.toString() || "default";
   return ICON_MAP[key] || ICON_MAP.default;
 };
 
@@ -55,12 +56,19 @@ const updateNodeInTree = (nodes, nodeId, updates) => {
   });
 };
 
-function TabPanel({ tabs, setTabs, activeTabId, setActiveTabId }) {
+function TabPanel({
+  tabs,
+  setTabs,
+  activeTabId,
+  setActiveTabId,
+  connections,
+  treeData,
+}) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [selectedTabId, setSelectedTabId] = useState(null);
 
-  const tabPanelContainerRef = useRef(null); // 2. 创建一个 ref
+  const tabPanelContainerRef = useRef(null);
 
   const handleContextMenu = (e, tabId) => {
     e.preventDefault();
@@ -133,6 +141,22 @@ function TabPanel({ tabs, setTabs, activeTabId, setActiveTabId }) {
     setActiveTabId(tabId);
   };
 
+  // 辅助函数：根据节点ID查找完整的节点对象
+  const findNodeInTree = (nodes, nodeId) => {
+    for (const node of nodes) {
+      if (node.id === nodeId) {
+        return node;
+      }
+      if (node.children) {
+        const found = findNodeInTree(node.children, nodeId);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return null;
+  };
+
   return (
     <div
       ref={tabPanelContainerRef}
@@ -171,25 +195,47 @@ function TabPanel({ tabs, setTabs, activeTabId, setActiveTabId }) {
           ))}
         </div>
       )}
-      {/* Tab Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto">
         {activeTabId && tabs.length > 0 ? (
           (() => {
             const activeTab = tabs.find((tab) => tab.id === activeTabId);
-            return activeTab ? (
-              <div>
-                <h1 className="text-3xl font-bold mb-4 text-primary flex items-center">
-                  {activeTab.icon && (
-                    <span className="mr-3">{activeTab.icon}</span>
-                  )}
-                  {activeTab.name}
-                </h1>
-                <div className="divider"></div>
-                <p className="text-base-content/80 whitespace-pre-wrap">
-                  {activeTab.details || "暂无详细描述。"}
-                </p>
-              </div>
-            ) : null;
+            if (!activeTab) return null;
+
+            const activeNode = findNodeInTree(treeData, activeTabId);
+
+            // 检查 activeNode 是否为 singletable 类型
+            if (activeNode && activeNode.iconName === "singleTable") {
+              // 找到根连接的配置 ID
+              const rootConfigId = activeNode.path[0].config_value;
+              // 根据配置 ID 查找完整的连接对象
+              const connection = connections.find(
+                (conn) => conn.base_config_id.toString() === rootConfigId
+              );
+
+              return (
+                <TableDetailPanel
+                  initialSql={activeTab.details} // activeTab.details 已经包含了生成的 SQL
+                  activeTabNode={activeNode} // 传递完整的节点信息
+                  connectionDetails={connection} // 传递根连接的详情
+                />
+              );
+            } else {
+              // 如果不是 singletable 类型，或者 activeNode 找不到，则显示默认详情
+              return (
+                <div className="p-6">
+                  <h1 className="text-3xl font-bold mb-4 text-primary flex items-center">
+                    {activeTab.icon && (
+                      <span className="mr-3">{activeTab.icon}</span>
+                    )}
+                    {activeTab.name}
+                  </h1>
+                  <div className="divider"></div>
+                  <pre className="text-base-content/80 whitespace-pre-wrap bg-base-200 p-4 rounded-md">
+                    {activeTab.details || "暂无详细描述。"}
+                  </pre>
+                </div>
+              );
+            }
           })()
         ) : (
           <div className="flex justify-center items-center h-full">
@@ -254,7 +300,9 @@ function DatabaseViewer({ connections }) {
         icon: getNodeIcon(dbType, null),
         iconName: dbType,
         description: conn.description,
-        details: `ID: ${conn.base_config_id}\n类型: ${dbType.toUpperCase()}`,
+        details: `ID: ${
+          conn.base_config_id
+        }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host}:${conn.port}`,
         children: null,
         path: [{ level: 1, config_value: conn.base_config_id.toString() }],
       };
@@ -262,16 +310,82 @@ function DatabaseViewer({ connections }) {
     setTreeData(newTreeData);
   }, [connections]);
 
+  // Helper function to generate SQL query based on node and connections
+  const generateSqlForNode = (node, allConnections, limit = 100) => {
+    if (!node || node.iconName !== "singleTable") {
+      return "此节点类型不适用于SQL生成。";
+    }
+
+    const rootConfigId = node.path[0].config_value;
+    const connection = allConnections.find(
+      (conn) => conn.base_config_id.toString() === rootConfigId
+    );
+
+    if (!connection) {
+      return `/* 错误: 无法找到连接信息来生成SQL */\nSELECT * FROM "${node.name}" LIMIT ${limit};`;
+    }
+
+    const dbType = connection.connection_type; // 1: mysql, 2: oracle, 3: sqlite
+    const tableName = node.name; // For singletable nodes, the name is the table name.
+
+    switch (dbType) {
+      case 1: // MySQL
+        // MySQL often uses `database.table`. Assuming connection_name is the database name.
+        // For MySQL, the database name is typically the connection name itself
+        // You might need to adjust this if your connection_name is not the database name.
+        // A more robust solution might retrieve database name from a parent node.
+        const mysqlDatabaseName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : connection.connection_name;
+        return `SELECT * FROM \`${mysqlDatabaseName}\`.\`${tableName}\` LIMIT ${limit};`;
+      case 2: // Oracle
+        // Oracle generally uses `SCHEMA.TABLE`. Assuming connection_name is the schema name.
+        const oracleSchemaName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : connection.connection_name;
+        return `SELECT * FROM "${oracleSchemaName}"."${tableName}" WHERE ROWNUM <= ${limit};`;
+      case 3: // SQLite
+        // SQLite typically just uses the table name.
+        return `SELECT * FROM "${tableName}" LIMIT ${limit};`;
+      // If other connection types (like MongoDB type 4, SQL Server type 6 from the example)
+      // are added in the future, their cases should be included here.
+      default:
+        return `SELECT * FROM "${tableName}" LIMIT ${limit}; /* 未知数据库类型，使用通用查询 */`;
+    }
+  };
+
   const handleNodeActivate = (node) => {
     const existingTab = tabs.find((tab) => tab.id === node.id);
+
+    let tabDetails = node.details; // Default details from node property
+
+    // If it's a singletable node, generate SQL
+    if (node.iconName === "singleTable") {
+      tabDetails = generateSqlForNode(node, connections);
+    }
+
     if (existingTab) {
+      // If the tab already exists, update its details if it's a singletable
+      // or if the details have somehow changed, then activate it.
+      if (existingTab.details !== tabDetails) {
+        setTabs((prevTabs) =>
+          prevTabs.map((tab) =>
+            tab.id === node.id ? { ...tab, details: tabDetails } : tab
+          )
+        );
+      }
       setActiveTabId(node.id);
     } else {
+      // Create a new tab
       const newTab = {
         id: node.id,
         name: node.name,
         icon: node.icon,
-        details: node.details,
+        details: tabDetails,
+        iconName: node.iconName, // 必须传递 iconName
+        path: node.path, // 必须传递 path
       };
       setTabs([...tabs, newTab]);
       setActiveTabId(node.id);
@@ -295,7 +409,7 @@ function DatabaseViewer({ connections }) {
           icon: getNodeIcon(child.type, child.icon_name),
           description: child.description || "",
           iconName: child.icon_name,
-          details: `Details for ${child.name}`,
+          details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
           children: null,
           path: [
             ...node.path,
@@ -336,11 +450,15 @@ function DatabaseViewer({ connections }) {
 
   const handleRefreshNode = async (node) => {
     console.log("Refreshing node:", node.name);
+    // Force children to be refetched by setting to null first, then toggle
+    setTreeData((prevTree) =>
+      updateNodeInTree(prevTree, node.id, { children: null })
+    );
     await fetchNodeChildren(node);
 
     setOpenNodes((prev) => ({
       ...prev,
-      [node.id]: true,
+      [node.id]: true, // Ensure node stays open after refresh
     }));
   };
 
@@ -388,6 +506,8 @@ function DatabaseViewer({ connections }) {
         setTabs={setTabs}
         activeTabId={activeTabId}
         setActiveTabId={setActiveTabId}
+        connections={connections} // 传递 connections
+        treeData={treeData} // 传递 treeData
       />
     </div>
   );

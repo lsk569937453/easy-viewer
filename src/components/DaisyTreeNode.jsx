@@ -18,7 +18,6 @@ function DaisyTreeNode({
   onAdd,
   onDelete,
 }) {
-  console.log("Rendering DaisyTreeNode:", node);
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
   const isExpandable =

@@ -1,0 +1,226 @@
+import React, { useState, useEffect, useRef } from "react";
+import { FaTimes } from "react-icons/fa";
+import TableDetailPanel from "./TableDetailPanel.jsx";
+
+// 辅助函数：根据节点ID在树中查找完整的节点对象
+const findNodeInTree = (nodes, nodeId) => {
+  for (const node of nodes) {
+    if (node.id === nodeId) {
+      return node;
+    }
+    if (node.children) {
+      const found = findNodeInTree(node.children, nodeId);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return null;
+};
+
+function TabPanel({
+  tabs,
+  setTabs,
+  activeTabId,
+  setActiveTabId,
+  connections,
+  treeData,
+}) {
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [selectedTabId, setSelectedTabId] = useState(null);
+
+  const tabPanelContainerRef = useRef(null);
+
+  const handleContextMenu = (e, tabId) => {
+    e.preventDefault();
+    setMenuVisible(true);
+
+    if (tabPanelContainerRef.current) {
+      const rect = tabPanelContainerRef.current.getBoundingClientRect();
+      setMenuPosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    } else {
+      setMenuPosition({ x: e.clientX, y: e.clientY });
+    }
+    setSelectedTabId(tabId);
+  };
+
+  const handleClickOutside = () => {
+    setMenuVisible(false);
+  };
+
+  useEffect(() => {
+    if (menuVisible) {
+      document.addEventListener("click", handleClickOutside);
+      return () => document.removeEventListener("click", handleClickOutside);
+    }
+  }, [menuVisible]);
+
+  const handleCloseTab = (tabId) => {
+    const updatedTabs = tabs.filter((tab) => tab.id !== tabId);
+    setTabs(updatedTabs);
+
+    if (activeTabId === tabId) {
+      if (updatedTabs.length > 0) {
+        setActiveTabId(updatedTabs[updatedTabs.length - 1].id);
+      } else {
+        setActiveTabId(null);
+      }
+    }
+  };
+
+  const handleCloseLeft = () => {
+    if (!selectedTabId) return;
+    const currentIndex = tabs.findIndex((tab) => tab.id === selectedTabId);
+    const updatedTabs = tabs.slice(currentIndex);
+    setTabs(updatedTabs);
+    setActiveTabId(updatedTabs[0]?.id || null);
+    setMenuVisible(false);
+  };
+
+  const handleCloseRight = () => {
+    if (!selectedTabId) return;
+    const currentIndex = tabs.findIndex((tab) => tab.id === selectedTabId);
+    const updatedTabs = tabs.slice(0, currentIndex + 1);
+    setTabs(updatedTabs);
+    if (activeTabId && !updatedTabs.find((tab) => tab.id === activeTabId)) {
+      setActiveTabId(updatedTabs[updatedTabs.length - 1]?.id || null);
+    }
+    setMenuVisible(false);
+  };
+
+  const handleCloseAll = () => {
+    setTabs([]);
+    setActiveTabId(null);
+    setMenuVisible(false);
+  };
+
+  const handleTabClick = (tabId) => {
+    setActiveTabId(tabId);
+  };
+
+  return (
+    <div
+      ref={tabPanelContainerRef}
+      className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg relative"
+    >
+      {/* Tab Bar */}
+      {tabs.length > 0 && (
+        <div className="flex border-b bg-base-200">
+          {tabs.map((tab) => (
+            <div
+              key={tab.id}
+              className={`
+                flex items-center px-4 py-2 cursor-pointer border-r border-base-300
+                flex-1 min-w-[80px] max-w-[200px]
+                ${
+                  activeTabId === tab.id
+                    ? "bg-base-100 text-primary font-semibold"
+                    : "text-base-content/60 hover:bg-base-300"
+                }
+              `}
+              onClick={() => handleTabClick(tab.id)}
+              onContextMenu={(e) => handleContextMenu(e, tab.id)}
+            >
+              <span className="mr-2 flex-shrink-0">{tab.icon}</span>
+              <span className="truncate flex-grow">{tab.name}</span>
+              <button
+                className="ml-2 text-base-content/60 hover:text-error flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCloseTab(tab.id);
+                }}
+              >
+                <FaTimes size="0.9em" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex-1 overflow-y-auto">
+        {activeTabId && tabs.length > 0 ? (
+          (() => {
+            const activeTab = tabs.find((tab) => tab.id === activeTabId);
+            if (!activeTab) return null;
+
+            const activeNode = findNodeInTree(treeData, activeTabId);
+
+            if (activeNode && activeNode.iconName === "singleTable") {
+              const rootConfigId = activeNode.path[0].config_value;
+              const connection = connections.find(
+                (conn) => conn.base_config_id.toString() === rootConfigId
+              );
+
+              return (
+                <TableDetailPanel
+                  initialSql={activeTab.details}
+                  activeTabNode={activeNode}
+                  connectionDetails={connection}
+                />
+              );
+            } else {
+              return (
+                <div className="p-6">
+                  <h1 className="text-3xl font-bold mb-4 text-primary flex items-center">
+                    {activeTab.icon && (
+                      <span className="mr-3">{activeTab.icon}</span>
+                    )}
+                    {activeTab.name}
+                  </h1>
+                  <div className="divider"></div>
+                  <pre className="text-base-content/80 whitespace-pre-wrap bg-base-200 p-4 rounded-md">
+                    {activeTab.details || "暂无详细描述。"}
+                  </pre>
+                </div>
+              );
+            }
+          })()
+        ) : (
+          <div className="flex justify-center items-center h-full">
+            <div className="text-center text-base-content/60">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="mx-auto h-12 w-12"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
+              </svg>
+              <p className="mt-4 text-lg">请从左侧列表中选择一个节点</p>
+            </div>
+          </div>
+        )}
+      </div>
+      {/* Context Menu */}
+      {menuVisible && (
+        <div
+          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2"
+          style={{ top: menuPosition.y, left: menuPosition.x }}
+        >
+          <ul className="menu menu-compact">
+            <li onClick={handleCloseLeft}>
+              <a>关闭标签左边页面</a>
+            </li>
+            <li onClick={handleCloseRight}>
+              <a>关闭右边页面</a>
+            </li>
+            <li onClick={handleCloseAll}>
+              <a>关闭所有页面</a>
+            </li>
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default TabPanel;

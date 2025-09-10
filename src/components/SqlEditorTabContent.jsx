@@ -8,7 +8,7 @@ import React, {
 import { invoke } from "@tauri-apps/api/core";
 import {
   FaPlay,
-  FaSearch, // Still needed for the input icon
+  FaSearch,
   FaChevronLeft,
   FaChevronRight,
   FaSave,
@@ -18,6 +18,10 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
+// 1. 引入 react-hot-toast
+import toast from "react-hot-toast";
+
+// 移除了之前自定义的 Notification 组件
 
 function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [sqlContent, setSqlContent] = useState("");
@@ -28,7 +32,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [totalRows, setTotalRows] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [searchTerm, setSearchTerm] = useState(""); // 搜索关键字
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
@@ -45,7 +49,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     }));
   }, [columns]);
 
-  // 新增：根据搜索词过滤数据
   const filteredData = useMemo(() => {
     if (!searchTerm) {
       return allFetchedData;
@@ -58,7 +61,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     );
   }, [allFetchedData, searchTerm]);
 
-  // 修改：displayData 现在从 filteredData 中切片
   const displayData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
@@ -131,6 +133,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   };
 
   const handleExecuteSql = useCallback(async () => {
+    // ... 此函数内容不变
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空。");
       return;
@@ -187,8 +190,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
 
         setColumns(fetchedColumns);
         setAllFetchedData(fetchedData);
-        // totalRows 现在通过 filteredData 计算，这里只需更新原始数据
-        // setTotalRows(fetchedData.length); // 这一行现在可以移除，或让 useEffect 更新
         setExecutionTime(response_msg.execution_time_ms || 0);
         setCurrentPage(1);
       } else {
@@ -212,21 +213,26 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       setError("SQL 查询不能为空，无法保存。");
       return;
     }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const responseJson = await invoke("save_query", {
-        connectionId: parseInt(connectionId),
-        queryName: queryName,
-        sql: sqlContent,
-        queryId: queryId,
-      });
-      const { response_code, response_msg } = JSON.parse(responseJson);
 
-      if (response_code === 0) {
-        alert("查询已成功保存!");
+    // 2. 使用 toast.promise 来处理异步操作，自动显示加载、成功和失败状态
+    const savePromise = invoke("save_query", {
+      connectionId: parseInt(connectionId),
+      queryName: queryName,
+      sql: sqlContent,
+      queryId: queryId,
+    });
+
+    toast.promise(savePromise, {
+      loading: "正在保存...",
+      success: (responseJson) => {
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        if (response_code !== 0) {
+          // 如果后端返回错误码，则抛出异常，toast 会捕获并显示错误信息
+          throw new Error(response_msg || "保存失败，但未收到错误详情。");
+        }
+        
+        // 成功后的逻辑
         updateTabDirtyState(false);
-
         if (!queryId && response_msg.query_id) {
           setTabs((prevTabs) =>
             prevTabs.map((t) =>
@@ -247,38 +253,36 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
             )
           );
         }
-      } else {
-        throw new Error(response_msg);
-      }
-    } catch (err) {
-      console.error("Failed to save query:", err);
-      alert(`保存查询失败: ${err.message || err.toString()}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sqlContent, queryName, connectionId, queryId, tab.id, tab.name, setTabs]);
+        
+        return "查询已成功保存!"; // 这是成功时显示的toast消息
+      },
+      error: (err) => `保存失败: ${err.message || "未知错误"}`, // 这是失败时显示的toast消息
+    });
+  }, [
+    sqlContent,
+    queryName,
+    connectionId,
+    queryId,
+    tab.id,
+    tab.name,
+    setTabs,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
-        event.preventDefault(); // Prevent default browser save dialog
+        event.preventDefault();
         handleSaveQuery();
       }
     };
-
     document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleSaveQuery]);
 
-  // 新增：当搜索词变化时，重置页码为第一页
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // 修改：totalRows 现在反映的是过滤后的数据量
   useEffect(() => {
     setTotalRows(filteredData.length);
   }, [filteredData]);
@@ -291,10 +295,11 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     }
   };
 
-  // 移除 handleSearchData 函数，因为它不再需要
-
   return (
+    // 3. 移除之前添加的 relative 定位和 Notification 组件渲染
     <div className="flex flex-col h-full bg-base-100 p-4">
+      {/* ... 页面其余部分保持不变 ... */}
+
       {/* Action Bar */}
       <div className="flex items-center space-x-2 mb-4 flex-shrink-0">
         <input

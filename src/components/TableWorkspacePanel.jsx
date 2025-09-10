@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 import { invoke } from "@tauri-apps/api/core";
 import { v4 as uuid } from "uuid";
+import TableDetailPage from "./TableDetailPage";
 
 // 导入 TanStack Table 相关的 hooks 和工具
 import {
@@ -458,23 +459,10 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
       <div className="flex-1 overflow-y-auto p-4">
         {activeSubTab === "properties" && (
-          <div className="prose">
-            <h3>表属性</h3>
-            <p>
-              <strong>表名:</strong> {activeTabNode?.name}
-            </p>
-            <p>
-              <strong>描述:</strong> {activeTabNode?.description || "暂无"}
-            </p>
-            <h4>节点详情:</h4>
-            <pre className="bg-base-200 p-2 rounded-md text-sm mt-4">
-              {JSON.stringify(activeTabNode, null, 2)}
-            </pre>
-            <h4>连接详情:</h4>
-            <pre className="bg-base-200 p-2 rounded-md text-sm mt-4">
-              {JSON.stringify(connectionDetails, null, 2)}
-            </pre>
-          </div>
+            // 将原来的内容替换为 TableDetailPage 组件
+            <TableDetailPage 
+                activeTabNode={activeTabNode} 
+            />
         )}
 
         {activeSubTab === "data" && (

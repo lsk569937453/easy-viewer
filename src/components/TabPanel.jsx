@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
 import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
-import TableDetailPage from "./TableDetailPage.jsx"; // 1. Import the new component
+import TableDetailPage from "./TableDetailPage.jsx";
+import SqlEditorTabContent from "./SqlEditorTabContent.jsx"; // Import the new component
 
 // 辅助函数：根据节点ID在树中查找完整的节点对象
 const findNodeInTree = (nodes, nodeId) => {
+  // 核心修改：在尝试遍历之前，检查 nodes 是否为数组
+  if (!Array.isArray(nodes)) {
+    return null;
+  }
+
   for (const node of nodes) {
-    if (node.id === nodeId) {
+    if (String(node.id) === String(nodeId)) {
+      // Ensure comparison is robust (string vs number)
       return node;
     }
-    if (node.children) {
+    // 核心修改：在递归调用之前，检查 node.children 是否为数组
+    if (Array.isArray(node.children)) {
       const found = findNodeInTree(node.children, nodeId);
       if (found) {
         return found;
@@ -146,52 +154,64 @@ function TabPanel({
           (() => {
             const activeTab = tabs.find((tab) => tab.id === activeTabId);
             if (!activeTab) return null;
-            
-            if (activeTab.type === 'tableDetail') {
+
+            // Render SqlEditorTabContent for "sqlEditor" type tabs
+            if (activeTab.type === "sqlEditor") {
+              return (
+                <SqlEditorTabContent
+                  tab={activeTab} // Pass the entire tab object
+                  connections={connections}
+                  setTabs={setTabs}
+                />
+              );
+            }
+
+            // Render TableDetailPage for "tableDetail" type tabs
+            if (activeTab.type === "tableDetail") {
               const activeNode = activeTab.node; // Use the node data we stored in the tab
               const rootConfigId = activeNode.path[0].config_value;
               const connection = connections.find(
                 (conn) => conn.base_config_id.toString() === rootConfigId
               );
-              
+
               return (
-                <TableDetailPage 
+                <TableDetailPage
                   activeTabNode={activeNode}
                   connectionDetails={connection}
                 />
               );
             }
-            const activeNode = findNodeInTree(treeData, activeTabId);
 
-            if (activeNode && activeNode.iconName === "singleTable") {
-              const rootConfigId = activeNode.path[0].config_value;
-              const connection = connections.find(
-                (conn) => conn.base_config_id.toString() === rootConfigId
-              );
-
+            // Render TableWorkspacePanel for "tableWorkspace" type tabs
+            if (activeTab.type === "tableWorkspace") {
               return (
                 <TableWorkspacePanel
-                  initialSql={activeTab.details}
-                  activeTabNode={activeNode}
-                  connectionDetails={connection}
+                  initialSql={activeTab.initialSql}
+                  activeTabNode={activeTab.activeTabNode}
+                  connectionDetails={activeTab.connectionDetails}
                 />
               );
-            } else {
-              return (
-                <div className="p-6">
-                  <h1 className="text-3xl font-bold mb-4 text-primary flex items-center">
-                    {activeTab.icon && (
-                      <span className="mr-3">{activeTab.icon}</span>
-                    )}
-                    {activeTab.name}
-                  </h1>
-                  <div className="divider"></div>
-                  <pre className="text-base-content/80 whitespace-pre-wrap bg-base-200 p-4 rounded-md">
-                    {activeTab.details || "暂无详细描述。"}
-                  </pre>
-                </div>
-              );
             }
+
+            // Default rendering for other tab types (e.g., info tabs for database/schema nodes)
+            // Note: For 'sqlEditor' tabs, activeTabId might not directly correspond to a treeData node ID.
+            // This 'findNodeInTree' part is for generic info tabs that do correspond to tree nodes.
+            const activeNode = findNodeInTree(treeData, activeTabId);
+
+            return (
+              <div className="p-6">
+                <h1 className="text-3xl font-bold mb-4 text-primary flex items-center">
+                  {activeTab.icon && (
+                    <span className="mr-3">{activeTab.icon}</span>
+                  )}
+                  {activeTab.name}
+                </h1>
+                <div className="divider"></div>
+                <pre className="text-base-content/80 whitespace-pre-wrap bg-base-200 p-4 rounded-md">
+                  {activeTab.details || "暂无详细描述。"}
+                </pre>
+              </div>
+            );
           })()
         ) : (
           <div className="flex justify-center items-center h-full">

@@ -5,15 +5,23 @@ import {
   FaPlus,
   FaTrashAlt,
   FaEdit,
+  FaDatabase, // 引入 FaDatabase 图标
 } from "react-icons/fa";
-import ContextMenuWrapper from "./ContextMenuWrapper"; 
+import ContextMenuWrapper from "./ContextMenuWrapper";
 
 const ACTION_ICON_MAP = {
   info: <FaInfoCircle />,
 };
 
 const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle"];
-const HOVER_ACTION_TYPES = ["query", "tables", "views", "columns", "index", "partitions"];
+const HOVER_ACTION_TYPES = [
+  "query",
+  "tables",
+  "views",
+  "columns",
+  "index",
+  "partitions",
+];
 
 function DaisyTreeNode({
   node,
@@ -25,15 +33,15 @@ function DaisyTreeNode({
   onAdd,
   onEdit,
   onDelete,
-  onEditConnection,   
-  onDeleteConnection, 
+  onEditConnection,
+  onDeleteConnection,
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
   const isExpandable =
     node.children === null ||
     (Array.isArray(node.children) && node.children.length > 0);
-  
+
   const isRootNode = ACTIONABLE_DB_TYPES.includes(node.type);
 
   const handleRowClick = () => {
@@ -78,7 +86,7 @@ function DaisyTreeNode({
 
   const shouldShowAddButton =
     node.iconName === "column" || node.iconName === "primary";
-    
+
   const rootNodeMenuItems = [
     {
       label: "编辑连接",
@@ -89,6 +97,10 @@ function DaisyTreeNode({
       onClick: () => onDeleteConnection && onDeleteConnection(node),
     },
   ];
+
+  // 新增的图标逻辑处理
+  const nodeIconToRender =
+    node.iconName === "singleQuery" ? <FaDatabase /> : node.icon;
 
   const nodeContent = (
     <a
@@ -107,7 +119,10 @@ function DaisyTreeNode({
             )
           )}
         </div>
-        {node.icon && <span className="mr-2 flex-shrink-0">{node.icon}</span>}
+        {/* 使用 nodeIconToRender 来渲染图标 */}
+        {nodeIconToRender && (
+          <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+        )}
         <div className="flex items-baseline overflow-hidden flex-1">
           <span className="truncate font-medium">{node.name}</span>
           {node.description && (
@@ -165,7 +180,7 @@ function DaisyTreeNode({
                   </button>
                 ) : (
                   <>
-                    {HOVER_ACTION_TYPES.includes(node.iconName) && (
+                    {HOVER_ACTION_TYPES.includes(node.iconName) ? (
                       <div className="flex items-center space-x-1">
                         <button
                           className="btn btn-ghost btn-circle btn-xs"
@@ -182,16 +197,16 @@ function DaisyTreeNode({
                           <FaPlus />
                         </button>
                       </div>
-                    )}
-                    {node.iconName &&
-                      !HOVER_ACTION_TYPES.includes(node.iconName) && (
+                    ) : (
+                      node.iconName && ( // 确保只有当 iconName 存在且不属于 HOVER_ACTION_TYPES 时才渲染
                         <button
                           className="btn btn-ghost btn-circle btn-xs"
                           onClick={handleActionIconClick}
                         >
                           {ACTION_ICON_MAP[node.iconName] || <FaInfoCircle />}
                         </button>
-                      )}
+                      )
+                    )}
                   </>
                 )}
               </>
@@ -226,8 +241,8 @@ function DaisyTreeNode({
               onAdd={onAdd}
               onEdit={onEdit}
               onDelete={onDelete}
-              onEditConnection={onEditConnection}     
-              onDeleteConnection={onDeleteConnection} 
+              onEditConnection={onEditConnection}
+              onDeleteConnection={onDeleteConnection}
             />
           ))}
         </ul>

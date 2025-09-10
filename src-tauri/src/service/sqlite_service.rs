@@ -432,15 +432,22 @@ WHERE type = 'view';",
                 info!("vec: {:?}", vec);
             }
         } else if level_infos.len() == 3 {
-            for (name, icon_name) in get_sqlite_table_data().iter() {
-                let list_node_info_response_item = ListNodeInfoResponseItem::new(
-                    true,
-                    true,
-                    icon_name.to_string(),
-                    name.to_string(),
-                    None,
-                );
-                vec.push(list_node_info_response_item);
+            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+
+            let node_name = level_infos[1].config_value.clone();
+
+            info!("node_name: {},base_config_id:{}", node_name, base_config_id);
+            if node_name == "Tables" {
+                for (name, icon_name) in get_sqlite_table_data().iter() {
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        icon_name.to_string(),
+                        name.to_string(),
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
             }
         } else if level_infos.len() == 4 {
             let table_name = level_infos[2].config_value.clone();

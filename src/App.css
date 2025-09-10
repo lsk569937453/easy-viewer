@@ -18,3 +18,16 @@ body,
 @plugin "daisyui" {
   themes: all;
 }
+.input:focus,
+.textarea:focus,
+.select:focus,
+.btn:focus {
+  outline-offset: 0px; 
+}
+
+
+.input-bordered:focus,
+.textarea-bordered:focus,
+.select-bordered:focus {
+   outline-offset: 0px;
+}

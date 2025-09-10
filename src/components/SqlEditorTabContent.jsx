@@ -25,18 +25,17 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isDirty, setIsDirty] = useState(false); // New state for dirty tracking
 
   const connectionId = tab.connectionId;
   const queryId = tab.queryId;
 
-  // Ref for the table container to enable scrolling
   const tableContainerRef = useRef(null);
 
-  // Memoized columns for react-table
   const tableColumns = useMemo(() => {
     return columns.map((col) => ({
-      accessorKey: col.name, // Use 'name' as accessorKey based on backend response
-      header: col.name, // Use 'name' as header
+      accessorKey: col.name,
+      header: col.name,
       cell: (info) => String(info.getValue()), // Ensure all values are rendered as strings
     }));
   }, [columns]);
@@ -49,43 +48,71 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     // Add pagination, sorting, etc. if needed later
   });
 
+  // Function to update the tab's dirty state in the parent (DatabaseViewer -> TabPanel)
+  const updateTabDirtyState = (dirty) => {
+    setIsDirty(dirty);
+    setTabs((prevTabs) =>
+      prevTabs.map((t) => (t.id === tab.id ? { ...t, isDirty: dirty } : t))
+    );
+  };
+
   // Load initial SQL content when tab becomes active or queryId changes
   useEffect(() => {
     const fetchQueryContent = async () => {
-      if (!queryId || queryId === undefined) {
-        // This might be a brand new query tab, no content to fetch
+      if (!queryId) {
+        // This might be a brand new query tab, no content to fetch from backend
         setSqlContent(tab.initialSql || "");
+        setQueryName(tab.name);
+        updateTabDirtyState(false); // New query starts clean
         return;
       }
 
       setIsLoading(true);
       setError(null);
       try {
-        // Assuming a command to load a specific query's content
-        // Or if the node already contained the SQL content, use that.
-        // For simplicity, let's assume `tab.initialSql` holds it if available or fetch if not.
-        if (tab.initialSql) {
-          setSqlContent(tab.initialSql);
+        const responseJson = await invoke("get_query", {
+          connectionId: parseInt(connectionId),
+          queryName: tab.name, // Use tab.name as query_name as per API definition
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        console.log("sql Message (string):", response_msg); // Now this should directly log the SQL string
+
+        // FIX: If response_msg is directly the SQL string.
+        if (response_code === 0) {
+          setSqlContent(response_msg || ""); // Direct assignment of the SQL string
+          setQueryName(tab.name); // queryName remains the tab's name, as it's not in response_msg
+          updateTabDirtyState(false); // Fetched content is clean
+          // No need to update tab.name from response_msg if it's just the SQL string
         } else {
-          // If tab.initialSql is not pre-populated, you might need another invoke call
-          // e.g., invoke("load_query_content", { query_id: queryId })
-          // For now, we'll just use the empty string if not provided.
-          setSqlContent("");
+          throw new Error(response_msg || "未能获取查询内容或响应格式不正确");
         }
-        setQueryName(tab.name); // Ensure query name is consistent with tab name
       } catch (err) {
         console.error("Failed to load query content:", err);
         setError(`加载查询内容失败: ${err.message || err.toString()}`);
         setSqlContent("");
+        updateTabDirtyState(false);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchQueryContent();
-  }, [queryId, tab.initialSql, tab.name]);
+  }, [queryId, tab.id, tab.name, connectionId, setTabs]); // Dependencies
 
-  // Function to execute SQL
+  const handleSqlContentChange = (e) => {
+    setSqlContent(e.target.value);
+    if (!isDirty) {
+      updateTabDirtyState(true);
+    }
+  };
+
+  const handleQueryNameChange = (e) => {
+    setQueryName(e.target.value);
+    if (!isDirty) {
+      updateTabDirtyState(true);
+    }
+  };
+
   const handleExecuteSql = async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空。");
@@ -100,7 +127,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
 
     try {
       const responseJson = await invoke("execute_sql", {
-        connection_id: parseInt(connectionId), // Ensure connectionId is integer
+        connection_id: parseInt(connectionId),
         sql: sqlContent,
         page: currentPage,
         page_size: pageSize,
@@ -115,8 +142,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           execution_time_ms,
         } = response_msg;
 
-        // Backend should return columns as [{ name: "col1" }, { name: "col2" }]
-        // And data as [[val1, val2], ...]
         const mappedData = resData.map((rowArray) => {
           const rowObject = {};
           rowArray.forEach((value, index) => {
@@ -144,7 +169,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     }
   };
 
-  // Function to save the SQL query (update the existing one)
+  // Function to save the SQL query (update or create)
   const handleSaveQuery = async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空，无法保存。");
@@ -155,16 +180,32 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     try {
       const responseJson = await invoke("save_query", {
         connection_id: parseInt(connectionId),
-        query_name: queryName, // Allow user to edit query name if a text input is added
+        query_name: queryName,
         sql: sqlContent,
-        query_id: queryId, // Pass queryId for update
+        query_id: queryId, // Pass queryId for update, null for new query
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
         alert("查询已成功保存!");
-        // If the query name was edited, update the tab's name
-        if (setTabs && tab.name !== queryName) {
+        updateTabDirtyState(false); // Saved, so not dirty anymore
+
+        // If it was a new query, update its queryId in the tab state
+        if (!queryId && response_msg.query_id) {
+          setTabs((prevTabs) =>
+            prevTabs.map((t) =>
+              t.id === tab.id
+                ? {
+                    ...t,
+                    queryId: response_msg.query_id,
+                    id: `sql-editor-${response_msg.query_id}`, // Update tab ID as well for consistency
+                    name: queryName,
+                  }
+                : t
+            )
+          );
+        } else if (tab.name !== queryName) {
+          // If query name was edited, update the tab's name
           setTabs((prevTabs) =>
             prevTabs.map((t) =>
               t.id === tab.id ? { ...t, name: queryName } : t
@@ -182,6 +223,22 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     }
   };
 
+  // Ctrl+S keyboard shortcut for saving
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "s") {
+        event.preventDefault(); // Prevent default browser save dialog
+        handleSaveQuery();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleSaveQuery]); // Dependency on handleSaveQuery
+
   const totalPages = Math.ceil(totalRows / pageSize);
 
   const handlePageChange = (newPage) => {
@@ -192,8 +249,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   };
 
   const handleSearchData = () => {
-    // For large datasets, this would typically involve re-executing SQL with a WHERE clause
-    // For demonstration, it's just a placeholder.
     alert(
       `搜索功能待实现。搜索词: "${searchTerm}"。通常需要重新执行带有WHERE子句的SQL。`
     );
@@ -207,7 +262,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           type="text"
           className="input input-bordered input-sm font-semibold text-lg flex-grow max-w-xs"
           value={queryName}
-          onChange={(e) => setQueryName(e.target.value)}
+          onChange={handleQueryNameChange} // Use new handler
           title="查询名称"
         />
         <button
@@ -227,10 +282,13 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           className="btn btn-ghost btn-sm flex items-center gap-2"
           onClick={handleSaveQuery}
           disabled={isLoading}
-          title="保存查询"
+          title="保存查询 (Ctrl+S)"
         >
           <FaSave />
           保存
+          {isDirty && (
+            <span className="text-red-500 text-xl leading-none ml-1">•</span>
+          )}{" "}
         </button>
       </div>
 
@@ -241,7 +299,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           rows="10"
           placeholder="在此输入 SQL 查询..."
           value={sqlContent}
-          onChange={(e) => setSqlContent(e.target.value)}
+          onChange={handleSqlContentChange} // Use new handler
         ></textarea>
       </div>
 

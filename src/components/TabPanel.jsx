@@ -4,19 +4,15 @@ import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
 import TableDetailPage from "./TableDetailPage.jsx";
 import SqlEditorTabContent from "./SqlEditorTabContent.jsx"; // Import the new component
 
-// 辅助函数：根据节点ID在树中查找完整的节点对象
 const findNodeInTree = (nodes, nodeId) => {
-  // 核心修改：在尝试遍历之前，检查 nodes 是否为数组
   if (!Array.isArray(nodes)) {
     return null;
   }
 
   for (const node of nodes) {
     if (String(node.id) === String(nodeId)) {
-      // Ensure comparison is robust (string vs number)
       return node;
     }
-    // 核心修改：在递归调用之前，检查 node.children 是否为数组
     if (Array.isArray(node.children)) {
       const found = findNodeInTree(node.children, nodeId);
       if (found) {

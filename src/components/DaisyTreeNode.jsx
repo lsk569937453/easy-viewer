@@ -98,7 +98,7 @@ function DaisyTreeNode({
     },
   ];
 
-  // 新增的图标逻辑处理
+  // 新增的图标逻辑处理：如果 iconName 是 'singleQuery'，则渲染 FaDatabase
   const nodeIconToRender =
     node.iconName === "singleQuery" ? <FaDatabase /> : node.icon;
 
@@ -227,26 +227,29 @@ function DaisyTreeNode({
         nodeContent
       )}
 
-      {isExpandable && isOpen && !node.isLoading && (
-        <ul>
-          {node.children.map((child) => (
-            <DaisyTreeNode
-              key={child.id}
-              node={child}
-              selectedNode={selectedNode}
-              openNodes={openNodes}
-              onNodeClick={onNodeClick}
-              onToggle={onToggle}
-              onRefresh={onRefresh}
-              onAdd={onAdd}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onEditConnection={onEditConnection}
-              onDeleteConnection={onDeleteConnection}
-            />
-          ))}
-        </ul>
-      )}
+      {isOpen &&
+        Array.isArray(node.children) &&
+        node.children.length > 0 &&
+        !node.isLoading && (
+          <ul>
+            {node.children.map((child) => (
+              <DaisyTreeNode
+                key={child.id}
+                node={child}
+                selectedNode={selectedNode}
+                openNodes={openNodes}
+                onNodeClick={onNodeClick}
+                onToggle={onToggle}
+                onRefresh={onRefresh}
+                onAdd={onAdd}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onEditConnection={onEditConnection}
+                onDeleteConnection={onDeleteConnection}
+              />
+            ))}
+          </ul>
+        )}
     </li>
   );
 }

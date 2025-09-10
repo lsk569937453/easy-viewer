@@ -36,6 +36,7 @@ const ICON_MAP = {
   column: <FaStream />,
   primary: <FaStar />,
   default: <FaFolder />,
+  singleQuery: <FaDatabase />, // Ensure singleQuery has its icon mapped
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -132,13 +133,22 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     }
   };
 
-  // 辅助函数：打开一个新的 SQL Editor 标签页
   const openNewSqlEditorTab = async (
     connectionId,
     connectionName,
     nodeIcon
   ) => {
-    const defaultQueryName = `新查询 - ${connectionName}`;
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const day = now.getDate().toString().padStart(2, "0");
+    const hours = now.getHours().toString().padStart(2, "0");
+    const minutes = now.getMinutes().toString().padStart(2, "0");
+    const seconds = now.getSeconds().toString().padStart(2, "0");
+    const milliseconds = now.getMilliseconds().toString().padStart(3, "0");
+
+    const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
+    const defaultQueryName = `New_Query_${timestamp}`;
     const defaultSqlContent = "";
 
     try {
@@ -151,11 +161,9 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        // 假设 response_msg 包含新查询的 query_id
         const { query_id } = response_msg;
-        const newTabId = `sql-editor-${query_id}`; // 为新标签页生成一个唯一 ID
+        const newTabId = `sql-editor-${query_id || Date.now()}`;
 
-        // 检查是否已经存在该 query_id 对应的 SQL 编辑器标签页
         const existingSqlEditorTab = tabs.find(
           (tab) => tab.type === "sqlEditor" && tab.queryId === query_id
         );
@@ -167,29 +175,32 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
             id: newTabId,
             name: defaultQueryName,
             icon: nodeIcon,
-            type: "sqlEditor", // 标识为 SQL 编辑器类型
+            type: "sqlEditor",
             connectionId: connectionId,
-            queryId: query_id, // 后端返回的新查询 ID
+            queryId: query_id,
             initialSql: defaultSqlContent,
+            isDirty: false, // New tab is not dirty initially
           };
           setTabs((prevTabs) => [...prevTabs, newTab]);
           setActiveTabId(newTab.id);
         }
+        return true; // 新增：表示成功
       } else {
         console.error(
           "Failed to create new query via save_query:",
           response_msg
         );
         alert(`创建新查询失败: ${response_msg}`);
+        return false; // 新增：表示失败
       }
     } catch (err) {
       console.error("Error invoking save_query for new query:", err);
       alert(`创建新查询时发生错误: ${err.message || err.toString()}`);
+      return false; // 新增：表示失败
     }
   };
 
   const handleNodeActivate = async (node) => {
-    // Determine the root connection ID from the node's path
     const rootConfigId = node.path[0]?.config_value;
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
@@ -199,36 +210,58 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       return;
     }
 
-    // --- 取消处理 'query' 节点点击的行为 ---
+    // --- Handle 'singleQuery' nodes ---
+    if (node.iconName === "singleQuery") {
+      const queryId = node.path[node.path.length - 1].config_value; // Assuming query_id is the last part of the path
+      const newTabId = `sql-editor-${queryId}`;
+
+      const existingSqlEditorTab = tabs.find(
+        (tab) => tab.type === "sqlEditor" && tab.queryId === queryId
+      );
+
+      if (existingSqlEditorTab) {
+        setActiveTabId(existingSqlEditorTab.id);
+      } else {
+        const newTab = {
+          id: newTabId,
+          name: node.name,
+          icon: node.icon,
+          type: "sqlEditor",
+          connectionId: connection.base_config_id,
+          queryId: queryId,
+          initialSql: null, // SqlEditorTabContent will fetch this using get_query
+          isDirty: false, // Initial state is not dirty
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
+    }
+
     if (node.iconName === "query") {
-      // 这里的逻辑已被移除，点击 'query' 节点时将不做任何操作。
-      // 如果需要，可以在这里添加一个 console.log 或其他提示，表示此操作已被禁用。
       console.log(
         `点击了 'query' 节点 (${node.name})，但此操作已被禁用。请使用右侧的“新增”按钮。`
       );
-      return; // 阻止进一步处理
+      return; // Prevent further processing
     }
-
-    // --- 现有逻辑处理其他节点类型 ---
-
-    // 检查标签页是否已经存在 (对于 node.id 稳定的其他节点类型)
-    const existingTab = tabs.find((tab) => tab.id === node.id);
 
     if (node.iconName === "singleTable") {
       let tabDetails = generateSqlForNode(node, connections);
+      const tabId = node.id; // Use node.id for singleTable tabs
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+
       if (existingTab) {
-        // For TableWorkspacePanel, we might want to update initialSql if the node's details changed
         if (existingTab.initialSql !== tabDetails) {
           setTabs((prevTabs) =>
             prevTabs.map((tab) =>
-              tab.id === node.id ? { ...tab, initialSql: tabDetails } : tab
+              tab.id === tabId ? { ...tab, initialSql: tabDetails } : tab
             )
           );
         }
-        setActiveTabId(node.id);
+        setActiveTabId(tabId);
       } else {
         const newTab = {
-          id: node.id,
+          id: tabId,
           name: node.name,
           icon: node.icon,
           initialSql: tabDetails,
@@ -236,8 +269,8 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
           path: node.path,
           type: "tableWorkspace", // Explicit type for TableWorkspacePanel
           connectionId: connection.base_config_id,
-          activeTabNode: node, // Pass node directly
-          connectionDetails: connection, // Pass connection directly
+          activeTabNode: node,
+          connectionDetails: connection,
         };
         setTabs([...tabs, newTab]);
         setActiveTabId(newTab.id);
@@ -245,8 +278,10 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       return; // Done with singleTable
     }
 
-    // Default info tab (if not 'query' and not 'singleTable')
+    // Default info tab (if not 'query', not 'singleQuery', and not 'singleTable')
     let tabDetails = node.details;
+    const existingTab = tabs.find((tab) => tab.id === node.id); // Check for existing info tab
+
     if (existingTab) {
       if (existingTab.details !== tabDetails) {
         setTabs((prevTabs) =>
@@ -332,7 +367,6 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
   };
 
-  // handleAddNode 函数保持不变，因为它是点击“新增”按钮时的行为
   const handleAddNode = async (node) => {
     console.log("Add action on node:", node.name);
     if (node.iconName === "query") {
@@ -343,11 +377,17 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         rootConfigId
       );
       if (connection) {
-        await openNewSqlEditorTab(
+        // 调用 openNewSqlEditorTab 并等待其完成
+        const success = await openNewSqlEditorTab(
+          // 新增：捕获 openNewSqlEditorTab 的返回结果
           parseInt(rootConfigId),
           connection.connection_name,
           node.icon
         );
+        if (success) {
+          // 新增：如果成功创建新查询，则刷新当前的 'query' 节点
+          await handleRefreshNode(node);
+        }
       } else {
         alert("无法找到数据库连接信息来创建新查询。");
       }
@@ -414,7 +454,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
                   onNodeClick={handleNodeActivate}
                   onToggle={handleToggleNode}
                   onRefresh={handleRefreshNode}
-                  onAdd={handleAddNode} // 确保这里传递了 handleAddNode
+                  onAdd={handleAddNode}
                   onEdit={handleEditNode}
                   onEditConnection={handleEditConnection}
                   onDeleteConnection={handleDeleteConnection}

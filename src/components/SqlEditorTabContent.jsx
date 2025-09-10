@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   FaPlay,
@@ -12,58 +18,51 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-
 function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [sqlContent, setSqlContent] = useState("");
   const [queryName, setQueryName] = useState(tab.name);
   const [executionTime, setExecutionTime] = useState(0);
-  const [data, setData] = useState([]);
+  const [allFetchedData, setAllFetchedData] = useState([]);
   const [columns, setColumns] = useState([]);
   const [totalRows, setTotalRows] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50); // Default page size
+  const [pageSize, setPageSize] = useState(50);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isDirty, setIsDirty] = useState(false); // New state for dirty tracking
-
+  const [isDirty, setIsDirty] = useState(false);
   const connectionId = tab.connectionId;
   const queryId = tab.queryId;
-
   const tableContainerRef = useRef(null);
-
   const tableColumns = useMemo(() => {
     return columns.map((col) => ({
       accessorKey: col.name,
       header: col.name,
-      cell: (info) => String(info.getValue()), // Ensure all values are rendered as strings
+      cell: (info) => String(info.getValue()),
     }));
   }, [columns]);
-
-  // TanStack Table instance
+  const displayData = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return allFetchedData.slice(startIndex, endIndex);
+  }, [allFetchedData, currentPage, pageSize]);
   const table = useReactTable({
-    data,
+    data: displayData,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
-    // Add pagination, sorting, etc. if needed later
   });
-
-  // Function to update the tab's dirty state in the parent (DatabaseViewer -> TabPanel)
   const updateTabDirtyState = (dirty) => {
     setIsDirty(dirty);
     setTabs((prevTabs) =>
       prevTabs.map((t) => (t.id === tab.id ? { ...t, isDirty: dirty } : t))
     );
   };
-
-  // Load initial SQL content when tab becomes active or queryId changes
   useEffect(() => {
     const fetchQueryContent = async () => {
       if (!queryId) {
-        // This might be a brand new query tab, no content to fetch from backend
         setSqlContent(tab.initialSql || "");
         setQueryName(tab.name);
-        updateTabDirtyState(false); // New query starts clean
+        updateTabDirtyState(false);
         return;
       }
 
@@ -72,17 +71,14 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       try {
         const responseJson = await invoke("get_query", {
           connectionId: parseInt(connectionId),
-          queryName: tab.name, // Use tab.name as query_name as per API definition
+          queryName: tab.name,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
-        console.log("sql Message (string):", response_msg); // Now this should directly log the SQL string
 
-        // FIX: If response_msg is directly the SQL string.
         if (response_code === 0) {
-          setSqlContent(response_msg || ""); // Direct assignment of the SQL string
-          setQueryName(tab.name); // queryName remains the tab's name, as it's not in response_msg
-          updateTabDirtyState(false); // Fetched content is clean
-          // No need to update tab.name from response_msg if it's just the SQL string
+          setSqlContent(response_msg || "");
+          setQueryName(tab.name);
+          updateTabDirtyState(false);
         } else {
           throw new Error(response_msg || "未能获取查询内容或响应格式不正确");
         }
@@ -97,80 +93,94 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     };
 
     fetchQueryContent();
-  }, [queryId, tab.id, tab.name, connectionId, setTabs]); // Dependencies
-
+  }, [queryId, tab.id, tab.name, connectionId, setTabs]);
   const handleSqlContentChange = (e) => {
     setSqlContent(e.target.value);
     if (!isDirty) {
       updateTabDirtyState(true);
     }
   };
-
   const handleQueryNameChange = (e) => {
     setQueryName(e.target.value);
     if (!isDirty) {
       updateTabDirtyState(true);
     }
   };
-
-  const handleExecuteSql = async () => {
+  const handleExecuteSql = useCallback(async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空。");
       return;
     }
     setIsLoading(true);
     setError(null);
-    setData([]); // Clear previous data
+    setAllFetchedData([]);
     setColumns([]);
     setExecutionTime(0);
     setTotalRows(0);
+    setCurrentPage(1);
 
     try {
-      const responseJson = await invoke("execute_sql", {
-        connection_id: parseInt(connectionId),
+      const listNodeInfoReqObject = {
+        level_infos: [
+          {
+            level: 0,
+            config_value: connectionId.toString(),
+          },
+        ],
+      };
+
+      const responseJson = await invoke("exe_sql", {
         sql: sqlContent,
-        page: currentPage,
-        page_size: pageSize,
+        listNodeInfoReq: listNodeInfoReqObject,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
-      if (response_code === 0) {
-        const {
-          columns: resColumns,
-          data: resData,
-          total_rows,
-          execution_time_ms,
-        } = response_msg;
+      if (
+        response_code === 0 &&
+        response_msg &&
+        response_msg.header &&
+        response_msg.rows
+      ) {
+        const rawHeaders = response_msg.header;
+        const rawRows = response_msg.rows;
 
-        const mappedData = resData.map((rowArray) => {
+        const fetchedColumns = rawHeaders.map((col) => ({
+          name: col.name,
+        }));
+
+        const fetchedColumnHeadersNames = fetchedColumns.map((col) => col.name);
+
+        const fetchedData = rawRows.map((rowArray) => {
           const rowObject = {};
           rowArray.forEach((value, index) => {
-            if (resColumns[index]) {
-              rowObject[resColumns[index].name] = value;
+            if (fetchedColumnHeadersNames[index]) {
+              rowObject[fetchedColumnHeadersNames[index]] = value;
             }
           });
           return rowObject;
         });
 
-        setColumns(resColumns);
-        setData(mappedData);
-        setTotalRows(total_rows);
-        setExecutionTime(execution_time_ms);
+        setColumns(fetchedColumns);
+        setAllFetchedData(fetchedData);
+        setTotalRows(fetchedData.length);
+        setExecutionTime(response_msg.execution_time_ms || 0);
+        setCurrentPage(1);
       } else {
-        throw new Error(response_msg);
+        throw new Error(response_msg || "未能获取查询结果或响应格式不正确");
       }
     } catch (err) {
       console.error("SQL execution failed:", err);
       setError(`执行 SQL 失败: ${err.message || err.toString()}`);
       setColumns([]);
-      setData([]);
+      setAllFetchedData([]);
+      setTotalRows(0);
+      setExecutionTime(0);
+      setCurrentPage(1);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Function to save the SQL query (update or create)
-  const handleSaveQuery = async () => {
+  }, [sqlContent, connectionId]);
+  const handleSaveQuery = useCallback(async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空，无法保存。");
       return;
@@ -179,18 +189,18 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     setError(null);
     try {
       const responseJson = await invoke("save_query", {
-        connection_id: parseInt(connectionId),
-        query_name: queryName,
+        connectionId: parseInt(connectionId),
+        queryName: queryName,
         sql: sqlContent,
-        query_id: queryId, // Pass queryId for update, null for new query
+        queryId: queryId,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
-
+      code;
+      Code;
       if (response_code === 0) {
         alert("查询已成功保存!");
-        updateTabDirtyState(false); // Saved, so not dirty anymore
+        updateTabDirtyState(false);
 
-        // If it was a new query, update its queryId in the tab state
         if (!queryId && response_msg.query_id) {
           setTabs((prevTabs) =>
             prevTabs.map((t) =>
@@ -198,14 +208,13 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
                 ? {
                     ...t,
                     queryId: response_msg.query_id,
-                    id: `sql-editor-${response_msg.query_id}`, // Update tab ID as well for consistency
+                    id: `sql-editor-${response_msg.query_id}`,
                     name: queryName,
                   }
                 : t
             )
           );
         } else if (tab.name !== queryName) {
-          // If query name was edited, update the tab's name
           setTabs((prevTabs) =>
             prevTabs.map((t) =>
               t.id === tab.id ? { ...t, name: queryName } : t
@@ -221,9 +230,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Ctrl+S keyboard shortcut for saving
+  }, [sqlContent, queryName, connectionId, queryId, tab.id, tab.name, setTabs]);
   useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
@@ -237,23 +244,16 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleSaveQuery]); // Dependency on handleSaveQuery
-
+  }, [handleSaveQuery]);
   const totalPages = Math.ceil(totalRows / pageSize);
-
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages && newPage !== currentPage) {
       setCurrentPage(newPage);
-      handleExecuteSql(); // Re-execute SQL for new page
     }
   };
-
   const handleSearchData = () => {
-    alert(
-      `搜索功能待实现。搜索词: "${searchTerm}"。通常需要重新执行带有WHERE子句的SQL。`
-    );
+    alert("");
   };
-
   return (
     <div className="flex flex-col h-full bg-base-100 p-4">
       {/* Action Bar */}
@@ -262,7 +262,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           type="text"
           className="input input-bordered input-sm font-semibold text-lg flex-grow max-w-xs"
           value={queryName}
-          onChange={handleQueryNameChange} // Use new handler
+          onChange={handleQueryNameChange}
           title="查询名称"
         />
         <button
@@ -291,19 +291,16 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           )}{" "}
         </button>
       </div>
-
-      {/* SQL Editor Area */}
+      code Code
       <div className="mb-4 flex-shrink-0">
         <textarea
           className="textarea textarea-bordered w-full font-mono text-sm resize-y"
           rows="10"
           placeholder="在此输入 SQL 查询..."
           value={sqlContent}
-          onChange={handleSqlContentChange} // Use new handler
+          onChange={handleSqlContentChange}
         ></textarea>
       </div>
-
-      {/* Error Display */}
       {error && (
         <div role="alert" className="alert alert-error mb-4 flex-shrink-0">
           <svg
@@ -322,7 +319,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           <span>{error}</span>
         </div>
       )}
-
       {/* Data Operations Area */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0 flex-wrap gap-2">
         <div className="flex items-center space-x-2">
@@ -365,17 +361,16 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           <span className="text-sm">总计: {totalRows} 行</span>
         </div>
       </div>
-
       {/* Data Table Area */}
       <div
         className="flex-1 overflow-auto rounded-lg border border-base-content/20"
         ref={tableContainerRef}
       >
-        {isLoading && data.length === 0 ? (
+        {isLoading && allFetchedData.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
-        ) : data.length > 0 ? (
+        ) : allFetchedData.length > 0 ? (
           <table className="table table-sm table-pin-rows table-pin-cols w-full">
             {/* Table Head */}
             <thead>
@@ -421,5 +416,4 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     </div>
   );
 }
-
 export default SqlEditorTabContent;

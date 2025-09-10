@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // 新增导入 useRef
 import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
@@ -59,7 +59,6 @@ const updateNodeInTree = (nodes, nodeId, updates) => {
   });
 };
 
-// Helper function to find connection by rootConfigId
 const findConnectionByRootConfigId = (connections, rootConfigId) => {
   return connections.find(
     (conn) => conn.base_config_id.toString() === rootConfigId
@@ -73,6 +72,11 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
   const [activeTabId, setActiveTabId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnectionId, setEditingConnectionId] = useState(null);
+  
+  // START_OF_MODIFICATION: 新增 State 和 Ref 用于删除确认模态框
+  const [nodeToDelete, setNodeToDelete] = useState(null);
+  const deleteModalRef = useRef(null);
+  // END_OF_MODIFICATION
 
   useEffect(() => {
     const newTreeData = (connections || []).map((conn) => {
@@ -179,24 +183,24 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
             connectionId: connectionId,
             queryId: query_id,
             initialSql: defaultSqlContent,
-            isDirty: false, // New tab is not dirty initially
+            isDirty: false,
           };
           setTabs((prevTabs) => [...prevTabs, newTab]);
           setActiveTabId(newTab.id);
         }
-        return true; // 新增：表示成功
+        return true;
       } else {
         console.error(
           "Failed to create new query via save_query:",
           response_msg
         );
         alert(`创建新查询失败: ${response_msg}`);
-        return false; // 新增：表示失败
+        return false;
       }
     } catch (err) {
       console.error("Error invoking save_query for new query:", err);
       alert(`创建新查询时发生错误: ${err.message || err.toString()}`);
-      return false; // 新增：表示失败
+      return false;
     }
   };
 
@@ -210,9 +214,8 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       return;
     }
 
-    // --- Handle 'singleQuery' nodes ---
     if (node.iconName === "singleQuery") {
-      const queryId = node.path[node.path.length - 1].config_value; // Assuming query_id is the last part of the path
+      const queryId = node.path[node.path.length - 1].config_value;
       const newTabId = `sql-editor-${queryId}`;
 
       const existingSqlEditorTab = tabs.find(
@@ -229,8 +232,8 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
           type: "sqlEditor",
           connectionId: connection.base_config_id,
           queryId: queryId,
-          initialSql: null, // SqlEditorTabContent will fetch this using get_query
-          isDirty: false, // Initial state is not dirty
+          initialSql: null,
+          isDirty: false,
         };
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
@@ -242,12 +245,12 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       console.log(
         `点击了 'query' 节点 (${node.name})，但此操作已被禁用。请使用右侧的“新增”按钮。`
       );
-      return; // Prevent further processing
+      return;
     }
 
     if (node.iconName === "singleTable") {
       let tabDetails = generateSqlForNode(node, connections);
-      const tabId = node.id; // Use node.id for singleTable tabs
+      const tabId = node.id;
       const existingTab = tabs.find((tab) => tab.id === tabId);
 
       if (existingTab) {
@@ -267,7 +270,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
           initialSql: tabDetails,
           iconName: node.iconName,
           path: node.path,
-          type: "tableWorkspace", // Explicit type for TableWorkspacePanel
+          type: "tableWorkspace",
           connectionId: connection.base_config_id,
           activeTabNode: node,
           connectionDetails: connection,
@@ -275,12 +278,11 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         setTabs([...tabs, newTab]);
         setActiveTabId(newTab.id);
       }
-      return; // Done with singleTable
+      return;
     }
 
-    // Default info tab (if not 'query', not 'singleQuery', and not 'singleTable')
     let tabDetails = node.details;
-    const existingTab = tabs.find((tab) => tab.id === node.id); // Check for existing info tab
+    const existingTab = tabs.find((tab) => tab.id === node.id);
 
     if (existingTab) {
       if (existingTab.details !== tabDetails) {
@@ -299,7 +301,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         details: tabDetails,
         iconName: node.iconName,
         path: node.path,
-        type: "info", // Default info tab
+        type: "info",
       };
       setTabs([...tabs, newTab]);
       setActiveTabId(newTab.id);
@@ -403,31 +405,26 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     setIsModalOpen(false);
     setEditingConnectionId(null);
   };
-
-  // START_OF_MODIFICATION
-  // 移除旧的 handleCreationSuccess
-  // const handleCreationSuccess = () => {
-  //   if (onConnectionsUpdate) {
-  //     onConnectionsUpdate();
-  //   }
-  // };
-
-  // 新增：处理 NewConnectionModal 成功保存（创建或更新）的事件
+  
   const handleConnectionModalSaveSuccess = (baseConfigId, isEditMode) => {
     console.log(
       `Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}`
     );
     if (onConnectionsUpdate) {
-      // 触发父组件（App）重新获取所有连接，这将导致 DatabaseViewer 的 connections prop 更新
-      // 进而触发 DatabaseViewer 内部的 useEffect 重新生成 treeData
       onConnectionsUpdate();
     }
   };
-  // END_OF_MODIFICATION
 
-  const handleDeleteConnection = async (node) => {
-    console.log("删除连接:", node);
-    const connectionIdToDelete = node.id; // node.id holds the base_config_id for root connection nodes
+
+  const handleRequestDeleteConnection = (node) => {
+    setNodeToDelete(node);
+    deleteModalRef.current?.showModal();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!nodeToDelete) return;
+
+    const connectionIdToDelete = nodeToDelete.id;
 
     try {
       const responseJson = await invoke("delete_base_config", {
@@ -436,39 +433,30 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        // 1. 立即从 treeData 中移除该节点，实现UI的即时更新
         setTreeData((prevTree) =>
           prevTree.filter((treeNode) => treeNode.id !== connectionIdToDelete)
         );
 
-        // 2. 同时从 openNodes 中移除该节点的展开状态
         setOpenNodes((prevOpenNodes) => {
           const newOpenNodes = { ...prevOpenNodes };
           delete newOpenNodes[connectionIdToDelete];
           return newOpenNodes;
         });
 
-        // 3. 关闭所有与该连接相关的 Tab
         setTabs((prevTabs) => {
           const remainingTabs = prevTabs.filter(
             (tab) => tab.connectionId !== connectionIdToDelete
           );
 
-          // 如果当前激活的 Tab 被删除了，尝试激活第一个剩余的 Tab
           if (
             activeTabId &&
             !remainingTabs.some((tab) => tab.id === activeTabId)
           ) {
-            if (remainingTabs.length > 0) {
-              setActiveTabId(remainingTabs[0].id);
-            } else {
-              setActiveTabId(null); // 没有剩余 Tab
-            }
+            setActiveTabId(remainingTabs.length > 0 ? remainingTabs[0].id : null);
           }
           return remainingTabs;
         });
 
-        // 4. 最后，通知父组件更新其 connections 状态，确保数据一致性
         if (onConnectionsUpdate) {
           await onConnectionsUpdate();
         }
@@ -482,8 +470,17 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     } catch (err) {
       console.error("Error invoking delete_base_config:", err);
       alert(`删除连接时发生错误: ${err.message || err.toString()}`);
+    } finally {
+      setNodeToDelete(null);
+      deleteModalRef.current?.close();
     }
   };
+
+  const handleCancelDelete = () => {
+    setNodeToDelete(null);
+    deleteModalRef.current?.close();
+  };
+  
 
   const handleEditNode = (node) => {
     if (node.iconName !== "singleTable") return;
@@ -496,7 +493,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       return;
     }
 
-    const tabId = `${node.id}-details`; // Create a unique ID for the detail tab
+    const tabId = `${node.id}-details`;
     const existingTab = tabs.find((tab) => tab.id === tabId);
 
     if (existingTab) {
@@ -504,11 +501,11 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     } else {
       const newTab = {
         id: tabId,
-        name: `${node.name} [Details]`, // Differentiate the tab name
+        name: `${node.name} [Details]`,
         icon: node.icon,
-        type: "tableDetail", // Add a type to identify this special tab
-        node: node, // Pass the full node data
-        connectionId: connection.base_config_id, // Add connectionId for consistent filtering
+        type: "tableDetail",
+        node: node,
+        connectionId: connection.base_config_id,
       };
       setTabs([...tabs, newTab]);
       setActiveTabId(newTab.id);
@@ -536,7 +533,8 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
                   onAdd={handleAddNode}
                   onEdit={handleEditNode}
                   onEditConnection={handleEditConnection}
-                  onDeleteConnection={handleDeleteConnection} // Pass the implemented function
+                  onDelete={handleRequestDeleteConnection} // 用于悬停按钮
+                  onDeleteConnection={handleRequestDeleteConnection} // 用于右键菜单
                 />
               ))}
             </ul>
@@ -561,12 +559,31 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       <NewConnectionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        // START_OF_MODIFICATION
-        // 传递新的 onSaveSuccess 处理函数
         onSaveSuccess={handleConnectionModalSaveSuccess}
-        // END_OF_MODIFICATION
         editingId={editingConnectionId}
       />
+      <dialog ref={deleteModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">确认删除</h3>
+          <p className="py-4">
+            您确定要删除连接 "
+            <span className="font-semibold">{nodeToDelete?.name}</span>
+            " 吗? 此操作不可撤销。
+          </p>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelDelete}>
+              取消
+            </button>
+            <button className="btn btn-error" onClick={handleConfirmDelete}>
+              确认删除
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+           <button onClick={handleCancelDelete}>close</button>
+        </form>
+      </dialog>
+      {/* END_OF_MODIFICATION */}
     </div>
   );
 }

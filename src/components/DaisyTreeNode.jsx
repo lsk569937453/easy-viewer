@@ -141,22 +141,22 @@ function DaisyTreeNode({
             >
               <FaSyncAlt />
             </button>
-            <button
+            {/* <button
               className="btn btn-ghost btn-circle btn-xs"
               title="新增"
               onClick={handleAddClick}
             >
               <FaPlus />
-            </button>
+            </button> */}
             {/* The onDelete here is a generic delete, not specifically for connections.
                 Connection deletion is handled by the context menu's onDeleteConnection. */}
-            {/* <button
+            <button
               className="btn btn-ghost btn-circle btn-xs"
               title="删除"
               onClick={handleDeleteClick}
             >
               <FaTrashAlt />
-            </button> */}
+            </button>
           </div>
         ) : (
           <>

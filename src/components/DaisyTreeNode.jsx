@@ -32,9 +32,9 @@ function DaisyTreeNode({
   onRefresh,
   onAdd,
   onEdit,
-  onDelete,
+  onDelete, // onDelete is for generic node deletion, not connection
   onEditConnection,
-  onDeleteConnection,
+  onDeleteConnection, // Specific for connection deletion
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
@@ -94,11 +94,10 @@ function DaisyTreeNode({
     },
     {
       label: "删除连接",
-      onClick: () => onDeleteConnection && onDeleteConnection(node),
+      onClick: () => onDeleteConnection && onDeleteConnection(node), // Call onDeleteConnection
     },
   ];
 
-  // 新增的图标逻辑处理：如果 iconName 是 'singleQuery'，则渲染 FaDatabase
   const nodeIconToRender =
     node.iconName === "singleQuery" ? <FaDatabase /> : node.icon;
 
@@ -119,7 +118,6 @@ function DaisyTreeNode({
             )
           )}
         </div>
-        {/* 使用 nodeIconToRender 来渲染图标 */}
         {nodeIconToRender && (
           <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
         )}
@@ -150,13 +148,15 @@ function DaisyTreeNode({
             >
               <FaPlus />
             </button>
-            <button
+            {/* The onDelete here is a generic delete, not specifically for connections.
+                Connection deletion is handled by the context menu's onDeleteConnection. */}
+            {/* <button
               className="btn btn-ghost btn-circle btn-xs"
               title="删除"
               onClick={handleDeleteClick}
             >
               <FaTrashAlt />
-            </button>
+            </button> */}
           </div>
         ) : (
           <>
@@ -198,7 +198,7 @@ function DaisyTreeNode({
                         </button>
                       </div>
                     ) : (
-                      node.iconName && ( // 确保只有当 iconName 存在且不属于 HOVER_ACTION_TYPES 时才渲染
+                      node.iconName && (
                         <button
                           className="btn btn-ghost btn-circle btn-xs"
                           onClick={handleActionIconClick}

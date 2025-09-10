@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
-import TabPanel from "./TabPanel.jsx"; // 1. 导入 TabPanel 组件
+import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import { DiMysql } from "react-icons/di";
-import TableDetailPage from "./TableDetailPage.jsx"; // 1. Import the new component
+import TableDetailPage from "./TableDetailPage.jsx";
 
 import { SiOracle, SiSqlite } from "react-icons/si";
 import {
@@ -36,7 +36,7 @@ const ICON_MAP = {
   column: <FaStream />,
   primary: <FaStar />,
   default: <FaFolder />,
-  singleQuery: <FaDatabase />, // Ensure singleQuery has its icon mapped
+  singleQuery: <FaDatabase />,
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -377,15 +377,12 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         rootConfigId
       );
       if (connection) {
-        // 调用 openNewSqlEditorTab 并等待其完成
         const success = await openNewSqlEditorTab(
-          // 新增：捕获 openNewSqlEditorTab 的返回结果
           parseInt(rootConfigId),
           connection.connection_name,
           node.icon
         );
         if (success) {
-          // 新增：如果成功创建新查询，则刷新当前的 'query' 节点
           await handleRefreshNode(node);
         }
       } else {
@@ -413,11 +410,76 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     }
   };
 
-  const handleDeleteConnection = (node) => {
+  const handleDeleteConnection = async (node) => {
     console.log("删除连接:", node);
+    const connectionIdToDelete = node.id; // node.id holds the base_config_id for root connection nodes
+
+    try {
+      const responseJson = await invoke("delete_base_config", {
+        baseConfigId: connectionIdToDelete,
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+
+      if (response_code === 0) {
+        // 1. 立即从 treeData 中移除该节点，实现UI的即时更新
+        setTreeData((prevTree) =>
+          prevTree.filter((treeNode) => treeNode.id !== connectionIdToDelete)
+        );
+
+        // 2. 同时从 openNodes 中移除该节点的展开状态
+        setOpenNodes((prevOpenNodes) => {
+          const newOpenNodes = { ...prevOpenNodes };
+          delete newOpenNodes[connectionIdToDelete];
+          return newOpenNodes;
+        });
+
+        // 3. 关闭所有与该连接相关的 Tab
+        setTabs((prevTabs) => {
+          const remainingTabs = prevTabs.filter(
+            (tab) => tab.connectionId !== connectionIdToDelete
+          );
+
+          // 如果当前激活的 Tab 被删除了，尝试激活第一个剩余的 Tab
+          if (
+            activeTabId &&
+            !remainingTabs.some((tab) => tab.id === activeTabId)
+          ) {
+            if (remainingTabs.length > 0) {
+              setActiveTabId(remainingTabs[0].id);
+            } else {
+              setActiveTabId(null); // 没有剩余 Tab
+            }
+          }
+          return remainingTabs;
+        });
+
+        // 4. 最后，通知父组件更新其 connections 状态，确保数据一致性
+        if (onConnectionsUpdate) {
+          await onConnectionsUpdate();
+        }
+      } else {
+        console.error(
+          "Failed to delete connection via delete_base_config:",
+          response_msg
+        );
+        alert(`删除连接失败: ${response_msg}`);
+      }
+    } catch (err) {
+      console.error("Error invoking delete_base_config:", err);
+      alert(`删除连接时发生错误: ${err.message || err.toString()}`);
+    }
   };
+
   const handleEditNode = (node) => {
     if (node.iconName !== "singleTable") return;
+
+    const rootConfigId = node.path[0]?.config_value;
+    const connection = findConnectionByRootConfigId(connections, rootConfigId);
+    if (!connection) {
+      console.error("Connection details not found for node:", node);
+      alert("无法找到数据库连接信息来编辑表详情。");
+      return;
+    }
 
     const tabId = `${node.id}-details`; // Create a unique ID for the detail tab
     const existingTab = tabs.find((tab) => tab.id === tabId);
@@ -429,13 +491,15 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         id: tabId,
         name: `${node.name} [Details]`, // Differentiate the tab name
         icon: node.icon,
-        type: "tableDetail", // 2. Add a type to identify this special tab
+        type: "tableDetail", // Add a type to identify this special tab
         node: node, // Pass the full node data
+        connectionId: connection.base_config_id, // Add connectionId for consistent filtering
       };
       setTabs([...tabs, newTab]);
-      setActiveTabId(tabId);
+      setActiveTabId(newTab.id);
     }
   };
+
   return (
     <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-[minmax(350px,_1fr)_2fr]">
       <div className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg">
@@ -457,7 +521,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
                   onAdd={handleAddNode}
                   onEdit={handleEditNode}
                   onEditConnection={handleEditConnection}
-                  onDeleteConnection={handleDeleteConnection}
+                  onDeleteConnection={handleDeleteConnection} // Pass the implemented function
                 />
               ))}
             </ul>

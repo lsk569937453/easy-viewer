@@ -38,9 +38,12 @@ function DaisyTreeNode({
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
+  // START_OF_MODIFICATION: 增加对 node.iconName !== "column" 的判断
   const isExpandable =
-    node.children === null ||
-    (Array.isArray(node.children) && node.children.length > 0);
+    node.iconName !== "column" && node.iconName !== "primary"&&
+    (node.children === null ||
+      (Array.isArray(node.children) && node.children.length > 0));
+  // END_OF_MODIFICATION
 
   const isRootNode = ACTIONABLE_DB_TYPES.includes(node.type);
 
@@ -141,15 +144,7 @@ function DaisyTreeNode({
             >
               <FaSyncAlt />
             </button>
-            {/* <button
-              className="btn btn-ghost btn-circle btn-xs"
-              title="新增"
-              onClick={handleAddClick}
-            >
-              <FaPlus />
-            </button> */}
-            {/* The onDelete here is a generic delete, not specifically for connections.
-                Connection deletion is handled by the context menu's onDeleteConnection. */}
+          
             <button
               className="btn btn-ghost btn-circle btn-xs"
               title="删除"

@@ -8,7 +8,7 @@ import React, {
 import { invoke } from "@tauri-apps/api/core";
 import {
   FaPlay,
-  FaSearch,
+  FaSearch, // Still needed for the input icon
   FaChevronLeft,
   FaChevronRight,
   FaSave,
@@ -18,6 +18,7 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
+
 function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [sqlContent, setSqlContent] = useState("");
   const [queryName, setQueryName] = useState(tab.name);
@@ -27,13 +28,15 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [totalRows, setTotalRows] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(""); // 搜索关键字
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isDirty, setIsDirty] = useState(false);
+
   const connectionId = tab.connectionId;
   const queryId = tab.queryId;
   const tableContainerRef = useRef(null);
+
   const tableColumns = useMemo(() => {
     return columns.map((col) => ({
       accessorKey: col.name,
@@ -41,22 +44,40 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       cell: (info) => String(info.getValue()),
     }));
   }, [columns]);
+
+  // 新增：根据搜索词过滤数据
+  const filteredData = useMemo(() => {
+    if (!searchTerm) {
+      return allFetchedData;
+    }
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return allFetchedData.filter((row) =>
+      Object.values(row).some((value) =>
+        String(value).toLowerCase().includes(lowerCaseSearchTerm)
+      )
+    );
+  }, [allFetchedData, searchTerm]);
+
+  // 修改：displayData 现在从 filteredData 中切片
   const displayData = useMemo(() => {
     const startIndex = (currentPage - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    return allFetchedData.slice(startIndex, endIndex);
-  }, [allFetchedData, currentPage, pageSize]);
+    return filteredData.slice(startIndex, endIndex);
+  }, [filteredData, currentPage, pageSize]);
+
   const table = useReactTable({
     data: displayData,
     columns: tableColumns,
     getCoreRowModel: getCoreRowModel(),
   });
+
   const updateTabDirtyState = (dirty) => {
     setIsDirty(dirty);
     setTabs((prevTabs) =>
       prevTabs.map((t) => (t.id === tab.id ? { ...t, isDirty: dirty } : t))
     );
   };
+
   useEffect(() => {
     const fetchQueryContent = async () => {
       if (!queryId) {
@@ -94,18 +115,21 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
 
     fetchQueryContent();
   }, [queryId, tab.id, tab.name, connectionId, setTabs]);
+
   const handleSqlContentChange = (e) => {
     setSqlContent(e.target.value);
     if (!isDirty) {
       updateTabDirtyState(true);
     }
   };
+
   const handleQueryNameChange = (e) => {
     setQueryName(e.target.value);
     if (!isDirty) {
       updateTabDirtyState(true);
     }
   };
+
   const handleExecuteSql = useCallback(async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空。");
@@ -118,6 +142,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
     setExecutionTime(0);
     setTotalRows(0);
     setCurrentPage(1);
+    setSearchTerm(""); // 执行查询时清空搜索词
 
     try {
       const listNodeInfoReqObject = {
@@ -162,7 +187,8 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
 
         setColumns(fetchedColumns);
         setAllFetchedData(fetchedData);
-        setTotalRows(fetchedData.length);
+        // totalRows 现在通过 filteredData 计算，这里只需更新原始数据
+        // setTotalRows(fetchedData.length); // 这一行现在可以移除，或让 useEffect 更新
         setExecutionTime(response_msg.execution_time_ms || 0);
         setCurrentPage(1);
       } else {
@@ -180,6 +206,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       setIsLoading(false);
     }
   }, [sqlContent, connectionId]);
+
   const handleSaveQuery = useCallback(async () => {
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空，无法保存。");
@@ -195,8 +222,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
         queryId: queryId,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
-      code;
-      Code;
+
       if (response_code === 0) {
         alert("查询已成功保存!");
         updateTabDirtyState(false);
@@ -231,6 +257,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       setIsLoading(false);
     }
   }, [sqlContent, queryName, connectionId, queryId, tab.id, tab.name, setTabs]);
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "s") {
@@ -245,15 +272,27 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleSaveQuery]);
+
+  // 新增：当搜索词变化时，重置页码为第一页
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // 修改：totalRows 现在反映的是过滤后的数据量
+  useEffect(() => {
+    setTotalRows(filteredData.length);
+  }, [filteredData]);
+
   const totalPages = Math.ceil(totalRows / pageSize);
+
   const handlePageChange = (newPage) => {
     if (newPage > 0 && newPage <= totalPages && newPage !== currentPage) {
       setCurrentPage(newPage);
     }
   };
-  const handleSearchData = () => {
-    alert("");
-  };
+
+  // 移除 handleSearchData 函数，因为它不再需要
+
   return (
     <div className="flex flex-col h-full bg-base-100 p-4">
       {/* Action Bar */}
@@ -291,7 +330,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           )}{" "}
         </button>
       </div>
-      code Code
+
       <div className="mb-4 flex-shrink-0">
         <textarea
           className="textarea textarea-bordered w-full font-mono text-sm resize-y"
@@ -301,6 +340,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           onChange={handleSqlContentChange}
         ></textarea>
       </div>
+
       {error && (
         <div role="alert" className="alert alert-error mb-4 flex-shrink-0">
           <svg
@@ -319,19 +359,21 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           <span>{error}</span>
         </div>
       )}
+
       {/* Data Operations Area */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0 flex-wrap gap-2">
         <div className="flex items-center space-x-2">
-          <input
-            type="text"
-            placeholder="搜索数据 (功能待实现)..."
-            className="input input-bordered input-sm w-48"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button className="btn btn-ghost btn-sm" onClick={handleSearchData}>
+          {/* 搜索输入框，现在带有FaSearch图标，但没有独立的搜索按钮 */}
+          <label className="input input-bordered input-sm flex items-center gap-2 w-48">
             <FaSearch />
-          </button>
+            <input
+              type="text"
+              className="grow"
+              placeholder="搜索数据..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)} // 实时更新搜索词
+            />
+          </label>
         </div>
         <div className="flex items-center space-x-4">
           {executionTime > 0 && (
@@ -370,7 +412,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           <div className="flex items-center justify-center h-full">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
-        ) : allFetchedData.length > 0 ? (
+        ) : filteredData.length > 0 ? (
           <table className="table table-sm table-pin-rows table-pin-cols w-full">
             {/* Table Head */}
             <thead>
@@ -409,7 +451,9 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           </table>
         ) : (
           <div className="p-4 text-center text-base-content/60">
-            没有数据可显示。请执行 SQL 查询。
+            {searchTerm
+              ? `没有找到与"${searchTerm}"匹配的数据。`
+              : "没有数据可显示。请执行 SQL 查询。"}
           </div>
         )}
       </div>

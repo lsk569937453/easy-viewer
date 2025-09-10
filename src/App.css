@@ -22,12 +22,20 @@ body,
 .textarea:focus,
 .select:focus,
 .btn:focus {
-  outline-offset: 0px; 
+  outline-offset: 0px;
 }
-
 
 .input-bordered:focus,
 .textarea-bordered:focus,
 .select-bordered:focus {
-   outline-offset: 0px;
+  outline-offset: 0px;
+}
+.input-bordered > input:focus {
+  outline: none !important;
+}
+
+.input-bordered:focus-within {
+  --tw-ring-offset-width: 0px !important;
+
+  outline-offset: 0px !important;
 }

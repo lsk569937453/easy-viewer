@@ -404,11 +404,26 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     setEditingConnectionId(null);
   };
 
-  const handleCreationSuccess = () => {
+  // START_OF_MODIFICATION
+  // 移除旧的 handleCreationSuccess
+  // const handleCreationSuccess = () => {
+  //   if (onConnectionsUpdate) {
+  //     onConnectionsUpdate();
+  //   }
+  // };
+
+  // 新增：处理 NewConnectionModal 成功保存（创建或更新）的事件
+  const handleConnectionModalSaveSuccess = (baseConfigId, isEditMode) => {
+    console.log(
+      `Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}`
+    );
     if (onConnectionsUpdate) {
+      // 触发父组件（App）重新获取所有连接，这将导致 DatabaseViewer 的 connections prop 更新
+      // 进而触发 DatabaseViewer 内部的 useEffect 重新生成 treeData
       onConnectionsUpdate();
     }
   };
+  // END_OF_MODIFICATION
 
   const handleDeleteConnection = async (node) => {
     console.log("删除连接:", node);
@@ -546,7 +561,10 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       <NewConnectionModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        onCreationSuccess={handleCreationSuccess}
+        // START_OF_MODIFICATION
+        // 传递新的 onSaveSuccess 处理函数
+        onSaveSuccess={handleConnectionModalSaveSuccess}
+        // END_OF_MODIFICATION
         editingId={editingConnectionId}
       />
     </div>

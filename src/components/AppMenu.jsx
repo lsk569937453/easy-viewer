@@ -1,4 +1,3 @@
-// src/components/AppMenu.jsx
 import React, { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import AboutModal from "./AboutModal";
@@ -301,7 +300,10 @@ function AppMenu({ onConnectionCreated }) {
       <NewConnectionModal
         isOpen={showNewConnectionModal}
         onClose={handleCloseNewConnectionModal}
-        onCreationSuccess={onConnectionCreated}
+        // START_OF_MODIFICATION
+        // AppMenu 只需要知道连接已更新，然后通知父组件重新加载连接
+        onSaveSuccess={() => onConnectionCreated()}
+        // END_OF_MODIFICATION
       />
     </div>
   );

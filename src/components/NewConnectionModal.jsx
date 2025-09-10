@@ -1,4 +1,3 @@
-// src/components/NewConnectionModal.jsx
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -12,8 +11,10 @@ const generateRandomString = (length) => {
   return result;
 };
 
-
-function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
+// START_OF_MODIFICATION
+// 将 onCreationSuccess prop 重命名为 onSaveSuccess，使其更通用
+function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
+  // END_OF_MODIFICATION
   const [connectionName, setConnectionName] = useState("");
   const [dbType, setDbType] = useState("sqlite");
   const [connectionMode, setConnectionMode] = useState("url");
@@ -27,7 +28,7 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
 
   const [error, setError] = useState("");
   const [isTesting, setIsTesting] = useState(false);
-  const [isCreating, setIsCreating] = useState(false); 
+  const [isCreating, setIsCreating] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [testMessage, setTestMessage] = useState("");
   const isEditMode = !!editingId;
@@ -78,8 +79,8 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
               setDbType(dbTypeKey);
 
               // 4. Populate form fields based on the database type.
-              if (dbTypeKey === 'sqlite') {
-                setConnectionMode('url');
+              if (dbTypeKey === "sqlite") {
+                setConnectionMode("url");
                 setConnectionString(baseConfigEnum.sqlite.file_path);
                 // Clear other fields to ensure a clean state
                 setHost("");
@@ -95,14 +96,13 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
                 setUsername(config.user_name || "");
                 setPassword(config.password || ""); // Note: Password might not be sent back for security
                 setDatabaseName(config.database || "");
-                
+
                 // When editing, it's often more user-friendly to default to Host mode
                 // as it displays all the details clearly.
-                setConnectionMode('host');
+                setConnectionMode("host");
                 setConnectionString(""); // Clear URL string
               }
               // --- END: MODIFIED PARSING LOGIC ---
-
             } else {
               setError(`获取连接信息失败: ${response_msg}`);
             }
@@ -122,21 +122,20 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
   useEffect(() => {
     // This effect should be skipped when initially populating the form in edit mode
     if (!isOpen) {
-        setConnectionString("");
-        if (dbType === "sqlite" || !traditionalDbTypes.includes(dbType)) {
-          setConnectionMode("url");
-        }
-        setHost("");
-        setPort("");
-        setUsername("");
-        setPassword("");
-        setDatabaseName("");
-        setTestResult(null);
-        setTestMessage("");
-        setError("");
+      setConnectionString("");
+      if (dbType === "sqlite" || !traditionalDbTypes.includes(dbType)) {
+        setConnectionMode("url");
+      }
+      setHost("");
+      setPort("");
+      setUsername("");
+      setPassword("");
+      setDatabaseName("");
+      setTestResult(null);
+      setTestMessage("");
+      setError("");
     }
   }, [dbType, isOpen]); // Added isOpen dependency
-
 
   if (!isOpen) {
     return null;
@@ -258,13 +257,14 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
           throw new Error(`不支持的数据库类型: ${dbType}`);
         }
         baseConfigEnum = { [dbType]: { config: details } };
-      } else { // Host 模式
+      } else {
+        // Host 模式
         const { isValid, message, details } = getHostConnectionDetails();
         if (!isValid) throw new Error(message);
         baseConfigEnum = { [dbType]: { config: details } };
       }
 
-        const saveConnectionRequest = {
+      const saveConnectionRequest = {
         ...(isEditMode && { base_config_id: editingId }), // Add ID if editing
         base_config: { base_config_enum: baseConfigEnum },
         connection_name: connectionName.trim(),
@@ -280,9 +280,34 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        alert("连接创建成功！"); 
-        onCreationSuccess(); 
-        onClose(); 
+        alert(isEditMode ? "连接更新成功！" : "连接创建成功！");
+
+        // START_OF_MODIFICATION
+        // 在成功后，获取被影响的连接ID，并传递给 onSaveSuccess 回调
+        let affectedId = null;
+        if (isEditMode) {
+          affectedId = editingId; // 编辑模式下，ID就是传入的 editingId
+        } else {
+          // 新建模式下，假设后端返回的 response_msg 中包含 base_config_id
+          // 需要处理 response_msg 可能是字符串化 JSON 的情况
+          const parsedMsg =
+            typeof response_msg === "string"
+              ? JSON.parse(response_msg)
+              : response_msg;
+          if (
+            parsedMsg &&
+            typeof parsedMsg === "object" &&
+            parsedMsg.base_config_id
+          ) {
+            affectedId = parsedMsg.base_config_id;
+          }
+        }
+        if (onSaveSuccess) {
+          onSaveSuccess(affectedId, isEditMode); // 调用父组件的回调，告知连接已保存
+        }
+        // END_OF_MODIFICATION
+
+        onClose();
       } else {
         setError(`创建失败: ${response_msg}`);
       }
@@ -422,10 +447,22 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
 
             {canUseHostMode && (
               <div role="tablist" className="tabs tabs-boxed w-fit">
-                <a role="tab" className={`tab ${connectionMode === "url" ? "tab-active" : ""}`} onClick={() => setConnectionMode("url")}>
+                <a
+                  role="tab"
+                  className={`tab ${
+                    connectionMode === "url" ? "tab-active" : ""
+                  }`}
+                  onClick={() => setConnectionMode("url")}
+                >
                   URL模式
                 </a>
-                <a role="tab" className={`tab ${connectionMode === "host" ? "tab-active" : ""}`} onClick={() => setConnectionMode("host")}>
+                <a
+                  role="tab"
+                  className={`tab ${
+                    connectionMode === "host" ? "tab-active" : ""
+                  }`}
+                  onClick={() => setConnectionMode("host")}
+                >
                   Host模式
                 </a>
               </div>
@@ -436,19 +473,45 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
                 {dbType === "sqlite" ? (
                   <>
                     <label className="label">
-                      <span className="label-text text-lg">数据库文件 <span className="text-error">*</span></span>
+                      <span className="label-text text-lg">
+                        数据库文件 <span className="text-error">*</span>
+                      </span>
                     </label>
                     <div className="join w-full">
-                      <input type="text" placeholder="点击右侧按钮选择文件" className={`input input-bordered join-item w-full ${error && error.includes("路径") ? "input-error" : ""}`} value={connectionString} readOnly />
-                      <button type="button" className="btn btn-primary join-item" onClick={handleSelectSqliteFile}>选择文件</button>
+                      <input
+                        type="text"
+                        placeholder="点击右侧按钮选择文件"
+                        className={`input input-bordered join-item w-full ${
+                          error && error.includes("路径") ? "input-error" : ""
+                        }`}
+                        value={connectionString}
+                        readOnly
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary join-item"
+                        onClick={handleSelectSqliteFile}
+                      >
+                        选择文件
+                      </button>
                     </div>
                   </>
                 ) : (
                   <>
                     <label className="label">
-                      <span className="label-text text-lg">连接字符串 <span className="text-error">*</span></span>
+                      <span className="label-text text-lg">
+                        连接字符串 <span className="text-error">*</span>
+                      </span>
                     </label>
-                    <input type="text" placeholder={getUrlPlaceholder()} className={`input input-bordered w-full ${error && error.includes("字符串") ? "input-error" : ""}`} value={connectionString} onChange={(e) => setConnectionString(e.target.value)} />
+                    <input
+                      type="text"
+                      placeholder={getUrlPlaceholder()}
+                      className={`input input-bordered w-full ${
+                        error && error.includes("字符串") ? "input-error" : ""
+                      }`}
+                      value={connectionString}
+                      onChange={(e) => setConnectionString(e.target.value)}
+                    />
                   </>
                 )}
               </div>
@@ -457,43 +520,134 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
             {connectionMode === "host" && (
               <div className="space-y-3">
                 <div className="form-control">
-                  <label className="label"><span className="label-text">主机 <span className="text-error">*</span></span></label>
-                  <input type="text" placeholder="例如: localhost 或 192.168.1.1" className={`input input-bordered w-full ${error && error.includes("主机") ? "input-error" : ""}`} value={host} onChange={(e) => setHost(e.target.value)} />
+                  <label className="label">
+                    <span className="label-text">
+                      主机 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: localhost 或 192.168.1.1"
+                    className={`input input-bordered w-full ${
+                      error && error.includes("主机") ? "input-error" : ""
+                    }`}
+                    value={host}
+                    onChange={(e) => setHost(e.target.value)}
+                  />
                 </div>
                 <div className="form-control">
-                  <label className="label"><span className="label-text">端口 <span className="text-error">*</span></span></label>
-                  <input type="text" placeholder={dbType === "mysql" ? "3306" : "1521"} className={`input input-bordered w-full ${error && error.includes("端口") ? "input-error" : ""}`} value={port} onChange={(e) => setPort(e.target.value)} />
+                  <label className="label">
+                    <span className="label-text">
+                      端口 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={dbType === "mysql" ? "3306" : "1521"}
+                    className={`input input-bordered w-full ${
+                      error && error.includes("端口") ? "input-error" : ""
+                    }`}
+                    value={port}
+                    onChange={(e) => setPort(e.target.value)}
+                  />
                 </div>
                 <div className="form-control">
-                  <label className="label"><span className="label-text">用户名 <span className="text-error">*</span></span></label>
-                  <input type="text" placeholder="例如: root 或 system" className={`input input-bordered w-full ${error && error.includes("用户名") ? "input-error" : ""}`} value={username} onChange={(e) => setUsername(e.target.value)} />
+                  <label className="label">
+                    <span className="label-text">
+                      用户名 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: root 或 system"
+                    className={`input input-bordered w-full ${
+                      error && error.includes("用户名") ? "input-error" : ""
+                    }`}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
                 </div>
                 <div className="form-control">
-                  <label className="label"><span className="label-text">密码</span></label>
-                  <input type="password" placeholder="请输入密码" className="input input-bordered w-full" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <label className="label">
+                    <span className="label-text">密码</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="请输入密码"
+                    className="input input-bordered w-full"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
                 </div>
                 <div className="form-control">
-                  <label className="label"><span className="label-text">{dbType === "oracle" ? "服务名/SID (可选)" : "数据库名 (可选)"}</span></label>
-                  <input type="text" placeholder={dbType === "oracle" ? "例如: ORCL 或 xe" : "例如: mydatabase"} className="input input-bordered w-full" value={databaseName} onChange={(e) => setDatabaseName(e.target.value)} />
+                  <label className="label">
+                    <span className="label-text">
+                      {dbType === "oracle"
+                        ? "服务名/SID (可选)"
+                        : "数据库名 (可选)"}
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={
+                      dbType === "oracle"
+                        ? "例如: ORCL 或 xe"
+                        : "例如: mydatabase"
+                    }
+                    className="input input-bordered w-full"
+                    value={databaseName}
+                    onChange={(e) => setDatabaseName(e.target.value)}
+                  />
                 </div>
               </div>
             )}
-            
+
             {/* 统一的错误提示区域 */}
             {error && (
               <div className="alert alert-error shadow-lg mt-4">
                 <div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current flex-shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                   <span>{error}</span>
                 </div>
               </div>
             )}
 
-
             {testResult && (
-              <div className={`alert ${testResult === "success" ? "alert-success" : "alert-error"} shadow-lg`}>
+              <div
+                className={`alert ${
+                  testResult === "success" ? "alert-success" : "alert-error"
+                } shadow-lg`}
+              >
                 <div>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={testResult === "success" ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"}/></svg>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="stroke-current flex-shrink-0 h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d={
+                        testResult === "success"
+                          ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                          : "M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      }
+                    />
+                  </svg>
                   <span>{testMessage}</span>
                 </div>
               </div>
@@ -501,15 +655,35 @@ function NewConnectionModal({ isOpen, onClose, onCreationSuccess, editingId }) {
           </div>
 
           <div className="modal-action mt-6">
-            <button type="button" className={`btn btn-info ${isTesting ? "loading" : ""}`} onClick={handleTestConnection} disabled={isTesting || isCreating || !isFormValid()}>
+            <button
+              type="button"
+              className={`btn btn-info ${isTesting ? "loading" : ""}`}
+              onClick={handleTestConnection}
+              disabled={isTesting || isCreating || !isFormValid()}
+            >
               {isTesting ? "测试中..." : "测试连接"}
             </button>
 
-            <button type="submit" className={`btn btn-primary ${isCreating ? "loading" : ""}`} disabled={isTesting || isCreating || !isFormValid()}>
-              {isCreating ? (isEditMode ? "更新中..." : "创建中...") : (isEditMode ? "更新" : "创建")}
+            <button
+              type="submit"
+              className={`btn btn-primary ${isCreating ? "loading" : ""}`}
+              disabled={isTesting || isCreating || !isFormValid()}
+            >
+              {isCreating
+                ? isEditMode
+                  ? "更新中..."
+                  : "创建中..."
+                : isEditMode
+                ? "更新"
+                : "创建"}
             </button>
 
-            <button type="button" className="btn btn-ghost" onClick={onClose} disabled={isCreating}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={onClose}
+              disabled={isCreating}
+            >
               取消
             </button>
           </div>

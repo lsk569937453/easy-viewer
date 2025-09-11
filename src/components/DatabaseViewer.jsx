@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react"; // 新增导入 useRef
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
@@ -24,19 +24,19 @@ const ICON_MAP = {
   mysql: <DiMysql size="1.2em" color="#00758F" />,
   oracle: <SiOracle size="1.2em" color="#F80000" />,
   sqlite: <SiSqlite size="1.2em" color="#003B57" />,
-  table: <FaTable />,
-  view: <FaEye />,
-  query: <FaSearch />,
-  tables: <FaColumns />,
-  views: <FaEye />,
-  singleTable: <FaTable />,
+  table: <FaTable />, // 可能表示“表”文件夹
+  view: <FaEye />, // 可能表示“视图”文件夹
+  query: <FaSearch />, // 查询文件夹
+  tables: <FaColumns />, // 具体表示“表”集合
+  views: <FaEye />, // 具体表示“视图”集合
+  singleTable: <FaTable />, // 单个表
   partitions: <FaLayerGroup />,
   columns: <FaColumns />,
   index: <FaKey />,
   column: <FaStream />,
   primary: <FaStar />,
   default: <FaFolder />,
-  singleQuery: <FaDatabase />,
+  singleQuery: <FaDatabase />, // 单个已保存的查询
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -44,6 +44,7 @@ const getNodeIcon = (nodeType, iconName) => {
   return ICON_MAP[key] || ICON_MAP.default;
 };
 
+// 此函数用于更新树中特定节点的属性（例如 children 或 isLoading）
 const updateNodeInTree = (nodes, nodeId, updates) => {
   return nodes.map((node) => {
     if (node.id === nodeId) {
@@ -65,20 +66,99 @@ const findConnectionByRootConfigId = (connections, rootConfigId) => {
   );
 };
 
-function DatabaseViewer({ connections, onConnectionsUpdate }) {
+// 更改 props 名称以更好地反映其用途
+function DatabaseViewer({
+  connections,
+  onConnectionUpdated,
+  onConnectionDeleted,
+}) {
   const [treeData, setTreeData] = useState([]);
-  const [openNodes, setOpenNodes] = useState({});
+  const [openNodes, setOpenNodes] = useState({}); // 存储节点的展开/关闭状态
   const [tabs, setTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnectionId, setEditingConnectionId] = useState(null);
-  
-  // START_OF_MODIFICATION: 新增 State 和 Ref 用于删除确认模态框
+
   const [nodeToDelete, setNodeToDelete] = useState(null);
   const deleteModalRef = useRef(null);
-  // END_OF_MODIFICATION
 
+  // ⭐ FIX 1: Use a ref to store the latest openNodes state
+  const openNodesRef = useRef(openNodes);
   useEffect(() => {
+    openNodesRef.current = openNodes;
+  }, [openNodes]);
+
+  // 使用 useCallback 记忆化 fetchNodeChildren，使其在重新渲染时保持引用不变
+  // 关键：为了保持所有层级的展开状态，fetchNodeChildren 在加载子节点后，需要递归地检查这些子节点是否也应该被展开。
+  const fetchNodeChildren = useCallback(
+    async (parentNode) => {
+      setTreeData((prevTree) =>
+        updateNodeInTree(prevTree, parentNode.id, { isLoading: true })
+      );
+
+      try {
+        const listNodeInfoReq = { level_infos: parentNode.path };
+        const responseJson = await invoke("list_node_info", {
+          listNodeInfoReq,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        if (response_code === 0) {
+          const childNodes = response_msg.list.map((child, index) => ({
+            id: `${parentNode.id}-${child.name}-${index}`, // 确保子节点 ID 唯一
+            name: child.name,
+            type: child.type || "default",
+            icon: getNodeIcon(child.type, child.icon_name),
+            description: child.description || "",
+            iconName: child.icon_name,
+            details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
+            children: null, // 新加载的子节点的 children 初始为 null
+            path: [
+              ...parentNode.path,
+              { level: parentNode.path.length + 1, config_value: child.name },
+            ],
+          }));
+
+          setTreeData((prevTree) =>
+            updateNodeInTree(prevTree, parentNode.id, {
+              children: childNodes,
+              isLoading: false,
+            })
+          );
+
+          // ⭐ FIX 2: Use the ref for the latest openNodes state for recursive calls
+          const currentOpenNodes = openNodesRef.current;
+          childNodes.forEach(async (childNode) => {
+            if (currentOpenNodes[childNode.id]) {
+              console.log(
+                `DatabaseViewer: Recursively re-fetching children for previously open child node: ${childNode.name} (ID: ${childNode.id})`
+              );
+              await fetchNodeChildren(childNode); // 递归调用自身
+            }
+          });
+        } else {
+          throw new Error(response_msg);
+        }
+      } catch (error) {
+        console.error("Failed to fetch node children:", error);
+        setTreeData((prevTree) =>
+          updateNodeInTree(prevTree, parentNode.id, {
+            children: [], // 获取失败时设为空数组
+            isLoading: false,
+          })
+        );
+      }
+    },
+    [] // ⭐ FIX 3: Empty dependency array ensures fetchNodeChildren is stable
+  );
+
+  // 当 connections 属性更新时，此 useEffect 会重新生成顶层树形数据
+  // 并尝试恢复已展开的节点状态
+  useEffect(() => {
+    console.log(
+      "DatabaseViewer: useEffect for connections triggered. Connections updated (prop changed):",
+      connections
+    );
+
     const newTreeData = (connections || []).map((conn) => {
       const dbTypeMap = { 1: "mysql", 2: "oracle", 3: "sqlite" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
@@ -90,15 +170,30 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
         icon: getNodeIcon(dbType, null),
         iconName: dbType,
         description: conn.description,
+        // 确保 conn.host 和 conn.port 在 App.jsx 中被正确解析并传递下来
         details: `ID: ${
           conn.base_config_id
-        }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host}:${conn.port}`,
-        children: null,
+        }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host || "N/A"}:${
+          conn.port || "N/A"
+        }`,
+        children: null, // 总是将根节点的 children 重置为 null，表示需要重新获取
         path: [{ level: 1, config_value: conn.base_config_id.toString() }],
       };
     });
-    setTreeData(newTreeData);
-  }, [connections]);
+    setTreeData(newTreeData); // 更新根节点列表
+
+    // 关键逻辑：在根节点更新后，遍历新生成的根节点，如果它们在 openNodes 中被标记为展开，则重新获取其子节点
+    // ⭐ FIX 4: Use the ref for the latest openNodes state
+    const currentOpenNodes = openNodesRef.current;
+    newTreeData.forEach(async (node) => {
+      if (currentOpenNodes[node.id] && node.children === null) {
+        console.log(
+          `DatabaseViewer: Re-fetching children for previously open root node: ${node.name} (ID: ${node.id})`
+        );
+        await fetchNodeChildren(node); // 调用记忆化后的函数，它现在会递归展开子节点
+      }
+    });
+  }, [connections, fetchNodeChildren]); // ⭐ FIX 5: Removed openNodes from dependencies, relying on ref.
 
   const generateSqlForNode = (node, allConnections, limit = 100) => {
     if (!node || node.iconName !== "singleTable") {
@@ -281,6 +376,22 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       return;
     }
 
+    // ⭐ 修复 Bug 1：对于可展开的父节点，点击其标签时也触发展开/折叠 ⭐
+    // 判断条件：如果 node.type 不是明确的叶子节点类型，则认为它是可展开的父节点。
+    if (
+      node.type !== "singleTable" &&
+      node.type !== "singleQuery" &&
+      node.type !== "column" &&
+      node.type !== "primary"
+    ) {
+      // 明确排除叶子节点类型
+      console.log(
+        `DatabaseViewer: Clicking expandable parent node (${node.name}), also toggling.`
+      );
+      await handleToggleNode(node); // 这将处理子节点的获取（如果需要）和 openNodes 状态的切换
+    }
+
+    // 原始逻辑：为所有非 singleTable/singleQuery 节点打开一个信息 Tab
     let tabDetails = node.details;
     const existingTab = tabs.find((tab) => tab.id === node.id);
 
@@ -308,65 +419,31 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     }
   };
 
-  const fetchNodeChildren = async (node) => {
-    setTreeData((prevTree) =>
-      updateNodeInTree(prevTree, node.id, { isLoading: true })
-    );
-
-    try {
-      const listNodeInfoReq = { level_infos: node.path };
-      const responseJson = await invoke("list_node_info", { listNodeInfoReq });
-      const { response_code, response_msg } = JSON.parse(responseJson);
-      if (response_code === 0) {
-        const childNodes = response_msg.list.map((child, index) => ({
-          id: `${node.id}-${child.name}-${index}`,
-          name: child.name,
-          type: child.type || "default",
-          icon: getNodeIcon(child.type, child.icon_name),
-          description: child.description || "",
-          iconName: child.icon_name,
-          details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-          children: null,
-          path: [
-            ...node.path,
-            { level: node.path.length + 1, config_value: child.name },
-          ],
-        }));
-
-        setTreeData((prevTree) =>
-          updateNodeInTree(prevTree, node.id, {
-            children: childNodes,
-            isLoading: false,
-          })
-        );
-      } else {
-        throw new Error(response_msg);
-      }
-    } catch (error) {
-      console.error("Failed to fetch node children:", error);
-      setTreeData((prevTree) =>
-        updateNodeInTree(prevTree, node.id, {
-          children: [],
-          isLoading: false,
-        })
-      );
-    }
-  };
-
+  // handleToggleNode 负责切换节点的展开/关闭状态，并在需要时获取子节点
   const handleToggleNode = async (node) => {
-    if (node.children === null) {
-      await fetchNodeChildren(node);
+    const isCurrentlyOpen = openNodes[node.id]; // Capture current state before update
+
+    // ⭐ FIX 6: Toggle the open state immediately
+    setOpenNodes((prev) => ({ ...prev, [node.id]: !isCurrentlyOpen }));
+
+    // If the node *was closed* and is now being opened, and its children are null, fetch them.
+    if (!isCurrentlyOpen && node.children === null) {
+      console.log(
+        `DatabaseViewer: Toggling node (${node.name}), fetching children due to opening.`
+      );
+      await fetchNodeChildren(node); // Call the memoized function
     }
-    setOpenNodes((prev) => ({ ...prev, [node.id]: !prev[node.id] }));
+    // If it was open and is now closed, or if it already had children, we don't need to fetch.
   };
 
+  // handleRefreshNode 强制重新加载节点子节点
   const handleRefreshNode = async (node) => {
     console.log("Refreshing node:", node.name);
     setTreeData((prevTree) =>
       updateNodeInTree(prevTree, node.id, { children: null })
-    );
-    await fetchNodeChildren(node);
-    setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
+    ); // 清空当前子节点，强制重新加载
+    await fetchNodeChildren(node); // 调用记忆化后的函数，它会处理递归展开
+    setOpenNodes((prev) => ({ ...prev, [node.id]: true })); // 确保刷新后节点是展开的
   };
 
   const handleAddNode = async (node) => {
@@ -405,16 +482,17 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     setIsModalOpen(false);
     setEditingConnectionId(null);
   };
-  
+
+  // 编辑连接成功后的回调函数，现在调用 onConnectionUpdated prop
   const handleConnectionModalSaveSuccess = (baseConfigId, isEditMode) => {
     console.log(
-      `Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}`
+      `DatabaseViewer: Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}. Calling onConnectionUpdated().`
     );
-    if (onConnectionsUpdate) {
-      onConnectionsUpdate();
+    // 调用父组件提供的回调，通知它有一个连接已更新，并传递更新的 ID
+    if (onConnectionUpdated) {
+      onConnectionUpdated(baseConfigId);
     }
   };
-
 
   const handleRequestDeleteConnection = (node) => {
     setNodeToDelete(node);
@@ -433,16 +511,18 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        setTreeData((prevTree) =>
-          prevTree.filter((treeNode) => treeNode.id !== connectionIdToDelete)
-        );
-
+        // 删除成功后，从 openNodes 中移除该连接及其所有子节点的展开状态
+        // 这种处理方式确保了与被删除连接相关的所有展开状态都被清除
         setOpenNodes((prevOpenNodes) => {
           const newOpenNodes = { ...prevOpenNodes };
+          // For simplicity, we can delete the root node's open state.
+          // More robust would be to iterate and delete all child open states,
+          // but if children are loaded only on demand, this is often enough.
           delete newOpenNodes[connectionIdToDelete];
           return newOpenNodes;
         });
 
+        // 过滤掉与已删除连接相关的任何打开的 Tab
         setTabs((prevTabs) => {
           const remainingTabs = prevTabs.filter(
             (tab) => tab.connectionId !== connectionIdToDelete
@@ -452,13 +532,19 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
             activeTabId &&
             !remainingTabs.some((tab) => tab.id === activeTabId)
           ) {
-            setActiveTabId(remainingTabs.length > 0 ? remainingTabs[0].id : null);
+            setActiveTabId(
+              remainingTabs.length > 0 ? remainingTabs[0].id : null
+            );
           }
           return remainingTabs;
         });
 
-        if (onConnectionsUpdate) {
-          await onConnectionsUpdate();
+        // 调用父组件提供的 onConnectionDeleted 回调来刷新连接列表 (App.jsx 会重新 fetchConnections)
+        if (onConnectionDeleted) {
+          console.log(
+            "DatabaseViewer: Connection deleted. Calling onConnectionDeleted()."
+          );
+          await onConnectionDeleted();
         }
       } else {
         console.error(
@@ -480,7 +566,6 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
     setNodeToDelete(null);
     deleteModalRef.current?.close();
   };
-  
 
   const handleEditNode = (node) => {
     if (node.iconName !== "singleTable") return;
@@ -526,7 +611,7 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
                   key={rootNode.id}
                   node={rootNode}
                   selectedNode={tabs.find((tab) => tab.id === activeTabId)}
-                  openNodes={openNodes}
+                  openNodes={openNodes} // 将 openNodes 传递给 DaisyTreeNode
                   onNodeClick={handleNodeActivate}
                   onToggle={handleToggleNode}
                   onRefresh={handleRefreshNode}
@@ -567,8 +652,8 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
           <h3 className="font-bold text-lg">确认删除</h3>
           <p className="py-4">
             您确定要删除连接 "
-            <span className="font-semibold">{nodeToDelete?.name}</span>
-            " 吗? 此操作不可撤销。
+            <span className="font-semibold">{nodeToDelete?.name}</span>" 吗?
+            此操作不可撤销。
           </p>
           <div className="modal-action">
             <button className="btn" onClick={handleCancelDelete}>
@@ -580,10 +665,9 @@ function DatabaseViewer({ connections, onConnectionsUpdate }) {
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-           <button onClick={handleCancelDelete}>close</button>
+          <button onClick={handleCancelDelete}>close</button>
         </form>
       </dialog>
-      {/* END_OF_MODIFICATION */}
     </div>
   );
 }

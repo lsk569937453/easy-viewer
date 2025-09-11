@@ -352,6 +352,7 @@ function DatabaseViewer({
       const existingSqlEditorTab = tabs.find(
         (tab) => tab.type === "sqlEditor" && tab.queryId === queryId
       );
+      console.log("existingSqlEditorTab1:", existingSqlEditorTab);
 
       if (existingSqlEditorTab) {
         setActiveTabId(existingSqlEditorTab.id);
@@ -371,24 +372,32 @@ function DatabaseViewer({
       }
       return;
     } else if (node.iconName === "singleTable") {
-      let tabDetails = generateSqlForNode(node, connections);
-      console.log(
-        `DatabaseViewer: Creating new tab for node (${node.name}), details:`,
-        tabDetails
+      const tableId = node.path[node.path.length - 1].config_value;
+      const newTabId = `singleTable-${tableId}`;
+      console.log("tabs:", tabs);
+      const existingSqlEditorTab = tabs.find(
+        (tab) => tab.type === "singleTable" && tab.id === newTabId
       );
-      const newTab = {
-        id: node.id,
-        name: node.name,
-        icon: node.icon,
-        details: tabDetails,
-        iconName: node.iconName,
-        path: node.path,
-        type: "singleTable",
-        initialSql: tabDetails,
-        node: node,
-      };
-      setTabs((prevTabs) => [...prevTabs, newTab]);
-      setActiveTabId(newTab.id);
+      console.log("existingSqlEditorTab2:", existingSqlEditorTab);
+      if (existingSqlEditorTab) {
+        setActiveTabId(existingSqlEditorTab.id);
+      } else {
+        let sql = generateSqlForNode(node, connections);
+
+        const newTab = {
+          id: newTabId,
+          name: node.name,
+          icon: node.icon,
+          details: sql,
+          iconName: node.iconName,
+          path: node.path,
+          type: "singleTable",
+          initialSql: sql,
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
       return;
     }
 
@@ -424,7 +433,7 @@ function DatabaseViewer({
         details: tabDetails,
         iconName: node.iconName,
         path: node.path,
-        type: "singleTable",
+        type: "info",
       };
       setTabs([...tabs, newTab]);
       setActiveTabId(newTab.id);

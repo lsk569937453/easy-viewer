@@ -30,6 +30,7 @@ function TabPanel({
   setActiveTabId,
   connections,
   treeData,
+  onQuerySaved,
 }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -158,6 +159,7 @@ function TabPanel({
                   tab={activeTab} // Pass the entire tab object
                   connections={connections}
                   setTabs={setTabs}
+                  onQuerySaved={onQuerySaved}
                 />
               );
             }
@@ -177,13 +179,13 @@ function TabPanel({
                 />
               );
             }
-
+            console.log("aaaa:" + activeTab.type);
             // Render TableWorkspacePanel for "tableWorkspace" type tabs
-            if (activeTab.type === "tableWorkspace") {
+            if (activeTab.type === "singleTable") {
               return (
                 <TableWorkspacePanel
                   initialSql={activeTab.initialSql}
-                  activeTabNode={activeTab.activeTabNode}
+                  activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
                 />
               );

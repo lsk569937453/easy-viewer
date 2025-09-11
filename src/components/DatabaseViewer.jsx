@@ -147,7 +147,39 @@ function DatabaseViewer({
       );
     }
   }, []);
-
+  const updateQueryNodeNameInTree = useCallback((queryIdToUpdate, newName) => {
+    console.log(
+      `DatabaseViewer: 收到更新查询节点名称请求。QueryId: ${queryIdToUpdate}, New Name: ${newName}`
+    );
+    setTreeData((prevTree) => {
+      const findAndUpdate = (nodes) => {
+        return nodes.map((node) => {
+          // 查找类型为 'singleQuery' 且其路径中最后一个 config_value 匹配 queryIdToUpdate 的节点
+          if (
+            node.iconName === "singleQuery" &&
+            node.path &&
+            node.path.length > 0 &&
+            node.path[node.path.length - 1].config_value.toString() ===
+              queryIdToUpdate.toString()
+          ) {
+            console.log(
+              `DatabaseViewer: 正在更新树节点名称: ${node.name} -> ${newName}`
+            );
+            return { ...node, name: newName };
+          }
+          // 递归查找子节点
+          if (node.children) {
+            const updatedChildren = findAndUpdate(node.children);
+            if (updatedChildren !== node.children) {
+              return { ...node, children: updatedChildren };
+            }
+          }
+          return node;
+        });
+      };
+      return findAndUpdate(prevTree);
+    });
+  }, []);
   useEffect(() => {
     console.log(
       "DatabaseViewer: useEffect for connections triggered. Connections updated (prop changed):",
@@ -338,6 +370,26 @@ function DatabaseViewer({
         setActiveTabId(newTab.id);
       }
       return;
+    } else if (node.iconName === "singleTable") {
+      let tabDetails = generateSqlForNode(node, connections);
+      console.log(
+        `DatabaseViewer: Creating new tab for node (${node.name}), details:`,
+        tabDetails
+      );
+      const newTab = {
+        id: node.id,
+        name: node.name,
+        icon: node.icon,
+        details: tabDetails,
+        iconName: node.iconName,
+        path: node.path,
+        type: "singleTable",
+        initialSql: tabDetails,
+        node: node,
+      };
+      setTabs((prevTabs) => [...prevTabs, newTab]);
+      setActiveTabId(newTab.id);
+      return;
     }
 
     if (
@@ -372,7 +424,7 @@ function DatabaseViewer({
         details: tabDetails,
         iconName: node.iconName,
         path: node.path,
-        type: "info",
+        type: "singleTable",
       };
       setTabs([...tabs, newTab]);
       setActiveTabId(newTab.id);
@@ -639,6 +691,7 @@ function DatabaseViewer({
         setActiveTabId={setActiveTabId}
         connections={connections}
         treeData={treeData}
+        onQuerySaved={updateQueryNodeNameInTree}
       />
       <NewConnectionModal
         isOpen={isModalOpen}

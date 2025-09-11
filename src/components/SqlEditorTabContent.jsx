@@ -20,7 +20,7 @@ import {
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 
-function SqlEditorTabContent({ tab, connections, setTabs }) {
+function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
   const [sqlContent, setSqlContent] = useState("");
   const [queryName, setQueryName] = useState(tab.name);
   const [executionTime, setExecutionTime] = useState(0);
@@ -210,12 +210,11 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       return;
     }
 
-    // 2. 使用 toast.promise 来处理异步操作，自动显示加载、成功和失败状态
     const savePromise = invoke("save_query", {
       connectionId: parseInt(connectionId),
       queryName: queryName,
       sql: sqlContent,
-      queryId: queryId,
+      queryId: queryId, // 如果是新查询，queryId 为 null
     });
 
     toast.promise(savePromise, {
@@ -223,38 +222,65 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
       success: (responseJson) => {
         const { response_code, response_msg } = JSON.parse(responseJson);
         if (response_code !== 0) {
-          // 如果后端返回错误码，则抛出异常，toast 会捕获并显示错误信息
           throw new Error(response_msg || "保存失败，但未收到错误详情。");
         }
 
-        // 成功后的逻辑
+        const prevQueryId = queryId; // 保存操作前的 queryId
+        const savedQueryId = response_msg.query_id; // 后端返回的实际 queryId (新查询会在此处获得ID)
+        const nameChanged = tab.name !== queryName; // 检查当前输入框中的名称是否与tab的当前名称不同
+
         updateTabDirtyState(false);
-        if (!queryId && response_msg.query_id) {
-          setTabs((prevTabs) =>
-            prevTabs.map((t) =>
-              t.id === tab.id
-                ? {
-                    ...t,
-                    queryId: response_msg.query_id,
-                    id: `sql-editor-${response_msg.query_id}`,
-                    name: queryName,
-                  }
-                : t
-            )
+
+        // 更新 Tab 面板自身的名称和ID（如果是新查询）
+        setTabs((prevTabs) =>
+          prevTabs.map((t) =>
+            t.id === tab.id
+              ? {
+                  ...t,
+                  queryId: savedQueryId, // 确保tab的queryId是最新的
+                  id: `sql-editor-${savedQueryId}`, // 确保tab的id是最新的
+                  name: queryName, // 确保tab的名称是最新的
+                }
+              : t
+          )
+        );
+
+        // ⭐ 新增逻辑：如果名称发生变化且存在有效的 queryId，则通知 DatabaseViewer 更新树节点
+        // 对于新创建的查询，`prevQueryId`为null，但`savedQueryId`会是一个有效值。
+        // `nameChanged`在这里可能为false，如果用户直接点击保存未修改默认名称。
+        // 但如果用户修改了名称，`nameChanged`为true，此时也需要更新树。
+        // 这里主要针对**已存在查询的重命名** 和 **新查询在首次保存时其名称可能与默认值不同** 的情况
+        if (savedQueryId && nameChanged) {
+          console.log(
+            `SqlEditorTabContent: 查询名称已更新。通知 DatabaseViewer 更新树节点。QueryId: ${savedQueryId}, New Name: ${queryName}`
           );
-        } else if (tab.name !== queryName) {
-          setTabs((prevTabs) =>
-            prevTabs.map((t) =>
-              t.id === tab.id ? { ...t, name: queryName } : t
-            )
+          if (onQuerySaved) {
+            onQuerySaved(savedQueryId, queryName);
+          }
+        } else if (!prevQueryId && savedQueryId) {
+          // 这是新查询首次保存的情况，虽然名称可能没变，但它现在是一个实际存在的查询了
+          // 此时 `DatabaseViewer` 的 `handleAddNode` 已经通过 `handleRefreshNode` 刷新了父级 'query' 文件夹，
+          // 确保新查询节点会被加载。所以这里不需要再额外调用 `onQuerySaved` 来更新名称。
+          // `onQuerySaved` 主要用于**重命名**场景。
+          console.log(
+            `SqlEditorTabContent: 新查询 (ID: ${savedQueryId}) 保存成功。通常由父组件刷新列表。`
           );
         }
 
-        return "查询已成功保存!"; // 这是成功时显示的toast消息
+        return "查询已成功保存!";
       },
-      error: (err) => `保存失败: ${err.message || "未知错误"}`, // 这是失败时显示的toast消息
+      error: (err) => `保存失败: ${err.message || "未知错误"}`,
     });
-  }, [sqlContent, queryName, connectionId, queryId, tab.id, tab.name, setTabs]);
+  }, [
+    sqlContent,
+    queryName,
+    connectionId,
+    queryId,
+    tab.id,
+    tab.name,
+    setTabs,
+    onQuerySaved,
+  ]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {

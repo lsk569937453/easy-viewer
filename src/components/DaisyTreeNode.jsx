@@ -5,7 +5,7 @@ import {
   FaPlus,
   FaTrashAlt,
   FaEdit,
-  FaDatabase, // 引入 FaDatabase 图标
+  FaDatabase,
 } from "react-icons/fa";
 import ContextMenuWrapper from "./ContextMenuWrapper";
 
@@ -15,7 +15,6 @@ const ACTION_ICON_MAP = {
 
 const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle"];
 
-// Nodes that will show a "Refresh" and "Add" button
 const NODES_WITH_REFRESH_ADD = [
   "query",
   "tables",
@@ -25,12 +24,9 @@ const NODES_WITH_REFRESH_ADD = [
   "partitions",
 ];
 
-// Nodes that will show an "Edit" button (e.g., for opening detail pages)
 const NODES_WITH_EDIT = ["singleTable"];
 
-// Nodes that will specifically show an "Add" button (even if they also have an "Edit" button)
-const NODES_WITH_ADD_ACTION = ["column", "primary"]; // Added 'singleTable' and 'column' here
-
+const NODES_WITH_ADD_ACTION = ["column", "primary"];
 function DaisyTreeNode({
   node,
   selectedNode,
@@ -40,9 +36,9 @@ function DaisyTreeNode({
   onRefresh,
   onAdd,
   onEdit,
-  onDelete, // onDelete is for generic node deletion, not connection
+  onDelete,
   onEditConnection,
-  onDeleteConnection, // Specific for connection deletion
+  onDeleteConnection,
   onDeleteQuery,
 }) {
   const isSelected = selectedNode?.id === node.id;
@@ -59,7 +55,6 @@ function DaisyTreeNode({
   const handleRowClick = () => {
     onNodeClick(node);
     if (isExpandable && !isOpen) {
-      // Only toggle if not already open to prevent double-fetch on first click
       onToggle(node);
     }
   };
@@ -109,7 +104,7 @@ function DaisyTreeNode({
     },
     {
       label: "删除连接",
-      onClick: () => onDeleteConnection && onDeleteConnection(node), // Call onDeleteConnection
+      onClick: () => onDeleteConnection && onDeleteConnection(node),
     },
   ];
 
@@ -148,7 +143,6 @@ function DaisyTreeNode({
 
       <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
         {isRootNode ? (
-          // Root connection node actions (Refresh, Delete)
           <div className="flex items-center space-x-1">
             <button
               className="btn btn-ghost btn-circle btn-xs"
@@ -167,7 +161,6 @@ function DaisyTreeNode({
             </button>
           </div>
         ) : (
-          // Other node actions
           <div className="flex items-center space-x-1">
             {node.iconName === "singleQuery" && (
               <button

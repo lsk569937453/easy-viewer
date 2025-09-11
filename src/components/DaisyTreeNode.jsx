@@ -43,6 +43,7 @@ function DaisyTreeNode({
   onDelete, // onDelete is for generic node deletion, not connection
   onEditConnection,
   onDeleteConnection, // Specific for connection deletion
+  onDeleteQuery,
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
@@ -81,7 +82,12 @@ function DaisyTreeNode({
       onAdd(node);
     }
   };
-
+  const handleDeleteQueryClick = (e) => {
+    e.stopPropagation();
+    if (onDeleteQuery) {
+      onDeleteQuery(node);
+    }
+  };
   const handleEditClick = (e) => {
     e.stopPropagation();
     if (onEdit) {
@@ -163,6 +169,15 @@ function DaisyTreeNode({
         ) : (
           // Other node actions
           <div className="flex items-center space-x-1">
+            {node.iconName === "singleQuery" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="删除查询"
+                onClick={handleDeleteQueryClick}
+              >
+                <FaTrashAlt />
+              </button>
+            )}
             {NODES_WITH_REFRESH_ADD.includes(node.iconName) && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"
@@ -191,12 +206,11 @@ function DaisyTreeNode({
                 <FaEdit />
               </button>
             )}
-            {/* Fallback for nodes with no specific hover actions (e.g., primary key, simple info nodes) */}
             {!NODES_WITH_REFRESH_ADD.includes(node.iconName) &&
               !NODES_WITH_ADD_ACTION.includes(node.iconName) &&
               !NODES_WITH_EDIT.includes(node.iconName) &&
-              node.iconName !== "singleQuery" && // singleQuery is a leaf, has no hover actions
-              node.iconName !== "primary" && // 'primary' is a leaf, no actions
+              node.iconName !== "singleQuery" &&
+              node.iconName !== "primary" &&
               node.iconName && (
                 <button
                   className="btn btn-ghost btn-circle btn-xs"
@@ -241,6 +255,7 @@ function DaisyTreeNode({
                 onDelete={onDelete}
                 onEditConnection={onEditConnection}
                 onDeleteConnection={onDeleteConnection}
+                onDeleteQuery={onDeleteQuery}
               />
             ))}
           </ul>

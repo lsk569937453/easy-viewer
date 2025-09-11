@@ -561,64 +561,153 @@ function DatabaseViewer({
 
   const handleConfirmDelete = async () => {
     if (!nodeToDelete) return;
+    if (nodeToDelete.iconName === "singleQuery") {
+      const baseConfigId = nodeToDelete.path[0]?.config_value;
+      const queryName = nodeToDelete.name;
+      // queryId is typically the last part of the path for singleQuery
+      const queryId =
+        nodeToDelete.path[nodeToDelete.path.length - 1]?.config_value;
 
-    const connectionIdToDelete = nodeToDelete.id;
-
-    try {
-      const responseJson = await invoke("delete_base_config", {
-        baseConfigId: connectionIdToDelete,
-      });
-      const { response_code, response_msg } = JSON.parse(responseJson);
-
-      if (response_code === 0) {
-        // 删除成功后，从 openNodes 中移除该连接及其所有子节点的展开状态
-        // 这种处理方式确保了与被删除连接相关的所有展开状态都被清除
-        setOpenNodes((prevOpenNodes) => {
-          const newOpenNodes = { ...prevOpenNodes };
-          // For simplicity, we can delete the root node's open state.
-          // More robust would be to iterate and delete all child open states,
-          // but if children are loaded only on demand, this is often enough.
-          delete newOpenNodes[connectionIdToDelete];
-          return newOpenNodes;
-        });
-
-        // 过滤掉与已删除连接相关的任何打开的 Tab
-        setTabs((prevTabs) => {
-          const remainingTabs = prevTabs.filter(
-            (tab) => tab.connectionId !== connectionIdToDelete
-          );
-
-          if (
-            activeTabId &&
-            !remainingTabs.some((tab) => tab.id === activeTabId)
-          ) {
-            setActiveTabId(
-              remainingTabs.length > 0 ? remainingTabs[0].id : null
-            );
-          }
-          return remainingTabs;
-        });
-
-        // 调用父组件提供的 onConnectionDeleted 回调来刷新连接列表 (App.jsx 会重新 fetchConnections)
-        if (onConnectionDeleted) {
-          console.log(
-            "DatabaseViewer: Connection deleted. Calling onConnectionDeleted()."
-          );
-          await onConnectionDeleted();
-        }
-      } else {
-        console.error(
-          "Failed to delete connection via delete_base_config:",
-          response_msg
-        );
-        alert(`删除连接失败: ${response_msg}`);
+      if (!baseConfigId || !queryName || !queryId) {
+        alert("无法获取完整的查询信息来删除。");
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+        return;
       }
-    } catch (err) {
-      console.error("Error invoking delete_base_config:", err);
-      alert(`删除连接时发生错误: ${err.message || err.toString()}`);
-    } finally {
-      setNodeToDelete(null);
-      deleteModalRef.current?.close();
+
+      try {
+        const responseJson = await invoke("remove_query", {
+          baseConfigId: parseInt(baseConfigId),
+          queryName: queryName,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          // Remove from treeData
+          setTreeData((prevTree) => {
+            const removeQueryNode = (nodes) => {
+              return nodes
+                .map((node) => {
+                  // Check if it's a singleQuery node with the matching queryId and baseConfigId
+                  if (
+                    node.iconName === "singleQuery" &&
+                    node.path &&
+                    node.path.length > 0 &&
+                    node.path[node.path.length - 1].config_value.toString() ===
+                      queryId.toString() &&
+                    node.path[0].config_value.toString() ===
+                      baseConfigId.toString()
+                  ) {
+                    return null; // Mark for removal
+                  }
+                  // Recursively check children
+                  if (node.children) {
+                    const updatedChildren = removeQueryNode(node.children);
+                    if (updatedChildren !== node.children) {
+                      return { ...node, children: updatedChildren };
+                    }
+                  }
+                  return node;
+                })
+                .filter(Boolean); // Filter out nulls (removed nodes)
+            };
+            return removeQueryNode(prevTree);
+          });
+
+          // Remove from openNodes
+          setOpenNodes((prevOpenNodes) => {
+            const newOpenNodes = { ...prevOpenNodes };
+            delete newOpenNodes[nodeToDelete.id]; // node.id of singleQuery is like 'sql-editor-query_id'
+            return newOpenNodes;
+          });
+
+          // Remove from tabs
+          setTabs((prevTabs) => {
+            const remainingTabs = prevTabs.filter(
+              (tab) =>
+                !(tab.type === "sqlEditor" && tab.queryId === parseInt(queryId))
+            );
+            if (
+              activeTabId &&
+              !remainingTabs.some((tab) => tab.id === activeTabId)
+            ) {
+              setActiveTabId(
+                remainingTabs.length > 0 ? remainingTabs[0].id : null
+              );
+            }
+            return remainingTabs;
+          });
+          console.log("Query deleted successfully.");
+        } else {
+          console.error("Failed to delete query:", response_msg);
+          alert(`删除查询失败: ${response_msg}`);
+        }
+      } catch (err) {
+        console.error("Error invoking remove_query:", err);
+        alert(`删除查询时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
+    } else {
+      const connectionIdToDelete = nodeToDelete.id;
+
+      try {
+        const responseJson = await invoke("delete_base_config", {
+          baseConfigId: connectionIdToDelete,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          // 删除成功后，从 openNodes 中移除该连接及其所有子节点的展开状态
+          // 这种处理方式确保了与被删除连接相关的所有展开状态都被清除
+          setOpenNodes((prevOpenNodes) => {
+            const newOpenNodes = { ...prevOpenNodes };
+            // For simplicity, we can delete the root node's open state.
+            // More robust would be to iterate and delete all child open states,
+            // but if children are loaded only on demand, this is often enough.
+            delete newOpenNodes[connectionIdToDelete];
+            return newOpenNodes;
+          });
+
+          // 过滤掉与已删除连接相关的任何打开的 Tab
+          setTabs((prevTabs) => {
+            const remainingTabs = prevTabs.filter(
+              (tab) => tab.connectionId !== connectionIdToDelete
+            );
+
+            if (
+              activeTabId &&
+              !remainingTabs.some((tab) => tab.id === activeTabId)
+            ) {
+              setActiveTabId(
+                remainingTabs.length > 0 ? remainingTabs[0].id : null
+              );
+            }
+            return remainingTabs;
+          });
+
+          // 调用父组件提供的 onConnectionDeleted 回调来刷新连接列表 (App.jsx 会重新 fetchConnections)
+          if (onConnectionDeleted) {
+            console.log(
+              "DatabaseViewer: Connection deleted. Calling onConnectionDeleted()."
+            );
+            await onConnectionDeleted();
+          }
+        } else {
+          console.error(
+            "Failed to delete connection via delete_base_config:",
+            response_msg
+          );
+          alert(`删除连接失败: ${response_msg}`);
+        }
+      } catch (err) {
+        console.error("Error invoking delete_base_config:", err);
+        alert(`删除连接时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
     }
   };
 
@@ -656,7 +745,12 @@ function DatabaseViewer({
       setActiveTabId(newTab.id);
     }
   };
-
+  const handleDeleteQuery = async (node) => {
+    console.log("Request to delete query:", node.name, "with node:", node);
+    // Set nodeToDelete and open the confirmation modal
+    setNodeToDelete(node);
+    deleteModalRef.current?.showModal();
+  };
   return (
     <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-[minmax(350px,_1fr)_2fr]">
       <div className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg">
@@ -680,6 +774,7 @@ function DatabaseViewer({
                   onEditConnection={handleEditConnection}
                   onDelete={handleRequestDeleteConnection} // 用于悬停按钮
                   onDeleteConnection={handleRequestDeleteConnection} // 用于右键菜单
+                  onDeleteQuery={handleDeleteQuery}
                 />
               ))}
             </ul>
@@ -712,8 +807,10 @@ function DatabaseViewer({
         <div className="modal-box">
           <h3 className="font-bold text-lg">确认删除</h3>
           <p className="py-4">
-            您确定要删除连接 "
-            <span className="font-semibold">{nodeToDelete?.name}</span>" 吗?
+            <span className="font-semibold">
+              {nodeToDelete?.iconName === "singleQuery" ? "查询" : "连接"} "
+              {nodeToDelete?.name}"
+            </span>
             此操作不可撤销。
           </p>
           <div className="modal-action">

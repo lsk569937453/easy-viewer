@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import toast from "react-hot-toast"; // 导入 toast
 
 const generateRandomString = (length) => {
   const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -219,7 +220,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     }
   };
 
-  // 处理创建连接的逻辑 - 已更新
+  // 处理创建/更新连接的逻辑
   const handleCreate = async (e) => {
     e.preventDefault();
     setError("");
@@ -231,7 +232,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     }
 
     if (testResult === "failure") {
-      if (!window.confirm("连接测试失败，确定仍要创建此连接吗？")) {
+      if (!window.confirm("连接测试失败，确定仍要保存此连接吗？")) {
         return;
       }
     }
@@ -264,23 +265,44 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         baseConfigEnum = { [dbType]: { config: details } };
       }
 
-      const saveConnectionRequest = {
-        ...(isEditMode && { base_config_id: editingId }), // Add ID if editing
-        base_config: { base_config_enum: baseConfigEnum },
-        connection_name: connectionName.trim(),
-      };
+      // START_OF_MODIFICATION
+      let responseJson;
+      let invokeCommand;
+      let requestBody;
+
+      if (isEditMode) {
+        // 构建 UpdateConnectionRequest
+        requestBody = {
+          connection_id: editingId, // 确保这里使用 editingId 作为 connection_id
+          base_config: { base_config_enum: baseConfigEnum },
+          connection_name: connectionName.trim(),
+        };
+        invokeCommand = "update_base_config";
+      } else {
+        // 构建 SaveConnectionRequest
+        requestBody = {
+          base_config: { base_config_enum: baseConfigEnum },
+          connection_name: connectionName.trim(),
+        };
+        invokeCommand = "save_base_config";
+      }
+
       console.log(
-        "正在创建连接, 请求体:",
-        JSON.stringify(saveConnectionRequest)
+        `正在${isEditMode ? "更新" : "创建"}连接, 请求体:`,
+        JSON.stringify(requestBody)
       );
 
-      const responseJson = await invoke("save_base_config", {
-        saveConnectionRequest,
+      // 根据模式调用不同的后端接口
+      responseJson = await invoke(invokeCommand, {
+        saveConnectionRequest: requestBody,
       });
+      // END_OF_MODIFICATION
+
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        alert(isEditMode ? "连接更新成功！" : "连接创建成功！");
+        // 将 alert 替换为 toast.success
+        toast.success(isEditMode ? "连接更新成功！" : "连接创建成功！");
 
         // START_OF_MODIFICATION
         // 在成功后，获取被影响的连接ID，并传递给 onSaveSuccess 回调
@@ -309,11 +331,11 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
 
         onClose();
       } else {
-        setError(`创建失败: ${response_msg}`);
+        setError(`${isEditMode ? "更新" : "创建"}失败: ${response_msg}`);
       }
     } catch (err) {
-      setError(`创建时发生错误: ${err.toString()}`);
-      console.error("创建连接异常:", err);
+      setError(`${isEditMode ? "更新" : "创建"}时发生错误: ${err.toString()}`);
+      console.error(`${isEditMode ? "更新" : "创建"}连接异常:`, err);
     } finally {
       setIsCreating(false);
     }
@@ -404,7 +426,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     <dialog id="new_connection_modal" className="modal" open={isOpen}>
       <div className="modal-box max-w-lg bg-base-100 shadow-xl rounded-lg p-6">
         <h3 className="font-bold text-2xl text-primary mb-4 border-b border-base-content/20 pb-2">
-          新建数据库连接
+          {isEditMode ? "编辑数据库连接" : "新建数据库连接"}
         </h3>
 
         <form onSubmit={handleCreate}>
@@ -436,8 +458,14 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 onChange={(e) => {
                   const newDbType = e.target.value;
                   setDbType(newDbType);
-                  setConnectionName(`${newDbType}-${generateRandomString(4)}`);
+                  // Only reset name if not in edit mode, or if dbType changes
+                  if (!isEditMode || newDbType !== dbType) {
+                    setConnectionName(
+                      `${newDbType}-${generateRandomString(4)}`
+                    );
+                  }
                 }}
+                disabled={isEditMode} // Usually, dbType cannot be changed in edit mode
               >
                 <option value="sqlite">SQLite</option>
                 <option value="mysql">MySQL</option>
@@ -602,7 +630,6 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
               </div>
             )}
 
-            {/* 统一的错误提示区域 */}
             {error && (
               <div className="alert alert-error shadow-lg mt-4">
                 <div>

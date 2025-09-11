@@ -8,27 +8,46 @@ import {
 } from "@tanstack/react-table";
 import { invoke } from "@tauri-apps/api/core";
 
-// Column 组件，用于在表格加载时显示骨架屏效果
 const ColumnSkeleton = () => (
   <div className="overflow-x-auto">
     <table className="table table-zebra w-full">
       <thead>
         <tr>
-          <th><div className="skeleton h-4 w-32"></div></th>
-          <th><div className="skeleton h-4 w-24"></div></th>
-          <th><div className="skeleton h-4 w-20"></div></th>
-          <th><div className="skeleton h-4 w-24"></div></th>
-          <th><div className="skeleton h-4 w-28"></div></th>
+          <th>
+            <div className="skeleton h-4 w-32"></div>
+          </th>
+          <th>
+            <div className="skeleton h-4 w-24"></div>
+          </th>
+          <th>
+            <div className="skeleton h-4 w-20"></div>
+          </th>
+          <th>
+            <div className="skeleton h-4 w-24"></div>
+          </th>
+          <th>
+            <div className="skeleton h-4 w-28"></div>
+          </th>
         </tr>
       </thead>
       <tbody>
         {[...Array(5)].map((_, i) => (
           <tr key={i}>
-            <td><div className="skeleton h-4 w-full"></div></td>
-            <td><div className="skeleton h-4 w-full"></div></td>
-            <td><div className="skeleton h-4 w-full"></div></td>
-            <td><div className="skeleton h-4 w-full"></div></td>
-            <td><div className="skeleton h-4 w-full"></div></td>
+            <td>
+              <div className="skeleton h-4 w-full"></div>
+            </td>
+            <td>
+              <div className="skeleton h-4 w-full"></div>
+            </td>
+            <td>
+              <div className="skeleton h-4 w-full"></div>
+            </td>
+            <td>
+              <div className="skeleton h-4 w-full"></div>
+            </td>
+            <td>
+              <div className="skeleton h-4 w-full"></div>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -38,15 +57,14 @@ const ColumnSkeleton = () => (
 
 // DDL 组件，用于在代码加载时显示骨架屏效果
 const DdlSkeleton = () => (
-    <div className="space-y-2">
-        <div className="skeleton h-4 w-full"></div>
-        <div className="skeleton h-4 w-11/12"></div>
-        <div className="skeleton h-4 w-full"></div>
-        <div className="skeleton h-4 w-10/12"></div>
-        <div className="skeleton h-4 w-full"></div>
-    </div>
+  <div className="space-y-2">
+    <div className="skeleton h-4 w-full"></div>
+    <div className="skeleton h-4 w-11/12"></div>
+    <div className="skeleton h-4 w-full"></div>
+    <div className="skeleton h-4 w-10/12"></div>
+    <div className="skeleton h-4 w-full"></div>
+  </div>
 );
-
 
 function TableDetailPage({ activeTabNode, connectionDetails }) {
   const [activeTab, setActiveTab] = useState("ddl");
@@ -86,24 +104,24 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
         const columnsResponse = JSON.parse(columnsResponseJson);
         if (columnsResponse.response_code === 0) {
           const columnsPayload = columnsResponse.response_msg; // 从 response_msg 中获取数据体
-                  console.log("columnsResponseJson:", columnsPayload);
+          console.log("columnsResponseJson:", columnsPayload);
 
           if (columnsPayload && columnsPayload.rows) {
             // 3. 根据日志修正列数据映射的索引
-            const formattedColumns = columnsPayload.rows.map(row => ({
+            const formattedColumns = columnsPayload.rows.map((row) => ({
               // row[0] is cid, row[1] is name, row[2] is type, etc.
               name: row[1] || "",
               type: row[2] || "",
-              isNullable: row[3] === '1' ? "YES" : "NO", // notnull: 0 -> YES, 1 -> NO
-              isPrimaryKey: row[5] === '1' ? "YES" : "NO", // pk: 1 -> YES, 0 -> NO
+              isNullable: row[3] === "1" ? "YES" : "NO", // notnull: 0 -> YES, 1 -> NO
+              isPrimaryKey: row[5] === "1" ? "YES" : "NO", // pk: 1 -> YES, 0 -> NO
               defaultValue: row[4] !== null ? String(row[4]) : "NULL",
             }));
             setColumnsData(formattedColumns);
           } else {
-              throw new Error("列数据的格式不正确。");
+            throw new Error("列数据的格式不正确。");
           }
         } else {
-            throw new Error(`获取列信息失败: ${columnsResponse.response_msg}`);
+          throw new Error(`获取列信息失败: ${columnsResponse.response_msg}`);
         }
       } catch (err) {
         console.error("获取表详情失败:", err);
@@ -137,13 +155,25 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
 
   const renderContent = () => {
     if (isLoading) {
-      return activeTab === 'ddl' ? <DdlSkeleton /> : <ColumnSkeleton />;
+      return activeTab === "ddl" ? <DdlSkeleton /> : <ColumnSkeleton />;
     }
 
     if (error) {
       return (
         <div role="alert" className="alert alert-error">
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="stroke-current shrink-0 h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
           <span>{error}</span>
         </div>
       );
@@ -151,7 +181,11 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
 
     if (activeTab === "ddl") {
       return (
-        <SyntaxHighlighter language="sql" style={vscDarkPlus} customStyle={{ margin: 0, height: "100%" }}>
+        <SyntaxHighlighter
+          language="sql"
+          style={vscDarkPlus}
+          customStyle={{ margin: 0, height: "100%" }}
+        >
           {ddl}
         </SyntaxHighlighter>
       );
@@ -195,7 +229,7 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
         </div>
       );
     }
-    
+
     return null;
   };
 
@@ -216,9 +250,7 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
         </a>
       </div>
 
-      <div className="flex-grow overflow-auto">
-        {renderContent()}
-      </div>
+      <div className="flex-grow overflow-auto">{renderContent()}</div>
     </div>
   );
 }

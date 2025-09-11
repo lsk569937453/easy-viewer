@@ -40,7 +40,9 @@ function DaisyTreeNode({
   const isOpen = openNodes[node.id];
   // START_OF_MODIFICATION: 增加对 node.iconName !== "column" 的判断
   const isExpandable =
-    node.iconName !== "column" && node.iconName !== "primary"&&
+    node.iconName !== "column" &&
+    node.iconName !== "primary" &&
+    node.iconName !== "singleQuery" &&
     (node.children === null ||
       (Array.isArray(node.children) && node.children.length > 0));
   // END_OF_MODIFICATION
@@ -144,7 +146,7 @@ function DaisyTreeNode({
             >
               <FaSyncAlt />
             </button>
-          
+
             <button
               className="btn btn-ghost btn-circle btn-xs"
               title="删除"

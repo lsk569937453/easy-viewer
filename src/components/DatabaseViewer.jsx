@@ -5,7 +5,6 @@ import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import { DiMysql } from "react-icons/di";
 import TableDetailPage from "./TableDetailPage.jsx";
-
 import { SiOracle, SiSqlite } from "react-icons/si";
 import {
   FaTable,
@@ -19,6 +18,13 @@ import {
   FaStream,
   FaStar,
 } from "react-icons/fa";
+
+// Import the new SQL generation functions
+import {
+  generateCreateTableSql,
+  generateCreateColumnSql,
+  generateCreateIndexSql,
+} from "../utils/SqlUtils.jsx"; // Adjust path if utils.js is elsewhere
 
 const ICON_MAP = {
   mysql: <DiMysql size="1.2em" color="#00758F" />,
@@ -44,7 +50,6 @@ const getNodeIcon = (nodeType, iconName) => {
   return ICON_MAP[key] || ICON_MAP.default;
 };
 
-// 此函数用于更新树中特定节点的属性（例如 children 或 isLoading）
 const updateNodeInTree = (nodes, nodeId, updates) => {
   return nodes.map((node) => {
     if (node.id === nodeId) {
@@ -66,7 +71,6 @@ const findConnectionByRootConfigId = (connections, rootConfigId) => {
   );
 };
 
-// 更改 props 名称以更好地反映其用途
 function DatabaseViewer({
   connections,
   onConnectionUpdated,
@@ -82,77 +86,68 @@ function DatabaseViewer({
   const [nodeToDelete, setNodeToDelete] = useState(null);
   const deleteModalRef = useRef(null);
 
-  // ⭐ FIX 1: Use a ref to store the latest openNodes state
   const openNodesRef = useRef(openNodes);
   useEffect(() => {
     openNodesRef.current = openNodes;
   }, [openNodes]);
 
-  // 使用 useCallback 记忆化 fetchNodeChildren，使其在重新渲染时保持引用不变
-  // 关键：为了保持所有层级的展开状态，fetchNodeChildren 在加载子节点后，需要递归地检查这些子节点是否也应该被展开。
-  const fetchNodeChildren = useCallback(
-    async (parentNode) => {
-      setTreeData((prevTree) =>
-        updateNodeInTree(prevTree, parentNode.id, { isLoading: true })
-      );
+  const fetchNodeChildren = useCallback(async (parentNode) => {
+    setTreeData((prevTree) =>
+      updateNodeInTree(prevTree, parentNode.id, { isLoading: true })
+    );
 
-      try {
-        const listNodeInfoReq = { level_infos: parentNode.path };
-        const responseJson = await invoke("list_node_info", {
-          listNodeInfoReq,
-        });
-        const { response_code, response_msg } = JSON.parse(responseJson);
-        if (response_code === 0) {
-          const childNodes = response_msg.list.map((child, index) => ({
-            id: `${parentNode.id}-${child.name}-${index}`, // 确保子节点 ID 唯一
-            name: child.name,
-            type: child.type || "default",
-            icon: getNodeIcon(child.type, child.icon_name),
-            description: child.description || "",
-            iconName: child.icon_name,
-            details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-            children: null, // 新加载的子节点的 children 初始为 null
-            path: [
-              ...parentNode.path,
-              { level: parentNode.path.length + 1, config_value: child.name },
-            ],
-          }));
+    try {
+      const listNodeInfoReq = { level_infos: parentNode.path };
+      const responseJson = await invoke("list_node_info", {
+        listNodeInfoReq,
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      if (response_code === 0) {
+        const childNodes = response_msg.list.map((child, index) => ({
+          id: `${parentNode.id}-${child.name}-${index}`, // 确保子节点 ID 唯一
+          name: child.name,
+          type: child.type || "default",
+          icon: getNodeIcon(child.type, child.icon_name),
+          description: child.description || "",
+          iconName: child.icon_name,
+          details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
+          children: null, // 新加载的子节点的 children 初始为 null
+          path: [
+            ...parentNode.path,
+            { level: parentNode.path.length + 1, config_value: child.name },
+          ],
+        }));
 
-          setTreeData((prevTree) =>
-            updateNodeInTree(prevTree, parentNode.id, {
-              children: childNodes,
-              isLoading: false,
-            })
-          );
-
-          // ⭐ FIX 2: Use the ref for the latest openNodes state for recursive calls
-          const currentOpenNodes = openNodesRef.current;
-          childNodes.forEach(async (childNode) => {
-            if (currentOpenNodes[childNode.id]) {
-              console.log(
-                `DatabaseViewer: Recursively re-fetching children for previously open child node: ${childNode.name} (ID: ${childNode.id})`
-              );
-              await fetchNodeChildren(childNode); // 递归调用自身
-            }
-          });
-        } else {
-          throw new Error(response_msg);
-        }
-      } catch (error) {
-        console.error("Failed to fetch node children:", error);
         setTreeData((prevTree) =>
           updateNodeInTree(prevTree, parentNode.id, {
-            children: [], // 获取失败时设为空数组
+            children: childNodes,
             isLoading: false,
           })
         );
-      }
-    },
-    [] // ⭐ FIX 3: Empty dependency array ensures fetchNodeChildren is stable
-  );
 
-  // 当 connections 属性更新时，此 useEffect 会重新生成顶层树形数据
-  // 并尝试恢复已展开的节点状态
+        const currentOpenNodes = openNodesRef.current;
+        childNodes.forEach(async (childNode) => {
+          if (currentOpenNodes[childNode.id]) {
+            console.log(
+              `DatabaseViewer: Recursively re-fetching children for previously open child node: ${childNode.name} (ID: ${childNode.id})`
+            );
+            await fetchNodeChildren(childNode); // 递归调用自身
+          }
+        });
+      } else {
+        throw new Error(response_msg);
+      }
+    } catch (error) {
+      console.error("Failed to fetch node children:", error);
+      setTreeData((prevTree) =>
+        updateNodeInTree(prevTree, parentNode.id, {
+          children: [], // 获取失败时设为空数组
+          isLoading: false,
+        })
+      );
+    }
+  }, []);
+
   useEffect(() => {
     console.log(
       "DatabaseViewer: useEffect for connections triggered. Connections updated (prop changed):",
@@ -170,7 +165,6 @@ function DatabaseViewer({
         icon: getNodeIcon(dbType, null),
         iconName: dbType,
         description: conn.description,
-        // 确保 conn.host 和 conn.port 在 App.jsx 中被正确解析并传递下来
         details: `ID: ${
           conn.base_config_id
         }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host || "N/A"}:${
@@ -182,8 +176,6 @@ function DatabaseViewer({
     });
     setTreeData(newTreeData); // 更新根节点列表
 
-    // 关键逻辑：在根节点更新后，遍历新生成的根节点，如果它们在 openNodes 中被标记为展开，则重新获取其子节点
-    // ⭐ FIX 4: Use the ref for the latest openNodes state
     const currentOpenNodes = openNodesRef.current;
     newTreeData.forEach(async (node) => {
       if (currentOpenNodes[node.id] && node.children === null) {
@@ -232,10 +224,11 @@ function DatabaseViewer({
     }
   };
 
-  const openNewSqlEditorTab = async (
+  const openSqlEditorTabWithContent = async (
     connectionId,
-    connectionName,
-    nodeIcon
+    nodeIcon, // Icon from the node that triggered this action
+    generatedSql = "",
+    defaultName = ""
   ) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -247,15 +240,14 @@ function DatabaseViewer({
     const milliseconds = now.getMilliseconds().toString().padStart(3, "0");
 
     const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
-    const defaultQueryName = `New_Query_${timestamp}`;
-    const defaultSqlContent = "";
+    const finalQueryName = defaultName || `New_Query_${timestamp}`;
 
     try {
       const responseJson = await invoke("save_query", {
         connectionId: connectionId,
-        queryName: defaultQueryName,
-        sql: defaultSqlContent,
-        queryId: null,
+        queryName: finalQueryName,
+        sql: generatedSql,
+        queryId: null, // New query, so no existing queryId
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
@@ -269,16 +261,28 @@ function DatabaseViewer({
 
         if (existingSqlEditorTab) {
           setActiveTabId(existingSqlEditorTab.id);
+          if (
+            generatedSql &&
+            existingSqlEditorTab.initialSql !== generatedSql
+          ) {
+            setTabs((prevTabs) =>
+              prevTabs.map((t) =>
+                t.id === existingSqlEditorTab.id
+                  ? { ...t, initialSql: generatedSql, isDirty: true } // Mark as dirty
+                  : t
+              )
+            );
+          }
         } else {
           const newTab = {
             id: newTabId,
-            name: defaultQueryName,
+            name: finalQueryName,
             icon: nodeIcon,
             type: "sqlEditor",
             connectionId: connectionId,
             queryId: query_id,
-            initialSql: defaultSqlContent,
-            isDirty: false,
+            initialSql: generatedSql,
+            isDirty: !!generatedSql, // Mark dirty if SQL was generated
           };
           setTabs((prevTabs) => [...prevTabs, newTab]);
           setActiveTabId(newTab.id);
@@ -336,62 +340,18 @@ function DatabaseViewer({
       return;
     }
 
-    if (node.iconName === "query") {
-      console.log(
-        `点击了 'query' 节点 (${node.name})，但此操作已被禁用。请使用右侧的“新增”按钮。`
-      );
-      return;
-    }
-
-    if (node.iconName === "singleTable") {
-      let tabDetails = generateSqlForNode(node, connections);
-      const tabId = node.id;
-      const existingTab = tabs.find((tab) => tab.id === tabId);
-
-      if (existingTab) {
-        if (existingTab.initialSql !== tabDetails) {
-          setTabs((prevTabs) =>
-            prevTabs.map((tab) =>
-              tab.id === tabId ? { ...tab, initialSql: tabDetails } : tab
-            )
-          );
-        }
-        setActiveTabId(tabId);
-      } else {
-        const newTab = {
-          id: tabId,
-          name: node.name,
-          icon: node.icon,
-          initialSql: tabDetails,
-          iconName: node.iconName,
-          path: node.path,
-          type: "tableWorkspace",
-          connectionId: connection.base_config_id,
-          activeTabNode: node,
-          connectionDetails: connection,
-        };
-        setTabs([...tabs, newTab]);
-        setActiveTabId(newTab.id);
-      }
-      return;
-    }
-
-    // ⭐ 修复 Bug 1：对于可展开的父节点，点击其标签时也触发展开/折叠 ⭐
-    // 判断条件：如果 node.type 不是明确的叶子节点类型，则认为它是可展开的父节点。
     if (
       node.type !== "singleTable" &&
       node.type !== "singleQuery" &&
       node.type !== "column" &&
       node.type !== "primary"
     ) {
-      // 明确排除叶子节点类型
       console.log(
         `DatabaseViewer: Clicking expandable parent node (${node.name}), also toggling.`
       );
       await handleToggleNode(node); // 这将处理子节点的获取（如果需要）和 openNodes 状态的切换
     }
 
-    // 原始逻辑：为所有非 singleTable/singleQuery 节点打开一个信息 Tab
     let tabDetails = node.details;
     const existingTab = tabs.find((tab) => tab.id === node.id);
 
@@ -419,56 +379,95 @@ function DatabaseViewer({
     }
   };
 
-  // handleToggleNode 负责切换节点的展开/关闭状态，并在需要时获取子节点
   const handleToggleNode = async (node) => {
     const isCurrentlyOpen = openNodes[node.id]; // Capture current state before update
 
-    // ⭐ FIX 6: Toggle the open state immediately
     setOpenNodes((prev) => ({ ...prev, [node.id]: !isCurrentlyOpen }));
 
-    // If the node *was closed* and is now being opened, and its children are null, fetch them.
     if (!isCurrentlyOpen && node.children === null) {
       console.log(
         `DatabaseViewer: Toggling node (${node.name}), fetching children due to opening.`
       );
-      await fetchNodeChildren(node); // Call the memoized function
+      await fetchNodeChildren(node);
     }
-    // If it was open and is now closed, or if it already had children, we don't need to fetch.
   };
 
-  // handleRefreshNode 强制重新加载节点子节点
   const handleRefreshNode = async (node) => {
     console.log("Refreshing node:", node.name);
     setTreeData((prevTree) =>
       updateNodeInTree(prevTree, node.id, { children: null })
-    ); // 清空当前子节点，强制重新加载
-    await fetchNodeChildren(node); // 调用记忆化后的函数，它会处理递归展开
-    setOpenNodes((prev) => ({ ...prev, [node.id]: true })); // 确保刷新后节点是展开的
+    );
+    await fetchNodeChildren(node);
+    setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
   };
 
   const handleAddNode = async (node) => {
-    console.log("Add action on node:", node.name);
+    console.log("Add action on node:", node.name, "Icon Name:", node.iconName);
+
+    const rootConfigId = node.path[0]?.config_value;
+    const connection = findConnectionByRootConfigId(connections, rootConfigId);
+
+    if (!connection) {
+      alert("无法找到数据库连接信息来执行此操作。");
+      return;
+    }
+
+    const connectionId = parseInt(rootConfigId);
+    const connectionType = connection.connection_type; // 1: mysql, 2: oracle, 3: sqlite
+    let generatedSql = "";
+    let defaultQueryName = "";
+
     if (node.iconName === "query") {
-      console.log("node:", node);
-      const rootConfigId = node.path[0]?.config_value;
-      const connection = findConnectionByRootConfigId(
-        connections,
-        rootConfigId
-      );
-      if (connection) {
-        const success = await openNewSqlEditorTab(
-          parseInt(rootConfigId),
-          connection.connection_name,
-          node.icon
-        );
-        if (success) {
-          await handleRefreshNode(node);
-        }
-      } else {
-        alert("无法找到数据库连接信息来创建新查询。");
+    } else if (node.iconName === "tables") {
+      const tableName = node.name;
+      generatedSql = generateCreateTableSql(connectionType, tableName);
+      defaultQueryName = `Create_Table_${tableName}`;
+    } else if (
+      node.iconName === "columns" ||
+      node.iconName === "column" ||
+      node.iconName === "primary"
+    ) {
+      let tableName = "";
+      if (node.iconName === "columns") {
+        tableName = node.path[node.path.length - 2]?.config_value;
+      } else if (node.iconName === "column" || node.iconName === "primary") {
+        tableName = node.path[node.path.length - 3]?.config_value;
       }
+
+      if (!tableName) {
+        alert("无法确定表名来生成 CREATE COLUMN SQL。");
+        return;
+      }
+      generatedSql = generateCreateColumnSql(connectionType, tableName);
+      defaultQueryName = `Add_Column_to_${tableName}`;
+    } else if (node.iconName === "index") {
+      // 'index' node is typically one level above the table name in the path
+      // e.g., path: [conn_id, db_name, table_name, 'index_folder']
+      const tableName = node.path[node.path.length - 2]?.config_value;
+      if (!tableName) {
+        alert("无法确定表名来生成 CREATE INDEX SQL。");
+        return;
+      }
+      generatedSql = generateCreateIndexSql(connectionType, tableName);
+      defaultQueryName = `Add_Index_to_${tableName}`;
     } else {
-      alert(`触发了“新增”操作，目标节点: ${node.name}`);
+      alert(
+        `触发了“新增”操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`
+      );
+      return;
+    }
+
+    // Now, open the SQL editor tab with the generated SQL or a blank query
+    const success = await openSqlEditorTabWithContent(
+      connectionId,
+      node.icon, // Use the current node's icon for the tab
+      generatedSql,
+      defaultQueryName
+    );
+
+    // If a new query was added to a 'query' folder, refresh that folder.
+    if (node.iconName === "query" && success) {
+      await handleRefreshNode(node);
     }
   };
 
@@ -615,7 +614,7 @@ function DatabaseViewer({
                   onNodeClick={handleNodeActivate}
                   onToggle={handleToggleNode}
                   onRefresh={handleRefreshNode}
-                  onAdd={handleAddNode}
+                  onAdd={handleAddNode} // Modified to handle new SQL generation
                   onEdit={handleEditNode}
                   onEditConnection={handleEditConnection}
                   onDelete={handleRequestDeleteConnection} // 用于悬停按钮

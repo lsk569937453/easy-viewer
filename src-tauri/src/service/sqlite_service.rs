@@ -437,7 +437,7 @@ WHERE type = 'view';",
             let node_name = level_infos[1].config_value.clone();
 
             info!("node_name: {},base_config_id:{}", node_name, base_config_id);
-            if node_name == "Tables" {
+            if node_name == "Tables" || node_name == "Views" {
                 for (name, icon_name) in get_sqlite_table_data().iter() {
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,

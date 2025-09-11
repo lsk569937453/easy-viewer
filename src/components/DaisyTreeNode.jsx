@@ -14,7 +14,9 @@ const ACTION_ICON_MAP = {
 };
 
 const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle"];
-const HOVER_ACTION_TYPES = [
+
+// Nodes that will show a "Refresh" and "Add" button
+const NODES_WITH_REFRESH_ADD = [
   "query",
   "tables",
   "views",
@@ -22,6 +24,12 @@ const HOVER_ACTION_TYPES = [
   "index",
   "partitions",
 ];
+
+// Nodes that will show an "Edit" button (e.g., for opening detail pages)
+const NODES_WITH_EDIT = ["singleTable"];
+
+// Nodes that will specifically show an "Add" button (even if they also have an "Edit" button)
+const NODES_WITH_ADD_ACTION = ["column", "primary"]; // Added 'singleTable' and 'column' here
 
 function DaisyTreeNode({
   node,
@@ -38,20 +46,19 @@ function DaisyTreeNode({
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
-  // START_OF_MODIFICATION: 增加对 node.iconName !== "column" 的判断
   const isExpandable =
     node.iconName !== "column" &&
     node.iconName !== "primary" &&
     node.iconName !== "singleQuery" &&
     (node.children === null ||
       (Array.isArray(node.children) && node.children.length > 0));
-  // END_OF_MODIFICATION
 
   const isRootNode = ACTIONABLE_DB_TYPES.includes(node.type);
 
   const handleRowClick = () => {
     onNodeClick(node);
-    if (isExpandable) {
+    if (isExpandable && !isOpen) {
+      // Only toggle if not already open to prevent double-fetch on first click
       onToggle(node);
     }
   };
@@ -88,9 +95,6 @@ function DaisyTreeNode({
       onDelete(node);
     }
   };
-
-  const shouldShowAddButton =
-    node.iconName === "column" || node.iconName === "primary";
 
   const rootNodeMenuItems = [
     {
@@ -137,7 +141,8 @@ function DaisyTreeNode({
       </div>
 
       <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-        {ACTIONABLE_DB_TYPES.includes(node.type) ? (
+        {isRootNode ? (
+          // Root connection node actions (Refresh, Delete)
           <div className="flex items-center space-x-1">
             <button
               className="btn btn-ghost btn-circle btn-xs"
@@ -156,8 +161,28 @@ function DaisyTreeNode({
             </button>
           </div>
         ) : (
-          <>
-            {node.iconName === "singleTable" ? (
+          // Other node actions
+          <div className="flex items-center space-x-1">
+            {NODES_WITH_REFRESH_ADD.includes(node.iconName) && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="刷新"
+                onClick={handleRefreshClick}
+              >
+                <FaSyncAlt />
+              </button>
+            )}
+            {(NODES_WITH_REFRESH_ADD.includes(node.iconName) ||
+              NODES_WITH_ADD_ACTION.includes(node.iconName)) && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="新增"
+                onClick={handleAddClick}
+              >
+                <FaPlus />
+              </button>
+            )}
+            {NODES_WITH_EDIT.includes(node.iconName) && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"
                 title="编辑"
@@ -165,50 +190,23 @@ function DaisyTreeNode({
               >
                 <FaEdit />
               </button>
-            ) : (
-              <>
-                {shouldShowAddButton ? (
-                  <button
-                    className="btn btn-ghost btn-circle btn-xs"
-                    title="新增"
-                    onClick={handleAddClick}
-                  >
-                    <FaPlus />
-                  </button>
-                ) : (
-                  <>
-                    {HOVER_ACTION_TYPES.includes(node.iconName) ? (
-                      <div className="flex items-center space-x-1">
-                        <button
-                          className="btn btn-ghost btn-circle btn-xs"
-                          title="刷新"
-                          onClick={handleRefreshClick}
-                        >
-                          <FaSyncAlt />
-                        </button>
-                        <button
-                          className="btn btn-ghost btn-circle btn-xs"
-                          title="新增"
-                          onClick={handleAddClick}
-                        >
-                          <FaPlus />
-                        </button>
-                      </div>
-                    ) : (
-                      node.iconName && (
-                        <button
-                          className="btn btn-ghost btn-circle btn-xs"
-                          onClick={handleActionIconClick}
-                        >
-                          {ACTION_ICON_MAP[node.iconName] || <FaInfoCircle />}
-                        </button>
-                      )
-                    )}
-                  </>
-                )}
-              </>
             )}
-          </>
+            {/* Fallback for nodes with no specific hover actions (e.g., primary key, simple info nodes) */}
+            {!NODES_WITH_REFRESH_ADD.includes(node.iconName) &&
+              !NODES_WITH_ADD_ACTION.includes(node.iconName) &&
+              !NODES_WITH_EDIT.includes(node.iconName) &&
+              node.iconName !== "singleQuery" && // singleQuery is a leaf, has no hover actions
+              node.iconName !== "primary" && // 'primary' is a leaf, no actions
+              node.iconName && (
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  onClick={handleActionIconClick}
+                  title="信息"
+                >
+                  {ACTION_ICON_MAP[node.iconName] || <FaInfoCircle />}
+                </button>
+              )}
+          </div>
         )}
       </div>
     </a>

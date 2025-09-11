@@ -18,10 +18,7 @@ import {
   getCoreRowModel,
   flexRender,
 } from "@tanstack/react-table";
-// 1. 引入 react-hot-toast
 import toast from "react-hot-toast";
-
-// 移除了之前自定义的 Notification 组件
 
 function SqlEditorTabContent({ tab, connections, setTabs }) {
   const [sqlContent, setSqlContent] = useState("");
@@ -133,7 +130,6 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
   };
 
   const handleExecuteSql = useCallback(async () => {
-    // ... 此函数内容不变
     if (!sqlContent.trim()) {
       setError("SQL 查询不能为空。");
       return;
@@ -230,7 +226,7 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
           // 如果后端返回错误码，则抛出异常，toast 会捕获并显示错误信息
           throw new Error(response_msg || "保存失败，但未收到错误详情。");
         }
-        
+
         // 成功后的逻辑
         updateTabDirtyState(false);
         if (!queryId && response_msg.query_id) {
@@ -253,20 +249,12 @@ function SqlEditorTabContent({ tab, connections, setTabs }) {
             )
           );
         }
-        
+
         return "查询已成功保存!"; // 这是成功时显示的toast消息
       },
       error: (err) => `保存失败: ${err.message || "未知错误"}`, // 这是失败时显示的toast消息
     });
-  }, [
-    sqlContent,
-    queryName,
-    connectionId,
-    queryId,
-    tab.id,
-    tab.name,
-    setTabs,
-  ]);
+  }, [sqlContent, queryName, connectionId, queryId, tab.id, tab.name, setTabs]);
 
   useEffect(() => {
     const handleKeyDown = (event) => {

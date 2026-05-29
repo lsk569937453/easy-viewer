@@ -12,7 +12,7 @@ pub async fn show_column_info(
 ) -> Result<ShowColumnsResponse, anyhow::Error> {
     let sql = format!("show columns from {}", table_name);
     info!("sql: {}", sql);
-    let rows = sqlx::query(&sql).fetch_all(conn).await?;
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(conn).await?;
     if rows.is_empty() {
         return Ok(ShowColumnsResponse::new());
     }

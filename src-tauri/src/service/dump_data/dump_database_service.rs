@@ -6,7 +6,7 @@ use serde_json::json;
 use serde_json::Value;
 use std::fmt::Debug;
 use std::io::Write;
-use xlsxwriter::Workbook;
+use rust_xlsxwriter::Workbook;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DumpDatabaseRes {
     pub data_list: DumpTableList,
@@ -88,37 +88,30 @@ impl DumpTableList {
             }
             ExportType::Csv => {}
             ExportType::Xlsx => {
-                let workbook = Workbook::new(&file_path)?;
+                let mut workbook = Workbook::new();
 
                 for i in 0..self.0.len() {
                     let item = &self.0[i];
                     let table_name = item.table_name.clone();
-                    let mut sheet = workbook.add_worksheet(Some(table_name.as_str()))?;
+                    let worksheet = workbook.add_worksheet();
+                    worksheet.set_name(&table_name)?;
 
-                    let mut row = 0;
+                    let mut row: u32 = 0;
 
                     for (column_index, column_item) in item.column_structs.iter().enumerate() {
-                        sheet.write_string(
-                            row,
-                            column_index as u16,
-                            column_item.column_name.as_str(),
-                            None,
-                        )?;
+                        worksheet.write_string(row, column_index as u16, &column_item.column_name)?;
                     }
                     row += 1;
 
                     for column_list in item.column_list.iter() {
                         for (column_index, column_item) in column_list.iter().enumerate() {
-                            sheet.write_string(
-                                row,
-                                column_index as u16,
-                                serde_json::to_string_pretty(&column_item.column_value)?.as_str(),
-                                None,
-                            )?;
+                            let val_str = serde_json::to_string_pretty(&column_item.column_value)?;
+                            worksheet.write_string(row, column_index as u16, val_str.as_str())?;
                         }
                         row += 1;
                     }
                 }
+                workbook.save(&file_path)?;
             }
         }
         Ok(())

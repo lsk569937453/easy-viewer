@@ -97,10 +97,10 @@ impl MysqlConfig {
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let sql = format!("show columns from {}", table_name);
         info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(GetColumnInfoForInsertSqlResponse::new());
         }
@@ -171,7 +171,7 @@ FROM information_schema.tables
 WHERE table_schema = "{}";"#,
                         database_name
                     );
-                    let query_size_result = sqlx::query(&query_db_size_sql)
+                    let query_size_result = sqlx::query(sqlx::AssertSqlSafe(query_db_size_sql))
                         .fetch_optional(&mut conn)
                         .await?
                         .ok_or(anyhow!(""))?;
@@ -200,7 +200,7 @@ WHERE table_schema = "{}";"#,
                 let database_name = level_infos[1].config_value.clone();
                 let sql = format!("use {}", database_name);
                 info!("sql: {}", sql);
-                conn.execute(&*sql).await?;
+                conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                 let tables_count: i32 = sqlx::query(
                     "SELECT COUNT(*) 
 FROM information_schema.tables
@@ -236,7 +236,7 @@ WHERE table_schema = DATABASE()",
 
                     let sql = format!("use {}", database_name.clone());
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
 
                     let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
                         .fetch_all(&mut conn)
@@ -252,7 +252,7 @@ WHERE table_schema = DATABASE()",
                         );
                         info!("sql: {}", sql);
                         let record_count: i32 =
-                            sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                            sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_one(&mut conn).await?.try_get(0)?;
                         let description = if record_count > 0 {
                             Some(format!("{}", record_count))
                         } else {
@@ -296,7 +296,7 @@ WHERE table_schema = DATABASE()",
 
                     let sql = format!("use {}", database_name.clone());
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                     let rows = sqlx::query("SHOW PROCEDURE STATUS")
                         .fetch_all(&mut conn)
                         .await?;
@@ -327,7 +327,7 @@ WHERE table_schema = DATABASE()",
 
                     let sql = format!("use {}", database_name.clone());
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                     let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'VIEW';")
                         .fetch_all(&mut conn)
                         .await?;
@@ -343,7 +343,7 @@ WHERE table_schema = DATABASE()",
                         );
                         info!("sql: {}", sql);
                         let record_count: i32 =
-                            sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                            sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_one(&mut conn).await?.try_get(0)?;
                         let description = if record_count > 0 {
                             Some(format!("{}", record_count))
                         } else {
@@ -365,7 +365,7 @@ WHERE table_schema = DATABASE()",
 
                     let sql = format!("use {}", database_name.clone());
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                     let list_functions_sql = format!(
                         "SELECT ROUTINE_NAME, ROUTINE_TYPE, DATA_TYPE, CREATED, LAST_ALTERED
 FROM information_schema.ROUTINES
@@ -373,7 +373,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
   AND ROUTINE_SCHEMA = '{}';",
                         database_name.clone()
                     );
-                    let rows = sqlx::query(&list_functions_sql)
+                    let rows = sqlx::query(sqlx::AssertSqlSafe(list_functions_sql))
                         .fetch_all(&mut conn)
                         .await?;
 
@@ -415,10 +415,10 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     let mut conn = MySqlConnection::connect(&connection_url).await?;
                     let mut sql = format!("use {}", database_name);
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                     sql = format!("describe {};", table_name);
                     info!("sql: {}", sql);
-                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                     for item in rows {
                         let buf: &[u8] = item.try_get(0)?;
                         let type_bytes: &[u8] = item.try_get(1)?;
@@ -450,10 +450,10 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     let mut conn = MySqlConnection::connect(&connection_url).await?;
                     let mut sql = format!("use {}", database_name);
                     info!("sql: {}", sql);
-                    conn.execute(&*sql).await?;
+                    conn.execute(sqlx::AssertSqlSafe(sql)).await?;
                     sql = format!("SHOW INDEX FROM {};", table_name);
                     info!("sql: {}", sql);
-                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                     for item in rows {
                         let key_name: String = item.try_get(2)?;
                         if key_name == "PRIMARY" {
@@ -499,7 +499,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let sql = format!("use {}", database_name.clone());
         info!("sql: {}", sql);
-        conn.execute(&*sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(sql)).await?;
         let file = File::open(&import_database_req.file_path).await?;
 
         let reader = BufReader::new(file);
@@ -512,8 +512,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             if line.trim().is_empty() {
                 if !sql_buffer.trim().is_empty() {
                     info!("Executing SQL: {}", sql_buffer);
-                    conn.execute(&*sql_buffer).await?;
-                    sql_buffer.clear();
+                    conn.execute(sqlx::AssertSqlSafe(sql_buffer.clone())).await?;
                 }
             } else {
                 sql_buffer.push_str(&line);
@@ -523,7 +522,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
 
         if !sql_buffer.trim().is_empty() {
             info!("Executing final SQL: {}", sql_buffer);
-            conn.execute(&*sql_buffer).await?;
+            conn.execute(sqlx::AssertSqlSafe(sql_buffer)).await?;
         }
         Ok(())
     }
@@ -540,7 +539,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let sql = format!("use {}", database_name.clone());
         info!("sql: {}", sql);
-        conn.execute(&*sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(sql)).await?;
 
         let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
             .fetch_all(&mut conn)
@@ -562,7 +561,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
             let mut dump_database_res_item = DumpDatabaseResItem::new();
             if dump_database_req.export_option.is_export_struct() {
                 let sql = format!("show create table {}", table_name);
-                let row = sqlx::query(&sql)
+                let row = sqlx::query(sqlx::AssertSqlSafe(sql))
                     .fetch_optional(&mut conn)
                     .await?
                     .ok_or(anyhow!("Not found table"))?;
@@ -581,7 +580,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                     database_name.clone(),
                     table_name.clone()
                 );
-                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                 if !rows.is_empty() {
                     let mut vec = vec![];
                     let mut column_structs = vec![];
@@ -633,7 +632,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let sql = format!("use {}", database_name.clone());
         info!("sql: {}", sql);
-        conn.execute(&*sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(sql)).await?;
 
         let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
             .fetch_all(&mut conn)
@@ -649,7 +648,7 @@ WHERE TABLE_SCHEMA = '{}'
   AND TABLE_NAME = '{}';",
                 database_name, table_name
             );
-            let list = sqlx::query(&get_columns_sql).fetch_all(&mut conn).await?;
+            let list = sqlx::query(sqlx::AssertSqlSafe(get_columns_sql)).fetch_all(&mut conn).await?;
             let mut vec = vec![];
             for item in list {
                 let column_name: String = item.try_get(0)?;
@@ -680,7 +679,7 @@ WHERE TABLE_SCHEMA = '{}'
 
             let use_database_sql = format!("use {}", database_name);
             info!("use_database_sql: {}", use_database_sql);
-            conn.execute(&*use_database_sql).await?;
+            conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         }
         info!("sql: {}", sql);
         let should_parse_sql = !(sql.contains("CREATE DATABASE")
@@ -702,7 +701,7 @@ WHERE TABLE_SCHEMA = '{}'
         };
         let primary_column_option = if let Some(table_name) = &is_simple_select_option {
             let sql = format!(r#"show columns from {}  where `Key` = "PRI""#, table_name);
-            let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
+            let option_row = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_optional(&mut conn).await?;
             if let Some(row) = option_row {
                 let primary_column: String = row.try_get(0)?;
                 Some(primary_column)
@@ -717,9 +716,9 @@ WHERE TABLE_SCHEMA = '{}'
         if !has_multi_rows {
             let mysql_query_result =
                 if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
-                    conn.execute(sql.as_str()).await?
+                    conn.execute(sqlx::AssertSqlSafe(sql.clone())).await?
                 } else {
-                    sqlx::query(&sql).execute(&mut conn).await?
+                    sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?
                 };
             let headers = vec![
                 Header {
@@ -743,7 +742,7 @@ WHERE TABLE_SCHEMA = '{}'
                 table_name: is_simple_select_option,
             });
         }
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
         }
@@ -800,11 +799,11 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let mut vec = vec![];
         for sql in sqls {
             info!("sql: {}", sql);
-            let result = conn.execute(&*sql).await.map_err(|e| anyhow!(e));
+            let result = conn.execute(sqlx::AssertSqlSafe(sql)).await.map_err(|e| anyhow!(e));
             if let Err(err) = result {
                 vec.push(err.to_string())
             }
@@ -828,10 +827,10 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let sql = format!("show create table {}", table_name);
-        let row = sqlx::query(&sql)
+        let row = sqlx::query(sqlx::AssertSqlSafe(sql))
             .fetch_optional(&mut conn)
             .await?
             .ok_or(anyhow!("Not found table"))?;
@@ -851,7 +850,7 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let rows = sqlx::query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE';")
             .fetch_all(&mut conn)
@@ -899,14 +898,14 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let drop_sql = format!(
             "ALTER TABLE {} DROP COLUMN {};",
             table_name.clone(),
             column_name
         );
         info!("drop_sql: {}", drop_sql);
-        conn.execute(&*drop_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(drop_sql)).await?;
 
         Ok(())
     }
@@ -924,10 +923,10 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let sql = format!("SHOW INDEX FROM {};", table_name);
         info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         let mut drop_sql = String::new();
         for item in rows {
             let key_name: String = item.try_get(2)?;
@@ -947,7 +946,7 @@ WHERE TABLE_SCHEMA = '{}'
             }
         }
         info!("drop_sql: {}", drop_sql);
-        conn.execute(&*drop_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(drop_sql)).await?;
 
         Ok(())
     }
@@ -964,10 +963,10 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let drop_sql = format!("drop table {}", table_name);
         info!("drop_sql: {}", drop_sql);
-        conn.execute(&*drop_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(drop_sql)).await?;
 
         Ok(())
     }
@@ -984,10 +983,10 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let drop_sql = format!("TRUNCATE  TABLE  {}", table_name);
         info!("drop_sql: {}", drop_sql);
-        conn.execute(&*drop_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(drop_sql)).await?;
 
         Ok(())
     }
@@ -1003,7 +1002,7 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
         let exe_sql_response = show_column_info(&mut conn, table_name).await?;
 
         Ok(exe_sql_response)
@@ -1023,11 +1022,11 @@ WHERE TABLE_SCHEMA = '{}'
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let sql = format!("show columns from {}", table_name);
         info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         let mut column_list = vec![];
         for item in rows.iter() {
             let columns_name: String = item.try_get(0)?;
@@ -1069,7 +1068,7 @@ WHERE TABLE_SCHEMA = '{}'
         );
 
         info!("move_column sql: {}", alter_table_sql);
-        conn.execute(&*alter_table_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(alter_table_sql)).await?;
         Ok("()".to_string())
     }
     pub async fn get_complete_words(
@@ -1105,7 +1104,7 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
             let database_byte: Vec<u8> = database_row.try_get(0)?;
             let database: String = String::from_utf8(database_byte)?;
             let use_database_sql = format!("use {}", database);
-            new_conn.execute(&*use_database_sql).await?;
+            new_conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
             set.insert(database.clone());
             let table_rows = sqlx::query("show tables").fetch_all(&mut new_conn).await?;
@@ -1117,7 +1116,7 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
 
                 let sql = format!("SHOW COLUMNS FROM `{}` ", table);
 
-                let column_row = sqlx::query(&sql).fetch_all(&mut new_conn).await?;
+                let column_row = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut new_conn).await?;
                 for item in column_row {
                     let columns: String = item.try_get(0)?;
                     set.insert(columns.clone());
@@ -1154,10 +1153,10 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let sql = format!("show create procedure {}", procedure_name);
-        let res_row = sqlx::query(&sql)
+        let res_row = sqlx::query(sqlx::AssertSqlSafe(sql))
             .fetch_optional(&mut conn)
             .await?
             .ok_or(anyhow!(""))?;
@@ -1179,14 +1178,14 @@ WHERE `Database` NOT IN ('information_schema', 'mysql', 'performance_schema')",
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let sql = format!(
             "ALTER TABLE {}
 DROP COLUMN {};",
             table_name, column_name
         );
-        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+        let _ = sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
 
         Ok(())
     }
@@ -1204,10 +1203,10 @@ DROP COLUMN {};",
         let mut conn = MySqlConnection::connect(&connection_url).await?;
         let use_database_sql = format!("use {}", database_name);
         info!("use_database_sql: {}", use_database_sql);
-        conn.execute(&*use_database_sql).await?;
+        conn.execute(sqlx::AssertSqlSafe(use_database_sql)).await?;
 
         let sql = format!("ALTER TABLE {} COMMENT = '{}';", table_name, new_comment);
-        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+        let _ = sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
 
         Ok(())
     }

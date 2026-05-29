@@ -180,7 +180,7 @@ WHERE table_schema = '{}'
   AND table_type = 'BASE TABLE';",
                 schema_name
             );
-            let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+            let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
             let table_names: Vec<String> = rows.iter().map(|row| row.get("table_name")).collect();
             let mut init_dump_tables_responses = vec![];
 
@@ -192,7 +192,7 @@ WHERE table_schema = '{}'
   AND table_name = '{}';",
                     schema_name, table_name
                 );
-                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                 let mut vec = vec![];
                 for item in rows.iter() {
                     let column_name: String = item.try_get(0)?;
@@ -235,8 +235,7 @@ WHERE table_schema = '{}'
             if line.trim().is_empty() {
                 if !sql_buffer.trim().is_empty() {
                     info!("Executing SQL: {}", sql_buffer);
-                    conn.execute(&*sql_buffer).await?;
-                    sql_buffer.clear();
+                    conn.execute(sqlx::AssertSqlSafe(sql_buffer.clone())).await?;
                 }
             } else {
                 sql_buffer.push_str(&line);
@@ -246,7 +245,7 @@ WHERE table_schema = '{}'
 
         if !sql_buffer.trim().is_empty() {
             info!("Executing final SQL: {}", sql_buffer);
-            conn.execute(&*sql_buffer).await?;
+            conn.execute(sqlx::AssertSqlSafe(sql_buffer)).await?;
         }
         Ok(())
     }
@@ -275,7 +274,7 @@ FROM information_schema.schemata
 WHERE schema_name = '{}';",
                 schema_name.clone()
             );
-            let creat_schema_row: String = sqlx::query(&create_schema_sql)
+            let creat_schema_row: String = sqlx::query(sqlx::AssertSqlSafe(create_schema_sql))
                 .fetch_optional(&mut conn)
                 .await?
                 .ok_or(anyhow!("Not found schema"))?
@@ -290,7 +289,7 @@ WHERE schema_name = '{}';",
                 let table_name = table.table_name;
                 let create_table_sql = generate_ddl(schema_name.clone(), table_name.clone());
                 info!("create_table_sql: {}", create_table_sql);
-                let creat_table_row: String = sqlx::query(&create_table_sql)
+                let creat_table_row: String = sqlx::query(sqlx::AssertSqlSafe(create_table_sql))
                     .fetch_optional(&mut conn)
                     .await?
                     .ok_or(anyhow!("Not found table"))?
@@ -312,7 +311,7 @@ WHERE schema_name = '{}';",
                         schema_name.clone(),
                         table_name.clone()
                     );
-                    let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                    let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                     if !rows.is_empty() {
                         let mut vec = vec![];
                         let mut column_structs = vec![];
@@ -389,7 +388,7 @@ FROM information_schema.tables
 WHERE table_schema = '{}';",
                 schema_name
             );
-            let tables_names = sqlx::query(&get_table_sql)
+            let tables_names = sqlx::query(sqlx::AssertSqlSafe(get_table_sql))
                 .fetch_all(&mut conn)
                 .await?
                 .iter()
@@ -402,7 +401,7 @@ FROM information_schema.columns
 WHERE table_name = '{}' AND table_schema = '{}';",
                     table_name, schema_name
                 );
-                let rows = sqlx::query(&show_column_sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(show_column_sql)).fetch_all(&mut conn).await?;
                 if rows.is_empty() {
                     return Ok(());
                 }
@@ -461,7 +460,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
 
         let mut conn = self.get_connection_with_database(database_name).await?;
         let drop_index_sql = format!("DROP INDEX IF EXISTS {}.{};", schema_name, index_name);
-        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(drop_index_sql)).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn drop_table(
@@ -477,7 +476,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let mut conn = self.get_connection_with_database(database_name).await?;
 
         let drop_index_sql = format!("DROP TABLE {}.{};", schema_name, table_name);
-        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(drop_index_sql)).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn truncate_table(
@@ -493,7 +492,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         let mut conn = self.get_connection_with_database(database_name).await?;
 
         let drop_index_sql = format!("TRUNCATE  TABLE {}.{};", schema_name, table_name);
-        sqlx::query(&drop_index_sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(drop_index_sql)).execute(&mut conn).await?;
         Ok(())
     }
 
@@ -530,7 +529,7 @@ WHERE c.table_schema = '{}'
   AND c.table_name = '{}';",
             schema_name, table_name
         );
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         let mut response_rows = vec![];
         info!("rows: {:?}", rows);
         for item in rows.iter() {
@@ -580,7 +579,7 @@ WHERE c.table_schema = '{}'
                     "SELECT pg_size_pretty(pg_database_size('{}')) AS database_size;",
                     database_name
                 );
-                let db_size_row = sqlx::query(&sql)
+                let db_size_row = sqlx::query(sqlx::AssertSqlSafe(sql))
                     .fetch_optional(&mut connection)
                     .await?
                     .ok_or(anyhow!("Not found"))?;
@@ -631,7 +630,7 @@ FROM information_schema.tables
 WHERE table_schema = '{}';",
                 schema_name
             );
-            let result_row = sqlx::query(&sql)
+            let result_row = sqlx::query(sqlx::AssertSqlSafe(sql))
                 .fetch_optional(&mut conn)
                 .await?
                 .ok_or(anyhow!(""))?;
@@ -669,7 +668,7 @@ FROM pg_catalog.pg_tables
 WHERE schemaname = '{}';",
                     schema_name
                 );
-                let rows = sqlx::query(&sql).fetch_all(&mut connection).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut connection).await?;
                 info!("rows: {}", rows.len());
                 if rows.is_empty() {
                     return Ok(ListNodeInfoResponse::new_with_empty());
@@ -682,7 +681,7 @@ WHERE schemaname = '{}';",
                         table_name.clone()
                     );
                     info!("sql: {}", sql);
-                    let record_count: i64 = sqlx::query(&sql)
+                    let record_count: i64 = sqlx::query(sqlx::AssertSqlSafe(sql))
                         .fetch_one(&mut connection)
                         .await?
                         .try_get(0)?;
@@ -751,7 +750,7 @@ WHERE schemaname = '{}';",
                 left join information_schema.table_constraints t on t.table_name = c.table_name and t.constraint_name = s.constraint_name
                 where  c.table_name ='{}' ", table_name);
                 info!("sql: {}", sql);
-                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                 for item in rows {
                     let column_name: String = item.try_get(0)?;
                     let column_type: String = item.try_get(1)?;
@@ -796,7 +795,7 @@ WHERE
                     table_name
                 );
                 info!("sql: {}", sql);
-                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                 for item in rows {
                     let index_name: String = item.try_get(0)?;
 
@@ -875,7 +874,7 @@ WHERE table_name = '{}'
   );"#,
                 table_name, table_name
             );
-            let option_row = sqlx::query(&sql).fetch_optional(&mut conn).await?;
+            let option_row = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_optional(&mut conn).await?;
             if let Some(row) = option_row {
                 let primary_column: String = row.try_get(0)?;
                 Some(primary_column)
@@ -890,9 +889,9 @@ WHERE table_name = '{}'
         if !has_multi_rows {
             let pg_query_result =
                 if sql.contains("CREATE PROCEDURE") || sql.contains("CREATE FUNCTION") {
-                    conn.execute(sql.as_str()).await?
+                    conn.execute(sqlx::AssertSqlSafe(sql.clone())).await?
                 } else {
-                    sqlx::query(&sql).execute(&mut conn).await?
+                    sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?
                 };
             let headers = vec![
                 Header {
@@ -913,7 +912,7 @@ WHERE table_name = '{}'
                 table_name: is_simple_select_option,
             });
         }
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ExeSqlResponse::new());
         }
@@ -968,7 +967,7 @@ WHERE table_name = '{}'
 
         let mut conn = self.get_connection_with_database(database_name).await?;
         let sql = generate_ddl(schema_name, table_name);
-        let row = sqlx::query(&sql)
+        let row = sqlx::query(sqlx::AssertSqlSafe(sql))
             .fetch_optional(&mut conn)
             .await?
             .ok_or(anyhow!("Not found table"))?;
@@ -988,7 +987,7 @@ WHERE table_name = '{}'
         let mut vec = vec![];
         for sql in sqls {
             info!("sql: {}", sql);
-            let result = conn.execute(&*sql).await.map_err(|e| anyhow!(e));
+            let result = conn.execute(sqlx::AssertSqlSafe(sql)).await.map_err(|e| anyhow!(e));
             if let Err(err) = result {
                 vec.push(err.to_string())
             }
@@ -1016,7 +1015,7 @@ FROM information_schema.columns
 WHERE table_name = '{}' AND table_schema = '{}';",
             table_name, schema_name
         );
-        let rows = sqlx::query(&show_column_sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(show_column_sql)).fetch_all(&mut conn).await?;
         if rows.is_empty() {
             return Ok(ShowColumnsResponse::new());
         }
@@ -1078,7 +1077,7 @@ WHERE table_schema = '{}'
                 schema_name
             );
             set.insert(schema_name.clone());
-            let table_names = sqlx::query(&get_tables_sql)
+            let table_names = sqlx::query(sqlx::AssertSqlSafe(get_tables_sql))
                 .fetch_all(&mut conn)
                 .await?
                 .iter()
@@ -1093,7 +1092,7 @@ WHERE table_schema = '{}'
   AND table_name = '{}';",
                     schema_name, table_name
                 );
-                let column_names = sqlx::query(&get_column_sql)
+                let column_names = sqlx::query(sqlx::AssertSqlSafe(get_column_sql))
                     .fetch_all(&mut conn)
                     .await?
                     .iter()
@@ -1123,7 +1122,7 @@ WHERE table_schema = '{}'
 
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
-        sqlx::query(&sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
 
         Ok(())
     }
@@ -1142,7 +1141,7 @@ WHERE table_schema = '{}'
 
         let sql = format!("COMMENT ON TABLE {} IS '{}';", table_name, new_comment);
         info!("update comment sql: {}", sql);
-        sqlx::query(&sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
 
         Ok(())
     }
@@ -1158,7 +1157,7 @@ WHERE table_schema = '{}'
         let mut conn = self.get_connection_with_database(database_name).await?;
         let sql = format!("ALTER TABLE {} DROP COLUMN {};", table_name, column_name);
         info!("remove_column sql: {}", sql);
-        let _ = sqlx::query(&sql).execute(&mut conn).await?;
+        let _ = sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
         Ok(())
     }
 }

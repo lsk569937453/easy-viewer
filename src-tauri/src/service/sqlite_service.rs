@@ -76,7 +76,7 @@ impl SqliteConfig {
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
-        sqlx::query(&format!("DELETE FROM {};", level_infos[2].config_value))
+        sqlx::query(sqlx::AssertSqlSafe(format!("DELETE FROM {};", level_infos[2].config_value)))
             .execute(&mut conn)
             .await?;
 
@@ -102,8 +102,7 @@ impl SqliteConfig {
             if line.trim().is_empty() {
                 if !sql_buffer.trim().is_empty() {
                     info!("Executing SQL: {}", sql_buffer);
-                    conn.execute(&*sql_buffer).await?;
-                    sql_buffer.clear();
+                    conn.execute(sqlx::AssertSqlSafe(sql_buffer.clone())).await?;
                 }
             } else {
                 sql_buffer.push_str(&line);
@@ -113,7 +112,7 @@ impl SqliteConfig {
 
         if !sql_buffer.trim().is_empty() {
             info!("Executing final SQL: {}", sql_buffer);
-            conn.execute(&*sql_buffer).await?;
+            conn.execute(sqlx::AssertSqlSafe(sql_buffer)).await?;
         }
         Ok(())
     }
@@ -127,7 +126,7 @@ impl SqliteConfig {
 FROM sqlite_master 
 WHERE type = 'table' and name !='sqlite_sequence';"
             .to_string();
-        let table_names = sqlx::query(&sql)
+        let table_names = sqlx::query(sqlx::AssertSqlSafe(sql))
             .fetch_all(&mut conn)
             .await?
             .iter()
@@ -136,7 +135,7 @@ WHERE type = 'table' and name !='sqlite_sequence';"
         let mut tables = vec![];
         for table in table_names {
             let get_column_info_sql = format!("PRAGMA table_info({});", table);
-            let rows = sqlx::query(&get_column_info_sql)
+            let rows = sqlx::query(sqlx::AssertSqlSafe(get_column_info_sql))
                 .fetch_all(&mut conn)
                 .await?;
             let mut columns = vec![];
@@ -172,7 +171,7 @@ FROM sqlite_master
 WHERE type = 'table' AND name = '{}';",
                 table_name
             );
-            let table_ddl: String = sqlx::query(&create_table_sql)
+            let table_ddl: String = sqlx::query(sqlx::AssertSqlSafe(create_table_sql))
                 .fetch_optional(&mut conn)
                 .await?
                 .ok_or(anyhow!("Not found table"))?
@@ -186,7 +185,7 @@ WHERE type = 'table' AND name = '{}';",
                     .map(|x| x.column_name.clone())
                     .join(",");
                 let sql = format!("select {} from {}", selected_column, table_name.clone());
-                let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
                 if !rows.is_empty() {
                     let mut vec = vec![];
                     let mut column_structs = vec![];
@@ -237,7 +236,7 @@ WHERE type = 'table' AND name = '{}';",
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let table_name: String = level_infos[2].config_value.clone();
         let sql: String = format!("DROP TABLE IF EXISTS {};", table_name);
-        sqlx::query(&sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn drop_index(
@@ -249,7 +248,7 @@ WHERE type = 'table' AND name = '{}';",
         let mut conn = SqliteConnection::connect(&self.file_path).await?;
         let index_name: String = level_infos[4].config_value.clone();
         let sql: String = format!("DROP INDEX IF EXISTS {};", index_name);
-        sqlx::query(&sql).execute(&mut conn).await?;
+        sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
         Ok(())
     }
     pub async fn get_column_info_for_is(
@@ -265,7 +264,7 @@ WHERE type = 'table' AND name = '{}';",
 
         let sql: String = format!("PRAGMA table_info({})", table_name);
         info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
 
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
@@ -374,7 +373,7 @@ WHERE type = 'table' and name !='sqlite_sequence';",
                     let sql = format!("select count(*) from {}", row_str.clone());
                     info!("sql: {}", sql);
                     let record_count: i32 =
-                        sqlx::query(&sql).fetch_one(&mut conn).await?.try_get(0)?;
+                        sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_one(&mut conn).await?.try_get(0)?;
                     let description = if record_count > 0 {
                         Some(format!("{}", record_count))
                     } else {
@@ -432,15 +431,22 @@ WHERE type = 'view';",
                 info!("vec: {:?}", vec);
             }
         } else if level_infos.len() == 3 {
-            for (name, icon_name) in get_sqlite_table_data().iter() {
-                let list_node_info_response_item = ListNodeInfoResponseItem::new(
-                    true,
-                    true,
-                    icon_name.to_string(),
-                    name.to_string(),
-                    None,
-                );
-                vec.push(list_node_info_response_item);
+            let base_config_id = level_infos[0].config_value.parse::<i32>()?;
+
+            let node_name = level_infos[1].config_value.clone();
+
+            info!("node_name: {},base_config_id:{}", node_name, base_config_id);
+            if node_name == "Tables" || node_name == "Views" {
+                for (name, icon_name) in get_sqlite_table_data().iter() {
+                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                        true,
+                        true,
+                        icon_name.to_string(),
+                        name.to_string(),
+                        None,
+                    );
+                    vec.push(list_node_info_response_item);
+                }
             }
         } else if level_infos.len() == 4 {
             let table_name = level_infos[2].config_value.clone();
@@ -449,7 +455,7 @@ WHERE type = 'view';",
             if node_name == "Columns" {
                 let query = format!("PRAGMA table_info({})", table_name);
                 let mut conn = SqliteConnection::connect(&self.file_path).await?;
-                let rows = sqlx::query(&query).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(query)).fetch_all(&mut conn).await?;
                 for item in rows {
                     let buf: &[u8] = item.try_get(1)?;
                     let type_bytes: &[u8] = item.try_get(2)?;
@@ -478,7 +484,7 @@ WHERE type = 'view';",
             } else if node_name == "Index" {
                 let query = format!("PRAGMA index_list({})", table_name);
                 let mut conn = SqliteConnection::connect(&self.file_path).await?;
-                let rows = sqlx::query(&query).fetch_all(&mut conn).await?;
+                let rows = sqlx::query(sqlx::AssertSqlSafe(query)).fetch_all(&mut conn).await?;
                 for item in rows {
                     let buf: &[u8] = item.try_get(1)?;
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
@@ -499,7 +505,7 @@ WHERE type = 'view';",
         table_name: &str,
     ) -> Option<String> {
         let sql = format!(r#"PRAGMA table_info({})"#, table_name);
-        let rows = sqlx::query(&sql).fetch_all(conn).await.ok()?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(conn).await.ok()?;
 
         for row in rows {
             let primary_column: i32 = row.try_get("pk").ok()?;
@@ -529,7 +535,7 @@ WHERE type = 'view';",
         let has_multi_rows = sql_parse_result.has_multiple_rows()?;
         info!("has_multi_rows: {}", has_multi_rows);
         if !has_multi_rows {
-            let mysql_query_result = sqlx::query(&sql).execute(&mut conn).await?;
+            let mysql_query_result = sqlx::query(sqlx::AssertSqlSafe(sql)).execute(&mut conn).await?;
             let headers = vec![
                 Header {
                     name: "affected_rows".to_string(),
@@ -552,7 +558,7 @@ WHERE type = 'view';",
                 table_name: is_simple_select_option,
             });
         }
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
 
         info!("rows: {}", rows.len());
         if rows.is_empty() {
@@ -614,7 +620,7 @@ WHERE type = 'view';",
         let mut vec = vec![];
         for sql in sqls {
             info!("sql: {}", sql);
-            let result = conn.execute(&*sql).await.map_err(|e| anyhow!(e));
+            let result = conn.execute(sqlx::AssertSqlSafe(sql)).await.map_err(|e| anyhow!(e));
             if let Err(err) = result {
                 vec.push(err.to_string())
             }
@@ -640,7 +646,7 @@ WHERE type = 'view';",
             r#"SELECT sql FROM sqlite_master where name='{}'"#,
             table_name
         );
-        let row = sqlx::query(&sql)
+        let row = sqlx::query(sqlx::AssertSqlSafe(sql))
             .fetch_optional(&mut conn)
             .await?
             .ok_or(anyhow!("Not found table"))?;
@@ -659,7 +665,7 @@ WHERE type = 'view';",
 
         let sql: String = format!("PRAGMA table_info({})", table_name);
         info!("sql: {}", sql);
-        let rows = sqlx::query(&sql).fetch_all(&mut conn).await?;
+        let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
 
         let first_item = rows.first().ok_or(anyhow!(""))?;
         let mut headers = vec![];
@@ -741,7 +747,7 @@ WHERE type = 'view';",
             let table: String = String::from_utf8(table_byes)?;
             let use_database_sql = format!(r#"PRAGMA table_info('{}')"#, table);
             set.insert(table.clone());
-            let column_rows = sqlx::query(&use_database_sql).fetch_all(&mut conn).await?;
+            let column_rows = sqlx::query(sqlx::AssertSqlSafe(use_database_sql)).fetch_all(&mut conn).await?;
             for column_row in column_rows {
                 let column_bytes: Vec<u8> = column_row.try_get(1)?;
                 let column = String::from_utf8(column_bytes)?;

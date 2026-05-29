@@ -1,0 +1,41 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%; /* <-- 这是最重要的基础 */
+  box-sizing: border-box;
+}
+.App {
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* 继承来自 #root 的 100% 高度 */
+  width: 100%;
+}
+
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: all;
+}
+.input:focus,
+.textarea:focus,
+.select:focus,
+.btn:focus {
+  outline-offset: 0px;
+}
+
+.input-bordered:focus,
+.textarea-bordered:focus,
+.select-bordered:focus {
+  outline-offset: 0px;
+}
+.input-bordered > input:focus {
+  outline: none !important;
+}
+
+.input-bordered:focus-within {
+  --tw-ring-offset-width: 0px !important;
+
+  outline-offset: 0px !important;
+}

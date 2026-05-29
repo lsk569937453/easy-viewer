@@ -18,7 +18,15 @@ use tauri::tray::MouseButton;
 use tauri::tray::MouseButtonState;
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
+use tauri::Listener;
 use tauri::Manager;
+
+#[tauri::command]
+fn show_main_window(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+    }
+}
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let appstate = AppState::new().await?;
@@ -103,6 +111,7 @@ async fn main() -> Result<(), anyhow::Error> {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            show_main_window,
             create_folder,
             delete_base_config,
             delete_bucket,

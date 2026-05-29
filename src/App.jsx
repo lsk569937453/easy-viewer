@@ -7,6 +7,11 @@ import { Toaster } from "react-hot-toast";
 function App() {
   const [connections, setConnections] = useState([]);
 
+  // 组件挂载完成后通知 Rust 端显示窗口
+  useEffect(() => {
+    invoke("show_main_window");
+  }, []);
+
   // 辅助函数：解析 connection_json 字符串以获取 host 和 port
   const parseConnectionJson = (connectionType, connectionJsonString) => {
     try {

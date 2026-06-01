@@ -186,7 +186,7 @@ function DatabaseViewer({
     );
 
     const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 1: "mysql", 2: "oracle", 3: "sqlite" };
+      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
 
       return {
@@ -229,29 +229,57 @@ function DatabaseViewer({
     );
 
     if (!connection) {
-      return `/* 错误: 无法找到连接信息来生成SQL */\nSELECT * FROM "${node.name}" LIMIT ${limit};`;
+      return `/* 错误: 无法找到连接信息来生成SQL */\nSELECT * FROM ${node.name} LIMIT ${limit};`;
     }
 
     const dbType = connection.connection_type;
     const tableName = node.name;
 
     switch (dbType) {
-      case 1:
+      case 0: {
+        // MySQL
         const mysqlDatabaseName =
           node.path.length > 2
             ? node.path[1].config_value
             : connection.connection_name;
         return `SELECT * FROM \`${mysqlDatabaseName}\`.\`${tableName}\` LIMIT ${limit};`;
-      case 2:
+      }
+      case 5: {
+        // OracleDB
         const oracleSchemaName =
           node.path.length > 2
             ? node.path[1].config_value
             : connection.connection_name;
         return `SELECT * FROM "${oracleSchemaName}"."${tableName}" WHERE ROWNUM <= ${limit};`;
+      }
       case 3:
-        return `SELECT * FROM "${tableName}" LIMIT ${limit};`;
+        // SQLite
+        return `SELECT * FROM \`${tableName}\` LIMIT ${limit};`;
+      case 1: {
+        // PostgreSQL
+        const pgSchemaName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : "public";
+        return `SELECT * FROM "${pgSchemaName}"."${tableName}" LIMIT ${limit};`;
+      }
+      case 6: {
+        // MSSQL
+        const mssqlDatabaseName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : connection.connection_name;
+        const mssqlSchemaName =
+          node.path.length > 4
+            ? node.path[3].config_value
+            : "dbo";
+        return `SELECT TOP ${limit} * FROM [${mssqlDatabaseName}].[${mssqlSchemaName}].[${tableName}];`;
+      }
+      case 7:
+        // Clickhouse
+        return `SELECT * FROM ${tableName} LIMIT ${limit};`;
       default:
-        return `SELECT * FROM "${tableName}" LIMIT ${limit}; /* 未知数据库类型，使用通用查询 */`;
+        return `SELECT * FROM ${tableName} LIMIT ${limit};`;
     }
   };
 

@@ -432,7 +432,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : filteredData.length > 0 ? (
-          <table className="table table-sm table-pin-rows table-pin-cols w-full">
+          <table className="table table-sm w-full">
             {/* Table Head */}
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (

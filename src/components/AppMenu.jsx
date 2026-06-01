@@ -3,7 +3,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import AboutModal from "./AboutModal";
 import NewConnectionModal from "./NewConnectionModal";
 
-const appWindow = getCurrentWindow();
+let appWindow = null;
+try {
+  appWindow = getCurrentWindow();
+} catch (e) {
+  console.warn("Not running in Tauri environment");
+}
 
 const themes = [
   "light",

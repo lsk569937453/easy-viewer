@@ -587,7 +587,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                     <p>没有数据。</p>
                   </div>
                 ) : (
-                  <table className="table table-zebra table-pin-rows table-pin-cols w-full table-fixed">
+                  <table className="table table-zebra w-full">
                     {" "}
                     <thead>
                       {table.getHeaderGroups().map((headerGroup) => (

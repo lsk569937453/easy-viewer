@@ -37,7 +37,7 @@ impl OracledbConfig {
         &self,
 
         list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
+        _appstate: &AppState,
     ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let mut vec = vec![];
         let level_infos = list_node_info_req.level_infos;

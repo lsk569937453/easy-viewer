@@ -33,11 +33,11 @@ pub struct MongodbConfig {
 impl MongodbConfig {
     pub async fn exe_sql(
         &self,
-        list_node_info_req: ListNodeInfoReq,
+        _list_node_info_req: ListNodeInfoReq,
         _appstate: &AppState,
-        sql: String,
+        _sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
-        let connection = self.get_connection().await?;
+        let _connection = self.get_connection().await?;
         Ok(ExeSqlResponse::new())
     }
     pub fn get_description(&self) -> Result<String, anyhow::Error> {

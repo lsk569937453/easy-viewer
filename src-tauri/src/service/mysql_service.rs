@@ -424,7 +424,7 @@ WHERE ROUTINE_TYPE = 'FUNCTION'
                         let type_bytes: &[u8] = item.try_get(1)?;
                         let type_name = String::from_utf8_lossy(type_bytes).to_string();
                         let key: &[u8] = item.try_get(3)?;
-                        info!("key: {}", String::from_utf8_lossy(key).to_string());
+                        info!("key: {}", String::from_utf8_lossy(key));
                         if key == b"PRI" {
                             let list_node_info_response_item = ListNodeInfoResponseItem::new(
                                 false,

@@ -330,15 +330,23 @@ pub fn postgres_row_to_json(
         };
     Ok(data)
 }
-fn from_days(days: i64, start_year: i32) -> NaiveDate {
-    NaiveDate::from_ymd_opt(start_year, 1, 1).unwrap() + chrono::Duration::days(days)
+fn from_days(days: i64, start_year: i32) -> Result<NaiveDate, anyhow::Error> {
+    let start = NaiveDate::from_ymd_opt(start_year, 1, 1)
+        .ok_or_else(|| anyhow!("Failed to create NaiveDate from year {}", start_year))?;
+    Ok(start + chrono::Duration::days(days))
 }
-fn from_mins(mins: u32) -> NaiveTime {
-    NaiveTime::from_num_seconds_from_midnight_opt(mins, 0).unwrap()
+fn from_mins(mins: u32) -> Result<NaiveTime, anyhow::Error> {
+    NaiveTime::from_num_seconds_from_midnight_opt(mins, 0)
+        .ok_or_else(|| anyhow!("Failed to create NaiveTime from mins {}", mins))
 }
-fn from_sec_fragments(sec_fragments: i64) -> NaiveTime {
-    NaiveTime::from_hms_opt(0, 0, 0).unwrap()
-        + chrono::Duration::nanoseconds(sec_fragments * (1e9 as i64) / 300)
+fn from_sec_fragments(sec_fragments: i64) -> Result<NaiveTime, anyhow::Error> {
+    let base = NaiveTime::from_hms_opt(0, 0, 0)
+        .ok_or_else(|| anyhow!("Failed to create base NaiveTime"))?;
+    Ok(base + chrono::Duration::nanoseconds(sec_fragments * (1e9 as i64) / 300))
+}
+fn midnight_time() -> Result<NaiveTime, anyhow::Error> {
+    NaiveTime::from_hms_opt(0, 0, 0)
+        .ok_or_else(|| anyhow!("Failed to create midnight NaiveTime"))
 }
 
 pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Error> {
@@ -347,43 +355,60 @@ pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Erro
         ColumnData::I32(value) => json!(value.clone()),
         ColumnData::Binary(value) => json!(value.clone()),
         ColumnData::Bit(value) => json!(value.clone()),
-        ColumnData::Date(value) => json!(value.map(|item| from_days(item.days() as i64, 1))),
+        ColumnData::Date(value) => {
+            json!(value.map(|item| from_days(item.days() as i64, 1)).transpose()?)
+        }
         ColumnData::DateTime(value) => json!(value
-            .map(|item| NaiveDateTime::new(
-                from_days(item.days() as i64, 1900),
-                from_sec_fragments(item.seconds_fragments() as i64)
-            ))
+            .map(|item| {
+                let date = from_days(item.days() as i64, 1900)?;
+                let time = from_sec_fragments(item.seconds_fragments() as i64)?;
+                Ok::<NaiveDateTime>(NaiveDateTime::new(date, time))
+            })
+            .transpose()?
             .map(|item| item.format("%Y-%m-%d %H:%M:%S").to_string())),
-        ColumnData::DateTime2(value) => json!(value.map(|item| NaiveDateTime::new(
-            from_days(item.date().days() as i64, 1),
-            NaiveTime::from_hms_opt(0, 0, 0).unwrap()
-                + chrono::Duration::nanoseconds(
-                    item.time().increments() as i64 * 10i64.pow(9 - item.time().scale() as u32)
+        ColumnData::DateTime2(value) => json!(value
+            .map(|item| {
+                let date = from_days(item.date().days() as i64, 1)?;
+                let time_base = midnight_time()?;
+                let time = time_base
+                    + chrono::Duration::nanoseconds(
+                        item.time().increments() as i64
+                            * 10i64.pow(9 - item.time().scale() as u32),
+                    );
+                Ok::<NaiveDateTime>(NaiveDateTime::new(date, time))
+            })
+            .transpose()?),
+        ColumnData::DateTimeOffset(value) => json!(value
+            .map(|dto| {
+                let date = from_days(dto.datetime2().date().days() as i64, 1)?;
+                let ns = dto.datetime2().time().increments() as i64
+                    * 10i64.pow(9 - dto.datetime2().time().scale() as u32);
+                let time_base = midnight_time()?;
+                let time = time_base + chrono::Duration::nanoseconds(ns);
+                let offset = chrono::Duration::minutes(dto.offset() as i64);
+                let naive = NaiveDateTime::new(date, time).sub(offset);
+                Ok::<chrono::DateTime<tiberius::time::chrono::Utc>>(
+                    chrono::DateTime::<tiberius::time::chrono::Utc>::from_naive_utc_and_offset(
+                        naive,
+                        tiberius::time::chrono::Utc,
+                    ),
                 )
-        ))),
-        ColumnData::DateTimeOffset(value) => json!(value.map(|dto| {
-            let date = from_days(dto.datetime2().date().days() as i64, 1);
-            let ns = dto.datetime2().time().increments() as i64
-                * 10i64.pow(9 - dto.datetime2().time().scale() as u32);
-            let time =
-                NaiveTime::from_hms_opt(0, 0, 0).unwrap() + chrono::Duration::nanoseconds(ns);
-
-            let offset = chrono::Duration::minutes(dto.offset() as i64);
-            let naive = NaiveDateTime::new(date, time).sub(offset);
-
-            chrono::DateTime::<tiberius::time::chrono::Utc>::from_naive_utc_and_offset(
-                naive,
-                tiberius::time::chrono::Utc,
-            )
-        })),
-        ColumnData::Time(value) => json!(value.map(|cc| {
-            let ns = cc.increments() as i64 * 10i64.pow(9 - cc.scale() as u32);
-            NaiveTime::from_hms_opt(0, 0, 0).unwrap() + chrono::Duration::nanoseconds(ns)
-        })),
-        ColumnData::SmallDateTime(value) => json!(value.map(|dt| NaiveDateTime::new(
-            from_days(dt.days() as i64, 1900),
-            from_mins(dt.seconds_fragments() as u32 * 60),
-        ))),
+            })
+            .transpose()?),
+        ColumnData::Time(value) => json!(value
+            .map(|cc| {
+                let ns = cc.increments() as i64 * 10i64.pow(9 - cc.scale() as u32);
+                let time_base = midnight_time()?;
+                Ok::<NaiveTime>(time_base + chrono::Duration::nanoseconds(ns))
+            })
+            .transpose()?),
+        ColumnData::SmallDateTime(value) => json!(value
+            .map(|dt| {
+                let date = from_days(dt.days() as i64, 1900)?;
+                let time = from_mins(dt.seconds_fragments() as u32 * 60)?;
+                Ok::<NaiveDateTime>(NaiveDateTime::new(date, time))
+            })
+            .transpose()?),
         ColumnData::Guid(value) => json!(value.clone()),
         ColumnData::Xml(value) => {
             json!(value.clone().map(|item| item.into_owned().into_string()))

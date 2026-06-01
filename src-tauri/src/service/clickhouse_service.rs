@@ -33,9 +33,9 @@ pub struct ClickhouseConfig {
 impl ClickhouseConfig {
     pub async fn exe_sql(
         &self,
-        list_node_info_req: ListNodeInfoReq,
+        _list_node_info_req: ListNodeInfoReq,
         _appstate: &AppState,
-        sql: String,
+        _sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         Ok(ExeSqlResponse::new())
     }

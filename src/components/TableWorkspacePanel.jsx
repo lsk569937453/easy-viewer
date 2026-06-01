@@ -74,7 +74,7 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
     setIsFocused(true);
     console.log(
       `DEBUG: EditableCell focused - Row ID: ${row.original.id}, Column: ${column.id}, Current Value: ${initialValue}`
-    ); // 添加这一行
+    );
     const range = document.createRange();
     if (ref.current) {
       range.selectNodeContents(ref.current);
@@ -93,7 +93,7 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
     (e) => {
       console.log(
         `DEBUG: EditableCell input - Row ID: ${row.original.id}, Column: ${column.id}, Text: ${e.target.textContent}`
-      ); // 添加这一行
+      );
       onCellInput(row.original.id, column.id, e.target.textContent);
     },
     [onCellInput, row.original.id, column.id]
@@ -101,23 +101,38 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Enter") {
-      e.target.blur(); // 这会触发 handleBlur
+      e.target.blur();
       e.preventDefault();
     }
   }, []);
 
+  const displayValue = String(initialValue !== null && initialValue !== undefined ? initialValue : "");
+
   return (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onInput={handleInput}
-      onKeyDown={handleKeyDown}
-      className="focus:outline-none focus:bg-base-300 px-2 py-1 -my-1 rounded cursor-text" // 添加 cursor-text 提示可编辑
-      title="点击编辑" // 添加 Tooltip 提示
-    />
+    <div className="relative w-full">
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        className={`px-1 py-0.5 cursor-text ${
+          isFocused
+            ? "outline-none bg-base-300 overflow-y-auto whitespace-pre-wrap break-words"
+            : "truncate"
+        }`}
+        style={{
+          fontSize: "12px",
+          lineHeight: "1.4",
+          maxWidth: isFocused ? "none" : "200px"
+        }}
+        title={isFocused ? "" : displayValue}
+      >
+        {displayValue}
+      </div>
+    </div>
   );
 };
 
@@ -587,17 +602,15 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                     <p>没有数据。</p>
                   </div>
                 ) : (
-                  <table className="table table-zebra w-full">
-                    {" "}
+                  <table className="table table-zebra w-full" style={{ fontSize: "12px" }}>
                     <thead>
                       {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
                           {headerGroup.headers.map((header) => (
                             <th
                               key={header.id}
-                              style={{ width: header.getSize() }}
+                              style={{ width: "150px", fontSize: "12px" }}
                             >
-                              {" "}
                               {header.isPlaceholder
                                 ? null
                                 : flexRender(
@@ -610,11 +623,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                       ))}
                     </thead>
                     <tbody>
-                      {/* 直接渲染当前页的所有行 */}
                       {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr key={row.id} style={{ fontSize: "12px" }}>
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id}>
+                            <td
+                              key={cell.id}
+                              style={{ width: "150px" }}
+                            >
                               {flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext()

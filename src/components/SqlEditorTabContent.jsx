@@ -432,15 +432,17 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : filteredData.length > 0 ? (
-          <table className="table table-sm w-full">
+          <table className="table table-sm w-full" style={{ fontSize: "12px" }}>
             {/* Table Head */}
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="bg-base-200">
-                      {" "}
-                      {/* Add distinct header background */}
+                    <th
+                      key={header.id}
+                      className="bg-base-200"
+                      style={{ width: "150px", fontSize: "12px" }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -455,9 +457,14 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
             {/* Table Body */}
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} style={{ fontSize: "12px" }}>
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
+                    <td
+                      key={cell.id}
+                      className="truncate"
+                      style={{ width: "150px" }}
+                      title={String(cell.getValue() || "")}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

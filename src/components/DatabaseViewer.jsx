@@ -38,6 +38,8 @@ const ICON_MAP = {
   partitions: <FaLayerGroup />,
   columns: <FaColumns />,
   index: <FaKey />,
+  singlePrimaryIndex: <FaStar />,
+  singleCommonIndex: <FaKey />,
   column: <FaStream />,
   primary: <FaStar />,
   default: <FaFolder />,
@@ -426,13 +428,43 @@ function DatabaseViewer({
         setActiveTabId(newTab.id);
       }
       return;
+    } else if (
+      node.iconName === "singlePrimaryIndex" ||
+      node.iconName === "singleCommonIndex"
+    ) {
+      // 处理索引节点点击
+      // 索引节点的 path 结构: [connection, database, type, table, "Index", index_name]
+      // 表名在 path[3] 的位置
+      const tableName = node.path[3]?.config_value;
+      const indexName = node.name;
+      const newTabId = `index-${node.id}`;
+
+      const existingIndexTab = tabs.find((tab) => tab.id === newTabId);
+      if (existingIndexTab) {
+        setActiveTabId(existingIndexTab.id);
+      } else {
+        const newTab = {
+          id: newTabId,
+          name: indexName,
+          icon: node.icon,
+          details: `索引: ${indexName}`,
+          type: "indexDetail",
+          node: node,
+          tableName: tableName,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
     }
 
     if (
-      node.type !== "singleTable" &&
-      node.type !== "singleQuery" &&
+      node.iconName !== "singleTable" &&
+      node.iconName !== "singleQuery" &&
       node.type !== "column" &&
-      node.type !== "primary"
+      node.type !== "primary" &&
+      node.iconName !== "singlePrimaryIndex" &&
+      node.iconName !== "singleCommonIndex"
     ) {
       console.log(
         `DatabaseViewer: Clicking expandable parent node (${node.name}), also toggling.`

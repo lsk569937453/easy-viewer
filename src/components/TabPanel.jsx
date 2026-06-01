@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
 import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
 import TableDetailPage from "./TableDetailPage.jsx";
-import SqlEditorTabContent from "./SqlEditorTabContent.jsx"; // Import the new component
+import SqlEditorTabContent from "./SqlEditorTabContent.jsx";
+import IndexDetailPage from "./IndexDetailPage.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -187,6 +188,16 @@ function TabPanel({
                   initialSql={activeTab.initialSql}
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render IndexDetailPage for "indexDetail" type tabs
+            if (activeTab.type === "indexDetail") {
+              return (
+                <IndexDetailPage
+                  activeTabNode={activeTab.node}
+                  tableName={activeTab.tableName}
                 />
               );
             }

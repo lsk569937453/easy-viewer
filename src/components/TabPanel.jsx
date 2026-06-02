@@ -7,6 +7,7 @@ import IndexDetailPage from "./IndexDetailPage.jsx";
 import ColumnDetailPage from "./ColumnDetailPage.jsx";
 import KafkaMessagesPanel from "./KafkaMessagesPanel.jsx";
 import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
+import RocketmqMessagesPanel from "./RocketmqMessagesPanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -229,6 +230,16 @@ function TabPanel({
             if (activeTab.type === "kafkaTopicDetail") {
               return (
                 <KafkaTopicDetail
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render RocketmqMessagesPanel for "rocketmqMessages" type tabs
+            if (activeTab.type === "rocketmqMessages") {
+              return (
+                <RocketmqMessagesPanel
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
                 />

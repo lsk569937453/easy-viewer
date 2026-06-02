@@ -4,6 +4,7 @@ use super::kafka_service::KafkaConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
+use super::rocketmq_service::RocketmqConfig;
 use super::s3_service::S3Config;
 use crate::service::mongdb_service::MongodbConfig;
 use crate::service::redis_service::RedisConfig;
@@ -46,6 +47,8 @@ pub enum BaseConfigEnum {
     Redis(RedisConfig),
     #[serde(rename = "elasticsearch")]
     Elasticsearch(ElasticsearchConfig),
+    #[serde(rename = "rocketmq")]
+    Rocketmq(RocketmqConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -66,6 +69,11 @@ impl BaseConfigEnum {
                 let service = crate::service::kafka_service::KafkaService::new(config.clone());
                 service.test_connection().await?;
             }
+            BaseConfigEnum::Rocketmq(config) => {
+                let service =
+                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
+                service.test_connection().await?;
+            }
         }
 
         Ok(())
@@ -83,6 +91,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Redis(config) => config.get_description()?,
             BaseConfigEnum::Elasticsearch(config) => config.get_description()?,
             BaseConfigEnum::Mssql(_) => "MSSQL Database".to_string(),
+            BaseConfigEnum::Rocketmq(config) => format!("RocketMQ: {}", config.proxy_url),
         };
         Ok(res)
     }
@@ -99,6 +108,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::S3(_) => 8,
             BaseConfigEnum::Redis(_) => 9,
             BaseConfigEnum::Elasticsearch(_) => 10,
+            BaseConfigEnum::Rocketmq(_) => 11,
         }
     }
     pub async fn list_node_info(
@@ -141,6 +151,11 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Kafka(config) => {
                 let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Rocketmq(config) => {
+                let service =
+                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
                 service.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),
@@ -323,6 +338,11 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Kafka(config) => {
                 let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Rocketmq(config) => {
+                let service =
+                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
                 service.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),

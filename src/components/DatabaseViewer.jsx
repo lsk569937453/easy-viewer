@@ -36,6 +36,7 @@ const ICON_MAP = {
   elasticsearch: <FaDatabase size="1.2em" color="#FEC514" />,
   s3: <FaDatabase size="1.2em" color="#FF9900" />,
   kafka: <FaStream size="1.2em" color="#231F20" />,
+  rocketmq: <FaStream size="1.2em" color="#D4213D" />,
   table: <FaTable />,
   view: <FaEye />,
   query: <FaSearch />,
@@ -62,6 +63,10 @@ const ICON_MAP = {
   kafka_brokers: <FaDatabase color="#FFB347" />,
   kafka_single_broker: <FaDatabase color="#FFA500" />,
   kafka_config: <FaKey color="#DDA0DD" />,
+  // RocketMQ specific icons
+  rocketmq_topics: <FaColumns color="#D4213D" />,
+  rocketmq_single_topic: <FaStream color="#D4213D" />,
+  rocketmq_messages: <FaStream color="#FF6B6B" />,
   // Redis specific icons
   redis_keys: <FaColumns color="#DC382D" />,
   strings: <FaStream color="#FF6B6B" />,
@@ -205,7 +210,7 @@ function DatabaseViewer({
 
   useEffect(() => {
     const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch" };
+      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
 
       return {
@@ -533,6 +538,12 @@ function DatabaseViewer({
       return;
     }
 
+    // RocketMQ 节点处理
+    if (node.iconName?.startsWith("rocketmq_")) {
+      await handleRocketmqNodeActivate(node, connection);
+      return;
+    }
+
     // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
     await handleToggleNode(node);
   };
@@ -588,6 +599,40 @@ function DatabaseViewer({
         setActiveTabId(newTab.id);
       }
       await handleToggleNode(node);
+      return;
+    }
+
+    // 默认展开/折叠
+    await handleToggleNode(node);
+  };
+
+  // RocketMQ 节点激活处理
+  const handleRocketmqNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Topic 消息查看
+    if (nodeType === "rocketmq_messages" || nodeType === "rocketmq_single_topic") {
+      const topicName = node.path[node.path.length - 1]?.config_value || node.name;
+      const tabId = `rocketmq-messages-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Messages`,
+          icon: node.icon,
+          type: "rocketmqMessages",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      if (nodeType === "rocketmq_messages") {
+        await handleToggleNode(node);
+      }
       return;
     }
 

@@ -516,6 +516,23 @@ pub async fn kafka_produce_message(
     Ok(res)
 }
 
+// RocketMQ commands
+#[tauri::command]
+pub async fn rocketmq_send_message(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    tag: Option<String>,
+    value: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        rocketmq_send_message_with_error(state, connection_id, topic, tag, value).await
+    );
+    info!("rocketmq_send_message: {:?}", time.elapsed());
+    Ok(res)
+}
+
 async fn kafka_create_topic_with_error(
     state: State<'_, AppState>,
     connection_id: i32,
@@ -586,5 +603,30 @@ async fn kafka_produce_message_with_error(
         Ok("Message sent successfully".to_string())
     } else {
         Err(anyhow::anyhow!("Connection is not a Kafka connection"))
+    }
+}
+
+async fn rocketmq_send_message_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    tag: Option<String>,
+    value: String,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Rocketmq(rmq_config) = base_config.base_config_enum {
+        let service = crate::service::rocketmq_service::RocketmqService::new(rmq_config);
+        service.send_message(&topic, tag, value).await?;
+        Ok("Message sent successfully".to_string())
+    } else {
+        Err(anyhow::anyhow!("Connection is not a RocketMQ connection"))
     }
 }

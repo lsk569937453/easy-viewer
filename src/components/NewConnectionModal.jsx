@@ -26,6 +26,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [databaseName, setDatabaseName] = useState("");
+  const [rmqTopics, setRmqTopics] = useState("");
 
   const [error, setError] = useState("");
   const [isTesting, setIsTesting] = useState(false);
@@ -49,6 +50,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     setUsername("");
     setPassword("");
     setDatabaseName("");
+    setRmqTopics("");
     setError("");
     setIsTesting(false);
     setIsCreating(false);
@@ -111,6 +113,18 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 setDatabaseName(config.region || "");
                 setConnectionMode("host");
                 setConnectionString("");
+              } else if (dbTypeKey === "rocketmq") {
+                // RocketMQ: proxy_url, access_key, secret_key, topics
+                const proxyUrl = baseConfigEnum.rocketmq.proxy_url || "";
+                const parts = proxyUrl.split(":");
+                setHost(parts[0] || "");
+                setPort(parts[1] || "8081");
+                setUsername(baseConfigEnum.rocketmq.access_key || "");
+                setPassword(baseConfigEnum.rocketmq.secret_key || "");
+                setRmqTopics((baseConfigEnum.rocketmq.topics || []).join(", "));
+                setConnectionMode("host");
+                setConnectionString("");
+                setDatabaseName("");
               } else {
                 // This handles 'mysql', 'oracle', etc.
                 const config = baseConfigEnum[dbTypeKey].config;
@@ -352,10 +366,34 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const getRocketmqConnectionDetails = () => {
+    const cleanHost = host.trim();
+    if (!cleanHost) return { isValid: false, message: "Proxy 地址不能为空！" };
+    const parsedPort = parseInt(port.trim(), 10) || 8081;
+    const proxyUrl = `${cleanHost}:${parsedPort}`;
+    const topicsList = rmqTopics
+      .trim()
+      .split(/[,\n]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    return {
+      isValid: true,
+      details: {
+        proxy_url: proxyUrl,
+        access_key: username.trim() || undefined,
+        secret_key: password.trim() || undefined,
+        topics: topicsList,
+      },
+    };
+  };
+
   const isFormValid = () => {
     if (connectionName.trim() === "") return false;
     if (isS3Type) {
       return getS3ConnectionDetails().isValid;
+    }
+    if (isRocketmqType) {
+      return getRocketmqConnectionDetails().isValid;
     }
     if (simpleBrokerTypes.includes(dbType)) {
       return getKafkaBrokerDetails().isValid;
@@ -400,6 +438,11 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         const { isValid, message, details } = getS3ConnectionDetails();
         if (!isValid) throw new Error(message);
         baseConfigEnum = { s3: { config: details } };
+      } else if (isRocketmqType) {
+        // RocketMQ
+        const { isValid, message, details } = getRocketmqConnectionDetails();
+        if (!isValid) throw new Error(message);
+        baseConfigEnum = { rocketmq: details };
       } else if (simpleBrokerTypes.includes(dbType)) {
         // Kafka 等只需要 broker 的类型
         const { broker } = getKafkaBrokerDetails();
@@ -517,6 +560,14 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             s3: { config: details },
           },
         };
+      } else if (isRocketmqType) {
+        const { isValid, message, details } = getRocketmqConnectionDetails();
+        if (!isValid) throw new Error(message);
+        testDatabaseRequest = {
+          base_config_enum: {
+            rocketmq: details,
+          },
+        };
       } else if (simpleBrokerTypes.includes(dbType)) {
         const { broker } = getKafkaBrokerDetails();
         testDatabaseRequest = {
@@ -612,6 +663,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
 
   const canUseHostMode = traditionalDbTypes.includes(dbType);
   const isKafkaType = dbType === "kafka";
+  const isRocketmqType = dbType === "rocketmq";
   const isS3Type = dbType === "s3";
 
   return (
@@ -669,6 +721,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 <option value="elasticsearch">Elasticsearch</option>
                 <option value="s3">S3 / OSS</option>
                 <option value="kafka">Kafka</option>
+                <option value="rocketmq">RocketMQ</option>
               </select>
             </div>
 
@@ -863,6 +916,80 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                       onChange={(e) => setPort(e.target.value)}
                     />
                   </div>
+                </div>
+              </div>
+            )}
+
+            {isRocketmqType && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Proxy 地址 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: localhost"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("主机") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="8081"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Access Key (可选)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: your-access-key"
+                    className="input input-bordered w-full"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Secret Key (可选)</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="请输入 Secret Key"
+                    className="input input-bordered w-full"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Topics <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered h-24 font-mono text-sm"
+                    placeholder="输入 Topic 名称，逗号或换行分隔&#10;例如: topic1, topic2, topic3"
+                    value={rmqTopics}
+                    onChange={(e) => setRmqTopics(e.target.value)}
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      逗号或换行分隔多个 Topic
+                    </span>
+                  </label>
                 </div>
               </div>
             )}

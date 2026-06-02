@@ -146,6 +146,7 @@ async fn main() -> Result<(), anyhow::Error> {
             remove_column,
             remove_query,
             rename_query,
+            rocketmq_send_message,
             save_base_config,
             save_query,
             show_columns,

@@ -131,10 +131,10 @@ function App() {
   }, []);
 
   return (
-    <div className="App flex h-screen flex-col bg-base-300">
+    <div className="App flex h-screen flex-col bg-base-200">
       {/* 将创建连接后的刷新函数传递给 AppMenu */}
       <AppMenu onConnectionCreated={fetchConnections} />
-      <main className="main-content flex-grow p-4 h-full w-full overflow-hidden ">
+      <main className="main-content flex-grow p-3 h-full w-full overflow-hidden ">
         {/*
           将 connections 数据传递给 DatabaseViewer。
           传递 handleSingleConnectionUpdated 作为 onConnectionUpdated prop，用于单个连接的更新。
@@ -152,10 +152,7 @@ function App() {
         toastOptions={{
           className: "",
           duration: 5000,
-          style: {
-            background: "#363636",
-            color: "#fff",
-          },
+          style: {},
           success: { duration: 3000 },
           error: { duration: 4000 },
         }}

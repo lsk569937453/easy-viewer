@@ -121,7 +121,7 @@ function DaisyTreeNode({
     <a
       className={`${
         isSelected ? "active" : ""
-      } group flex justify-between items-center w-full`}
+      } group flex justify-between items-center w-full overflow-hidden`}
       onClick={handleRowClick}
     >
       <div className="flex items-center overflow-hidden flex-1">

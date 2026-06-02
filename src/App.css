@@ -4,13 +4,13 @@ body,
   margin: 0;
   padding: 0;
   width: 100%;
-  height: 100%; /* <-- 这是最重要的基础 */
+  height: 100%;
   box-sizing: border-box;
 }
 .App {
   display: flex;
   flex-direction: column;
-  height: 100%; /* 继承来自 #root 的 100% 高度 */
+  height: 100%;
   width: 100%;
 }
 
@@ -18,6 +18,8 @@ body,
 @plugin "daisyui" {
   themes: all;
 }
+
+/* 统一表单聚焦样式 */
 .input:focus,
 .textarea:focus,
 .select:focus,
@@ -36,6 +38,31 @@ body,
 
 .input-bordered:focus-within {
   --tw-ring-offset-width: 0px !important;
-
   outline-offset: 0px !important;
+}
+
+/* 全局表格优化 */
+table {
+  border-collapse: collapse;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(var(--bc) / 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(var(--bc) / 0.3);
+}
+
+/* 右键菜单不要过大 padding */
+.menu menu-compact li > a {
+  padding: 0.3rem 0.6rem;
 }

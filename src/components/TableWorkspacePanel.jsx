@@ -137,21 +137,16 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [originalTableData, setOriginalTableData] = useState([]);
-  const [currentlyEditingCell, setCurrentlyEditingCell] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
-    let changesDetected = false;
-    if (currentlyEditingCell) {
-      changesDetected = true;
-    } else {
-      changesDetected =
-        JSON.stringify(tableData) !== JSON.stringify(originalTableData);
-    }
-    setHasChanges(changesDetected);
-  }, [tableData, originalTableData, currentlyEditingCell]);
+    const dataChanged =
+      JSON.stringify(tableData) !== JSON.stringify(originalTableData);
+    setHasChanges(dataChanged || isEditing);
+  }, [tableData, originalTableData, isEditing]);
 
   useEffect(() => {
     setSqlQuery(initialSql || "");
@@ -161,7 +156,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
     }
   }, [initialSql, activeTabNode, activeSubTab]);
@@ -172,7 +166,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
       return;
     }
@@ -209,7 +202,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         setTableData(fetchedData);
         setColumnHeaders(fetchedColumnHeaders);
         setOriginalTableData(JSON.parse(JSON.stringify(fetchedData))); // 深拷贝，作为原始数据
-        setCurrentlyEditingCell(null); // 清除编辑状态
+        setIsEditing(false);
         setCurrentPage(1);
       } else {
         console.error(
@@ -219,15 +212,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         setTableData([]);
         setColumnHeaders([]);
         setOriginalTableData([]);
-        setCurrentlyEditingCell(null);
-        setCurrentPage(1); // 清除数据时重置分页
+          setCurrentPage(1); // 清除数据时重置分页
       }
     } catch (error) {
       console.error("DEBUG: Error executing SQL query:", error);
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
     }
   };
@@ -241,7 +232,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   };
 
   const handleCellInput = useCallback((rowId, columnId, value) => {
-    // setCurrentlyEditingCell(rowId ? { rowId, columnId, value } : null);
+    setIsEditing(!!rowId);
   }, []);
 
   const handleCellChange = useCallback((originalRow, columnId, value) => {
@@ -258,7 +249,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       };
       return updatedData; // 返回新状态
     });
-    setCurrentlyEditingCell(null); // 提交后清除实时编辑状态
   }, []);
 
   // 添加新行
@@ -316,7 +306,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
       if (response_code === 0) {
         setOriginalTableData(JSON.parse(JSON.stringify(tableData))); // 将当前 tableData 设置为新的原始数据
-        setCurrentlyEditingCell(null); // 保存成功后清除实时编辑状态
+        setIsEditing(false);
         alert("数据保存成功！");
       } else {
         alert(`数据保存失败: ${response_msg}`);
@@ -331,7 +321,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   // 取消修改，将 tableData 恢复到 originalTableData
   const handleCancelChanges = useCallback(() => {
     setTableData(JSON.parse(JSON.stringify(originalTableData))); // 深拷贝原始数据，恢复到当前数据
-    setCurrentlyEditingCell(null); // 取消修改后，清除实时编辑状态
+    setIsEditing(false);
     // 取消修改后，当前页可能超出总页数，重置到第一页
     setCurrentPage(1);
   }, [originalTableData]);
@@ -557,12 +547,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                   </div>
                 ) : (
                   <table className="table table-zebra w-full" style={{ fontSize: "12px" }}>
-                    <thead>
+                    <thead className="sticky top-0 z-10">
                       {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
                           {headerGroup.headers.map((header) => (
                             <th
                               key={header.id}
+                              className="bg-base-200"
                               style={{ width: "150px", fontSize: "12px" }}
                             >
                               {header.isPlaceholder

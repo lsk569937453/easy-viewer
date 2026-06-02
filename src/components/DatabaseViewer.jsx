@@ -799,12 +799,12 @@ function DatabaseViewer({
   };
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-[minmax(350px,_1fr)_2fr]">
-      <div className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg">
-        <div className="flex-shrink-0 border-b p-4">
-          <h2 className="text-xl font-bold">数据库导航</h2>
+    <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
+      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5">
+        <div className="flex-shrink-0 border-b border-base-content/5 px-3 py-2">
+          <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">导航</h2>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
           {treeData && treeData.length > 0 ? (
             <ul className="menu p-0">
               {treeData.map((rootNode) => (
@@ -826,10 +826,10 @@ function DatabaseViewer({
               ))}
             </ul>
           ) : (
-            <div className="text-center text-base-content/60 p-4">
-              <p>暂无数据库连接。</p>
-              <p className="text-sm mt-2">
-                请通过 "连接" &gt; "新建连接..." 添加一个新的数据库连接。
+            <div className="text-center text-base-content/40 p-6">
+              <p className="text-sm">暂无数据库连接</p>
+              <p className="text-xs mt-2">
+                请通过 "连接" &gt; "新建连接..." 添加
               </p>
             </div>
           )}

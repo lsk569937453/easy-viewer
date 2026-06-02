@@ -487,40 +487,8 @@ function DatabaseViewer({
       return;
     }
 
-    if (
-      node.iconName !== "singleTable" &&
-      node.iconName !== "singleQuery" &&
-      node.iconName !== "singlePrimaryIndex" &&
-      node.iconName !== "singleCommonIndex"
-    ) {
-      await handleToggleNode(node);
-    }
-
-    let tabDetails = node.details;
-    const existingTab = tabs.find((tab) => tab.id === node.id);
-
-    if (existingTab) {
-      if (existingTab.details !== tabDetails) {
-        setTabs((prevTabs) =>
-          prevTabs.map((tab) =>
-            tab.id === node.id ? { ...tab, details: tabDetails } : tab
-          )
-        );
-      }
-      setActiveTabId(node.id);
-    } else {
-      const newTab = {
-        id: node.id,
-        name: node.name,
-        icon: node.icon,
-        details: tabDetails,
-        iconName: node.iconName,
-        path: node.path,
-        type: "info",
-      };
-      setTabs([...tabs, newTab]);
-      setActiveTabId(newTab.id);
-    }
+    // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
+    await handleToggleNode(node);
   };
 
   const handleToggleNode = async (node) => {

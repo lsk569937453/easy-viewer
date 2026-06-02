@@ -391,6 +391,8 @@ function DatabaseViewer({
         setActiveTabId(existingSqlEditorTab.id);
       } else {
         let sql = generateSqlForNode(node, connections);
+        const rootConfigId = node.path[0]?.config_value;
+        const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
         const newTab = {
           id: newTabId,
@@ -402,6 +404,7 @@ function DatabaseViewer({
           type: "singleTable",
           initialSql: sql,
           node: node,
+          connectionDetails: connection,
         };
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);

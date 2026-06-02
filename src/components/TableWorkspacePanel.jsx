@@ -295,26 +295,63 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 保存修改
   const handleSaveChanges = async () => {
+    // 对比 tableData 和 originalTableData，生成 UPDATE SQL
+    const sqls = [];
+    const idColumn = columnHeaders[0]; // 使用第一列作为标识列
+
+    for (let i = 0; i < tableData.length; i++) {
+      const current = tableData[i];
+      const original = originalTableData.find(
+        (o) => o.id === current.id
+      );
+      if (!original) continue;
+
+      const changes = [];
+      columnHeaders.forEach((col) => {
+        if (String(current[col]) !== String(original[col])) {
+          const val =
+            current[col] === null || current[col] === undefined
+              ? "NULL"
+              : `'${String(current[col]).replace(/'/g, "''")}'`;
+          changes.push(`\`${col}\` = ${val}`);
+        }
+      });
+
+      if (changes.length > 0) {
+        const idValue =
+          original[idColumn] === null || original[idColumn] === undefined
+            ? "NULL"
+            : `'${String(original[idColumn]).replace(/'/g, "''")}'`;
+        sqls.push(
+          `UPDATE \`${activeTabNode.name}\` SET ${changes.join(", ")} WHERE \`${idColumn}\` = ${idValue}`
+        );
+      }
+    }
+
+    if (sqls.length === 0) {
+      alert("没有检测到变更。");
+      return;
+    }
+
     try {
-      const responseJson = await invoke("update_table_data", {
-        configId: connectionDetails.base_config_id,
-        tableName: activeTabNode.name,
-        data: tableData, // 当前的 tableData
-        originalData: originalTableData, // 原始数据，用于后端对比差异
+      const listNodeInfoReq = { level_infos: activeTabNode.path };
+      const responseJson = await invoke("update_record", {
+        listNodeInfoReq,
+        sqls,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        setOriginalTableData(JSON.parse(JSON.stringify(tableData))); // 将当前 tableData 设置为新的原始数据
+        setOriginalTableData(JSON.parse(JSON.stringify(tableData)));
         setIsEditing(false);
         alert("数据保存成功！");
       } else {
         alert(`数据保存失败: ${response_msg}`);
-        console.error("DEBUG: Save failed:", response_msg);
+        console.error("Save failed:", response_msg);
       }
     } catch (error) {
-      console.error("DEBUG: Error saving data:", error);
-      alert("保存数据时发生错误！");
+      console.error("Error saving data:", error);
+      alert(`保存数据时发生错误: ${error.message || error}`);
     }
   };
 

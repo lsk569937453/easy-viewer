@@ -1,5 +1,6 @@
 use crate::service::base_config_service::DatabaseHostStruct;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
+use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
@@ -8,6 +9,7 @@ use clickhouse::Client;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::BTreeMap;
 use std::sync::OnceLock;
 use std::time::Duration;
 use tokio::time::timeout;
@@ -30,37 +32,121 @@ pub struct ClickhouseConfig {
     pub config: DatabaseHostStruct,
 }
 
+/// Wrapper for ClickHouse JSON response format
+#[derive(Debug, Deserialize)]
+struct ClickhouseJsonResponse {
+    meta: Vec<ClickhouseMeta>,
+    data: Vec<BTreeMap<String, serde_json::Value>>,
+}
+
+#[derive(Debug, Deserialize)]
+struct ClickhouseMeta {
+    name: String,
+}
+
 impl ClickhouseConfig {
     pub async fn exe_sql(
         &self,
-        _list_node_info_req: ListNodeInfoReq,
+        list_node_info_req: ListNodeInfoReq,
         _appstate: &AppState,
-        _sql: String,
+        sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
-        Ok(ExeSqlResponse::new())
+        // Qualify table name with database if needed
+        let level_infos = &list_node_info_req.level_infos;
+        let actual_sql = if level_infos.len() >= 2 {
+            let db_name = level_infos[1].config_value.clone();
+            qualify_sql_with_database(&sql, &db_name)
+        } else {
+            sql.clone()
+        };
+
+        info!("ClickHouse exe_sql: {}", actual_sql);
+
+        // Use ClickHouse HTTP interface directly with FORMAT JSON
+        let json_sql = format!("{} FORMAT JSON", actual_sql.trim_end_matches(';').trim());
+
+        let url = format!("http://{}:{}", self.config.host, self.config.port);
+
+        let mut request = reqwest::Client::new()
+            .post(&url)
+            .body(json_sql)
+            .header("Content-Type", "application/x-www-form-urlencoded");
+
+        if !self.config.user_name.is_empty() {
+            request = request.basic_auth(&self.config.user_name, Some(&self.config.password));
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("ClickHouse HTTP error {}: {}", status, error_text));
+        }
+
+        let raw_json = response.text().await?;
+        let ch_response: ClickhouseJsonResponse =
+            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+
+        // Build headers from meta
+        let headers: Vec<Header> = ch_response
+            .meta
+            .iter()
+            .map(|m| Header {
+                name: m.name.clone(),
+                type_name: "String".to_string(),
+                is_primary_key: false,
+            })
+            .collect();
+
+        let field_names: Vec<String> = headers.iter().map(|h| h.name.clone()).collect();
+
+        // Build rows
+        let mut rows: Vec<Vec<Option<String>>> = Vec::new();
+        for row in &ch_response.data {
+            let mut row_vec: Vec<Option<String>> = Vec::new();
+            for field_name in &field_names {
+                let cell = row
+                    .get(field_name)
+                    .and_then(|v| json_value_to_string(v));
+                row_vec.push(cell);
+            }
+            rows.push(row_vec);
+        }
+
+        Ok(ExeSqlResponse::from(headers, rows, None))
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
-        let _ = self.get_connection().await?;
-
+        let _ = self.get_connection_for_query().await?;
         Ok(())
     }
-    async fn get_connection(&self) -> Result<Client, anyhow::Error> {
+
+    /// Get a basic client for queries (does not test connection)
+    async fn get_connection_for_query(&self) -> Result<Client, anyhow::Error> {
         let url = format!("http://{}:{}", self.config.host, self.config.port);
         let client = Client::default()
             .with_url(url.clone())
             .with_user(self.config.user_name.clone())
-            .with_password(self.config.password.clone())
-            .with_product_info("easy-viewer", "1.0.0");
-        info!("Clickhouse url: {}", url);
+            .with_password(self.config.password.clone());
+        if let Some(ref db) = self.config.database {
+            if !db.is_empty() {
+                info!("ClickHouse using database: {}", db);
+                return Ok(client.with_database(db));
+            }
+        }
+        Ok(client)
+    }
+
+    async fn get_connection(&self) -> Result<Client, anyhow::Error> {
+        let client = self.get_connection_for_query().await?;
         let t = timeout(
             Duration::from_millis(500),
             client.query("SELECT 'Hello, World!'").fetch_one::<usize>(),
         )
         .await??;
-        info!("Clickhouse url2: {}", t);
-
+        info!("Clickhouse connection test: {}", t);
         Ok(client)
     }
+
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -71,7 +157,7 @@ impl ClickhouseConfig {
         match level_infos.len() {
             1 => {
                 let conn = self.get_connection().await?;
-                let get_database_sql = "SELECT name 
+                let get_database_sql = "SELECT name
 FROM system.databases
 WHERE name != 'information_schema' and name != 'INFORMATION_SCHEMA'";
                 info!("get_database_sql: {}", get_database_sql);
@@ -79,8 +165,8 @@ WHERE name != 'information_schema' and name != 'INFORMATION_SCHEMA'";
                 for db_name in res {
                     info!("db_name: {}", db_name);
                     let show_size_sql = format!(
-                        "SELECT 
-    database AS database_name, 
+                        "SELECT
+    database AS database_name,
     formatReadableSize(SUM(bytes_on_disk)) AS database_size
 FROM system.parts
 WHERE database = '{}'
@@ -147,7 +233,6 @@ WHERE database = '{}'",
                             table_name.clone(),
                             None,
                         );
-                        // info!("schema name is:{}", schema_name);
                         vec.push(list_node_info_response_item);
                     }
                 }
@@ -159,5 +244,46 @@ WHERE database = '{}'",
         }
 
         Ok(ListNodeInfoResponse::new(vec))
+    }
+}
+
+/// Qualify a simple "SELECT * FROM table" with the database name: "SELECT * FROM db.table"
+fn qualify_sql_with_database(sql: &str, db_name: &str) -> String {
+    let parts: Vec<&str> = sql.split_whitespace().collect();
+    if let Some(from_idx) = parts.iter().position(|p| p.to_uppercase() == "FROM") {
+        if from_idx + 1 < parts.len() {
+            let table_name = parts[from_idx + 1].trim_matches('`');
+            if !table_name.contains('.') {
+                let qualified = format!("`{}`.`{}`", db_name, table_name);
+                let mut result = String::new();
+                for (i, part) in parts.iter().enumerate() {
+                    if i == from_idx + 1 {
+                        result.push_str(&qualified);
+                    } else {
+                        result.push_str(part);
+                    }
+                    if i < parts.len() - 1 {
+                        result.push(' ');
+                    }
+                }
+                return result;
+            }
+        }
+    }
+    sql.to_string()
+}
+
+/// Convert a serde_json::Value to an Option<String>
+fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
+    match value {
+        serde_json::Value::Null => None,
+        serde_json::Value::String(s) => Some(s.clone()),
+        serde_json::Value::Number(n) => Some(format!("{}", n)),
+        serde_json::Value::Bool(b) => Some(format!("{}", b)),
+        serde_json::Value::Array(arr) => {
+            let items: Vec<String> = arr.iter().filter_map(json_value_to_string).collect();
+            Some(format!("[{}]", items.join(", ")))
+        }
+        serde_json::Value::Object(obj) => serde_json::to_string(obj).ok(),
     }
 }

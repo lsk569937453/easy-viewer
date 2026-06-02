@@ -1,6 +1,7 @@
 pub mod base_config_service;
 pub mod clickhouse_service;
 pub mod cmd;
+pub mod elasticsearch_service;
 pub mod cmd_service;
 pub mod dump_data;
 pub mod kafka_service;
@@ -11,5 +12,6 @@ pub mod mysql_service;
 pub mod oracledb_service;
 pub mod postgresql_service;
 pub mod query_service;
+pub mod redis_service;
 pub mod s3_service;
 pub mod sqlite_service;

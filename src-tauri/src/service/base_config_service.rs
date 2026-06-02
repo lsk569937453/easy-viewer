@@ -1,10 +1,12 @@
 use super::clickhouse_service::ClickhouseConfig;
+use super::elasticsearch_service::ElasticsearchConfig;
 use super::kafka_service::KafkaConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
 use super::s3_service::S3Config;
 use crate::service::mongdb_service::MongodbConfig;
+use crate::service::redis_service::RedisConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
 use crate::service::sqlite_service::SqliteConfig;
 use crate::sql_lite::connection::AppState;
@@ -40,6 +42,10 @@ pub enum BaseConfigEnum {
     Clickhouse(ClickhouseConfig),
     #[serde(rename = "s3")]
     S3(S3Config),
+    #[serde(rename = "redis")]
+    Redis(RedisConfig),
+    #[serde(rename = "elasticsearch")]
+    Elasticsearch(ElasticsearchConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -54,6 +60,8 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
             BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             BaseConfigEnum::S3(config) => config.test_connection().await?,
+            BaseConfigEnum::Redis(config) => config.test_connection().await?,
+            BaseConfigEnum::Elasticsearch(config) => config.test_connection().await?,
             BaseConfigEnum::Kafka(config) => {
                 let service = crate::service::kafka_service::KafkaService::new(config.clone());
                 service.test_connection().await?;
@@ -72,6 +80,8 @@ impl BaseConfigEnum {
             BaseConfigEnum::Kafka(config) => format!("Kafka: {}", config.broker),
             BaseConfigEnum::Clickhouse(_) => "Clickhouse Database".to_string(),
             BaseConfigEnum::S3(_) => "S3 Storage".to_string(),
+            BaseConfigEnum::Redis(config) => config.get_description()?,
+            BaseConfigEnum::Elasticsearch(config) => config.get_description()?,
             BaseConfigEnum::Mssql(_) => "MSSQL Database".to_string(),
         };
         Ok(res)
@@ -87,6 +97,8 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mssql(_) => 6,
             BaseConfigEnum::Clickhouse(_) => 7,
             BaseConfigEnum::S3(_) => 8,
+            BaseConfigEnum::Redis(_) => 9,
+            BaseConfigEnum::Elasticsearch(_) => 10,
         }
     }
     pub async fn list_node_info(
@@ -119,6 +131,12 @@ impl BaseConfigEnum {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::S3(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Redis(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Elasticsearch(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Kafka(config) => {
@@ -295,6 +313,12 @@ impl BaseConfigEnum {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Mongodb(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Redis(config) => {
+                config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Elasticsearch(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
             }
             BaseConfigEnum::Kafka(config) => {

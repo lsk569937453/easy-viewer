@@ -46,6 +46,7 @@ rdkafka = { version = "=0.38.0", default-features = false, features = [
 ] }
 rdkafka-sys = { version = "=4.9.0+2.10.0", default-features = false }
 redis = "1.2.2"
+reqwest = { version = "0.12", features = ["json"] }
 rust_decimal = "1.42.0"
 
 serde = { version = "1.0.228", features = ["derive"] }
@@ -79,6 +80,7 @@ tiberius = { version = "0.12.3", features = ["tds73", "chrono"] }
 time = "0.3.47"
 tokio = { version = "1.52.3", features = ["full", "tracing", "time"] }
 tokio-util = "0.7.18"
+url = "2"
 uuid = { version = "1.23.1", features = [
     "v4",
     "fast-rng",

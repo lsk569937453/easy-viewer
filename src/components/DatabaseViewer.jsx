@@ -5,7 +5,7 @@ import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import { DiMysql } from "react-icons/di";
 import TableDetailPage from "./TableDetailPage.jsx";
-import { SiOracle, SiSqlite } from "react-icons/si";
+import { SiOracle, SiSqlite, SiMongodb, SiRedis } from "react-icons/si";
 import {
   FaTable,
   FaEye,
@@ -30,6 +30,11 @@ const ICON_MAP = {
   oracle: <SiOracle size="1.2em" color="#F80000" />,
   postgresql: <FaDatabase size="1.2em" color="#336791" />,
   sqlite: <SiSqlite size="1.2em" color="#003B57" />,
+  mongodb: <SiMongodb size="1.2em" color="#47A248" />,
+  redis: <SiRedis size="1.2em" color="#DC382D" />,
+  clickhouse: <FaDatabase size="1.2em" color="#FFCC00" />,
+  elasticsearch: <FaDatabase size="1.2em" color="#FEC514" />,
+  s3: <FaDatabase size="1.2em" color="#FF9900" />,
   kafka: <FaStream size="1.2em" color="#231F20" />,
   table: <FaTable />,
   view: <FaEye />,
@@ -57,6 +62,19 @@ const ICON_MAP = {
   kafka_brokers: <FaDatabase color="#FFB347" />,
   kafka_single_broker: <FaDatabase color="#FFA500" />,
   kafka_config: <FaKey color="#DDA0DD" />,
+  // Redis specific icons
+  redis_keys: <FaColumns color="#DC382D" />,
+  strings: <FaStream color="#FF6B6B" />,
+  hashes: <FaLayerGroup color="#7B68EE" />,
+  lists: <FaColumns color="#50C878" />,
+  sets: <FaStar color="#FFB347" />,
+  zsets: <FaKey color="#DDA0DD" />,
+  // Elasticsearch specific icons
+  es_indices: <FaColumns color="#FEC514" />,
+  // S3 / OSS specific icons
+  bucket: <FaDatabase size="1.2em" color="#FF9900" />,
+  folder: <FaFolder color="#FFB347" />,
+  textFile: <FaEye color="#87CEEB" />,
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -187,7 +205,7 @@ function DatabaseViewer({
 
   useEffect(() => {
     const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3" };
+      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
 
       return {
@@ -276,6 +294,15 @@ function DatabaseViewer({
       case 7:
         // Clickhouse
         return `SELECT * FROM ${tableName} LIMIT ${limit};`;
+      case 4:
+        // MongoDB
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
+      case 9:
+        // Redis
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
+      case 10:
+        // Elasticsearch
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
       default:
         return `SELECT * FROM ${tableName} LIMIT ${limit};`;
     }

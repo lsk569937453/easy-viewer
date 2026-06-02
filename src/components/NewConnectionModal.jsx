@@ -35,6 +35,8 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const isEditMode = !!editingId;
 
   const traditionalDbTypes = ["mysql", "oracle", "postgresql"];
+  // Kafka 只需要 broker，用简化表单
+  const simpleBrokerTypes = ["kafka"];
 
   const resetForm = () => {
     const initialDbType = "sqlite";
@@ -83,9 +85,19 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
               if (dbTypeKey === "sqlite") {
                 setConnectionMode("url");
                 setConnectionString(baseConfigEnum.sqlite.file_path);
-                // Clear other fields to ensure a clean state
                 setHost("");
                 setPort("");
+                setUsername("");
+                setPassword("");
+                setDatabaseName("");
+              } else if (dbTypeKey === "kafka") {
+                // Kafka: 解析 broker 地址 "host:port"
+                const broker = baseConfigEnum.kafka.broker || "";
+                const parts = broker.split(":");
+                setHost(parts[0] || "");
+                setPort(parts[1] || "9092");
+                setConnectionMode("host");
+                setConnectionString("");
                 setUsername("");
                 setPassword("");
                 setDatabaseName("");
@@ -202,6 +214,17 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const parseKafkaUrl = (url) => {
+    const regex =
+      /^kafka:\/\/([^:]+)(?::(\d+))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 Kafka URL 格式。");
+    const [, host, port] = match;
+    return {
+      broker: `${host}:${port || "9092"}`,
+    };
+  };
+
   const getHostConnectionDetails = () => {
     const cleanHost = host.trim();
     const cleanPort = port.trim();
@@ -226,8 +249,22 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const getKafkaBrokerDetails = () => {
+    const cleanHost = host.trim();
+    const cleanPort = port.trim();
+    if (!cleanHost) return { isValid: false, message: "主机不能为空！" };
+    const parsedPort = parseInt(cleanPort, 10) || 9092;
+    return {
+      isValid: true,
+      broker: `${cleanHost}:${parsedPort}`,
+    };
+  };
+
   const isFormValid = () => {
     if (connectionName.trim() === "") return false;
+    if (simpleBrokerTypes.includes(dbType)) {
+      return getKafkaBrokerDetails().isValid;
+    }
     if (connectionMode === "url") {
       return connectionString.trim() !== "";
     } else {
@@ -263,6 +300,10 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             file_path: connectionString.trim(),
           },
         };
+      } else if (simpleBrokerTypes.includes(dbType)) {
+        // Kafka 等只需要 broker 的类型
+        const { broker } = getKafkaBrokerDetails();
+        baseConfigEnum = { [dbType]: { broker } };
       } else if (connectionMode === "url") {
         let details;
         if (dbType === "mysql") {
@@ -368,6 +409,13 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             sqlite: { file_path: connectionString.trim() },
           },
         };
+      } else if (simpleBrokerTypes.includes(dbType)) {
+        const { broker } = getKafkaBrokerDetails();
+        testDatabaseRequest = {
+          base_config_enum: {
+            [dbType]: { broker },
+          },
+        };
       } else {
         let connectionDetailsForBackend;
         if (connectionMode === "url") {
@@ -431,12 +479,15 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         return "例如: oracle://user:password@host:port/service_name";
       case "postgresql":
         return "例如: postgresql://user:password@host:port/database_name";
+      case "kafka":
+        return "例如: kafka://host:port";
       default:
         return "请输入连接字符串";
     }
   };
 
   const canUseHostMode = traditionalDbTypes.includes(dbType);
+  const isKafkaType = dbType === "kafka";
 
   return (
     <dialog id="new_connection_modal" className="modal" open={isOpen}>
@@ -487,6 +538,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 <option value="mysql">MySQL</option>
                 <option value="postgresql">PostgreSQL</option>
                 <option value="oracle">Oracle</option>
+                <option value="kafka">Kafka</option>
               </select>
             </div>
 
@@ -645,6 +697,38 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
                   />
+                </div>
+              </div>
+            )}
+
+            {isKafkaType && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Broker 地址 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: localhost"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("主机") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="9092"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
             )}

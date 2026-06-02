@@ -1,4 +1,5 @@
 use super::clickhouse_service::ClickhouseConfig;
+use super::kafka_service::KafkaConfig;
 use super::mssql_service::MssqlConfig;
 use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
@@ -53,7 +54,10 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
             BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             BaseConfigEnum::S3(config) => config.test_connection().await?,
-            _ => {}
+            BaseConfigEnum::Kafka(config) => {
+                let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.test_connection().await?;
+            }
         }
 
         Ok(())
@@ -65,8 +69,10 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => config.get_description()?,
             BaseConfigEnum::Mongodb(config) => config.get_description()?,
             BaseConfigEnum::Oracledb(config) => config.get_description()?,
-
-            _ => "".to_string(),
+            BaseConfigEnum::Kafka(config) => format!("Kafka: {}", config.broker),
+            BaseConfigEnum::Clickhouse(_) => "Clickhouse Database".to_string(),
+            BaseConfigEnum::S3(_) => "S3 Storage".to_string(),
+            BaseConfigEnum::Mssql(_) => "MSSQL Database".to_string(),
         };
         Ok(res)
     }
@@ -114,6 +120,10 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::S3(config) => {
                 config.list_node_info(list_node_info_req, appstate).await?
+            }
+            BaseConfigEnum::Kafka(config) => {
+                let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.list_node_info(list_node_info_req, appstate).await?
             }
             _ => ListNodeInfoResponse::new_with_empty(),
         };
@@ -286,6 +296,10 @@ impl BaseConfigEnum {
             }
             BaseConfigEnum::Mongodb(config) => {
                 config.exe_sql(list_node_info_req, appstate, sql).await?
+            }
+            BaseConfigEnum::Kafka(config) => {
+                let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.exe_sql(list_node_info_req, appstate, sql).await?
             }
             _ => ExeSqlResponse::new(),
         };
@@ -679,12 +693,6 @@ impl BaseConfigEnum {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
-pub struct KafkaConfig {
-    pub broker: String,
-    pub topic: String,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DatabaseHostStruct {
     pub host: String,
@@ -711,6 +719,13 @@ impl DatabaseHostStruct {
 #[derive(Deserialize, Serialize)]
 pub struct BaseConfig {
     pub base_config_enum: BaseConfigEnum,
+}
+
+impl BaseConfig {
+    pub fn deserialize(json_str: String) -> Result<Self, anyhow::Error> {
+        let config: BaseConfig = serde_json::from_str(&json_str)?;
+        Ok(config)
+    }
 }
 
 #[test]

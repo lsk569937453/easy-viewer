@@ -43,6 +43,7 @@ use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
+use sqlx::Row;
 use std::time::Instant;
 use tauri::State;
 macro_rules! handle_response {
@@ -472,4 +473,118 @@ pub async fn get_query(
     let res = handle_response!(get_query_with_error(state, connection_id, query_name).await);
     info!("get_query: {:?}", time.elapsed());
     Ok(res)
+}
+
+// Kafka commands
+#[tauri::command]
+pub async fn kafka_create_topic(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    num_partitions: i32,
+    replication_factor: i32,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(kafka_create_topic_with_error(state, connection_id, topic, num_partitions, replication_factor).await);
+    info!("kafka_create_topic: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn kafka_delete_topic(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(kafka_delete_topic_with_error(state, connection_id, topic).await);
+    info!("kafka_delete_topic: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn kafka_produce_message(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    key: Option<String>,
+    value: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(kafka_produce_message_with_error(state, connection_id, topic, key, value).await);
+    info!("kafka_produce_message: {:?}", time.elapsed());
+    Ok(res)
+}
+
+async fn kafka_create_topic_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    num_partitions: i32,
+    replication_factor: i32,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
+        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
+        service.create_topic(&topic, num_partitions, replication_factor).await?;
+        Ok("Topic created successfully".to_string())
+    } else {
+        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
+    }
+}
+
+async fn kafka_delete_topic_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
+        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
+        service.delete_topic(&topic).await?;
+        Ok("Topic deleted successfully".to_string())
+    } else {
+        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
+    }
+}
+
+async fn kafka_produce_message_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    key: Option<String>,
+    value: String,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
+        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
+        service.produce_message(&topic, key, value).await?;
+        Ok("Message sent successfully".to_string())
+    } else {
+        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
+    }
 }

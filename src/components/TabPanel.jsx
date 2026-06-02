@@ -5,6 +5,8 @@ import TableDetailPage from "./TableDetailPage.jsx";
 import SqlEditorTabContent from "./SqlEditorTabContent.jsx";
 import IndexDetailPage from "./IndexDetailPage.jsx";
 import ColumnDetailPage from "./ColumnDetailPage.jsx";
+import KafkaMessagesPanel from "./KafkaMessagesPanel.jsx";
+import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -209,6 +211,26 @@ function TabPanel({
                 <ColumnDetailPage
                   activeTabNode={activeTab.node}
                   tableName={activeTab.tableName}
+                />
+              );
+            }
+
+            // Render KafkaMessagesPanel for "kafkaMessages" type tabs
+            if (activeTab.type === "kafkaMessages") {
+              return (
+                <KafkaMessagesPanel
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render KafkaTopicDetail for "kafkaTopicDetail" type tabs
+            if (activeTab.type === "kafkaTopicDetail") {
+              return (
+                <KafkaTopicDetail
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
                 />
               );
             }

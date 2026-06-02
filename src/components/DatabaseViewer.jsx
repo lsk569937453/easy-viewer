@@ -28,7 +28,9 @@ import {
 const ICON_MAP = {
   mysql: <DiMysql size="1.2em" color="#00758F" />,
   oracle: <SiOracle size="1.2em" color="#F80000" />,
+  postgresql: <FaDatabase size="1.2em" color="#336791" />,
   sqlite: <SiSqlite size="1.2em" color="#003B57" />,
+  kafka: <FaStream size="1.2em" color="#231F20" />,
   table: <FaTable />,
   view: <FaEye />,
   query: <FaSearch />,
@@ -44,6 +46,17 @@ const ICON_MAP = {
   primary: <FaStar />,
   default: <FaFolder />,
   singleQuery: <FaDatabase />,
+  // Kafka specific icons
+  kafka_topics: <FaColumns color="#00A0E4" />,
+  kafka_single_topic: <FaStream color="#00A0E4" />,
+  kafka_partitions: <FaLayerGroup color="#7B68EE" />,
+  kafka_single_partition: <FaLayerGroup color="#9370DB" />,
+  kafka_messages: <FaStream color="#FF6B6B" />,
+  kafka_consumer_groups: <FaDatabase color="#50C878" />,
+  kafka_single_consumer_group: <FaDatabase color="#3CB371" />,
+  kafka_brokers: <FaDatabase color="#FFB347" />,
+  kafka_single_broker: <FaDatabase color="#FFA500" />,
+  kafka_config: <FaKey color="#DDA0DD" />,
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -487,7 +500,71 @@ function DatabaseViewer({
       return;
     }
 
+    // Kafka 节点处理
+    if (node.iconName?.startsWith("kafka_")) {
+      await handleKafkaNodeActivate(node, connection);
+      return;
+    }
+
     // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
+    await handleToggleNode(node);
+  };
+
+  // Kafka 节点激活处理
+  const handleKafkaNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Topic 消息查看
+    if (nodeType === "kafka_messages" || nodeType === "kafka_single_topic") {
+      const topicName = node.path[node.path.length - 1]?.config_value || node.name;
+      const tabId = `kafka-messages-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Messages`,
+          icon: node.icon,
+          type: "kafkaMessages",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      if (nodeType === "kafka_messages") {
+        await handleToggleNode(node);
+      }
+      return;
+    }
+
+    // Topic 详情页
+    if (nodeType === "kafka_partitions" || nodeType === "kafka_config") {
+      const topicName = node.path[node.path.length - 2]?.config_value;
+      const tabId = `kafka-topic-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Details`,
+          icon: node.icon,
+          type: "kafkaTopicDetail",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
+      return;
+    }
+
+    // 默认展开/折叠
     await handleToggleNode(node);
   };
 
@@ -554,6 +631,33 @@ function DatabaseViewer({
       }
       generatedSql = generateCreateIndexSql(connectionType, tableName);
       defaultQueryName = `Add_Index_to_${tableName}`;
+    } else if (node.iconName === "kafka_topics") {
+      // 创建新 Kafka Topic
+      const topicName = prompt("请输入新 Topic 名称:");
+      if (!topicName) return;
+
+      const numPartitions = parseInt(prompt("请输入分区数 (默认 1):", "1") || "1");
+      const replicationFactor = parseInt(prompt("请输入副本因子 (默认 1):", "1") || "1");
+
+      try {
+        const responseJson = await invoke("kafka_create_topic", {
+          connectionId: connectionId,
+          topic: topicName,
+          numPartitions: numPartitions,
+          replicationFactor: replicationFactor,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          alert(`Topic "${topicName}" 创建成功!`);
+          await handleRefreshNode(node);
+        } else {
+          alert(`创建 Topic 失败: ${response_msg}`);
+        }
+      } catch (err) {
+        alert(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
+      }
+      return;
     } else {
       alert(
         `触发了"新增"操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`

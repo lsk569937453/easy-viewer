@@ -3,6 +3,7 @@ pub mod clickhouse_service;
 pub mod cmd;
 pub mod cmd_service;
 pub mod dump_data;
+pub mod kafka_service;
 pub mod mongdb_service;
 pub mod mssql_service;
 pub mod mysql_common_service;

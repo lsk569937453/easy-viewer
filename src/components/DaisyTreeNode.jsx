@@ -61,7 +61,6 @@ function DaisyTreeNode({
 
   const handleActionIconClick = (e) => {
     e.stopPropagation();
-    console.log(`Action button clicked for node: ${node.name}`, node);
   };
 
   const handleRefreshClick = (e) => {

@@ -141,6 +141,5 @@ ALTER TABLE ${tableName}
 }
 
 export function getCreateIndexForColumn(node, tableName) {
-  console.log(node, tableName);
   return `/* getCreateIndexForColumn: Feature not fully implemented for dynamic connection types. */`;
 }

@@ -180,7 +180,6 @@ function TabPanel({
                 />
               );
             }
-            console.log("aaaa:" + activeTab.type);
             // Render TableWorkspacePanel for "tableWorkspace" type tabs
             if (activeTab.type === "singleTable") {
               return (

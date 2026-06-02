@@ -18,8 +18,6 @@ function IndexDetailPage({ activeTabNode, tableName }) {
 
   useEffect(() => {
     const fetchIndexDetails = async () => {
-      console.log("IndexDetailPage: fetchIndexDetails called", { activeTabNode, tableName });
-
       if (!activeTabNode || !activeTabNode.path || !tableName) {
         setError("无法加载索引详情：缺少必要信息。");
         console.error("IndexDetailPage: Missing required data", { activeTabNode, tableName });
@@ -46,16 +44,12 @@ function IndexDetailPage({ activeTabNode, tableName }) {
           ORDER BY SEQ_IN_INDEX
         `;
 
-        console.log("IndexDetailPage: Executing SQL", indexColumnsSql);
-
         const listNodeInfoReq = { level_infos: activeTabNode.path };
         const responseJson = await invoke("exe_sql", {
           sql: indexColumnsSql,
           listNodeInfoReq: listNodeInfoReq,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
-
-        console.log("IndexDetailPage: SQL response", { response_code, response_msg });
 
         if (response_code === 0 && response_msg && response_msg.rows) {
           const columns = response_msg.rows.map((row) => ({
@@ -66,7 +60,6 @@ function IndexDetailPage({ activeTabNode, tableName }) {
             subPart: row[4] || null,
             nullable: row[5] || "YES",
           }));
-          console.log("IndexDetailPage: Parsed columns", columns);
           setIndexColumns(columns);
         } else {
           console.error("IndexDetailPage: Failed to get index columns", { response_code, response_msg });
@@ -92,16 +85,12 @@ function IndexDetailPage({ activeTabNode, tableName }) {
           GROUP BY INDEX_NAME, INDEX_TYPE, NON_UNIQUE, TABLE_NAME
         `;
 
-        console.log("IndexDetailPage: Executing create SQL query", createIndexSqlQuery);
-
         const createSqlResponseJson = await invoke("exe_sql", {
           sql: createIndexSqlQuery,
           listNodeInfoReq: listNodeInfoReq,
         });
         const { response_code: createCode, response_msg: createMsg } =
           JSON.parse(createSqlResponseJson);
-
-        console.log("IndexDetailPage: Create SQL response", { createCode, createMsg });
 
         if (createCode === 0 && createMsg && createMsg.rows && createMsg.rows[0]) {
           setCreateIndexSql(createMsg.rows[0][0] || "-- 无法生成创建索引的 SQL");
@@ -123,16 +112,12 @@ function IndexDetailPage({ activeTabNode, tableName }) {
           LIMIT 1
         `;
 
-        console.log("IndexDetailPage: Executing index info query", indexInfoSql);
-
         const infoResponseJson = await invoke("exe_sql", {
           sql: indexInfoSql,
           listNodeInfoReq: listNodeInfoReq,
         });
         const { response_code: infoCode, response_msg: infoMsg } =
           JSON.parse(infoResponseJson);
-
-        console.log("IndexDetailPage: Index info response", { infoCode, infoMsg });
 
         if (infoCode === 0 && infoMsg && infoMsg.rows && infoMsg.rows[0]) {
           setIndexInfo({

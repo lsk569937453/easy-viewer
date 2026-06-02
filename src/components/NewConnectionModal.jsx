@@ -287,11 +287,6 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         invokeCommand = "save_base_config";
       }
 
-      console.log(
-        `正在${isEditMode ? "更新" : "创建"}连接, 请求体:`,
-        JSON.stringify(requestBody)
-      );
-
       // 根据模式调用不同的后端接口
       responseJson = await invoke(invokeCommand, {
         saveConnectionRequest: requestBody,

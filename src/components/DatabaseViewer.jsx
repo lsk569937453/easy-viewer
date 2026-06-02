@@ -129,9 +129,6 @@ function DatabaseViewer({
         const currentOpenNodes = openNodesRef.current;
         childNodes.forEach(async (childNode) => {
           if (currentOpenNodes[childNode.id]) {
-            console.log(
-              `DatabaseViewer: Recursively re-fetching children for previously open child node: ${childNode.name} (ID: ${childNode.id})`
-            );
             await fetchNodeChildren(childNode);
           }
         });
@@ -150,9 +147,6 @@ function DatabaseViewer({
   }, []);
 
   const updateQueryNodeNameInTree = useCallback((queryIdToUpdate, newName) => {
-    console.log(
-      `DatabaseViewer: 收到更新查询节点名称请求。QueryId: ${queryIdToUpdate}, New Name: ${newName}`
-    );
     setTreeData((prevTree) => {
       const findAndUpdate = (nodes) => {
         return nodes.map((node) => {
@@ -163,9 +157,6 @@ function DatabaseViewer({
             node.path[node.path.length - 1].config_value.toString() ===
               queryIdToUpdate.toString()
           ) {
-            console.log(
-              `DatabaseViewer: 正在更新树节点名称: ${node.name} -> ${newName}`
-            );
             return { ...node, name: newName };
           }
           if (node.children) {
@@ -182,11 +173,6 @@ function DatabaseViewer({
   }, []);
 
   useEffect(() => {
-    console.log(
-      "DatabaseViewer: useEffect for connections triggered. Connections updated (prop changed):",
-      connections
-    );
-
     const newTreeData = (connections || []).map((conn) => {
       const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
@@ -212,9 +198,6 @@ function DatabaseViewer({
     const currentOpenNodes = openNodesRef.current;
     newTreeData.forEach(async (node) => {
       if (currentOpenNodes[node.id] && node.children === null) {
-        console.log(
-          `DatabaseViewer: Re-fetching children for previously open root node: ${node.name} (ID: ${node.id})`
-        );
         await fetchNodeChildren(node);
       }
     });
@@ -381,8 +364,6 @@ function DatabaseViewer({
       const existingSqlEditorTab = tabs.find(
         (tab) => tab.type === "sqlEditor" && tab.queryId === queryId
       );
-      console.log("existingSqlEditorTab1:", existingSqlEditorTab);
-
       if (existingSqlEditorTab) {
         setActiveTabId(existingSqlEditorTab.id);
       } else {
@@ -403,11 +384,9 @@ function DatabaseViewer({
     } else if (node.iconName === "singleTable") {
       const tableId = node.path[node.path.length - 1].config_value;
       const newTabId = `singleTable-${tableId}`;
-      console.log("tabs:", tabs);
       const existingSqlEditorTab = tabs.find(
         (tab) => tab.type === "singleTable" && tab.id === newTabId
       );
-      console.log("existingSqlEditorTab2:", existingSqlEditorTab);
       if (existingSqlEditorTab) {
         setActiveTabId(existingSqlEditorTab.id);
       } else {
@@ -466,9 +445,6 @@ function DatabaseViewer({
       node.iconName !== "singlePrimaryIndex" &&
       node.iconName !== "singleCommonIndex"
     ) {
-      console.log(
-        `DatabaseViewer: Clicking expandable parent node (${node.name}), also toggling.`
-      );
       await handleToggleNode(node);
     }
 
@@ -505,15 +481,11 @@ function DatabaseViewer({
     setOpenNodes((prev) => ({ ...prev, [node.id]: !isCurrentlyOpen }));
 
     if (!isCurrentlyOpen && node.children === null) {
-      console.log(
-        `DatabaseViewer: Toggling node (${node.name}), fetching children due to opening.`
-      );
       await fetchNodeChildren(node);
     }
   };
 
   const handleRefreshNode = async (node) => {
-    console.log("Refreshing node:", node.name);
     setTreeData((prevTree) =>
       updateNodeInTree(prevTree, node.id, { children: null })
     );
@@ -522,8 +494,6 @@ function DatabaseViewer({
   };
 
   const handleAddNode = async (node) => {
-    console.log("Add action on node:", node.name, "Icon Name:", node.iconName);
-
     const rootConfigId = node.path[0]?.config_value;
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
@@ -588,7 +558,6 @@ function DatabaseViewer({
   };
 
   const handleEditConnection = (node) => {
-    console.log("Editing connection:", node.name, "with ID:", node.id);
     setEditingConnectionId(node.id);
     setIsModalOpen(true);
   };
@@ -599,9 +568,6 @@ function DatabaseViewer({
   };
 
   const handleConnectionModalSaveSuccess = (baseConfigId, isEditMode) => {
-    console.log(
-      `DatabaseViewer: Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}. Calling onConnectionUpdated().`
-    );
     if (onConnectionUpdated) {
       onConnectionUpdated(baseConfigId);
     }
@@ -684,7 +650,6 @@ function DatabaseViewer({
             }
             return remainingTabs;
           });
-          console.log("Query deleted successfully.");
         } else {
           console.error("Failed to delete query:", response_msg);
           alert(`删除查询失败: ${response_msg}`);
@@ -729,9 +694,6 @@ function DatabaseViewer({
           });
 
           if (onConnectionDeleted) {
-            console.log(
-              "DatabaseViewer: Connection deleted. Calling onConnectionDeleted()."
-            );
             await onConnectionDeleted();
           }
         } else {
@@ -787,7 +749,6 @@ function DatabaseViewer({
   };
 
   const handleDeleteQuery = async (node) => {
-    console.log("Request to delete query:", node.name, "with node:", node);
     setNodeToDelete(node);
     deleteModalRef.current?.showModal();
   };

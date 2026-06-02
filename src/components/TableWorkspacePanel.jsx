@@ -58,9 +58,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    console.log(
-      `DEBUG: EditableCell blurred - Row ID: ${row.original.id}, Column: ${column.id}`
-    );
     if (ref.current) {
       const currentText = ref.current.textContent;
       if (currentText !== initialValue) {
@@ -72,9 +69,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    console.log(
-      `DEBUG: EditableCell focused - Row ID: ${row.original.id}, Column: ${column.id}, Current Value: ${initialValue}`
-    );
     const range = document.createRange();
     if (ref.current) {
       range.selectNodeContents(ref.current);
@@ -91,9 +85,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleInput = useCallback(
     (e) => {
-      console.log(
-        `DEBUG: EditableCell input - Row ID: ${row.original.id}, Column: ${column.id}, Text: ${e.target.textContent}`
-      );
       onCellInput(row.original.id, column.id, e.target.textContent);
     },
     [onCellInput, row.original.id, column.id]
@@ -163,18 +154,10 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   }, [tableData, originalTableData, currentlyEditingCell]);
 
   useEffect(() => {
-    console.log(
-      "DEBUG: Initial SQL/Active Tab Node changed. SQL:",
-      initialSql,
-      "Node:",
-      activeTabNode?.name
-    );
     setSqlQuery(initialSql || "");
     if (activeTabNode && activeSubTab === "data") {
-      console.log("DEBUG: Triggering fetchTableData with:", initialSql);
       fetchTableData(initialSql);
     } else {
-      console.log("DEBUG: Clearing table data (not 'data' sub-tab or no node)");
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
@@ -186,7 +169,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   // 获取表数据
   const fetchTableData = async (query) => {
     if (!query || !activeTabNode || !activeTabNode.path) {
-      console.log("DEBUG: fetchTableData skipped (missing query/node info).");
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
@@ -195,7 +177,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       return;
     }
 
-    console.log("DEBUG: Calling invoke('exe_sql') with query:", query);
     try {
       const listNodeInfoReqObject = { level_infos: activeTabNode.path };
 
@@ -225,12 +206,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
           return rowObject;
         });
 
-        console.log(
-          "DEBUG: Data fetched successfully. Rows:",
-          fetchedData.length,
-          "Headers:",
-          fetchedColumnHeaders
-        );
         setTableData(fetchedData);
         setColumnHeaders(fetchedColumnHeaders);
         setOriginalTableData(JSON.parse(JSON.stringify(fetchedData))); // 深拷贝，作为原始数据
@@ -262,31 +237,17 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   };
 
   const handleExecuteSql = () => {
-    console.log("DEBUG: Execute SQL button clicked. Query:", sqlQuery);
     fetchTableData(sqlQuery);
   };
 
   const handleCellInput = useCallback((rowId, columnId, value) => {
-    // console.log("DEBUG: Cell input. Row ID:", rowId, "Column ID:", columnId, "Value:", value); // 可能会非常频繁，根据需要开启
     // setCurrentlyEditingCell(rowId ? { rowId, columnId, value } : null);
   }, []);
 
   const handleCellChange = useCallback((originalRow, columnId, value) => {
-    console.log(
-      "DEBUG: Cell change committed. Row ID:",
-      originalRow.id,
-      "Column ID:",
-      columnId,
-      "New Value:",
-      value
-    );
     setTableData((prevTableData) => {
       const rowIndex = prevTableData.findIndex((r) => r.id === originalRow.id);
       if (rowIndex === -1) {
-        console.warn(
-          "DEBUG: Could not find original row to update (on blur commit):",
-          originalRow
-        );
         return prevTableData; // 未找到则返回之前的状态
       }
 
@@ -302,7 +263,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 添加新行
   const handleAddRow = useCallback(() => {
-    console.log("DEBUG: Add row clicked.");
     const newRow = columnHeaders.reduce(
       (acc, col) => ({ ...acc, [col]: "" }),
       {}
@@ -315,7 +275,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   const handleDeleteRow = useCallback(
     async (rowToDelete) => {
-      console.log("DEBUG: Delete row clicked. Row ID:", rowToDelete.id);
       if (!window.confirm("确定要删除此行数据吗？此操作不可撤销。")) {
         return;
       }
@@ -346,8 +305,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 保存修改
   const handleSaveChanges = async () => {
-    console.log("DEBUG: Save changes clicked. Current tableData:", tableData);
-
     try {
       const responseJson = await invoke("update_table_data", {
         configId: connectionDetails.base_config_id,
@@ -361,7 +318,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         setOriginalTableData(JSON.parse(JSON.stringify(tableData))); // 将当前 tableData 设置为新的原始数据
         setCurrentlyEditingCell(null); // 保存成功后清除实时编辑状态
         alert("数据保存成功！");
-        console.log("DEBUG: Data saved successfully.");
       } else {
         alert(`数据保存失败: ${response_msg}`);
         console.error("DEBUG: Save failed:", response_msg);
@@ -374,7 +330,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 取消修改，将 tableData 恢复到 originalTableData
   const handleCancelChanges = useCallback(() => {
-    console.log("DEBUG: Cancel changes clicked.");
     setTableData(JSON.parse(JSON.stringify(originalTableData))); // 深拷贝原始数据，恢复到当前数据
     setCurrentlyEditingCell(null); // 取消修改后，清除实时编辑状态
     // 取消修改后，当前页可能超出总页数，重置到第一页
@@ -388,7 +343,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         String(value).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       )
     );
-    // console.log("DEBUG: Filtered data count:", data.length, "Search term:", debouncedSearchTerm); // 可能会频繁，根据需要开启
     return data;
   }, [tableData, debouncedSearchTerm]);
 

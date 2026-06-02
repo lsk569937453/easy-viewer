@@ -38,7 +38,6 @@ function App() {
    */
   const fetchConnections = async () => {
     try {
-      console.log("App: 正在从后端获取所有连接列表...");
       const responseJson = await invoke("get_base_config");
       const baseResponse = JSON.parse(responseJson);
 
@@ -54,7 +53,6 @@ function App() {
           );
           return { ...conn, host, port }; // 将解析出的 host 和 port 添加到连接对象中
         });
-        console.log("App: 成功获取所有连接列表:", processedConnections);
         // 使用新的数组引用更新状态，这将触发 DatabaseViewer 的 useEffect
         setConnections(processedConnections);
       } else {
@@ -73,9 +71,6 @@ function App() {
    */
   const handleSingleConnectionUpdated = async (updatedConnectionId) => {
     try {
-      console.log(
-        `App: 单个连接 (ID: ${updatedConnectionId}) 已更新，正在重新获取最新信息...`
-      );
       // 调用您提供的后端接口获取单个连接的最新数据
       const responseJson = await invoke("get_base_config_by_id", {
         baseConfigId: updatedConnectionId,
@@ -84,11 +79,6 @@ function App() {
 
       if (baseResponse.response_code === 0) {
         const rawUpdatedConnection = baseResponse.response_msg; // 这是 GetBaseConnectionByIdResponse 结构
-        console.log(
-          `App: 成功获取更新后的连接 (ID: ${updatedConnectionId}):`,
-          rawUpdatedConnection
-        );
-
         // 解析新获取连接的 connection_json 以获取 host 和 port
         const { host, port } = parseConnectionJson(
           rawUpdatedConnection.connection_type,
@@ -114,9 +104,6 @@ function App() {
               ? fullyUpdatedConnection // 用新的完整连接对象替换旧的
               : conn
           )
-        );
-        console.log(
-          `App: connections 状态已更新，包含 ID: ${updatedConnectionId} 的最新数据。`
         );
       } else {
         console.error(

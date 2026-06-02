@@ -4,6 +4,7 @@ import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
 import TableDetailPage from "./TableDetailPage.jsx";
 import SqlEditorTabContent from "./SqlEditorTabContent.jsx";
 import IndexDetailPage from "./IndexDetailPage.jsx";
+import ColumnDetailPage from "./ColumnDetailPage.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -195,6 +196,16 @@ function TabPanel({
             if (activeTab.type === "indexDetail") {
               return (
                 <IndexDetailPage
+                  activeTabNode={activeTab.node}
+                  tableName={activeTab.tableName}
+                />
+              );
+            }
+
+            // Render ColumnDetailPage for "columnDetail" type tabs
+            if (activeTab.type === "columnDetail") {
+              return (
+                <ColumnDetailPage
                   activeTabNode={activeTab.node}
                   tableName={activeTab.tableName}
                 />

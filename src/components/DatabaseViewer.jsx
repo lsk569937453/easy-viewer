@@ -435,13 +435,34 @@ function DatabaseViewer({
         setActiveTabId(newTab.id);
       }
       return;
+    } else if (node.iconName === "column" || node.iconName === "primary") {
+      const columnName = node.name;
+      const tableName = node.path[node.path.length - 3]?.config_value;
+      const newTabId = `column-${node.id}`;
+
+      const existingColumnTab = tabs.find((tab) => tab.id === newTabId);
+      if (existingColumnTab) {
+        setActiveTabId(existingColumnTab.id);
+      } else {
+        const newTab = {
+          id: newTabId,
+          name: columnName,
+          icon: node.icon,
+          details: `列: ${columnName}`,
+          type: "columnDetail",
+          node: node,
+          tableName: tableName,
+          iconName: node.iconName,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
     }
 
     if (
       node.iconName !== "singleTable" &&
       node.iconName !== "singleQuery" &&
-      node.type !== "column" &&
-      node.type !== "primary" &&
       node.iconName !== "singlePrimaryIndex" &&
       node.iconName !== "singleCommonIndex"
     ) {

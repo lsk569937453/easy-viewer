@@ -34,7 +34,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const [testMessage, setTestMessage] = useState("");
   const isEditMode = !!editingId;
 
-  const traditionalDbTypes = ["mysql", "oracle"];
+  const traditionalDbTypes = ["mysql", "oracle", "postgresql"];
 
   const resetForm = () => {
     const initialDbType = "sqlite";
@@ -187,6 +187,21 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const parsePostgresqlUrl = (url) => {
+    const regex =
+      /^postgresql:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/([^?]*))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 PostgreSQL URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 5432,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
   const getHostConnectionDetails = () => {
     const cleanHost = host.trim();
     const cleanPort = port.trim();
@@ -254,6 +269,8 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
           details = parseMysqlUrl(connectionString.trim());
         } else if (dbType === "oracle") {
           details = parseOracleUrl(connectionString.trim());
+        } else if (dbType === "postgresql") {
+          details = parsePostgresqlUrl(connectionString.trim());
         } else {
           throw new Error(`不支持的数据库类型: ${dbType}`);
         }
@@ -360,6 +377,8 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             connectionDetailsForBackend = parseMysqlUrl(connectionString);
           else if (dbType === "oracle")
             connectionDetailsForBackend = parseOracleUrl(connectionString);
+          else if (dbType === "postgresql")
+            connectionDetailsForBackend = parsePostgresqlUrl(connectionString);
           else
             throw new Error(
               `URL模式暂不支持 ${dbType} 类型数据库的后端解析测试。`
@@ -410,6 +429,8 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         return "例如: mysql://user:password@host:port/database_name";
       case "oracle":
         return "例如: oracle://user:password@host:port/service_name";
+      case "postgresql":
+        return "例如: postgresql://user:password@host:port/database_name";
       default:
         return "请输入连接字符串";
     }
@@ -464,6 +485,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
               >
                 <option value="sqlite">SQLite</option>
                 <option value="mysql">MySQL</option>
+                <option value="postgresql">PostgreSQL</option>
                 <option value="oracle">Oracle</option>
               </select>
             </div>
@@ -566,7 +588,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                   </label>
                   <input
                     type="text"
-                    placeholder={dbType === "mysql" ? "3306" : "1521"}
+                    placeholder={dbType === "mysql" ? "3306" : dbType === "postgresql" ? "5432" : "1521"}
                     className={`input input-bordered w-full ${
                       error && error.includes("端口") ? "input-error" : ""
                     }`}
@@ -607,6 +629,8 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                     <span className="label-text">
                       {dbType === "oracle"
                         ? "服务名/SID (可选)"
+                        : dbType === "postgresql"
+                        ? "数据库名"
                         : "数据库名 (可选)"}
                     </span>
                   </label>

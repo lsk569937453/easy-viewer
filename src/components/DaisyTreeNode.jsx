@@ -52,9 +52,16 @@ function DaisyTreeNode({
 
   const isRootNode = ACTIONABLE_DB_TYPES.includes(node.type);
 
+  // 这些节点类型由 handleNodeActivate 自己处理 toggle
+  const SELF_TOGGLE_TYPES = ["singleTable"];
+
   const handleRowClick = () => {
     onNodeClick(node);
-    if (isExpandable && !isOpen) {
+    if (
+      isExpandable &&
+      !isOpen &&
+      !SELF_TOGGLE_TYPES.includes(node.iconName)
+    ) {
       onToggle(node);
     }
   };

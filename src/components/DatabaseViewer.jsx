@@ -406,6 +406,8 @@ function DatabaseViewer({
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
       }
+      // 表节点同时切换展开/折叠
+      await handleToggleNode(node);
       return;
     } else if (
       node.iconName === "singlePrimaryIndex" ||
@@ -457,6 +459,28 @@ function DatabaseViewer({
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
       }
+      return;
+    } else if (node.iconName === "columns") {
+      // 点击 Columns 文件夹 -> 打开所属表的列信息详情页
+      const tableName = node.path[node.path.length - 2]?.config_value;
+      const tabId = `columns-detail-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+
+      if (existingTab) {
+        setActiveTabId(tabId);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${tableName} - 列信息`,
+          icon: node.icon,
+          type: "tableDetail",
+          node: node,
+          defaultTab: "column",
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
       return;
     }
 

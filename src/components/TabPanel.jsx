@@ -117,13 +117,13 @@ function TabPanel({
     >
       {/* Tab Bar */}
       {tabs.length > 0 && (
-        <div className="flex border-b bg-base-200">
+        <div className="flex border-b bg-base-200 w-full">
           {tabs.map((tab) => (
             <div
               key={tab.id}
               className={`
-                flex items-center px-4 py-2 cursor-pointer border-r border-base-300
-                flex-1 min-w-[80px] max-w-[200px]
+                flex items-center px-3 py-2 cursor-pointer border-r border-base-300
+                flex-1 min-w-[60px] max-w-[220px]
                 ${
                   activeTabId === tab.id
                     ? "bg-base-100 text-primary font-semibold"
@@ -133,16 +133,16 @@ function TabPanel({
               onClick={() => handleTabClick(tab.id)}
               onContextMenu={(e) => handleContextMenu(e, tab.id)}
             >
-              <span className="mr-2 flex-shrink-0">{tab.icon}</span>
-              <span className="truncate flex-grow">{tab.name}</span>
+              <span className="mr-1 flex-shrink-0">{tab.icon}</span>
+              <span className="truncate flex-grow text-xs">{tab.name}</span>
               <button
-                className="ml-2 text-base-content/60 hover:text-error flex-shrink-0"
+                className="ml-1 flex-shrink-0 text-base-content/40 hover:text-error"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCloseTab(tab.id);
                 }}
               >
-                <FaTimes size="0.9em" />
+                <FaTimes size="0.7em" />
               </button>
             </div>
           ))}
@@ -178,6 +178,7 @@ function TabPanel({
                 <TableDetailPage
                   activeTabNode={activeNode}
                   connectionDetails={connection}
+                  defaultTab={activeTab.defaultTab}
                 />
               );
             }
@@ -257,7 +258,18 @@ function TabPanel({
       {/* Context Menu */}
       {menuVisible && (
         <div
-          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2"
+          ref={(el) => {
+            if (el && tabPanelContainerRef.current) {
+              const containerRect = tabPanelContainerRef.current.getBoundingClientRect();
+              const menuRect = el.getBoundingClientRect();
+              // 如果菜单超出容器右边界，改为右对齐
+              if (menuRect.right > containerRect.right) {
+                el.style.left = "auto";
+                el.style.right = `${containerRect.right - containerRect.left - menuPosition.x - 1}px`;
+              }
+            }
+          }}
+          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2 min-w-[160px]"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <ul className="menu menu-compact">

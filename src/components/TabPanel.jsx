@@ -8,6 +8,7 @@ import ColumnDetailPage from "./ColumnDetailPage.jsx";
 import KafkaMessagesPanel from "./KafkaMessagesPanel.jsx";
 import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
 import RocketmqMessagesPanel from "./RocketmqMessagesPanel.jsx";
+import RedisConsolePanel from "./RedisConsolePanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -240,6 +241,16 @@ function TabPanel({
             if (activeTab.type === "rocketmqMessages") {
               return (
                 <RocketmqMessagesPanel
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render RedisConsolePanel for "redisConsole" type tabs
+            if (activeTab.type === "redisConsole") {
+              return (
+                <RedisConsolePanel
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
                 />

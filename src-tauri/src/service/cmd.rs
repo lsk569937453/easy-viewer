@@ -630,3 +630,90 @@ async fn rocketmq_send_message_with_error(
         Err(anyhow::anyhow!("Connection is not a RocketMQ connection"))
     }
 }
+
+// Redis commands
+#[tauri::command]
+pub async fn redis_execute_command(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    command: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(redis_execute_command_with_error(state, connection_id, command).await);
+    info!("redis_execute_command: {:?}", time.elapsed());
+    Ok(res)
+}
+
+async fn redis_execute_command_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    command: String,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Redis(redis_config) = base_config.base_config_enum {
+        // 解析命令：按空格分割，支持引号内的空格
+        let parsed = parse_redis_command(&command);
+        if parsed.is_empty() {
+            return Err(anyhow::anyhow!("Empty command"));
+        }
+
+        let cmd = &parsed[0];
+        let args = &parsed[1..];
+
+        let response = redis_config.execute_raw_command(cmd, args)?;
+        serde_json::to_string(&response).map_err(|e| anyhow::anyhow!("Failed to serialize response: {}", e))
+    } else {
+        Err(anyhow::anyhow!("Connection is not a Redis connection"))
+    }
+}
+
+/// 解析 Redis 命令，支持引号内的空格
+/// 例如：SET key "hello world" -> ["SET", "key", "hello world"]
+fn parse_redis_command(command: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut escape_next = false;
+
+    for ch in command.chars() {
+        if escape_next {
+            current.push(ch);
+            escape_next = false;
+            continue;
+        }
+
+        match ch {
+            '\\' => {
+                escape_next = true;
+            }
+            '"' => {
+                in_quotes = !in_quotes;
+            }
+            ' ' | '\t' => {
+                if in_quotes {
+                    current.push(ch);
+                } else if !current.is_empty() {
+                    result.push(current.trim().to_string());
+                    current = String::new();
+                }
+            }
+            _ => {
+                current.push(ch);
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        result.push(current.trim().to_string());
+    }
+
+    result
+}

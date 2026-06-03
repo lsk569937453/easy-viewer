@@ -98,7 +98,7 @@ async fn main() -> Result<(), anyhow::Error> {
                         message
                     ))
                 })
-                .level(LevelFilter::Info)
+                .level(LevelFilter::Debug)
                 .level_for(
                     "tao::platform_impl::platform::event_loop::runner",
                     log::LevelFilter::Error,
@@ -143,6 +143,7 @@ async fn main() -> Result<(), anyhow::Error> {
             kafka_produce_message,
             list_node_info,
             move_column,
+            redis_execute_command,
             remove_column,
             remove_query,
             rename_query,

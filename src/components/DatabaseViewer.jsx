@@ -17,6 +17,7 @@ import {
   FaColumns,
   FaStream,
   FaStar,
+  FaTerminal,
 } from "react-icons/fa";
 
 import {
@@ -74,6 +75,7 @@ const ICON_MAP = {
   lists: <FaColumns color="#50C878" />,
   sets: <FaStar color="#FFB347" />,
   zsets: <FaKey color="#DDA0DD" />,
+  redis_console: <FaTerminal color="#DC382D" />,
   // Elasticsearch specific icons
   es_indices: <FaColumns color="#FEC514" />,
   // S3 / OSS specific icons
@@ -544,6 +546,12 @@ function DatabaseViewer({
       return;
     }
 
+    // Redis 节点处理
+    if (node.iconName?.startsWith("redis_")) {
+      await handleRedisNodeActivate(node, connection);
+      return;
+    }
+
     // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
     await handleToggleNode(node);
   };
@@ -632,6 +640,36 @@ function DatabaseViewer({
       }
       if (nodeType === "rocketmq_messages") {
         await handleToggleNode(node);
+      }
+      return;
+    }
+
+    // 默认展开/折叠
+    await handleToggleNode(node);
+  };
+
+  // Redis 节点激活处理
+  const handleRedisNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Console 节点
+    if (nodeType === "redis_console") {
+      const tabId = `redis-console-${connection.base_config_id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `Redis Console`,
+          icon: node.icon,
+          type: "redisConsole",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
       }
       return;
     }

@@ -4,10 +4,12 @@ use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
+use crate::vojo::redis_command_response::RedisCommandResponse;
 use crate::AppState;
 use redis::Commands;
 use serde::Deserialize;
 use serde::Serialize;
+use std::time::Instant;
 
 #[derive(Deserialize, Serialize, Clone)]
 pub struct RedisConfig {
@@ -314,6 +316,7 @@ fn get_redis_key_type_map() -> Vec<(&'static str, &'static str)> {
         ("Lists", "lists"),
         ("Sets", "sets"),
         ("Sorted Sets", "zsets"),
+        ("Console", "redis_console"),
     ]
 }
 
@@ -338,4 +341,116 @@ fn parse_limit_from_sql(sql: &str) -> i64 {
         }
     }
     100
+}
+
+impl RedisConfig {
+    pub fn execute_raw_command(&self, cmd: &str, args: &[String]) -> Result<RedisCommandResponse, anyhow::Error> {
+        let start_time = Instant::now();
+        let client = self.get_connection()?;
+        let mut con = client.get_connection()?;
+
+        let db_index: u16 = if let Some(ref db) = self.config.database {
+            db.parse().unwrap_or(0)
+        } else {
+            0
+        };
+        let _: () = redis::cmd("SELECT")
+            .arg(db_index)
+            .query(&mut con)?;
+
+        // 构建命令并执行
+        let mut redis_cmd = redis::cmd(cmd);
+        for arg in args {
+            redis_cmd.arg(arg);
+        }
+
+        let result = redis_cmd.query::<redis::Value>(&mut con);
+        let execution_time_ms = start_time.elapsed().as_millis() as u64;
+
+        match result {
+            Ok(value) => {
+                let response = convert_redis_value(value, execution_time_ms);
+                Ok(response)
+            }
+            Err(e) => {
+                // Redis 错误也作为响应返回
+                Ok(RedisCommandResponse {
+                    response_type: "error".to_string(),
+                    value: Some(format!("Redis error: {}", e)),
+                    array_items: None,
+                    execution_time_ms,
+                })
+            }
+        }
+    }
+}
+
+fn convert_redis_value(value: redis::Value, execution_time_ms: u64) -> RedisCommandResponse {
+    match value {
+        redis::Value::Nil => RedisCommandResponse {
+            response_type: "nil".to_string(),
+            value: Some("(nil)".to_string()),
+            array_items: None,
+            execution_time_ms,
+        },
+        redis::Value::Int(i) => RedisCommandResponse {
+            response_type: "integer".to_string(),
+            value: Some(i.to_string()),
+            array_items: None,
+            execution_time_ms,
+        },
+        redis::Value::BulkString(bytes) => {
+            // 尝试将字节转换为 UTF-8 字符串
+            let string_value = String::from_utf8(bytes)
+                .unwrap_or("(binary data)".to_string());
+            RedisCommandResponse {
+                response_type: "string".to_string(),
+                value: Some(string_value),
+                array_items: None,
+                execution_time_ms,
+            }
+        },
+        redis::Value::Array(values) => {
+            // 数组类型，递归转换每个元素
+            let array_items: Vec<String> = values
+                .into_iter()
+                .map(|v| match v {
+                    redis::Value::Nil => "(nil)".to_string(),
+                    redis::Value::Int(i) => i.to_string(),
+                    redis::Value::BulkString(bytes) => {
+                        String::from_utf8(bytes)
+                            .unwrap_or("(binary data)".to_string())
+                    }
+                    redis::Value::Array(_) => "[array]".to_string(),
+                    redis::Value::SimpleString(s) => s,
+                    _ => "(unknown)".to_string(),
+                })
+                .collect();
+
+            RedisCommandResponse {
+                response_type: "array".to_string(),
+                value: None,
+                array_items: Some(array_items),
+                execution_time_ms,
+            }
+        },
+        redis::Value::SimpleString(s) => RedisCommandResponse {
+            response_type: "status".to_string(),
+            value: Some(s),
+            array_items: None,
+            execution_time_ms,
+        },
+        redis::Value::Okay => RedisCommandResponse {
+            response_type: "ok".to_string(),
+            value: Some("OK".to_string()),
+            array_items: None,
+            execution_time_ms,
+        },
+        _ => RedisCommandResponse {
+            response_type: "unknown".to_string(),
+            value: Some("(unknown response type)".to_string()),
+            array_items: None,
+            execution_time_ms,
+        },
+    }
 }

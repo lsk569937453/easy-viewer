@@ -45,7 +45,7 @@ function ContextMenuWrapper({ children, menuItems }) {
 
 
   return (
-    <div onContextMenu={handleContextMenu}>
+    <div className="w-full" onContextMenu={handleContextMenu}>
       {children}
       {contextMenu.visible && (
         <div

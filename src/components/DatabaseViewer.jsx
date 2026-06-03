@@ -142,27 +142,52 @@ function DatabaseViewer({
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
       if (response_code === 0) {
-        const childNodes = response_msg.list.map((child, index) => ({
-          id: `${parentNode.id}-${child.name}-${index}`,
-          name: child.name,
-          type: child.type || "default",
-          icon: getNodeIcon(child.type, child.icon_name),
-          description: child.description || "",
-          iconName: child.icon_name,
-          details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-          children: null,
-          path: [
-            ...parentNode.path,
-            { level: parentNode.path.length + 1, config_value: child.name },
-          ],
-        }));
+        let childNodes = [];
 
-        setTreeData((prevTree) =>
-          updateNodeInTree(prevTree, parentNode.id, {
+        setTreeData((prevTree) => {
+          // Find existing children to preserve their loaded sub-trees and avoid flicker
+          const existingChildrenByName = {};
+          const findNode = (nodes, id) => {
+            for (const n of nodes) {
+              if (n.id === id) return n;
+              if (n.children) {
+                const found = findNode(n.children, id);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          const existingParent = findNode(prevTree, parentNode.id);
+          if (existingParent?.children) {
+            for (const c of existingParent.children) {
+              existingChildrenByName[c.name] = c;
+            }
+          }
+
+          childNodes = response_msg.list.map((child, index) => {
+            const existing = existingChildrenByName[child.name];
+            return {
+              id: `${parentNode.id}-${child.name}-${index}`,
+              name: child.name,
+              type: child.type || "default",
+              icon: getNodeIcon(child.type, child.icon_name),
+              description: child.description || "",
+              iconName: child.icon_name,
+              details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
+              // Preserve old children if available to avoid flicker on refresh
+              children: existing?.children ?? null,
+              path: [
+                ...parentNode.path,
+                { level: parentNode.path.length + 1, config_value: child.name },
+              ],
+            };
+          });
+
+          return updateNodeInTree(prevTree, parentNode.id, {
             children: childNodes,
             isLoading: false,
-          })
-        );
+          });
+        });
 
         const currentOpenNodes = openNodesRef.current;
         childNodes.forEach(async (childNode) => {
@@ -713,9 +738,7 @@ function DatabaseViewer({
   };
 
   const handleRefreshNode = async (node) => {
-    setTreeData((prevTree) =>
-      updateNodeInTree(prevTree, node.id, { children: null })
-    );
+    // Don't clear children — keep old data visible while loading to avoid flicker
     await fetchNodeChildren(node);
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
   };

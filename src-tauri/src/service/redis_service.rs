@@ -9,6 +9,7 @@ use crate::AppState;
 use redis::Commands;
 use serde::Deserialize;
 use serde::Serialize;
+use std::time::Duration;
 use std::time::Instant;
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -24,7 +25,7 @@ impl RedisConfig {
 
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let client = self.get_connection()?;
-        let mut con = client.get_connection()?;
+        let mut con = client.get_connection_with_timeout(Duration::from_secs(5))?;
         redis::cmd("PING").query::<String>(&mut con)?;
         Ok(())
     }
@@ -40,6 +41,8 @@ impl RedisConfig {
         };
         info!("redis_url: {}", url);
         let client = redis::Client::open(url)?;
+        info!("redis_url: success");
+
         Ok(client)
     }
 
@@ -65,9 +68,7 @@ impl RedisConfig {
                 };
 
                 // Select the database
-                let _: () = redis::cmd("SELECT")
-                    .arg(db_index)
-                    .query(&mut con)?;
+                let _: () = redis::cmd("SELECT").arg(db_index).query(&mut con)?;
 
                 // Get total key count
                 let db_size: i64 = redis::cmd("DBSIZE").query(&mut con)?;
@@ -98,18 +99,12 @@ impl RedisConfig {
                 } else {
                     0
                 };
-                let _: () = redis::cmd("SELECT")
-                    .arg(db_index)
-                    .query(&mut con)?;
+                let _: () = redis::cmd("SELECT").arg(db_index).query(&mut con)?;
 
-                let keys: Vec<String> = redis::cmd("KEYS")
-                    .arg("*")
-                    .query(&mut con)?;
+                let keys: Vec<String> = redis::cmd("KEYS").arg("*").query(&mut con)?;
 
                 for key in keys {
-                    let key_type: String = redis::cmd("TYPE")
-                        .arg(&key)
-                        .query(&mut con)?;
+                    let key_type: String = redis::cmd("TYPE").arg(&key).query(&mut con)?;
 
                     let should_include = match selected_type {
                         "strings" => key_type == "string",
@@ -154,18 +149,14 @@ impl RedisConfig {
         } else {
             0
         };
-        let _: () = redis::cmd("SELECT")
-            .arg(db_index)
-            .query(&mut con)?;
+        let _: () = redis::cmd("SELECT").arg(db_index).query(&mut con)?;
 
         // Parse SQL: SELECT * FROM <key_name> or SELECT * FROM <key_name> LIMIT <n>
         let key_name = parse_key_from_sql(&sql);
         let limit = parse_limit_from_sql(&sql);
 
         // Get the type of the key
-        let key_type: String = redis::cmd("TYPE")
-            .arg(&key_name)
-            .query(&mut con)?;
+        let key_type: String = redis::cmd("TYPE").arg(&key_name).query(&mut con)?;
 
         match key_type.as_str() {
             "string" => {
@@ -195,9 +186,8 @@ impl RedisConfig {
                 Ok(ExeSqlResponse::from(headers, rows, Some(key_name)))
             }
             "hash" => {
-                let all_fields: Vec<(String, String)> = redis::cmd("HGETALL")
-                    .arg(&key_name)
-                    .query(&mut con)?;
+                let all_fields: Vec<(String, String)> =
+                    redis::cmd("HGETALL").arg(&key_name).query(&mut con)?;
 
                 let headers = vec![
                     Header {
@@ -245,9 +235,7 @@ impl RedisConfig {
                 Ok(ExeSqlResponse::from(headers, rows, Some(key_name)))
             }
             "set" => {
-                let members: Vec<String> = redis::cmd("SMEMBERS")
-                    .arg(&key_name)
-                    .query(&mut con)?;
+                let members: Vec<String> = redis::cmd("SMEMBERS").arg(&key_name).query(&mut con)?;
 
                 let headers = vec![Header {
                     name: "member".to_string(),
@@ -344,7 +332,11 @@ fn parse_limit_from_sql(sql: &str) -> i64 {
 }
 
 impl RedisConfig {
-    pub fn execute_raw_command(&self, cmd: &str, args: &[String]) -> Result<RedisCommandResponse, anyhow::Error> {
+    pub fn execute_raw_command(
+        &self,
+        cmd: &str,
+        args: &[String],
+    ) -> Result<RedisCommandResponse, anyhow::Error> {
         let start_time = Instant::now();
         let client = self.get_connection()?;
         let mut con = client.get_connection()?;
@@ -354,9 +346,7 @@ impl RedisConfig {
         } else {
             0
         };
-        let _: () = redis::cmd("SELECT")
-            .arg(db_index)
-            .query(&mut con)?;
+        let _: () = redis::cmd("SELECT").arg(db_index).query(&mut con)?;
 
         // 构建命令并执行
         let mut redis_cmd = redis::cmd(cmd);
@@ -401,15 +391,14 @@ fn convert_redis_value(value: redis::Value, execution_time_ms: u64) -> RedisComm
         },
         redis::Value::BulkString(bytes) => {
             // 尝试将字节转换为 UTF-8 字符串
-            let string_value = String::from_utf8(bytes)
-                .unwrap_or("(binary data)".to_string());
+            let string_value = String::from_utf8(bytes).unwrap_or("(binary data)".to_string());
             RedisCommandResponse {
                 response_type: "string".to_string(),
                 value: Some(string_value),
                 array_items: None,
                 execution_time_ms,
             }
-        },
+        }
         redis::Value::Array(values) => {
             // 数组类型，递归转换每个元素
             let array_items: Vec<String> = values
@@ -418,8 +407,7 @@ fn convert_redis_value(value: redis::Value, execution_time_ms: u64) -> RedisComm
                     redis::Value::Nil => "(nil)".to_string(),
                     redis::Value::Int(i) => i.to_string(),
                     redis::Value::BulkString(bytes) => {
-                        String::from_utf8(bytes)
-                            .unwrap_or("(binary data)".to_string())
+                        String::from_utf8(bytes).unwrap_or("(binary data)".to_string())
                     }
                     redis::Value::Array(_) => "[array]".to_string(),
                     redis::Value::SimpleString(s) => s,
@@ -433,7 +421,7 @@ fn convert_redis_value(value: redis::Value, execution_time_ms: u64) -> RedisComm
                 array_items: Some(array_items),
                 execution_time_ms,
             }
-        },
+        }
         redis::Value::SimpleString(s) => RedisCommandResponse {
             response_type: "status".to_string(),
             value: Some(s),

@@ -7,6 +7,7 @@ use serde_repr::Serialize_repr;
 use std::fmt::{Display, Formatter};
 #[derive(Serialize_repr, Deserialize_repr, Clone, Default)]
 #[repr(u8)]
+#[allow(dead_code)]
 pub enum DateBaseType {
     #[default]
     Mysql = 0,
@@ -15,16 +16,19 @@ pub enum DateBaseType {
 }
 impl DateBaseType {}
 #[derive(Deserialize, Serialize)]
+#[allow(dead_code)]
 pub struct TestDatabaseRequest {
     pub database_type: DateBaseType,
     pub source: TestSource,
 }
 #[derive(Deserialize, Serialize, Clone)]
+#[allow(dead_code)]
 pub enum TestSource {
     TestUrl(String),
     TestHost(TestHostStruct),
 }
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[allow(dead_code)]
 pub struct TestHostStruct {
     pub host: String,
     pub database: String,

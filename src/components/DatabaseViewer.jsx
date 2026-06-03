@@ -5,7 +5,7 @@ import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import { DiMysql } from "react-icons/di";
 import TableDetailPage from "./TableDetailPage.jsx";
-import { SiOracle, SiSqlite } from "react-icons/si";
+import { SiOracle, SiSqlite, SiMongodb, SiRedis } from "react-icons/si";
 import {
   FaTable,
   FaEye,
@@ -28,7 +28,15 @@ import {
 const ICON_MAP = {
   mysql: <DiMysql size="1.2em" color="#00758F" />,
   oracle: <SiOracle size="1.2em" color="#F80000" />,
+  postgresql: <FaDatabase size="1.2em" color="#336791" />,
   sqlite: <SiSqlite size="1.2em" color="#003B57" />,
+  mongodb: <SiMongodb size="1.2em" color="#47A248" />,
+  redis: <SiRedis size="1.2em" color="#DC382D" />,
+  clickhouse: <FaDatabase size="1.2em" color="#FFCC00" />,
+  elasticsearch: <FaDatabase size="1.2em" color="#FEC514" />,
+  s3: <FaDatabase size="1.2em" color="#FF9900" />,
+  kafka: <FaStream size="1.2em" color="#231F20" />,
+  rocketmq: <FaStream size="1.2em" color="#D4213D" />,
   table: <FaTable />,
   view: <FaEye />,
   query: <FaSearch />,
@@ -38,10 +46,40 @@ const ICON_MAP = {
   partitions: <FaLayerGroup />,
   columns: <FaColumns />,
   index: <FaKey />,
+  singlePrimaryIndex: <FaStar />,
+  singleCommonIndex: <FaKey />,
   column: <FaStream />,
   primary: <FaStar />,
   default: <FaFolder />,
   singleQuery: <FaDatabase />,
+  // Kafka specific icons
+  kafka_topics: <FaColumns color="#00A0E4" />,
+  kafka_single_topic: <FaStream color="#00A0E4" />,
+  kafka_partitions: <FaLayerGroup color="#7B68EE" />,
+  kafka_single_partition: <FaLayerGroup color="#9370DB" />,
+  kafka_messages: <FaStream color="#FF6B6B" />,
+  kafka_consumer_groups: <FaDatabase color="#50C878" />,
+  kafka_single_consumer_group: <FaDatabase color="#3CB371" />,
+  kafka_brokers: <FaDatabase color="#FFB347" />,
+  kafka_single_broker: <FaDatabase color="#FFA500" />,
+  kafka_config: <FaKey color="#DDA0DD" />,
+  // RocketMQ specific icons
+  rocketmq_topics: <FaColumns color="#D4213D" />,
+  rocketmq_single_topic: <FaStream color="#D4213D" />,
+  rocketmq_messages: <FaStream color="#FF6B6B" />,
+  // Redis specific icons
+  redis_keys: <FaColumns color="#DC382D" />,
+  strings: <FaStream color="#FF6B6B" />,
+  hashes: <FaLayerGroup color="#7B68EE" />,
+  lists: <FaColumns color="#50C878" />,
+  sets: <FaStar color="#FFB347" />,
+  zsets: <FaKey color="#DDA0DD" />,
+  // Elasticsearch specific icons
+  es_indices: <FaColumns color="#FEC514" />,
+  // S3 / OSS specific icons
+  bucket: <FaDatabase size="1.2em" color="#FF9900" />,
+  folder: <FaFolder color="#FFB347" />,
+  textFile: <FaEye color="#87CEEB" />,
 };
 
 const getNodeIcon = (nodeType, iconName) => {
@@ -127,9 +165,6 @@ function DatabaseViewer({
         const currentOpenNodes = openNodesRef.current;
         childNodes.forEach(async (childNode) => {
           if (currentOpenNodes[childNode.id]) {
-            console.log(
-              `DatabaseViewer: Recursively re-fetching children for previously open child node: ${childNode.name} (ID: ${childNode.id})`
-            );
             await fetchNodeChildren(childNode);
           }
         });
@@ -148,9 +183,6 @@ function DatabaseViewer({
   }, []);
 
   const updateQueryNodeNameInTree = useCallback((queryIdToUpdate, newName) => {
-    console.log(
-      `DatabaseViewer: 收到更新查询节点名称请求。QueryId: ${queryIdToUpdate}, New Name: ${newName}`
-    );
     setTreeData((prevTree) => {
       const findAndUpdate = (nodes) => {
         return nodes.map((node) => {
@@ -161,9 +193,6 @@ function DatabaseViewer({
             node.path[node.path.length - 1].config_value.toString() ===
               queryIdToUpdate.toString()
           ) {
-            console.log(
-              `DatabaseViewer: 正在更新树节点名称: ${node.name} -> ${newName}`
-            );
             return { ...node, name: newName };
           }
           if (node.children) {
@@ -180,13 +209,8 @@ function DatabaseViewer({
   }, []);
 
   useEffect(() => {
-    console.log(
-      "DatabaseViewer: useEffect for connections triggered. Connections updated (prop changed):",
-      connections
-    );
-
     const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 1: "mysql", 2: "oracle", 3: "sqlite" };
+      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
 
       return {
@@ -210,9 +234,6 @@ function DatabaseViewer({
     const currentOpenNodes = openNodesRef.current;
     newTreeData.forEach(async (node) => {
       if (currentOpenNodes[node.id] && node.children === null) {
-        console.log(
-          `DatabaseViewer: Re-fetching children for previously open root node: ${node.name} (ID: ${node.id})`
-        );
         await fetchNodeChildren(node);
       }
     });
@@ -229,29 +250,66 @@ function DatabaseViewer({
     );
 
     if (!connection) {
-      return `/* 错误: 无法找到连接信息来生成SQL */\nSELECT * FROM "${node.name}" LIMIT ${limit};`;
+      return `/* 错误: 无法找到连接信息来生成SQL */\nSELECT * FROM ${node.name} LIMIT ${limit};`;
     }
 
     const dbType = connection.connection_type;
     const tableName = node.name;
 
     switch (dbType) {
-      case 1:
+      case 0: {
+        // MySQL
         const mysqlDatabaseName =
           node.path.length > 2
             ? node.path[1].config_value
             : connection.connection_name;
         return `SELECT * FROM \`${mysqlDatabaseName}\`.\`${tableName}\` LIMIT ${limit};`;
-      case 2:
+      }
+      case 5: {
+        // OracleDB
         const oracleSchemaName =
           node.path.length > 2
             ? node.path[1].config_value
             : connection.connection_name;
         return `SELECT * FROM "${oracleSchemaName}"."${tableName}" WHERE ROWNUM <= ${limit};`;
+      }
       case 3:
-        return `SELECT * FROM "${tableName}" LIMIT ${limit};`;
+        // SQLite
+        return `SELECT * FROM \`${tableName}\` LIMIT ${limit};`;
+      case 1: {
+        // PostgreSQL
+        const pgSchemaName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : "public";
+        return `SELECT * FROM "${pgSchemaName}"."${tableName}" LIMIT ${limit};`;
+      }
+      case 6: {
+        // MSSQL
+        const mssqlDatabaseName =
+          node.path.length > 2
+            ? node.path[1].config_value
+            : connection.connection_name;
+        const mssqlSchemaName =
+          node.path.length > 4
+            ? node.path[3].config_value
+            : "dbo";
+        return `SELECT TOP ${limit} * FROM [${mssqlDatabaseName}].[${mssqlSchemaName}].[${tableName}];`;
+      }
+      case 7:
+        // Clickhouse
+        return `SELECT * FROM ${tableName} LIMIT ${limit};`;
+      case 4:
+        // MongoDB
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
+      case 9:
+        // Redis
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
+      case 10:
+        // Elasticsearch
+        return `SELECT * FROM ${tableName} LIMIT ${limit}`;
       default:
-        return `SELECT * FROM "${tableName}" LIMIT ${limit}; /* 未知数据库类型，使用通用查询 */`;
+        return `SELECT * FROM ${tableName} LIMIT ${limit};`;
     }
   };
 
@@ -351,8 +409,6 @@ function DatabaseViewer({
       const existingSqlEditorTab = tabs.find(
         (tab) => tab.type === "sqlEditor" && tab.queryId === queryId
       );
-      console.log("existingSqlEditorTab1:", existingSqlEditorTab);
-
       if (existingSqlEditorTab) {
         setActiveTabId(existingSqlEditorTab.id);
       } else {
@@ -373,15 +429,15 @@ function DatabaseViewer({
     } else if (node.iconName === "singleTable") {
       const tableId = node.path[node.path.length - 1].config_value;
       const newTabId = `singleTable-${tableId}`;
-      console.log("tabs:", tabs);
       const existingSqlEditorTab = tabs.find(
         (tab) => tab.type === "singleTable" && tab.id === newTabId
       );
-      console.log("existingSqlEditorTab2:", existingSqlEditorTab);
       if (existingSqlEditorTab) {
         setActiveTabId(existingSqlEditorTab.id);
       } else {
         let sql = generateSqlForNode(node, connections);
+        const rootConfigId = node.path[0]?.config_value;
+        const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
         const newTab = {
           id: newTabId,
@@ -393,50 +449,195 @@ function DatabaseViewer({
           type: "singleTable",
           initialSql: sql,
           node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      // 表节点同时切换展开/折叠
+      await handleToggleNode(node);
+      return;
+    } else if (
+      node.iconName === "singlePrimaryIndex" ||
+      node.iconName === "singleCommonIndex"
+    ) {
+      // 处理索引节点点击
+      // 索引节点的 path 结构: [connection, database, type, table, "Index", index_name]
+      // 表名在 path[3] 的位置
+      const tableName = node.path[3]?.config_value;
+      const indexName = node.name;
+      const newTabId = `index-${node.id}`;
+
+      const existingIndexTab = tabs.find((tab) => tab.id === newTabId);
+      if (existingIndexTab) {
+        setActiveTabId(existingIndexTab.id);
+      } else {
+        const newTab = {
+          id: newTabId,
+          name: indexName,
+          icon: node.icon,
+          details: `索引: ${indexName}`,
+          type: "indexDetail",
+          node: node,
+          tableName: tableName,
         };
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
       }
       return;
-    }
+    } else if (node.iconName === "column" || node.iconName === "primary") {
+      const columnName = node.name;
+      const tableName = node.path[node.path.length - 3]?.config_value;
+      const newTabId = `column-${node.id}`;
 
-    if (
-      node.type !== "singleTable" &&
-      node.type !== "singleQuery" &&
-      node.type !== "column" &&
-      node.type !== "primary"
-    ) {
-      console.log(
-        `DatabaseViewer: Clicking expandable parent node (${node.name}), also toggling.`
-      );
-      await handleToggleNode(node);
-    }
-
-    let tabDetails = node.details;
-    const existingTab = tabs.find((tab) => tab.id === node.id);
-
-    if (existingTab) {
-      if (existingTab.details !== tabDetails) {
-        setTabs((prevTabs) =>
-          prevTabs.map((tab) =>
-            tab.id === node.id ? { ...tab, details: tabDetails } : tab
-          )
-        );
+      const existingColumnTab = tabs.find((tab) => tab.id === newTabId);
+      if (existingColumnTab) {
+        setActiveTabId(existingColumnTab.id);
+      } else {
+        const newTab = {
+          id: newTabId,
+          name: columnName,
+          icon: node.icon,
+          details: `列: ${columnName}`,
+          type: "columnDetail",
+          node: node,
+          tableName: tableName,
+          iconName: node.iconName,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
       }
-      setActiveTabId(node.id);
-    } else {
-      const newTab = {
-        id: node.id,
-        name: node.name,
-        icon: node.icon,
-        details: tabDetails,
-        iconName: node.iconName,
-        path: node.path,
-        type: "info",
-      };
-      setTabs([...tabs, newTab]);
-      setActiveTabId(newTab.id);
+      return;
+    } else if (node.iconName === "columns") {
+      // 点击 Columns 文件夹 -> 打开所属表的列信息详情页
+      const tableName = node.path[node.path.length - 2]?.config_value;
+      const tabId = `columns-detail-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+
+      if (existingTab) {
+        setActiveTabId(tabId);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${tableName} - 列信息`,
+          icon: node.icon,
+          type: "tableDetail",
+          node: node,
+          defaultTab: "column",
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
+      return;
     }
+
+    // Kafka 节点处理
+    if (node.iconName?.startsWith("kafka_")) {
+      await handleKafkaNodeActivate(node, connection);
+      return;
+    }
+
+    // RocketMQ 节点处理
+    if (node.iconName?.startsWith("rocketmq_")) {
+      await handleRocketmqNodeActivate(node, connection);
+      return;
+    }
+
+    // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
+    await handleToggleNode(node);
+  };
+
+  // Kafka 节点激活处理
+  const handleKafkaNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Topic 消息查看
+    if (nodeType === "kafka_messages" || nodeType === "kafka_single_topic") {
+      const topicName = node.path[node.path.length - 1]?.config_value || node.name;
+      const tabId = `kafka-messages-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Messages`,
+          icon: node.icon,
+          type: "kafkaMessages",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      if (nodeType === "kafka_messages") {
+        await handleToggleNode(node);
+      }
+      return;
+    }
+
+    // Topic 详情页
+    if (nodeType === "kafka_partitions" || nodeType === "kafka_config") {
+      const topicName = node.path[node.path.length - 2]?.config_value;
+      const tabId = `kafka-topic-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Details`,
+          icon: node.icon,
+          type: "kafkaTopicDetail",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
+      return;
+    }
+
+    // 默认展开/折叠
+    await handleToggleNode(node);
+  };
+
+  // RocketMQ 节点激活处理
+  const handleRocketmqNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Topic 消息查看
+    if (nodeType === "rocketmq_messages" || nodeType === "rocketmq_single_topic") {
+      const topicName = node.path[node.path.length - 1]?.config_value || node.name;
+      const tabId = `rocketmq-messages-${node.id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `${topicName} - Messages`,
+          icon: node.icon,
+          type: "rocketmqMessages",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      if (nodeType === "rocketmq_messages") {
+        await handleToggleNode(node);
+      }
+      return;
+    }
+
+    // 默认展开/折叠
+    await handleToggleNode(node);
   };
 
   const handleToggleNode = async (node) => {
@@ -445,15 +646,11 @@ function DatabaseViewer({
     setOpenNodes((prev) => ({ ...prev, [node.id]: !isCurrentlyOpen }));
 
     if (!isCurrentlyOpen && node.children === null) {
-      console.log(
-        `DatabaseViewer: Toggling node (${node.name}), fetching children due to opening.`
-      );
       await fetchNodeChildren(node);
     }
   };
 
   const handleRefreshNode = async (node) => {
-    console.log("Refreshing node:", node.name);
     setTreeData((prevTree) =>
       updateNodeInTree(prevTree, node.id, { children: null })
     );
@@ -462,8 +659,6 @@ function DatabaseViewer({
   };
 
   const handleAddNode = async (node) => {
-    console.log("Add action on node:", node.name, "Icon Name:", node.iconName);
-
     const rootConfigId = node.path[0]?.config_value;
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
@@ -508,6 +703,33 @@ function DatabaseViewer({
       }
       generatedSql = generateCreateIndexSql(connectionType, tableName);
       defaultQueryName = `Add_Index_to_${tableName}`;
+    } else if (node.iconName === "kafka_topics") {
+      // 创建新 Kafka Topic
+      const topicName = prompt("请输入新 Topic 名称:");
+      if (!topicName) return;
+
+      const numPartitions = parseInt(prompt("请输入分区数 (默认 1):", "1") || "1");
+      const replicationFactor = parseInt(prompt("请输入副本因子 (默认 1):", "1") || "1");
+
+      try {
+        const responseJson = await invoke("kafka_create_topic", {
+          connectionId: connectionId,
+          topic: topicName,
+          numPartitions: numPartitions,
+          replicationFactor: replicationFactor,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          alert(`Topic "${topicName}" 创建成功!`);
+          await handleRefreshNode(node);
+        } else {
+          alert(`创建 Topic 失败: ${response_msg}`);
+        }
+      } catch (err) {
+        alert(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
+      }
+      return;
     } else {
       alert(
         `触发了"新增"操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`
@@ -528,7 +750,6 @@ function DatabaseViewer({
   };
 
   const handleEditConnection = (node) => {
-    console.log("Editing connection:", node.name, "with ID:", node.id);
     setEditingConnectionId(node.id);
     setIsModalOpen(true);
   };
@@ -539,9 +760,6 @@ function DatabaseViewer({
   };
 
   const handleConnectionModalSaveSuccess = (baseConfigId, isEditMode) => {
-    console.log(
-      `DatabaseViewer: Connection saved: ID ${baseConfigId}, EditMode: ${isEditMode}. Calling onConnectionUpdated().`
-    );
     if (onConnectionUpdated) {
       onConnectionUpdated(baseConfigId);
     }
@@ -624,7 +842,6 @@ function DatabaseViewer({
             }
             return remainingTabs;
           });
-          console.log("Query deleted successfully.");
         } else {
           console.error("Failed to delete query:", response_msg);
           alert(`删除查询失败: ${response_msg}`);
@@ -669,9 +886,6 @@ function DatabaseViewer({
           });
 
           if (onConnectionDeleted) {
-            console.log(
-              "DatabaseViewer: Connection deleted. Calling onConnectionDeleted()."
-            );
             await onConnectionDeleted();
           }
         } else {
@@ -727,18 +941,17 @@ function DatabaseViewer({
   };
 
   const handleDeleteQuery = async (node) => {
-    console.log("Request to delete query:", node.name, "with node:", node);
     setNodeToDelete(node);
     deleteModalRef.current?.showModal();
   };
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-4 md:grid-cols-[minmax(350px,_1fr)_2fr]">
-      <div className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg">
-        <div className="flex-shrink-0 border-b p-4">
-          <h2 className="text-xl font-bold">数据库导航</h2>
+    <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
+      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5">
+        <div className="flex-shrink-0 border-b border-base-content/5 px-3 py-2">
+          <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">导航</h2>
         </div>
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
           {treeData && treeData.length > 0 ? (
             <ul className="menu p-0">
               {treeData.map((rootNode) => (
@@ -760,10 +973,10 @@ function DatabaseViewer({
               ))}
             </ul>
           ) : (
-            <div className="text-center text-base-content/60 p-4">
-              <p>暂无数据库连接。</p>
-              <p className="text-sm mt-2">
-                请通过 "连接" &gt; "新建连接..." 添加一个新的数据库连接。
+            <div className="text-center text-base-content/40 p-6">
+              <p className="text-sm">暂无数据库连接</p>
+              <p className="text-xs mt-2">
+                请通过 "连接" &gt; "新建连接..." 添加
               </p>
             </div>
           )}

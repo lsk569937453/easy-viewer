@@ -3,7 +3,6 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
-use aws_sdk_s3::config::endpoint::Endpoint;
 use aws_sdk_s3::config::Credentials;
 use aws_sdk_s3::config::Region;
 use aws_sdk_s3::config::SharedCredentialsProvider;
@@ -16,7 +15,6 @@ use human_bytes::human_bytes;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
-use std::i32;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -458,7 +456,7 @@ impl S3Config {
                     );
                     vecs.push(list_node_info_response_item);
                 }
-                return Ok(ListNodeInfoResponse::new(vecs));
+                Ok(ListNodeInfoResponse::new(vecs))
             }
             2 => {
                 let bucket_name = list[1].config_value.clone();
@@ -503,7 +501,7 @@ impl S3Config {
                     vecs.push(list_node_item);
                 }
 
-                return Ok(ListNodeInfoResponse::new(vecs));
+                Ok(ListNodeInfoResponse::new(vecs))
             }
             _ => {
                 let bucket_name = list[1].config_value.clone();
@@ -529,7 +527,7 @@ impl S3Config {
                 for prefix in prefixes {
                     let mut prefix_str = prefix.prefix().unwrap_or_default().to_string();
                     prefix_str.pop();
-                    let prefix = prefix_str.split("/").last().unwrap();
+                    let prefix = prefix_str.split("/").last().unwrap_or_default();
                     vecs.push(ListNodeInfoResponseItem::new(
                         true,
                         true,
@@ -564,12 +562,11 @@ impl S3Config {
                     vecs.push(list_node_item);
                 }
 
-                return Ok(ListNodeInfoResponse::new(vecs));
+                Ok(ListNodeInfoResponse::new(vecs))
             }
         }
-
-        Ok(ListNodeInfoResponse::new_with_empty())
     }
+
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let _ = self.get_connection().await?;
         Ok(())
@@ -580,9 +577,6 @@ impl S3Config {
         let region = self.config.region.clone();
         let credentials = Credentials::from_keys(access_key.clone(), secret_key, None);
 
-        let endpoint = Endpoint::builder()
-            .url(format!("http://{}:{}", self.config.host, self.config.port))
-            .build();
         let config = Config::builder()
             .endpoint_url(format!("http://{}:{}", self.config.host, self.config.port))
             .region(Region::new(region))

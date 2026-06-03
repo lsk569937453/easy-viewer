@@ -66,8 +66,8 @@ const DdlSkeleton = () => (
   </div>
 );
 
-function TableDetailPage({ activeTabNode, connectionDetails }) {
-  const [activeTab, setActiveTab] = useState("ddl");
+function TableDetailPage({ activeTabNode, connectionDetails, defaultTab }) {
+  const [activeTab, setActiveTab] = useState(defaultTab || "ddl");
   const [columnsData, setColumnsData] = useState([]);
   const [ddl, setDdl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -104,7 +104,6 @@ function TableDetailPage({ activeTabNode, connectionDetails }) {
         const columnsResponse = JSON.parse(columnsResponseJson);
         if (columnsResponse.response_code === 0) {
           const columnsPayload = columnsResponse.response_msg; // 从 response_msg 中获取数据体
-          console.log("columnsResponseJson:", columnsPayload);
 
           if (columnsPayload && columnsPayload.rows) {
             // 3. 根据日志修正列数据映射的索引

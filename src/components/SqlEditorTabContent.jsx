@@ -251,9 +251,6 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
         // 但如果用户修改了名称，`nameChanged`为true，此时也需要更新树。
         // 这里主要针对**已存在查询的重命名** 和 **新查询在首次保存时其名称可能与默认值不同** 的情况
         if (savedQueryId && nameChanged) {
-          console.log(
-            `SqlEditorTabContent: 查询名称已更新。通知 DatabaseViewer 更新树节点。QueryId: ${savedQueryId}, New Name: ${queryName}`
-          );
           if (onQuerySaved) {
             onQuerySaved(savedQueryId, queryName);
           }
@@ -262,9 +259,6 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
           // 此时 `DatabaseViewer` 的 `handleAddNode` 已经通过 `handleRefreshNode` 刷新了父级 'query' 文件夹，
           // 确保新查询节点会被加载。所以这里不需要再额外调用 `onQuerySaved` 来更新名称。
           // `onQuerySaved` 主要用于**重命名**场景。
-          console.log(
-            `SqlEditorTabContent: 新查询 (ID: ${savedQueryId}) 保存成功。通常由父组件刷新列表。`
-          );
         }
 
         return "查询已成功保存!";
@@ -432,15 +426,17 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : filteredData.length > 0 ? (
-          <table className="table table-sm table-pin-rows table-pin-cols w-full">
+          <table className="table table-sm w-full" style={{ fontSize: "12px" }}>
             {/* Table Head */}
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th key={header.id} className="bg-base-200">
-                      {" "}
-                      {/* Add distinct header background */}
+                    <th
+                      key={header.id}
+                      className="bg-base-200"
+                      style={{ width: "150px", fontSize: "12px" }}
+                    >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -455,9 +451,14 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
             {/* Table Body */}
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+                <tr key={row.id} style={{ fontSize: "12px" }}>
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
+                    <td
+                      key={cell.id}
+                      className="truncate"
+                      style={{ width: "150px" }}
+                      title={String(cell.getValue() || "")}
+                    >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()

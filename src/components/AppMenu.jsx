@@ -3,7 +3,12 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import AboutModal from "./AboutModal";
 import NewConnectionModal from "./NewConnectionModal";
 
-const appWindow = getCurrentWindow();
+let appWindow = null;
+try {
+  appWindow = getCurrentWindow();
+} catch (e) {
+  console.warn("Not running in Tauri environment");
+}
 
 const themes = [
   "light",
@@ -159,12 +164,12 @@ function AppMenu({ onConnectionCreated }) {
   return (
     <div
       id="app-menu-titlebar"
-      className="navbar h-12 min-h-12 max-h-12 select-none rounded-t-lg bg-base-200"
+      className="navbar h-10 min-h-10 max-h-10 select-none bg-base-300 border-b border-base-content/10"
       ref={menuRef}
       style={{ position: "relative", zIndex: 10 }}
     >
       <div className="flex-1 flex items-center">
-        <a className="btn btn-ghost text-xl normal-case" data-tauri-no-drag>
+        <a className="btn btn-ghost text-sm font-bold normal-case px-3 tracking-wide opacity-70" data-tauri-no-drag>
           DB Viewer
         </a>
         <ul className="menu menu-horizontal p-0" data-tauri-no-drag>
@@ -276,19 +281,19 @@ function AppMenu({ onConnectionCreated }) {
 
       <div className="flex-none" data-tauri-no-drag>
         <button
-          className="btn btn-square btn-ghost"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content"
           onClick={() => appWindow.minimize()}
         >
-          _
+          ─
         </button>
         <button
-          className="btn btn-square btn-ghost"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content"
           onClick={() => appWindow.toggleMaximize()}
         >
           □
         </button>
         <button
-          className="btn btn-square btn-ghost"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:bg-error hover:text-error-content"
           onClick={() => appWindow.close()}
         >
           ✕

@@ -193,9 +193,9 @@ impl MssqlConfig {
     ) -> Result<(), anyhow::Error> {
         let level_infos = list_node_info_req.level_infos;
         let database_name = level_infos[1].config_value.clone();
-        let schema_name = level_infos[2].config_value.clone();
+        let _schema_name = level_infos[2].config_value.clone();
 
-        let table_name = level_infos[4].config_value.clone();
+        let _table_name = level_infos[4].config_value.clone();
         let mut conn = self.get_connection_with_database(database_name).await?;
 
         let mut vec = vec![];
@@ -928,7 +928,7 @@ WHERE table_schema = '{}'
             TcpStream::connect(config.get_addr()),
         )
         .await
-        .map_err(|e| anyhow!("Connect timeout in 500ms."))??;
+        .map_err(|_e| anyhow!("Connect timeout in 500ms."))??;
         tcp.set_nodelay(true)?;
 
         let client = timeout(

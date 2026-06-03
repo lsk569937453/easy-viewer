@@ -2,7 +2,12 @@ import React, { useState, useEffect, useRef } from "react";
 import { FaTimes } from "react-icons/fa";
 import TableWorkspacePanel from "./TableWorkspacePanel.jsx";
 import TableDetailPage from "./TableDetailPage.jsx";
-import SqlEditorTabContent from "./SqlEditorTabContent.jsx"; // Import the new component
+import SqlEditorTabContent from "./SqlEditorTabContent.jsx";
+import IndexDetailPage from "./IndexDetailPage.jsx";
+import ColumnDetailPage from "./ColumnDetailPage.jsx";
+import KafkaMessagesPanel from "./KafkaMessagesPanel.jsx";
+import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
+import RocketmqMessagesPanel from "./RocketmqMessagesPanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -111,36 +116,36 @@ function TabPanel({
   return (
     <div
       ref={tabPanelContainerRef}
-      className="flex flex-col overflow-hidden rounded-lg bg-base-100 shadow-lg relative"
+      className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative"
     >
       {/* Tab Bar */}
       {tabs.length > 0 && (
-        <div className="flex border-b bg-base-200">
+        <div className="flex border-b border-base-content/5 bg-base-200/50 w-full">
           {tabs.map((tab) => (
             <div
               key={tab.id}
               className={`
-                flex items-center px-4 py-2 cursor-pointer border-r border-base-300
-                flex-1 min-w-[80px] max-w-[200px]
+                flex items-center px-3 py-1.5 cursor-pointer border-r border-base-content/5
+                flex-1 min-w-[60px] max-w-[220px] transition-colors
                 ${
                   activeTabId === tab.id
                     ? "bg-base-100 text-primary font-semibold"
-                    : "text-base-content/60 hover:bg-base-300"
+                    : "text-base-content/50 hover:bg-base-200 hover:text-base-content/80"
                 }
               `}
               onClick={() => handleTabClick(tab.id)}
               onContextMenu={(e) => handleContextMenu(e, tab.id)}
             >
-              <span className="mr-2 flex-shrink-0">{tab.icon}</span>
-              <span className="truncate flex-grow">{tab.name}</span>
+              <span className="mr-1.5 flex-shrink-0 opacity-60">{tab.icon}</span>
+              <span className="truncate flex-grow text-xs">{tab.name}</span>
               <button
-                className="ml-2 text-base-content/60 hover:text-error flex-shrink-0"
+                className="ml-1 flex-shrink-0 text-base-content/30 hover:text-error transition-colors"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCloseTab(tab.id);
                 }}
               >
-                <FaTimes size="0.9em" />
+                <FaTimes size="0.7em" />
               </button>
             </div>
           ))}
@@ -176,15 +181,65 @@ function TabPanel({
                 <TableDetailPage
                   activeTabNode={activeNode}
                   connectionDetails={connection}
+                  defaultTab={activeTab.defaultTab}
                 />
               );
             }
-            console.log("aaaa:" + activeTab.type);
             // Render TableWorkspacePanel for "tableWorkspace" type tabs
             if (activeTab.type === "singleTable") {
               return (
                 <TableWorkspacePanel
                   initialSql={activeTab.initialSql}
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render IndexDetailPage for "indexDetail" type tabs
+            if (activeTab.type === "indexDetail") {
+              return (
+                <IndexDetailPage
+                  activeTabNode={activeTab.node}
+                  tableName={activeTab.tableName}
+                />
+              );
+            }
+
+            // Render ColumnDetailPage for "columnDetail" type tabs
+            if (activeTab.type === "columnDetail") {
+              return (
+                <ColumnDetailPage
+                  activeTabNode={activeTab.node}
+                  tableName={activeTab.tableName}
+                />
+              );
+            }
+
+            // Render KafkaMessagesPanel for "kafkaMessages" type tabs
+            if (activeTab.type === "kafkaMessages") {
+              return (
+                <KafkaMessagesPanel
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render KafkaTopicDetail for "kafkaTopicDetail" type tabs
+            if (activeTab.type === "kafkaTopicDetail") {
+              return (
+                <KafkaTopicDetail
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render RocketmqMessagesPanel for "rocketmqMessages" type tabs
+            if (activeTab.type === "rocketmqMessages") {
+              return (
+                <RocketmqMessagesPanel
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
                 />
@@ -213,10 +268,10 @@ function TabPanel({
           })()
         ) : (
           <div className="flex justify-center items-center h-full">
-            <div className="text-center text-base-content/60">
+            <div className="text-center text-base-content/30">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="mx-auto h-12 w-12"
+                className="mx-auto h-10 w-10"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -225,10 +280,10 @@ function TabPanel({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
                 />
               </svg>
-              <p className="mt-4 text-lg">请从左侧列表中选择一个节点</p>
+              <p className="mt-3 text-sm">从左侧选择节点以查看内容</p>
             </div>
           </div>
         )}
@@ -236,7 +291,18 @@ function TabPanel({
       {/* Context Menu */}
       {menuVisible && (
         <div
-          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2"
+          ref={(el) => {
+            if (el && tabPanelContainerRef.current) {
+              const containerRect = tabPanelContainerRef.current.getBoundingClientRect();
+              const menuRect = el.getBoundingClientRect();
+              // 如果菜单超出容器右边界，改为右对齐
+              if (menuRect.right > containerRect.right) {
+                el.style.left = "auto";
+                el.style.right = `${containerRect.right - containerRect.left - menuPosition.x - 1}px`;
+              }
+            }
+          }}
+          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2 min-w-[160px]"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <ul className="menu menu-compact">

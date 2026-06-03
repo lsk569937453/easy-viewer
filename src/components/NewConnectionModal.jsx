@@ -26,6 +26,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [databaseName, setDatabaseName] = useState("");
+  const [rmqTopics, setRmqTopics] = useState("");
 
   const [error, setError] = useState("");
   const [isTesting, setIsTesting] = useState(false);
@@ -34,7 +35,9 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const [testMessage, setTestMessage] = useState("");
   const isEditMode = !!editingId;
 
-  const traditionalDbTypes = ["mysql", "oracle"];
+  const traditionalDbTypes = ["mysql", "oracle", "postgresql", "mongodb", "redis", "clickhouse", "elasticsearch"];
+  // Kafka 只需要 broker，用简化表单
+  const simpleBrokerTypes = ["kafka"];
 
   const resetForm = () => {
     const initialDbType = "sqlite";
@@ -47,6 +50,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     setUsername("");
     setPassword("");
     setDatabaseName("");
+    setRmqTopics("");
     setError("");
     setIsTesting(false);
     setIsCreating(false);
@@ -83,11 +87,43 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
               if (dbTypeKey === "sqlite") {
                 setConnectionMode("url");
                 setConnectionString(baseConfigEnum.sqlite.file_path);
-                // Clear other fields to ensure a clean state
                 setHost("");
                 setPort("");
                 setUsername("");
                 setPassword("");
+                setDatabaseName("");
+              } else if (dbTypeKey === "kafka") {
+                // Kafka: 解析 broker 地址 "host:port"
+                const broker = baseConfigEnum.kafka.broker || "";
+                const parts = broker.split(":");
+                setHost(parts[0] || "");
+                setPort(parts[1] || "9092");
+                setConnectionMode("host");
+                setConnectionString("");
+                setUsername("");
+                setPassword("");
+                setDatabaseName("");
+              } else if (dbTypeKey === "s3") {
+                // S3 / OSS: access_key / secret_key / region
+                const config = baseConfigEnum.s3.config;
+                setHost(config.host || "");
+                setPort(config.port ? String(config.port) : "443");
+                setUsername(config.access_key || "");
+                setPassword(config.secret_key || "");
+                setDatabaseName(config.region || "");
+                setConnectionMode("host");
+                setConnectionString("");
+              } else if (dbTypeKey === "rocketmq") {
+                // RocketMQ: proxy_url, access_key, secret_key, topics
+                const proxyUrl = baseConfigEnum.rocketmq.proxy_url || "";
+                const parts = proxyUrl.split(":");
+                setHost(parts[0] || "");
+                setPort(parts[1] || "8081");
+                setUsername(baseConfigEnum.rocketmq.access_key || "");
+                setPassword(baseConfigEnum.rocketmq.secret_key || "");
+                setRmqTopics((baseConfigEnum.rocketmq.topics || []).join(", "));
+                setConnectionMode("host");
+                setConnectionString("");
                 setDatabaseName("");
               } else {
                 // This handles 'mysql', 'oracle', etc.
@@ -187,6 +223,92 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const parsePostgresqlUrl = (url) => {
+    const regex =
+      /^postgresql:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/([^?]*))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 PostgreSQL URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 5432,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
+  const parseKafkaUrl = (url) => {
+    const regex =
+      /^kafka:\/\/([^:]+)(?::(\d+))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 Kafka URL 格式。");
+    const [, host, port] = match;
+    return {
+      broker: `${host}:${port || "9092"}`,
+    };
+  };
+
+  const parseMongodbUrl = (url) => {
+    const regex =
+      /^mongodb:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/([^?]*))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 MongoDB URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 27017,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
+  const parseRedisUrl = (url) => {
+    const regex =
+      /^redis:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/(\d+))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 Redis URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 6379,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
+  const parseClickhouseUrl = (url) => {
+    const regex =
+      /^clickhouse:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/([^?]*))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 ClickHouse URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 8123,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
+  const parseElasticsearchUrl = (url) => {
+    const regex =
+      /^https?:\/\/(?:([^:]+)(?::([^@]*))?@)?([^:]+)(?::(\d+))(?:\/([^?]*))?$/;
+    const match = url.match(regex);
+    if (!match) throw new Error("无效的 Elasticsearch URL 格式。");
+    const [, user, pass, host, port, database] = match;
+    return {
+      host: host || "",
+      port: parseInt(port, 10) || 9200,
+      database: database || "",
+      user_name: user || "",
+      password: pass || "",
+    };
+  };
+
   const getHostConnectionDetails = () => {
     const cleanHost = host.trim();
     const cleanPort = port.trim();
@@ -211,8 +333,71 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const getKafkaBrokerDetails = () => {
+    const cleanHost = host.trim();
+    const cleanPort = port.trim();
+    if (!cleanHost) return { isValid: false, message: "主机不能为空！" };
+    const parsedPort = parseInt(cleanPort, 10) || 9092;
+    return {
+      isValid: true,
+      broker: `${cleanHost}:${parsedPort}`,
+    };
+  };
+
+  const getS3ConnectionDetails = () => {
+    const cleanHost = host.trim();
+    const cleanPort = port.trim();
+    const cleanAccessKey = username.trim();
+    const cleanSecretKey = password.trim();
+    const cleanRegion = databaseName.trim();
+    if (!cleanHost) return { isValid: false, message: "Endpoint 不能为空！" };
+    if (!cleanAccessKey) return { isValid: false, message: "Access Key 不能为空！" };
+    if (!cleanSecretKey) return { isValid: false, message: "Secret Key 不能为空！" };
+    const parsedPort = parseInt(cleanPort, 10) || 443;
+    return {
+      isValid: true,
+      details: {
+        host: cleanHost,
+        port: parsedPort,
+        access_key: cleanAccessKey,
+        secret_key: cleanSecretKey,
+        region: cleanRegion || "us-east-1",
+      },
+    };
+  };
+
+  const getRocketmqConnectionDetails = () => {
+    const cleanHost = host.trim();
+    if (!cleanHost) return { isValid: false, message: "Proxy 地址不能为空！" };
+    const parsedPort = parseInt(port.trim(), 10) || 8081;
+    const proxyUrl = `${cleanHost}:${parsedPort}`;
+    const topicsList = rmqTopics
+      .trim()
+      .split(/[,\n]+/)
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+    return {
+      isValid: true,
+      details: {
+        proxy_url: proxyUrl,
+        access_key: username.trim() || undefined,
+        secret_key: password.trim() || undefined,
+        topics: topicsList,
+      },
+    };
+  };
+
   const isFormValid = () => {
     if (connectionName.trim() === "") return false;
+    if (isS3Type) {
+      return getS3ConnectionDetails().isValid;
+    }
+    if (isRocketmqType) {
+      return getRocketmqConnectionDetails().isValid;
+    }
+    if (simpleBrokerTypes.includes(dbType)) {
+      return getKafkaBrokerDetails().isValid;
+    }
     if (connectionMode === "url") {
       return connectionString.trim() !== "";
     } else {
@@ -248,12 +433,28 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             file_path: connectionString.trim(),
           },
         };
+      } else if (isS3Type) {
+        // S3 / OSS
+        const { isValid, message, details } = getS3ConnectionDetails();
+        if (!isValid) throw new Error(message);
+        baseConfigEnum = { s3: { config: details } };
+      } else if (isRocketmqType) {
+        // RocketMQ
+        const { isValid, message, details } = getRocketmqConnectionDetails();
+        if (!isValid) throw new Error(message);
+        baseConfigEnum = { rocketmq: details };
+      } else if (simpleBrokerTypes.includes(dbType)) {
+        // Kafka 等只需要 broker 的类型
+        const { broker } = getKafkaBrokerDetails();
+        baseConfigEnum = { [dbType]: { broker } };
       } else if (connectionMode === "url") {
         let details;
         if (dbType === "mysql") {
           details = parseMysqlUrl(connectionString.trim());
         } else if (dbType === "oracle") {
           details = parseOracleUrl(connectionString.trim());
+        } else if (dbType === "postgresql") {
+          details = parsePostgresqlUrl(connectionString.trim());
         } else {
           throw new Error(`不支持的数据库类型: ${dbType}`);
         }
@@ -286,11 +487,6 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         };
         invokeCommand = "save_base_config";
       }
-
-      console.log(
-        `正在${isEditMode ? "更新" : "创建"}连接, 请求体:`,
-        JSON.stringify(requestBody)
-      );
 
       // 根据模式调用不同的后端接口
       responseJson = await invoke(invokeCommand, {
@@ -356,6 +552,29 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             sqlite: { file_path: connectionString.trim() },
           },
         };
+      } else if (isS3Type) {
+        const { isValid, message, details } = getS3ConnectionDetails();
+        if (!isValid) throw new Error(message);
+        testDatabaseRequest = {
+          base_config_enum: {
+            s3: { config: details },
+          },
+        };
+      } else if (isRocketmqType) {
+        const { isValid, message, details } = getRocketmqConnectionDetails();
+        if (!isValid) throw new Error(message);
+        testDatabaseRequest = {
+          base_config_enum: {
+            rocketmq: details,
+          },
+        };
+      } else if (simpleBrokerTypes.includes(dbType)) {
+        const { broker } = getKafkaBrokerDetails();
+        testDatabaseRequest = {
+          base_config_enum: {
+            [dbType]: { broker },
+          },
+        };
       } else {
         let connectionDetailsForBackend;
         if (connectionMode === "url") {
@@ -365,6 +584,16 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             connectionDetailsForBackend = parseMysqlUrl(connectionString);
           else if (dbType === "oracle")
             connectionDetailsForBackend = parseOracleUrl(connectionString);
+          else if (dbType === "postgresql")
+            connectionDetailsForBackend = parsePostgresqlUrl(connectionString);
+          else if (dbType === "mongodb")
+            connectionDetailsForBackend = parseMongodbUrl(connectionString);
+          else if (dbType === "redis")
+            connectionDetailsForBackend = parseRedisUrl(connectionString);
+          else if (dbType === "clickhouse")
+            connectionDetailsForBackend = parseClickhouseUrl(connectionString);
+          else if (dbType === "elasticsearch")
+            connectionDetailsForBackend = parseElasticsearchUrl(connectionString);
           else
             throw new Error(
               `URL模式暂不支持 ${dbType} 类型数据库的后端解析测试。`
@@ -415,12 +644,27 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         return "例如: mysql://user:password@host:port/database_name";
       case "oracle":
         return "例如: oracle://user:password@host:port/service_name";
+      case "postgresql":
+        return "例如: postgresql://user:password@host:port/database_name";
+      case "mongodb":
+        return "例如: mongodb://user:password@host:port/database_name";
+      case "redis":
+        return "例如: redis://password@host:port/db_index";
+      case "clickhouse":
+        return "例如: clickhouse://user:password@host:port/database";
+      case "elasticsearch":
+        return "例如: http://user:password@host:port";
+      case "kafka":
+        return "例如: kafka://host:port";
       default:
         return "请输入连接字符串";
     }
   };
 
   const canUseHostMode = traditionalDbTypes.includes(dbType);
+  const isKafkaType = dbType === "kafka";
+  const isRocketmqType = dbType === "rocketmq";
+  const isS3Type = dbType === "s3";
 
   return (
     <dialog id="new_connection_modal" className="modal" open={isOpen}>
@@ -469,7 +713,15 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
               >
                 <option value="sqlite">SQLite</option>
                 <option value="mysql">MySQL</option>
+                <option value="postgresql">PostgreSQL</option>
                 <option value="oracle">Oracle</option>
+                <option value="mongodb">MongoDB</option>
+                <option value="redis">Redis</option>
+                <option value="clickhouse">ClickHouse</option>
+                <option value="elasticsearch">Elasticsearch</option>
+                <option value="s3">S3 / OSS</option>
+                <option value="kafka">Kafka</option>
+                <option value="rocketmq">RocketMQ</option>
               </select>
             </div>
 
@@ -571,7 +823,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                   </label>
                   <input
                     type="text"
-                    placeholder={dbType === "mysql" ? "3306" : "1521"}
+                    placeholder={dbType === "mysql" ? "3306" : dbType === "postgresql" ? "5432" : dbType === "mongodb" ? "27017" : dbType === "redis" ? "6379" : dbType === "clickhouse" ? "8123" : dbType === "elasticsearch" ? "9200" : "1521"}
                     className={`input input-bordered w-full ${
                       error && error.includes("端口") ? "input-error" : ""
                     }`}
@@ -612,6 +864,10 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                     <span className="label-text">
                       {dbType === "oracle"
                         ? "服务名/SID (可选)"
+                        : dbType === "postgresql"
+                        ? "数据库名"
+                        : dbType === "redis"
+                        ? "数据库索引 (可选，默认0)"
                         : "数据库名 (可选)"}
                     </span>
                   </label>
@@ -620,8 +876,192 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                     placeholder={
                       dbType === "oracle"
                         ? "例如: ORCL 或 xe"
+                        : dbType === "redis"
+                        ? "例如: 0"
                         : "例如: mydatabase"
                     }
+                    className="input input-bordered w-full"
+                    value={databaseName}
+                    onChange={(e) => setDatabaseName(e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+
+            {isKafkaType && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Broker 地址 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: localhost"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("主机") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="9092"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isRocketmqType && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Proxy 地址 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: localhost"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("主机") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="8081"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Access Key (可选)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: your-access-key"
+                    className="input input-bordered w-full"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Secret Key (可选)</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="请输入 Secret Key"
+                    className="input input-bordered w-full"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Topics <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered h-24 font-mono text-sm"
+                    placeholder="输入 Topic 名称，逗号或换行分隔&#10;例如: topic1, topic2, topic3"
+                    value={rmqTopics}
+                    onChange={(e) => setRmqTopics(e.target.value)}
+                  />
+                  <label className="label">
+                    <span className="label-text-alt">
+                      逗号或换行分隔多个 Topic
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            {isS3Type && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Endpoint <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: s3.amazonaws.com 或 oss-cn-hangzhou.aliyuncs.com"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("主机") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="443"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Access Key <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: AKIAIOSFODNN7EXAMPLE"
+                    className={`input input-bordered w-full ${
+                      error && error.includes("Access Key") ? "input-error" : ""
+                    }`}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Secret Key <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="请输入 Secret Key"
+                    className="input input-bordered w-full"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      Region (可选，默认 us-east-1)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: us-east-1 或 cn-hangzhou"
                     className="input input-bordered w-full"
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}

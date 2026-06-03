@@ -1,4 +1,5 @@
 use serde_json::Value;
+#[allow(dead_code)]
 const MAX_LINE_LENGTH: usize = 50;
 pub fn serde_value_to_string(value: Value) -> Option<String> {
     if value.is_string() {
@@ -9,6 +10,7 @@ pub fn serde_value_to_string(value: Value) -> Option<String> {
         Some(value.to_string())
     }
 }
+#[allow(dead_code)]
 pub fn wrap_string(input: &str, max_line_length: usize) -> String {
     input
         .chars()

@@ -58,9 +58,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
-    console.log(
-      `DEBUG: EditableCell blurred - Row ID: ${row.original.id}, Column: ${column.id}`
-    );
     if (ref.current) {
       const currentText = ref.current.textContent;
       if (currentText !== initialValue) {
@@ -72,9 +69,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    console.log(
-      `DEBUG: EditableCell focused - Row ID: ${row.original.id}, Column: ${column.id}, Current Value: ${initialValue}`
-    ); // 添加这一行
     const range = document.createRange();
     if (ref.current) {
       range.selectNodeContents(ref.current);
@@ -91,9 +85,6 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleInput = useCallback(
     (e) => {
-      console.log(
-        `DEBUG: EditableCell input - Row ID: ${row.original.id}, Column: ${column.id}, Text: ${e.target.textContent}`
-      ); // 添加这一行
       onCellInput(row.original.id, column.id, e.target.textContent);
     },
     [onCellInput, row.original.id, column.id]
@@ -101,23 +92,38 @@ const EditableCell = ({ getValue, row, column, onCellChange, onCellInput }) => {
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Enter") {
-      e.target.blur(); // 这会触发 handleBlur
+      e.target.blur();
       e.preventDefault();
     }
   }, []);
 
+  const displayValue = String(initialValue !== null && initialValue !== undefined ? initialValue : "");
+
   return (
-    <div
-      ref={ref}
-      contentEditable
-      suppressContentEditableWarning
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      onInput={handleInput}
-      onKeyDown={handleKeyDown}
-      className="focus:outline-none focus:bg-base-300 px-2 py-1 -my-1 rounded cursor-text" // 添加 cursor-text 提示可编辑
-      title="点击编辑" // 添加 Tooltip 提示
-    />
+    <div className="relative w-full">
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onInput={handleInput}
+        onKeyDown={handleKeyDown}
+        className={`px-1 py-0.5 cursor-text ${
+          isFocused
+            ? "outline-none bg-base-300 overflow-y-auto whitespace-pre-wrap break-words"
+            : "truncate"
+        }`}
+        style={{
+          fontSize: "12px",
+          lineHeight: "1.4",
+          maxWidth: isFocused ? "none" : "200px"
+        }}
+        title={isFocused ? "" : displayValue}
+      >
+        {displayValue}
+      </div>
+    </div>
   );
 };
 
@@ -131,39 +137,25 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   const [hasChanges, setHasChanges] = useState(false);
   const [originalTableData, setOriginalTableData] = useState([]);
-  const [currentlyEditingCell, setCurrentlyEditingCell] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
   useEffect(() => {
-    let changesDetected = false;
-    if (currentlyEditingCell) {
-      changesDetected = true;
-    } else {
-      changesDetected =
-        JSON.stringify(tableData) !== JSON.stringify(originalTableData);
-    }
-    setHasChanges(changesDetected);
-  }, [tableData, originalTableData, currentlyEditingCell]);
+    const dataChanged =
+      JSON.stringify(tableData) !== JSON.stringify(originalTableData);
+    setHasChanges(dataChanged || isEditing);
+  }, [tableData, originalTableData, isEditing]);
 
   useEffect(() => {
-    console.log(
-      "DEBUG: Initial SQL/Active Tab Node changed. SQL:",
-      initialSql,
-      "Node:",
-      activeTabNode?.name
-    );
     setSqlQuery(initialSql || "");
     if (activeTabNode && activeSubTab === "data") {
-      console.log("DEBUG: Triggering fetchTableData with:", initialSql);
       fetchTableData(initialSql);
     } else {
-      console.log("DEBUG: Clearing table data (not 'data' sub-tab or no node)");
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
     }
   }, [initialSql, activeTabNode, activeSubTab]);
@@ -171,16 +163,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   // 获取表数据
   const fetchTableData = async (query) => {
     if (!query || !activeTabNode || !activeTabNode.path) {
-      console.log("DEBUG: fetchTableData skipped (missing query/node info).");
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
       return;
     }
 
-    console.log("DEBUG: Calling invoke('exe_sql') with query:", query);
     try {
       const listNodeInfoReqObject = { level_infos: activeTabNode.path };
 
@@ -210,16 +199,10 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
           return rowObject;
         });
 
-        console.log(
-          "DEBUG: Data fetched successfully. Rows:",
-          fetchedData.length,
-          "Headers:",
-          fetchedColumnHeaders
-        );
         setTableData(fetchedData);
         setColumnHeaders(fetchedColumnHeaders);
         setOriginalTableData(JSON.parse(JSON.stringify(fetchedData))); // 深拷贝，作为原始数据
-        setCurrentlyEditingCell(null); // 清除编辑状态
+        setIsEditing(false);
         setCurrentPage(1);
       } else {
         console.error(
@@ -229,15 +212,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         setTableData([]);
         setColumnHeaders([]);
         setOriginalTableData([]);
-        setCurrentlyEditingCell(null);
-        setCurrentPage(1); // 清除数据时重置分页
+          setCurrentPage(1); // 清除数据时重置分页
       }
     } catch (error) {
       console.error("DEBUG: Error executing SQL query:", error);
       setTableData([]);
       setColumnHeaders([]);
       setOriginalTableData([]);
-      setCurrentlyEditingCell(null);
       setCurrentPage(1); // 清除数据时重置分页
     }
   };
@@ -247,31 +228,17 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
   };
 
   const handleExecuteSql = () => {
-    console.log("DEBUG: Execute SQL button clicked. Query:", sqlQuery);
     fetchTableData(sqlQuery);
   };
 
   const handleCellInput = useCallback((rowId, columnId, value) => {
-    // console.log("DEBUG: Cell input. Row ID:", rowId, "Column ID:", columnId, "Value:", value); // 可能会非常频繁，根据需要开启
-    // setCurrentlyEditingCell(rowId ? { rowId, columnId, value } : null);
+    setIsEditing(!!rowId);
   }, []);
 
   const handleCellChange = useCallback((originalRow, columnId, value) => {
-    console.log(
-      "DEBUG: Cell change committed. Row ID:",
-      originalRow.id,
-      "Column ID:",
-      columnId,
-      "New Value:",
-      value
-    );
     setTableData((prevTableData) => {
       const rowIndex = prevTableData.findIndex((r) => r.id === originalRow.id);
       if (rowIndex === -1) {
-        console.warn(
-          "DEBUG: Could not find original row to update (on blur commit):",
-          originalRow
-        );
         return prevTableData; // 未找到则返回之前的状态
       }
 
@@ -282,12 +249,10 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       };
       return updatedData; // 返回新状态
     });
-    setCurrentlyEditingCell(null); // 提交后清除实时编辑状态
   }, []);
 
   // 添加新行
   const handleAddRow = useCallback(() => {
-    console.log("DEBUG: Add row clicked.");
     const newRow = columnHeaders.reduce(
       (acc, col) => ({ ...acc, [col]: "" }),
       {}
@@ -300,7 +265,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   const handleDeleteRow = useCallback(
     async (rowToDelete) => {
-      console.log("DEBUG: Delete row clicked. Row ID:", rowToDelete.id);
       if (!window.confirm("确定要删除此行数据吗？此操作不可撤销。")) {
         return;
       }
@@ -331,37 +295,70 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 保存修改
   const handleSaveChanges = async () => {
-    console.log("DEBUG: Save changes clicked. Current tableData:", tableData);
+    // 对比 tableData 和 originalTableData，生成 UPDATE SQL
+    const sqls = [];
+    const idColumn = columnHeaders[0]; // 使用第一列作为标识列
+
+    for (let i = 0; i < tableData.length; i++) {
+      const current = tableData[i];
+      const original = originalTableData.find(
+        (o) => o.id === current.id
+      );
+      if (!original) continue;
+
+      const changes = [];
+      columnHeaders.forEach((col) => {
+        if (String(current[col]) !== String(original[col])) {
+          const val =
+            current[col] === null || current[col] === undefined
+              ? "NULL"
+              : `'${String(current[col]).replace(/'/g, "''")}'`;
+          changes.push(`\`${col}\` = ${val}`);
+        }
+      });
+
+      if (changes.length > 0) {
+        const idValue =
+          original[idColumn] === null || original[idColumn] === undefined
+            ? "NULL"
+            : `'${String(original[idColumn]).replace(/'/g, "''")}'`;
+        sqls.push(
+          `UPDATE \`${activeTabNode.name}\` SET ${changes.join(", ")} WHERE \`${idColumn}\` = ${idValue}`
+        );
+      }
+    }
+
+    if (sqls.length === 0) {
+      alert("没有检测到变更。");
+      return;
+    }
 
     try {
-      const responseJson = await invoke("update_table_data", {
-        configId: connectionDetails.base_config_id,
-        tableName: activeTabNode.name,
-        data: tableData, // 当前的 tableData
-        originalData: originalTableData, // 原始数据，用于后端对比差异
+      const listNodeInfoReq = { level_infos: activeTabNode.path };
+      const responseJson = await invoke("update_record", {
+        listNodeInfoReq,
+        sqls,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        setOriginalTableData(JSON.parse(JSON.stringify(tableData))); // 将当前 tableData 设置为新的原始数据
-        setCurrentlyEditingCell(null); // 保存成功后清除实时编辑状态
+        setOriginalTableData(JSON.parse(JSON.stringify(tableData)));
+        setIsEditing(false);
         alert("数据保存成功！");
-        console.log("DEBUG: Data saved successfully.");
       } else {
         alert(`数据保存失败: ${response_msg}`);
-        console.error("DEBUG: Save failed:", response_msg);
+        console.error("Save failed:", response_msg);
       }
     } catch (error) {
-      console.error("DEBUG: Error saving data:", error);
-      alert("保存数据时发生错误！");
+      console.error("Error saving data:", error);
+      alert(`保存数据时发生错误: ${error.message || error}`);
     }
   };
 
   // 取消修改，将 tableData 恢复到 originalTableData
   const handleCancelChanges = useCallback(() => {
-    console.log("DEBUG: Cancel changes clicked.");
     setTableData(JSON.parse(JSON.stringify(originalTableData))); // 深拷贝原始数据，恢复到当前数据
-    setCurrentlyEditingCell(null); // 取消修改后，清除实时编辑状态
+    setIsEditing(false);
     // 取消修改后，当前页可能超出总页数，重置到第一页
     setCurrentPage(1);
   }, [originalTableData]);
@@ -373,7 +370,6 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
         String(value).toLowerCase().includes(debouncedSearchTerm.toLowerCase())
       )
     );
-    // console.log("DEBUG: Filtered data count:", data.length, "Search term:", debouncedSearchTerm); // 可能会频繁，根据需要开启
     return data;
   }, [tableData, debouncedSearchTerm]);
 
@@ -587,17 +583,16 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                     <p>没有数据。</p>
                   </div>
                 ) : (
-                  <table className="table table-zebra table-pin-rows table-pin-cols w-full table-fixed">
-                    {" "}
-                    <thead>
+                  <table className="table table-zebra w-full" style={{ fontSize: "12px" }}>
+                    <thead className="sticky top-0 z-10">
                       {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>
                           {headerGroup.headers.map((header) => (
                             <th
                               key={header.id}
-                              style={{ width: header.getSize() }}
+                              className="bg-base-200"
+                              style={{ width: "150px", fontSize: "12px" }}
                             >
-                              {" "}
                               {header.isPlaceholder
                                 ? null
                                 : flexRender(
@@ -610,11 +605,13 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
                       ))}
                     </thead>
                     <tbody>
-                      {/* 直接渲染当前页的所有行 */}
                       {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr key={row.id} style={{ fontSize: "12px" }}>
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id}>
+                            <td
+                              key={cell.id}
+                              style={{ width: "150px" }}
+                            >
                               {flexRender(
                                 cell.column.columnDef.cell,
                                 cell.getContext()

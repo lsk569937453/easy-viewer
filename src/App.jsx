@@ -7,6 +7,11 @@ import { Toaster } from "react-hot-toast";
 function App() {
   const [connections, setConnections] = useState([]);
 
+  // 组件挂载完成后通知 Rust 端显示窗口
+  useEffect(() => {
+    invoke("show_main_window");
+  }, []);
+
   // 辅助函数：解析 connection_json 字符串以获取 host 和 port
   const parseConnectionJson = (connectionType, connectionJsonString) => {
     try {
@@ -33,7 +38,6 @@ function App() {
    */
   const fetchConnections = async () => {
     try {
-      console.log("App: 正在从后端获取所有连接列表...");
       const responseJson = await invoke("get_base_config");
       const baseResponse = JSON.parse(responseJson);
 
@@ -49,7 +53,6 @@ function App() {
           );
           return { ...conn, host, port }; // 将解析出的 host 和 port 添加到连接对象中
         });
-        console.log("App: 成功获取所有连接列表:", processedConnections);
         // 使用新的数组引用更新状态，这将触发 DatabaseViewer 的 useEffect
         setConnections(processedConnections);
       } else {
@@ -68,9 +71,6 @@ function App() {
    */
   const handleSingleConnectionUpdated = async (updatedConnectionId) => {
     try {
-      console.log(
-        `App: 单个连接 (ID: ${updatedConnectionId}) 已更新，正在重新获取最新信息...`
-      );
       // 调用您提供的后端接口获取单个连接的最新数据
       const responseJson = await invoke("get_base_config_by_id", {
         baseConfigId: updatedConnectionId,
@@ -79,11 +79,6 @@ function App() {
 
       if (baseResponse.response_code === 0) {
         const rawUpdatedConnection = baseResponse.response_msg; // 这是 GetBaseConnectionByIdResponse 结构
-        console.log(
-          `App: 成功获取更新后的连接 (ID: ${updatedConnectionId}):`,
-          rawUpdatedConnection
-        );
-
         // 解析新获取连接的 connection_json 以获取 host 和 port
         const { host, port } = parseConnectionJson(
           rawUpdatedConnection.connection_type,
@@ -109,9 +104,6 @@ function App() {
               ? fullyUpdatedConnection // 用新的完整连接对象替换旧的
               : conn
           )
-        );
-        console.log(
-          `App: connections 状态已更新，包含 ID: ${updatedConnectionId} 的最新数据。`
         );
       } else {
         console.error(
@@ -139,10 +131,10 @@ function App() {
   }, []);
 
   return (
-    <div className="App flex h-screen flex-col bg-base-300">
+    <div className="App flex h-screen flex-col bg-base-200">
       {/* 将创建连接后的刷新函数传递给 AppMenu */}
       <AppMenu onConnectionCreated={fetchConnections} />
-      <main className="main-content flex-grow p-4 h-full w-full overflow-hidden ">
+      <main className="main-content flex-grow p-3 h-full w-full overflow-hidden ">
         {/*
           将 connections 数据传递给 DatabaseViewer。
           传递 handleSingleConnectionUpdated 作为 onConnectionUpdated prop，用于单个连接的更新。
@@ -160,10 +152,7 @@ function App() {
         toastOptions={{
           className: "",
           duration: 5000,
-          style: {
-            background: "#363636",
-            color: "#fff",
-          },
+          style: {},
           success: { duration: 3000 },
           error: { duration: 4000 },
         }}

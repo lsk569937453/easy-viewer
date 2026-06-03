@@ -19,6 +19,13 @@ use tauri::tray::MouseButtonState;
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 use tauri::Manager;
+
+#[tauri::command]
+fn show_main_window(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+    }
+}
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     let appstate = AppState::new().await?;
@@ -26,10 +33,9 @@ async fn main() -> Result<(), anyhow::Error> {
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
-            let _ = app
-                .get_webview_window("main")
-                .expect("no main window")
-                .set_focus();
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_focus();
+            }
         }))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
@@ -40,8 +46,11 @@ async fn main() -> Result<(), anyhow::Error> {
             let show = MenuItem::with_id(app, "show".to_string(), "Show", true, None::<&str>)?;
 
             let menu = Menu::with_items(app, &[&show, &quit])?;
+            let Some(icon) = app.default_window_icon().cloned() else {
+                return Err("Failed to get default window icon".into());
+            };
             let _ = TrayIconBuilder::new()
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(icon)
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -50,8 +59,9 @@ async fn main() -> Result<(), anyhow::Error> {
                         app.exit(0);
                     }
                     "show" => {
-                        let window = app.get_webview_window("main").unwrap();
-                        window.show().unwrap();
+                        if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.show();
+                        }
                     }
                     _ => {
                         info!("menu item {:?} not handled", event);
@@ -98,11 +108,12 @@ async fn main() -> Result<(), anyhow::Error> {
         )
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { api, .. } = event.clone() {
-                window.hide().unwrap();
+                let _ = window.hide();
                 api.prevent_close();
             }
         })
         .invoke_handler(tauri::generate_handler![
+            show_main_window,
             create_folder,
             delete_base_config,
             delete_bucket,
@@ -127,11 +138,15 @@ async fn main() -> Result<(), anyhow::Error> {
             get_query,
             import_database,
             init_dump_data,
+            kafka_create_topic,
+            kafka_delete_topic,
+            kafka_produce_message,
             list_node_info,
             move_column,
             remove_column,
             remove_query,
             rename_query,
+            rocketmq_send_message,
             save_base_config,
             save_query,
             show_columns,
@@ -142,6 +157,6 @@ async fn main() -> Result<(), anyhow::Error> {
             update_comment,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .map_err(|e| anyhow!("error while running tauri application: {}", e))?;
     Ok(())
 }

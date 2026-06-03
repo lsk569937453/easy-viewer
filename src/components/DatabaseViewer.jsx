@@ -429,6 +429,32 @@ function DatabaseViewer({
       }
       return;
     } else if (node.iconName === "singleTable") {
+      const rootConfigId = node.path[0]?.config_value;
+      const connection = findConnectionByRootConfigId(connections, rootConfigId);
+
+      // Redis key — use dedicated RedisKeyDetailPanel
+      if (connection && connection.connection_type === 9) {
+        const keyName = node.name;
+        const tabId = `redis-key-${node.id}`;
+        const existingTab = tabs.find((tab) => tab.id === tabId);
+        if (existingTab) {
+          setActiveTabId(existingTab.id);
+        } else {
+          const newTab = {
+            id: tabId,
+            name: keyName,
+            icon: node.icon,
+            type: "redisKeyDetail",
+            node: node,
+            connectionDetails: connection,
+          };
+          setTabs((prevTabs) => [...prevTabs, newTab]);
+          setActiveTabId(newTab.id);
+        }
+        await handleToggleNode(node);
+        return;
+      }
+
       const tableId = node.path[node.path.length - 1].config_value;
       const newTabId = `singleTable-${tableId}`;
       const existingSqlEditorTab = tabs.find(
@@ -438,8 +464,6 @@ function DatabaseViewer({
         setActiveTabId(existingSqlEditorTab.id);
       } else {
         let sql = generateSqlForNode(node, connections);
-        const rootConfigId = node.path[0]?.config_value;
-        const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
         const newTab = {
           id: newTabId,
@@ -694,6 +718,47 @@ function DatabaseViewer({
     );
     await fetchNodeChildren(node);
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
+  };
+
+  // Remove a Redis key node from the tree and close its tab
+  const handleRedisKeyDeleted = (node) => {
+    const tabId = `redis-key-${node.id}`;
+
+    // Remove node from tree
+    setTreeData((prevTree) => {
+      const removeFromTree = (nodes) =>
+        nodes
+          .map((n) => {
+            if (n.id === node.id) return null;
+            if (n.children) {
+              const updated = removeFromTree(n.children);
+              if (updated !== n.children) {
+                return { ...n, children: updated };
+              }
+            }
+            return n;
+          })
+          .filter(Boolean);
+      return removeFromTree(prevTree);
+    });
+
+    // Remove the openNodes entry
+    setOpenNodes((prev) => {
+      const next = { ...prev };
+      delete next[node.id];
+      return next;
+    });
+
+    // Close the tab and switch to the previous one
+    setTabs((prevTabs) => {
+      const remaining = prevTabs.filter((tab) => tab.id !== tabId);
+      if (activeTabId === tabId) {
+        setActiveTabId(
+          remaining.length > 0 ? remaining[remaining.length - 1].id : null
+        );
+      }
+      return remaining;
+    });
   };
 
   const handleAddNode = async (node) => {
@@ -1028,6 +1093,7 @@ function DatabaseViewer({
         connections={connections}
         treeData={treeData}
         onQuerySaved={updateQueryNodeNameInTree}
+        onRedisKeyDeleted={handleRedisKeyDeleted}
       />
       <NewConnectionModal
         isOpen={isModalOpen}

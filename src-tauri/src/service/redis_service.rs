@@ -93,7 +93,7 @@ impl RedisConfig {
             }
             // Level 2: Show keys filtered by type
             2 => {
-                let selected_type = level_infos[1].config_value.as_str();
+                let selected_type = level_infos[1].config_value.to_lowercase();
                 let db_index: u16 = if let Some(ref db) = self.config.database {
                     db.parse().unwrap_or(0)
                 } else {
@@ -106,13 +106,15 @@ impl RedisConfig {
                 for key in keys {
                     let key_type: String = redis::cmd("TYPE").arg(&key).query(&mut con)?;
 
-                    let should_include = match selected_type {
+                    let should_include = match selected_type.as_str() {
+                        "keys" => true,            // show all keys
                         "strings" => key_type == "string",
                         "hashes" => key_type == "hash",
                         "lists" => key_type == "list",
                         "sets" => key_type == "set",
-                        "zsets" => key_type == "zset",
-                        _ => true,
+                        "sorted sets" => key_type == "zset",
+                        "console" => false,        // console is not a key category
+                        _ => false,
                     };
 
                     if should_include {

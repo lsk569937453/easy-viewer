@@ -9,6 +9,7 @@ import KafkaMessagesPanel from "./KafkaMessagesPanel.jsx";
 import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
 import RocketmqMessagesPanel from "./RocketmqMessagesPanel.jsx";
 import RedisConsolePanel from "./RedisConsolePanel.jsx";
+import RedisKeyDetailPanel from "./RedisKeyDetailPanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -37,6 +38,7 @@ function TabPanel({
   connections,
   treeData,
   onQuerySaved,
+  onRedisKeyDeleted,
 }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -253,6 +255,17 @@ function TabPanel({
                 <RedisConsolePanel
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
+                />
+              );
+            }
+
+            // Render RedisKeyDetailPanel for "redisKeyDetail" type tabs
+            if (activeTab.type === "redisKeyDetail") {
+              return (
+                <RedisKeyDetailPanel
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
+                  onKeyDeleted={onRedisKeyDeleted}
                 />
               );
             }

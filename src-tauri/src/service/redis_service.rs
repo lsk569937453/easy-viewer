@@ -9,6 +9,7 @@ use crate::AppState;
 use redis::Commands;
 use serde::Deserialize;
 use serde::Serialize;
+use std::collections::HashMap;
 use std::time::Duration;
 use std::time::Instant;
 
@@ -72,13 +73,38 @@ impl RedisConfig {
 
                 // Get total key count
                 let db_size: i64 = redis::cmd("DBSIZE").query(&mut con)?;
+
+                // Count keys by type for per-category display
+                let mut type_counts: HashMap<String, usize> = HashMap::new();
+                if db_size > 0 {
+                    let keys: Vec<String> = redis::cmd("KEYS").arg("*").query(&mut con)?;
+                    for key in &keys {
+                        let key_type: String = redis::cmd("TYPE").arg(key).query(&mut con)?;
+                        *type_counts.entry(key_type).or_insert(0) += 1;
+                    }
+                }
+
                 let key_types = get_redis_key_type_map();
 
                 for (name, icon_name) in key_types.iter() {
-                    let description = if *name == "Keys" && db_size > 0 {
-                        Some(format!("({})", db_size))
-                    } else {
-                        None
+                    let description = match *name {
+                        "Keys" => {
+                            if db_size > 0 {
+                                Some(format!("({})", db_size))
+                            } else {
+                                None
+                            }
+                        }
+                        "Console" => None,
+                        _ => {
+                            let redis_type = category_name_to_redis_type(name);
+                            if db_size > 0 {
+                                let count = type_counts.get(redis_type).copied().unwrap_or(0);
+                                Some(format!("({})", count))
+                            } else {
+                                None
+                            }
+                        }
                     };
                     let item = ListNodeInfoResponseItem::new(
                         true,
@@ -308,6 +334,18 @@ fn get_redis_key_type_map() -> Vec<(&'static str, &'static str)> {
         ("Sorted Sets", "zsets"),
         ("Console", "redis_console"),
     ]
+}
+
+/// Map category display name to the corresponding Redis TYPE command return value.
+fn category_name_to_redis_type(name: &str) -> &str {
+    match name {
+        "Strings" => "string",
+        "Hashes" => "hash",
+        "Lists" => "list",
+        "Sets" => "set",
+        "Sorted Sets" => "zset",
+        _ => "",
+    }
 }
 
 /// Parse SQL to extract key name: SELECT * FROM <key> [LIMIT <n>]

@@ -142,59 +142,35 @@ function DatabaseViewer({
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
       if (response_code === 0) {
-        let childNodes = [];
+        // Build childNodes BEFORE setTreeData so the value is available
+        // for the caller regardless of React batching timing.
+        const childNodes = response_msg.list.map((child, index) => {
+          const childId = `${parentNode.id}-${child.name}-${index}`;
 
-        setTreeData((prevTree) => {
-          // Find existing children to preserve their loaded sub-trees and avoid flicker
-          const existingChildrenByName = {};
-          const findNode = (nodes, id) => {
-            for (const n of nodes) {
-              if (n.id === id) return n;
-              if (n.children) {
-                const found = findNode(n.children, id);
-                if (found) return found;
-              }
-            }
-            return null;
+          return {
+            id: childId,
+            name: child.name,
+            type: child.type || "default",
+            icon: getNodeIcon(child.type, child.icon_name),
+            description: child.description || "",
+            iconName: child.icon_name,
+            details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
+            children: null,
+            path: [
+              ...parentNode.path,
+              { level: parentNode.path.length + 1, config_value: child.name },
+            ],
           };
-          const existingParent = findNode(prevTree, parentNode.id);
-          if (existingParent?.children) {
-            for (const c of existingParent.children) {
-              existingChildrenByName[c.name] = c;
-            }
-          }
+        });
 
-          childNodes = response_msg.list.map((child, index) => {
-            const existing = existingChildrenByName[child.name];
-            return {
-              id: `${parentNode.id}-${child.name}-${index}`,
-              name: child.name,
-              type: child.type || "default",
-              icon: getNodeIcon(child.type, child.icon_name),
-              description: child.description || "",
-              iconName: child.icon_name,
-              details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-              // Preserve old children if available to avoid flicker on refresh
-              children: existing?.children ?? null,
-              path: [
-                ...parentNode.path,
-                { level: parentNode.path.length + 1, config_value: child.name },
-              ],
-            };
-          });
-
-          return updateNodeInTree(prevTree, parentNode.id, {
+        setTreeData((prevTree) =>
+          updateNodeInTree(prevTree, parentNode.id, {
             children: childNodes,
             isLoading: false,
-          });
-        });
+          })
+        );
 
-        const currentOpenNodes = openNodesRef.current;
-        childNodes.forEach(async (childNode) => {
-          if (currentOpenNodes[childNode.id]) {
-            await fetchNodeChildren(childNode);
-          }
-        });
+        return childNodes;
       } else {
         throw new Error(response_msg);
       }
@@ -738,9 +714,64 @@ function DatabaseViewer({
   };
 
   const handleRefreshNode = async (node) => {
-    // Don't clear children — keep old data visible while loading to avoid flicker
-    await fetchNodeChildren(node);
+    const childNodes = await fetchNodeChildren(node);
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
+
+    // Re-fetch data for open children using raw invoke calls, then
+    // update the tree in a SINGLE setTreeData to avoid React batching races.
+    if (childNodes && childNodes.length > 0) {
+      const currentOpenNodes = openNodesRef.current;
+      const openChildren = childNodes.filter(
+        (child) => currentOpenNodes[child.id]
+      );
+
+      if (openChildren.length > 0) {
+        // Fetch all open children's data in parallel via raw invoke
+        const results = await Promise.all(
+          openChildren.map(async (child) => {
+            try {
+              const responseJson = await invoke("list_node_info", {
+                listNodeInfoReq: { level_infos: child.path },
+              });
+              const { response_code, response_msg } = JSON.parse(responseJson);
+              if (response_code === 0) {
+                return { child, list: response_msg.list };
+              }
+            } catch (err) {
+              console.error("Failed to re-fetch child:", child.name, err);
+            }
+            return null;
+          })
+        );
+
+        // Update tree state ONCE with all results
+        setTreeData((prevTree) => {
+          let updated = prevTree;
+          for (const result of results.filter(Boolean)) {
+            const { child, list } = result;
+            const grandChildren = list.map((item, index) => ({
+              id: `${child.id}-${item.name}-${index}`,
+              name: item.name,
+              type: item.type || "default",
+              icon: getNodeIcon(item.type, item.icon_name),
+              description: item.description || "",
+              iconName: item.icon_name,
+              details: `节点: ${item.name}\n类型: ${item.type || "未知"}`,
+              children: null,
+              path: [
+                ...child.path,
+                { level: child.path.length + 1, config_value: item.name },
+              ],
+            }));
+            updated = updateNodeInTree(updated, child.id, {
+              children: grandChildren,
+              isLoading: false,
+            });
+          }
+          return updated;
+        });
+      }
+    }
   };
 
   // Remove a Redis key node from the tree and close its tab

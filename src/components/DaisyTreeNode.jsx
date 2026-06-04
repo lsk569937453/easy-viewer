@@ -236,8 +236,7 @@ function DaisyTreeNode({
       )}
 
       {isOpen &&
-        Array.isArray(node.children) &&
-        node.children.length > 0 && (
+        (Array.isArray(node.children) && node.children.length > 0 ? (
           <ul>
             {node.children.map((child) => (
               <DaisyTreeNode
@@ -257,7 +256,13 @@ function DaisyTreeNode({
               />
             ))}
           </ul>
-        )}
+        ) : node.isLoading ? (
+          <ul>
+            <li>
+              <span className="text-xs text-base-content/40 pl-9">加载中...</span>
+            </li>
+          </ul>
+        ) : null)}
     </li>
   );
 }

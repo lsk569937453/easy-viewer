@@ -692,6 +692,44 @@ impl BaseConfigEnum {
                     .update_record(list_node_info_req, appstate, sql)
                     .await?
             }
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
+            _ => (),
+        };
+        Ok(())
+    }
+    pub async fn create_collection(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        collection_name: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .create_collection(list_node_info_req, appstate, collection_name)
+                    .await?
+            }
+            _ => return Err(anyhow!("Unsupported database type for create_collection")),
+        };
+        Ok(())
+    }
+    pub async fn delete_table_row(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        table_name: String,
+        row_id: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .delete_table_row(list_node_info_req, appstate, table_name, row_id)
+                    .await?
+            }
             _ => (),
         };
         Ok(())

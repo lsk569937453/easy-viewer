@@ -13,7 +13,7 @@ const ACTION_ICON_MAP = {
   info: <FaInfoCircle />,
 };
 
-const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis"];
+const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb"];
 
 const NODES_WITH_REFRESH_ADD = [
   "query",
@@ -22,6 +22,7 @@ const NODES_WITH_REFRESH_ADD = [
   "columns",
   "index",
   "partitions",
+  "collections",
 ];
 
 const NODES_WITH_EDIT = ["singleTable"];

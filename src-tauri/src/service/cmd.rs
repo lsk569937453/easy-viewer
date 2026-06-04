@@ -11,7 +11,9 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
+use crate::service::cmd_service::create_collection_with_error;
 use crate::service::cmd_service::delete_bucket_with_error;
+use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
 use crate::service::cmd_service::drop_column_with_error;
@@ -252,6 +254,34 @@ pub async fn update_record(
     let time = Instant::now();
     let res = handle_response!(update_record_with_error(state, list_node_info_req, sqls).await);
     info!("update_record: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn create_collection(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    collection_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        create_collection_with_error(state, list_node_info_req, collection_name).await
+    );
+    info!("create_collection: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn delete_table_row(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    table_name: String,
+    row_id: String,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        delete_table_row_with_error(state, base_config_id, table_name, row_id, list_node_info_req).await
+    );
+    info!("delete_table_row: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

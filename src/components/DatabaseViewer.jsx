@@ -121,6 +121,9 @@ function DatabaseViewer({
   const [activeTabId, setActiveTabId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnectionId, setEditingConnectionId] = useState(null);
+  const createCollectionModalRef = useRef(null);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [createCollectionNode, setCreateCollectionNode] = useState(null);
 
   const [nodeToDelete, setNodeToDelete] = useState(null);
   const deleteModalRef = useRef(null);
@@ -887,6 +890,11 @@ function DatabaseViewer({
         alert(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
       }
       return;
+    } else if (node.iconName === "collections") {
+      setNewCollectionName("");
+      setCreateCollectionNode(node);
+      createCollectionModalRef.current?.showModal();
+      return;
     } else {
       alert(
         `触发了"新增"操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`
@@ -1067,6 +1075,35 @@ function DatabaseViewer({
     deleteModalRef.current?.close();
   };
 
+  const handleConfirmCreateCollection = async () => {
+    if (!newCollectionName.trim() || !createCollectionNode) return;
+
+    try {
+      const listNodeInfoReq = { level_infos: createCollectionNode.path };
+      const responseJson = await invoke("create_collection", {
+        listNodeInfoReq,
+        collectionName: newCollectionName.trim(),
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      createCollectionModalRef.current?.close();
+      if (response_code === 0) {
+        alert(`Collection "${newCollectionName.trim()}" 创建成功!`);
+        await handleRefreshNode(createCollectionNode);
+      } else {
+        alert(`创建 Collection 失败: ${response_msg}`);
+      }
+    } catch (err) {
+      createCollectionModalRef.current?.close();
+      alert(`创建 Collection 时发生错误: ${err.message || err.toString()}`);
+    }
+  };
+
+  const handleCancelCreateCollection = () => {
+    setNewCollectionName("");
+    setCreateCollectionNode(null);
+    createCollectionModalRef.current?.close();
+  };
+
   const handleEditNode = (node) => {
     if (node.iconName !== "singleTable") return;
 
@@ -1176,6 +1213,43 @@ function DatabaseViewer({
         </div>
         <form method="dialog" className="modal-backdrop">
           <button onClick={handleCancelDelete}>close</button>
+        </form>
+      </dialog>
+
+      <dialog ref={createCollectionModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">新建 Collection</h3>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">Collection 名称</span>
+            </label>
+            <input
+              type="text"
+              placeholder="请输入 Collection 名称"
+              className="input input-bordered w-full"
+              value={newCollectionName}
+              onChange={(e) => setNewCollectionName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmCreateCollection();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelCreateCollection}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmCreateCollection}
+              disabled={!newCollectionName.trim()}
+            >
+              创建
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelCreateCollection}>close</button>
         </form>
       </dialog>
     </div>

@@ -740,6 +740,56 @@ pub async fn update_record_with_error(
 
     Ok(())
 }
+pub async fn create_collection_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    collection_name: String,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "create_collection: collection_name={:?}, level_infos={:?}",
+        collection_name, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .create_collection(list_node_info_req, state.inner(), collection_name)
+        .await?;
+    Ok(())
+}
+pub async fn delete_table_row_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    table_name: String,
+    row_id: String,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "delete_table_row base_config_id: {}, table_name: {}, row_id: {}",
+        base_config_id, table_name, row_id
+    );
+    let value = base_config_id;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .delete_table_row(list_node_info_req, state.inner(), table_name, row_id)
+        .await?;
+    Ok(())
+}
 pub async fn show_columns_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

@@ -115,7 +115,9 @@ async fn main() -> Result<(), anyhow::Error> {
         .invoke_handler(tauri::generate_handler![
             show_main_window,
             create_folder,
+            create_collection,
             delete_base_config,
+            delete_table_row,
             delete_bucket,
             download_file,
             download_bucket,

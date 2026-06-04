@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import {
   FaPlus,
   FaTrashAlt,
@@ -277,21 +278,22 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
           baseConfigId: connectionDetails.base_config_id,
           tableName: activeTabNode.name,
           rowId: realRowId,
+          idColumn,
           listNodeInfoReq,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
 
         if (response_code === 0) {
-          alert("数据删除成功！");
+          showSuccess("数据删除成功！");
           // 删除成功后，重新获取数据以更新UI和原始数据状态
           fetchTableData(sqlQuery);
         } else {
-          alert(`数据删除失败: ${response_msg}`);
+          showError(`数据删除失败: ${response_msg}`);
           console.error("DEBUG: Delete failed:", response_msg);
         }
       } catch (error) {
         console.error("DEBUG: Error deleting data:", error);
-        alert(`删除数据时发生错误！${error.message || error}`);
+        showError(`删除数据时发生错误！${error.message || error}`);
       }
     },
     [connectionDetails, activeTabNode, sqlQuery, fetchTableData]
@@ -350,7 +352,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
     }
 
     if (sqls.length === 0) {
-      alert("没有检测到变更。");
+      showError("没有检测到变更。");
       return;
     }
 
@@ -365,14 +367,14 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       if (response_code === 0) {
         setOriginalTableData(JSON.parse(JSON.stringify(tableData)));
         setIsEditing(false);
-        alert("数据保存成功！");
+        showSuccess("数据保存成功！");
       } else {
-        alert(`数据保存失败: ${response_msg}`);
+        showError(`数据保存失败: ${response_msg}`);
         console.error("Save failed:", response_msg);
       }
     } catch (error) {
       console.error("Error saving data:", error);
-      alert(`保存数据时发生错误: ${error.message || error}`);
+      showError(`保存数据时发生错误: ${error.message || error}`);
     }
   };
 

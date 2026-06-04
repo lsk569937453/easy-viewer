@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
 import {
   IoRefresh,
@@ -83,13 +84,13 @@ function KafkaTopicDetail({ activeTabNode, connectionDetails }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        alert(`Topic "${topicName}" 已删除`);
+        showSuccess(`Topic "${topicName}" 已删除`);
         window.location.reload(); // 简单刷新页面
       } else {
-        alert(`删除失败: ${response_msg}`);
+        showError(`删除失败: ${response_msg}`);
       }
     } catch (err) {
-      alert(`删除 Topic 时发生错误: ${err.message || err.toString()}`);
+      showError(`删除 Topic 时发生错误: ${err.message || err.toString()}`);
     }
   };
 

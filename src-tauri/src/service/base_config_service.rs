@@ -697,6 +697,11 @@ impl BaseConfigEnum {
                     .update_record(list_node_info_req, appstate, sql)
                     .await?
             }
+            BaseConfigEnum::Clickhouse(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
             _ => (),
         };
         Ok(())
@@ -723,11 +728,17 @@ impl BaseConfigEnum {
         appstate: &AppState,
         table_name: String,
         row_id: String,
+        id_column: String,
     ) -> Result<(), anyhow::Error> {
         match self {
             BaseConfigEnum::Mongodb(config) => {
                 config
                     .delete_table_row(list_node_info_req, appstate, table_name, row_id)
+                    .await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
+                config
+                    .delete_table_row(list_node_info_req, appstate, table_name, row_id, id_column)
                     .await?
             }
             _ => (),
@@ -769,6 +780,9 @@ impl BaseConfigEnum {
                 config.get_ddl(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Mssql(config) => config.get_ddl(list_node_info_req, appstate).await?,
+            BaseConfigEnum::Clickhouse(config) => {
+                config.get_ddl(list_node_info_req, appstate).await?
+            }
             _ => "ExeSqlResponse::new()".to_string(),
         };
         Ok(data)

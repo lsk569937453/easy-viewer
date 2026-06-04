@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
@@ -388,12 +389,12 @@ function DatabaseViewer({
           "Failed to create new query via save_query:",
           response_msg
         );
-        alert(`创建新查询失败: ${response_msg}`);
+        showError(`创建新查询失败: ${response_msg}`);
         return false;
       }
     } catch (err) {
       console.error("Error invoking save_query for new query:", err);
-      alert(`创建新查询时发生错误: ${err.message || err.toString()}`);
+      showError(`创建新查询时发生错误: ${err.message || err.toString()}`);
       return false;
     }
   };
@@ -404,7 +405,7 @@ function DatabaseViewer({
 
     if (!connection) {
       console.error("Connection details not found for node:", node);
-      alert("无法找到数据库连接信息。");
+      showError("无法找到数据库连接信息。");
       return;
     }
 
@@ -823,7 +824,7 @@ function DatabaseViewer({
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
     if (!connection) {
-      alert("无法找到数据库连接信息来执行此操作。");
+      showError("无法找到数据库连接信息来执行此操作。");
       return;
     }
 
@@ -850,7 +851,7 @@ function DatabaseViewer({
       }
 
       if (!tableName) {
-        alert("无法确定表名来生成 CREATE COLUMN SQL。");
+        showError("无法确定表名来生成 CREATE COLUMN SQL。");
         return;
       }
       generatedSql = generateCreateColumnSql(connectionType, tableName);
@@ -858,7 +859,7 @@ function DatabaseViewer({
     } else if (node.iconName === "index") {
       const tableName = node.path[node.path.length - 2]?.config_value;
       if (!tableName) {
-        alert("无法确定表名来生成 CREATE INDEX SQL。");
+        showError("无法确定表名来生成 CREATE INDEX SQL。");
         return;
       }
       generatedSql = generateCreateIndexSql(connectionType, tableName);
@@ -881,13 +882,13 @@ function DatabaseViewer({
         const { response_code, response_msg } = JSON.parse(responseJson);
 
         if (response_code === 0) {
-          alert(`Topic "${topicName}" 创建成功!`);
+          showSuccess(`Topic "${topicName}" 创建成功!`);
           await handleRefreshNode(node);
         } else {
-          alert(`创建 Topic 失败: ${response_msg}`);
+          showError(`创建 Topic 失败: ${response_msg}`);
         }
       } catch (err) {
-        alert(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
+        showError(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
       }
       return;
     } else if (node.iconName === "collections") {
@@ -896,7 +897,7 @@ function DatabaseViewer({
       createCollectionModalRef.current?.showModal();
       return;
     } else {
-      alert(
+      showError(
         `触发了"新增"操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`
       );
       return;
@@ -944,7 +945,7 @@ function DatabaseViewer({
         nodeToDelete.path[nodeToDelete.path.length - 1]?.config_value;
 
       if (!baseConfigId || !queryName || !queryId) {
-        alert("无法获取完整的查询信息来删除。");
+        showError("无法获取完整的查询信息来删除。");
         setNodeToDelete(null);
         deleteModalRef.current?.close();
         return;
@@ -1009,11 +1010,11 @@ function DatabaseViewer({
           });
         } else {
           console.error("Failed to delete query:", response_msg);
-          alert(`删除查询失败: ${response_msg}`);
+          showError(`删除查询失败: ${response_msg}`);
         }
       } catch (err) {
         console.error("Error invoking remove_query:", err);
-        alert(`删除查询时发生错误: ${err.message || err.toString()}`);
+        showError(`删除查询时发生错误: ${err.message || err.toString()}`);
       } finally {
         setNodeToDelete(null);
         deleteModalRef.current?.close();
@@ -1058,11 +1059,11 @@ function DatabaseViewer({
             "Failed to delete connection via delete_base_config:",
             response_msg
           );
-          alert(`删除连接失败: ${response_msg}`);
+          showError(`删除连接失败: ${response_msg}`);
         }
       } catch (err) {
         console.error("Error invoking delete_base_config:", err);
-        alert(`删除连接时发生错误: ${err.message || err.toString()}`);
+        showError(`删除连接时发生错误: ${err.message || err.toString()}`);
       } finally {
         setNodeToDelete(null);
         deleteModalRef.current?.close();
@@ -1087,14 +1088,14 @@ function DatabaseViewer({
       const { response_code, response_msg } = JSON.parse(responseJson);
       createCollectionModalRef.current?.close();
       if (response_code === 0) {
-        alert(`Collection "${newCollectionName.trim()}" 创建成功!`);
+        showSuccess(`Collection "${newCollectionName.trim()}" 创建成功!`);
         await handleRefreshNode(createCollectionNode);
       } else {
-        alert(`创建 Collection 失败: ${response_msg}`);
+        showError(`创建 Collection 失败: ${response_msg}`);
       }
     } catch (err) {
       createCollectionModalRef.current?.close();
-      alert(`创建 Collection 时发生错误: ${err.message || err.toString()}`);
+      showError(`创建 Collection 时发生错误: ${err.message || err.toString()}`);
     }
   };
 
@@ -1111,7 +1112,7 @@ function DatabaseViewer({
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
     if (!connection) {
       console.error("Connection details not found for node:", node);
-      alert("无法找到数据库连接信息来编辑表详情。");
+      showError("无法找到数据库连接信息来编辑表详情。");
       return;
     }
 

@@ -770,11 +770,12 @@ pub async fn delete_table_row_with_error(
     base_config_id: i32,
     table_name: String,
     row_id: String,
+    id_column: String,
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<(), anyhow::Error> {
     info!(
-        "delete_table_row base_config_id: {}, table_name: {}, row_id: {}",
-        base_config_id, table_name, row_id
+        "delete_table_row base_config_id: {}, table_name: {}, row_id: {}, id_column: {}",
+        base_config_id, table_name, row_id, id_column
     );
     let value = base_config_id;
     let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
@@ -786,7 +787,7 @@ pub async fn delete_table_row_with_error(
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     base_config
         .base_config_enum
-        .delete_table_row(list_node_info_req, state.inner(), table_name, row_id)
+        .delete_table_row(list_node_info_req, state.inner(), table_name, row_id, id_column)
         .await?;
     Ok(())
 }

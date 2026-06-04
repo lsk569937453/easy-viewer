@@ -140,7 +140,7 @@ impl ClickhouseConfig {
         let client = self.get_connection_for_query().await?;
         let t = timeout(
             Duration::from_millis(500),
-            client.query("SELECT 'Hello, World!'").fetch_one::<usize>(),
+            client.query("SELECT 1").fetch_one::<u8>(),
         )
         .await??;
         info!("Clickhouse connection test: {}", t);
@@ -199,7 +199,7 @@ FROM system.tables
 WHERE database = '{}'",
                     db_name
                 );
-                let tables_count = conn.query(&sql).fetch_one::<i32>().await?;
+                let tables_count = conn.query(&sql).fetch_one::<u64>().await?;
                 for (name, icon_name) in get_clickhouse_database_data().iter() {
                     let description = if *name == "Tables" && tables_count > 0 {
                         Some(format!("({})", tables_count))
@@ -245,6 +245,156 @@ WHERE database = '{}'",
 
         Ok(ListNodeInfoResponse::new(vec))
     }
+
+    pub async fn update_record(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        sqls: Vec<String>,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = &list_node_info_req.level_infos;
+        if level_infos.len() < 2 {
+            return Err(anyhow!("Invalid level_infos for ClickHouse update"));
+        }
+
+        let db_name = level_infos[1].config_value.clone();
+        let url = format!(
+            "http://{}:{}?database={}",
+            self.config.host, self.config.port, db_name
+        );
+
+        let mut errors = vec![];
+        for sql in &sqls {
+            // Convert standard UPDATE to ClickHouse ALTER TABLE ... UPDATE syntax
+            let ch_sql = convert_update_to_clickhouse_syntax(sql, &db_name);
+            info!("ClickHouse update SQL: {}", ch_sql);
+
+            let mut request = reqwest::Client::new()
+                .post(&url)
+                .body(ch_sql)
+                .header("Content-Type", "application/x-www-form-urlencoded");
+
+            if !self.config.user_name.is_empty() {
+                request = request.basic_auth(&self.config.user_name, Some(&self.config.password));
+            }
+
+            match request.send().await {
+                Ok(response) => {
+                    let status = response.status();
+                    if !status.is_success() {
+                        let error_text = response.text().await.unwrap_or_default();
+                        errors.push(format!("ClickHouse HTTP error {}: {}", status, error_text));
+                    }
+                }
+                Err(e) => {
+                    errors.push(format!("ClickHouse request error: {}", e));
+                }
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(anyhow!(errors.join("; ")));
+        }
+
+        Ok(())
+    }
+
+    pub async fn delete_table_row(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        table_name: String,
+        row_id: String,
+        id_column: String,
+    ) -> Result<(), anyhow::Error> {
+        let level_infos = &list_node_info_req.level_infos;
+        if level_infos.len() < 2 {
+            return Err(anyhow!("Invalid level_infos for ClickHouse delete"));
+        }
+
+        let db_name = level_infos[1].config_value.clone();
+        let url = format!(
+            "http://{}:{}?database={}",
+            self.config.host, self.config.port, db_name
+        );
+
+        // ClickHouse uses ALTER TABLE ... DELETE WHERE syntax
+        let sql = format!(
+            "ALTER TABLE `{}`.`{}` DELETE WHERE `{}` = '{}'",
+            db_name, table_name, id_column, row_id.replace('\'', "''")
+        );
+        info!("ClickHouse delete SQL: {}", sql);
+
+        let mut request = reqwest::Client::new()
+            .post(&url)
+            .body(sql)
+            .header("Content-Type", "application/x-www-form-urlencoded");
+
+        if !self.config.user_name.is_empty() {
+            request = request.basic_auth(&self.config.user_name, Some(&self.config.password));
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("ClickHouse delete error {}: {}", status, error_text));
+        }
+
+        Ok(())
+    }
+
+    pub async fn get_ddl(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+    ) -> Result<String, anyhow::Error> {
+        let level_infos = &list_node_info_req.level_infos;
+        if level_infos.len() < 4 {
+            return Err(anyhow!("Invalid level_infos for ClickHouse get_ddl"));
+        }
+
+        let database_name = level_infos[1].config_value.clone();
+        let table_name = level_infos[3].config_value.clone();
+
+        let sql = format!(
+            "SHOW CREATE TABLE `{}`.`{}` FORMAT JSON",
+            database_name, table_name
+        );
+        info!("ClickHouse get_ddl: {}", sql);
+
+        let url = format!("http://{}:{}", self.config.host, self.config.port);
+
+        let mut request = reqwest::Client::new()
+            .post(&url)
+            .body(sql)
+            .header("Content-Type", "application/x-www-form-urlencoded");
+
+        if !self.config.user_name.is_empty() {
+            request = request.basic_auth(&self.config.user_name, Some(&self.config.password));
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("ClickHouse HTTP error {}: {}", status, error_text));
+        }
+
+        let raw_json = response.text().await?;
+        let ch_response: ClickhouseJsonResponse =
+            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+
+        // SHOW CREATE TABLE returns a single row with a "statement" column
+        let ddl = ch_response
+            .data
+            .first()
+            .and_then(|row| row.get("statement"))
+            .and_then(|v| json_value_to_string(v))
+            .ok_or_else(|| anyhow!("No DDL found in response"))?;
+
+        Ok(ddl)
+    }
 }
 
 /// Qualify a simple "SELECT * FROM table" with the database name: "SELECT * FROM db.table"
@@ -271,6 +421,42 @@ fn qualify_sql_with_database(sql: &str, db_name: &str) -> String {
         }
     }
     sql.to_string()
+}
+
+/// Convert standard UPDATE SQL to ClickHouse ALTER TABLE ... UPDATE syntax.
+/// Input:  UPDATE `table` SET `col` = 'val' WHERE `id` = 'val'
+/// Output: ALTER TABLE `db`.`table` UPDATE `col` = 'val' WHERE `id` = 'val'
+fn convert_update_to_clickhouse_syntax(sql: &str, db_name: &str) -> String {
+    let sql_upper = sql.to_uppercase();
+
+    if !sql_upper.starts_with("UPDATE") {
+        // Not an UPDATE, qualify as-is
+        return qualify_sql_with_database(sql, db_name);
+    }
+
+    // Find SET and WHERE positions
+    let set_pos = match sql_upper.find("SET") {
+        Some(p) => p,
+        None => return qualify_sql_with_database(sql, db_name),
+    };
+    let where_pos = match sql_upper.find("WHERE") {
+        Some(p) => p,
+        None => return qualify_sql_with_database(sql, db_name),
+    };
+
+    // Extract table name between UPDATE and SET
+    let table_part = sql[6..set_pos].trim();
+    let table_name = table_part.trim_matches('`');
+
+    // Qualify table name with database
+    let qualified_table = format!("`{}`.`{}`", db_name, table_name);
+
+    // Extract the SET ... WHERE part
+    let set_where_part = &sql[set_pos..where_pos];
+    let where_part = &sql[where_pos..];
+
+    // Build ClickHouse ALTER TABLE ... UPDATE syntax
+    format!("ALTER TABLE {} UPDATE {} {}", qualified_table, set_where_part.trim_start_matches("SET").trim(), where_part)
 }
 
 /// Convert a serde_json::Value to an Option<String>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
 import { SiRedis } from "react-icons/si";
 import {
@@ -230,10 +231,10 @@ function RedisKeyDetailPanel({ activeTabNode, connectionDetails, onKeyDeleted })
           onKeyDeleted(activeTabNode);
         }
       } else {
-        alert("Failed to delete key");
+        showError("Failed to delete key");
       }
     } catch (err) {
-      alert(`Delete failed: ${err.message || err}`);
+      showError(`Delete failed: ${err.message || err}`);
     } finally {
       setActionLoading(false);
     }
@@ -251,7 +252,7 @@ function RedisKeyDetailPanel({ activeTabNode, connectionDetails, onKeyDeleted })
         setShowTtlModal(false);
         setNewTtlSeconds("");
       } catch (err) {
-        alert(`Failed to remove expiry: ${err.message || err}`);
+        showError(`Failed to remove expiry: ${err.message || err}`);
       } finally {
         setActionLoading(false);
       }
@@ -260,7 +261,7 @@ function RedisKeyDetailPanel({ activeTabNode, connectionDetails, onKeyDeleted })
 
     const seconds = Number(input);
     if (isNaN(seconds) || seconds <= 0) {
-      alert("Please enter a positive number of seconds");
+      showError("Please enter a positive number of seconds");
       return;
     }
     setActionLoading(true);
@@ -271,10 +272,10 @@ function RedisKeyDetailPanel({ activeTabNode, connectionDetails, onKeyDeleted })
         setShowTtlModal(false);
         setNewTtlSeconds("");
       } else {
-        alert("Failed to set TTL. Key may not exist.");
+        showError("Failed to set TTL. Key may not exist.");
       }
     } catch (err) {
-      alert(`Set TTL failed: ${err.message || err}`);
+      showError(`Set TTL failed: ${err.message || err}`);
     } finally {
       setActionLoading(false);
     }

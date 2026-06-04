@@ -275,11 +275,12 @@ pub async fn delete_table_row(
     base_config_id: i32,
     table_name: String,
     row_id: String,
+    id_column: String,
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(
-        delete_table_row_with_error(state, base_config_id, table_name, row_id, list_node_info_req).await
+        delete_table_row_with_error(state, base_config_id, table_name, row_id, id_column, list_node_info_req).await
     );
     info!("delete_table_row: {:?}", time.elapsed());
     Ok(res)

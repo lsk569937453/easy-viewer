@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
 import {
   IoRefresh,
@@ -68,7 +69,7 @@ function KafkaMessagesPanel({ activeTabNode, connectionDetails }) {
   // 发送消息
   const handleSendMessage = async () => {
     if (!newMessageValue.trim()) {
-      alert("消息内容不能为空");
+      showError("消息内容不能为空");
       return;
     }
 
@@ -84,16 +85,16 @@ function KafkaMessagesPanel({ activeTabNode, connectionDetails }) {
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        alert("消息发送成功!");
+        showSuccess("消息发送成功!");
         setNewMessageKey("");
         setNewMessageValue("");
         setShowProducerModal(false);
         await fetchMessages();
       } else {
-        alert(`发送消息失败: ${response_msg}`);
+        showError(`发送消息失败: ${response_msg}`);
       }
     } catch (err) {
-      alert(`发送消息时发生错误: ${err.message || err.toString()}`);
+      showError(`发送消息时发生错误: ${err.message || err.toString()}`);
     } finally {
       setSending(false);
     }

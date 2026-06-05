@@ -77,7 +77,13 @@ pub struct MysqlConfig {
 impl MysqlConfig {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("mysql".to_string());
-        MySqlConnection::connect(&test_url).await.map(|_| ())?;
+        timeout(
+            Duration::from_secs(1),
+            MySqlConnection::connect(&test_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
+        .map_err(|e| anyhow!(e))?;
         Ok(())
     }
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
@@ -817,7 +823,12 @@ WHERE TABLE_SCHEMA = '{}'
     }
     pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
         let connection_url = self.config.to_url("mysql".to_string());
-        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let mut conn = timeout(
+            Duration::from_secs(1),
+            MySqlConnection::connect(&connection_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))??;
         let row = sqlx::query("SELECT VERSION()")
             .fetch_one(&mut conn)
             .await?;

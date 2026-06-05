@@ -63,7 +63,6 @@ function DaisyTreeNode({
     onNodeClick(node);
     if (
       isExpandable &&
-      !isOpen &&
       !SELF_TOGGLE_TYPES.includes(node.iconName)
     ) {
       onToggle(node);
@@ -242,8 +241,65 @@ function DaisyTreeNode({
   return (
     <li>
       {isRootNode ? (
-        <ContextMenuWrapper menuItems={rootNodeMenuItems}>
-          {nodeContent}
+        <ContextMenuWrapper menuItems={rootNodeMenuItems} onClick={handleRowClick}>
+          <div
+            className={`${
+              isSelected ? "active" : ""
+            } ${isOffline ? "opacity-50" : ""} group flex items-center w-full overflow-hidden`}
+          >
+            <div className="flex items-center overflow-hidden flex-1 min-w-0">
+              <div className="w-6 text-center mr-1 flex items-center justify-center">
+                {node.isLoading ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  isExpandable && (
+                    <span className="cursor-pointer">{isOpen ? "▼" : "▶"}</span>
+                  )
+                )}
+              </div>
+              {nodeIconToRender && (
+                isRootNode && node.version ? (
+                  <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+                    <span>{nodeIconToRender}</span>
+                    <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+                  </div>
+                ) : (
+                  <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+                )
+              )}
+              <div className="flex items-baseline overflow-hidden flex-1 min-w-0" title={node.name}>
+                <span className="truncate font-medium">{node.name.length > 20 ? node.name.substring(0, 18) + '...' : node.name}</span>
+                {isOffline && (
+                  <span className="ml-2 badge badge-xs badge-ghost text-[10px]">离线</span>
+                )}
+                {!isOffline && node.description && (
+                  <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
+                    {node.description}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+              <div className="flex items-center space-x-1">
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="刷新"
+                  onClick={handleRefreshClick}
+                >
+                  <FaSyncAlt />
+                </button>
+
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="删除"
+                  onClick={handleDeleteClick}
+                >
+                  <FaTrashAlt />
+                </button>
+              </div>
+            </div>
+          </div>
         </ContextMenuWrapper>
       ) : (
         nodeContent

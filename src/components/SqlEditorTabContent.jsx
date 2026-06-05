@@ -36,6 +36,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
 
   const connectionId = tab.connectionId;
   const queryId = tab.queryId;
+  const databaseName = tab.databaseName;
   const tableContainerRef = useRef(null);
 
   const tableColumns = useMemo(() => {
@@ -92,6 +93,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
         const responseJson = await invoke("get_query", {
           connectionId: parseInt(connectionId),
           queryName: tab.name,
+          databaseName: databaseName || undefined,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
 
@@ -113,7 +115,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
     };
 
     fetchQueryContent();
-  }, [queryId, tab.id, tab.name, connectionId, setTabs]);
+  }, [queryId, tab.id, tab.name, connectionId, databaseName, setTabs]);
 
   const handleSqlContentChange = (e) => {
     setSqlContent(e.target.value);
@@ -214,7 +216,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
       connectionId: parseInt(connectionId),
       queryName: queryName,
       sql: sqlContent,
-      queryId: queryId, // 如果是新查询，queryId 为 null
+      databaseName: databaseName || undefined,
     });
 
     toast.promise(savePromise, {
@@ -226,7 +228,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
         }
 
         const prevQueryId = queryId; // 保存操作前的 queryId
-        const savedQueryId = response_msg.query_id; // 后端返回的实际 queryId (新查询会在此处获得ID)
+        const savedQueryId = response_msg; // 后端返回的 query id
         const nameChanged = tab.name !== queryName; // 检查当前输入框中的名称是否与tab的当前名称不同
 
         updateTabDirtyState(false);
@@ -245,20 +247,13 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
           )
         );
 
-        // ⭐ 新增逻辑：如果名称发生变化且存在有效的 queryId，则通知 DatabaseViewer 更新树节点
-        // 对于新创建的查询，`prevQueryId`为null，但`savedQueryId`会是一个有效值。
-        // `nameChanged`在这里可能为false，如果用户直接点击保存未修改默认名称。
-        // 但如果用户修改了名称，`nameChanged`为true，此时也需要更新树。
-        // 这里主要针对**已存在查询的重命名** 和 **新查询在首次保存时其名称可能与默认值不同** 的情况
+        // 如果名称发生变化且存在有效的 queryId，则通知 DatabaseViewer 更新树节点
         if (savedQueryId && nameChanged) {
           if (onQuerySaved) {
             onQuerySaved(savedQueryId, queryName);
           }
         } else if (!prevQueryId && savedQueryId) {
-          // 这是新查询首次保存的情况，虽然名称可能没变，但它现在是一个实际存在的查询了
-          // 此时 `DatabaseViewer` 的 `handleAddNode` 已经通过 `handleRefreshNode` 刷新了父级 'query' 文件夹，
-          // 确保新查询节点会被加载。所以这里不需要再额外调用 `onQuerySaved` 来更新名称。
-          // `onQuerySaved` 主要用于**重命名**场景。
+          // 新查询首次保存
         }
 
         return "查询已成功保存!";
@@ -270,6 +265,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
     queryName,
     connectionId,
     queryId,
+    databaseName,
     tab.id,
     tab.name,
     setTabs,

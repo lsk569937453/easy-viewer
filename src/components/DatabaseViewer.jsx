@@ -357,7 +357,8 @@ function DatabaseViewer({
     connectionId,
     nodeIcon,
     generatedSql = "",
-    defaultName = ""
+    defaultName = "",
+    databaseName = ""
   ) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -376,12 +377,12 @@ function DatabaseViewer({
         connectionId: connectionId,
         queryName: finalQueryName,
         sql: generatedSql,
-        queryId: null,
+        databaseName: databaseName || undefined,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        const { query_id } = response_msg;
+        const query_id = response_msg;
         const newTabId = `sql-editor-${query_id || Date.now()}`;
 
         const existingSqlEditorTab = tabs.find(
@@ -410,6 +411,7 @@ function DatabaseViewer({
             type: "sqlEditor",
             connectionId: connectionId,
             queryId: query_id,
+            databaseName: databaseName,
             initialSql: generatedSql,
             isDirty: !!generatedSql,
           };
@@ -444,6 +446,7 @@ function DatabaseViewer({
 
     if (node.iconName === "singleQuery") {
       const queryId = node.path[node.path.length - 1].config_value;
+      const databaseName = node.path[1]?.config_value || "";
       const newTabId = `sql-editor-${queryId}`;
 
       const existingSqlEditorTab = tabs.find(
@@ -459,6 +462,7 @@ function DatabaseViewer({
           type: "sqlEditor",
           connectionId: connection.base_config_id,
           queryId: queryId,
+          databaseName: databaseName,
           initialSql: null,
           isDirty: false,
         };
@@ -863,6 +867,7 @@ function DatabaseViewer({
 
     const connectionId = parseInt(rootConfigId);
     const connectionType = connection.connection_type;
+    const databaseName = node.path[1]?.config_value || "";
     let generatedSql = "";
     let defaultQueryName = "";
 
@@ -940,7 +945,8 @@ function DatabaseViewer({
       connectionId,
       node.icon,
       generatedSql,
-      defaultQueryName
+      defaultQueryName,
+      databaseName
     );
 
     if (node.iconName === "query" && success) {
@@ -985,9 +991,11 @@ function DatabaseViewer({
       }
 
       try {
+        const databaseName = nodeToDelete.path[1]?.config_value || "";
         const responseJson = await invoke("remove_query", {
           baseConfigId: parseInt(baseConfigId),
           queryName: queryName,
+          databaseName: databaseName || undefined,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
 

@@ -156,7 +156,13 @@ impl PostgresqlConfig {
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("postgres".to_string());
-        PgConnection::connect(&test_url).await.map(|_| ())?;
+        timeout(
+            Duration::from_secs(1),
+            PgConnection::connect(&test_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
+        .map_err(|e| anyhow!(e))?;
         Ok(())
     }
     pub async fn init_dump_data(

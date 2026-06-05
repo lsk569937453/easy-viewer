@@ -59,7 +59,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
             BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
-            BaseConfigEnum::Oracledb(config) => config.test_connection()?,
+            BaseConfigEnum::Oracledb(config) => config.test_connection().await?,
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
             BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             BaseConfigEnum::S3(config) => config.test_connection().await?,

@@ -754,11 +754,11 @@ pub async fn get_server_version_with_error(
     let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
     // Unified 2-second timeout for all database types
     let version = tokio::time::timeout(
-        std::time::Duration::from_secs(2),
+        std::time::Duration::from_secs(1),
         base_config.base_config_enum.get_server_version(),
     )
     .await
-    .map_err(|_| anyhow!("Connection timeout (3s)"))??;
+    .map_err(|_| anyhow!("Connection timeout (1s)"))??;
     Ok(version)
 }
 pub async fn create_collection_with_error(

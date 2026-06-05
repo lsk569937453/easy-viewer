@@ -13,6 +13,8 @@ use elasticsearch::Elasticsearch;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
+use std::time::Duration;
+use tokio::time::timeout;
 use url::Url;
 
 #[derive(Deserialize, Serialize, Clone)]
@@ -28,7 +30,9 @@ impl ElasticsearchConfig {
 
     pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
         let client = self.get_connection()?;
-        let response = client.info().send().await?;
+        let response = timeout(Duration::from_secs(1), client.info().send())
+            .await
+            .map_err(|_| anyhow!("Connect timeout"))??;
         let status = response.status_code();
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
@@ -45,7 +49,9 @@ impl ElasticsearchConfig {
 
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let client = self.get_connection()?;
-        let response = client.ping().send().await?;
+        let response = timeout(Duration::from_secs(1), client.ping().send())
+            .await
+            .map_err(|_| anyhow!("Connect timeout"))??;
         let status = response.status_code();
         if !status.is_success() {
             return Err(anyhow!("Elasticsearch ping failed with status: {}", status));

@@ -26,7 +26,7 @@ impl RedisConfig {
 
     pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
         let client = self.get_connection()?;
-        let mut con = client.get_connection()?;
+        let mut con = client.get_connection_with_timeout(Duration::from_secs(1))?;
         let info: String = redis::cmd("INFO").arg("server").query(&mut con)?;
         for line in info.lines() {
             if line.starts_with("redis_version:") {
@@ -39,7 +39,7 @@ impl RedisConfig {
 
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let client = self.get_connection()?;
-        let mut con = client.get_connection_with_timeout(Duration::from_secs(5))?;
+        let mut con = client.get_connection_with_timeout(Duration::from_secs(1))?;
         redis::cmd("PING").query::<String>(&mut con)?;
         Ok(())
     }

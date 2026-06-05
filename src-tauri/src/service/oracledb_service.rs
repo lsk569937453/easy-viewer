@@ -3,6 +3,8 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
+use std::time::Duration;
+use tokio::time::timeout;
 use oracle::Connection;
 use serde::Deserialize;
 use serde::Serialize;
@@ -15,9 +17,28 @@ impl OracledbConfig {
         let description = format!("{}:{}", self.config.host, self.config.port);
         Ok(description)
     }
-    pub fn test_connection(&self) -> Result<(), anyhow::Error> {
-        self.get_connection()?;
-        Ok(())
+    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+        let config = self.config.clone();
+        timeout(Duration::from_secs(1), async move {
+            tokio::task::spawn_blocking(move || {
+                let connect_string = if let Some(db) = &config.database {
+                    format!("{}:{}/{}", config.host, config.port, db)
+                } else {
+                    format!("{}:{}", config.host, config.port)
+                };
+                oracle::Connection::connect(
+                    config.user_name.clone(),
+                    config.password.clone(),
+                    connect_string,
+                )
+                .map_err(|e| anyhow!(e))?;
+                Ok(())
+            })
+            .await
+            .map_err(|e| anyhow!(e))?
+        })
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
     }
     fn get_connection(&self) -> Result<Connection, anyhow::Error> {
         let connect_string = if let Some(db) = &self.config.database {
@@ -60,6 +81,17 @@ impl OracledbConfig {
                 }
                 return Ok(ListNodeInfoResponse::new(vec));
             }
+            2 => {
+                let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                    true,
+                    true,
+                    "query".to_string(),
+                    "Query".to_string(),
+                    None,
+                );
+                vec.push(list_node_info_response_item);
+                return Ok(ListNodeInfoResponse::new(vec));
+            }
             _ => {
                 info!("level_infos: {}", level_infos.len());
             }
@@ -67,11 +99,30 @@ impl OracledbConfig {
         Ok(ListNodeInfoResponse::new_with_empty())
     }
     pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
-        let conn = self.get_connection()?;
-        let version = conn.query_row_as::<String>(
-            "SELECT BANNER FROM v$version WHERE ROWNUM = 1",
-            &[],
-        )?;
-        Ok(version)
+        let config = self.config.clone();
+        timeout(Duration::from_secs(1), async move {
+            tokio::task::spawn_blocking(move || {
+                let connect_string = if let Some(db) = &config.database {
+                    format!("{}:{}/{}", config.host, config.port, db)
+                } else {
+                    format!("{}:{}", config.host, config.port)
+                };
+                let conn = oracle::Connection::connect(
+                    config.user_name.clone(),
+                    config.password.clone(),
+                    connect_string,
+                )
+                .map_err(|e| anyhow!(e))?;
+                let version = conn.query_row_as::<String>(
+                    "SELECT BANNER FROM v$version WHERE ROWNUM = 1",
+                    &[],
+                )?;
+                Ok(version)
+            })
+            .await
+            .map_err(|e| anyhow!(e))?
+        })
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
     }
 }

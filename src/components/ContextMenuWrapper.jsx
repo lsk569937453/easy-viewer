@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
  * @param {React.ReactNode} children - The element that will trigger the context menu.
  * @param {Array<{label: string, onClick: function}>} menuItems - The items to display in the menu.
  */
-function ContextMenuWrapper({ children, menuItems }) {
+function ContextMenuWrapper({ children, menuItems, onClick }) {
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -33,11 +33,11 @@ function ContextMenuWrapper({ children, menuItems }) {
         handleClose();
       }
     };
-    
+
     if (contextMenu.visible) {
       document.addEventListener("mousedown", handleClickOutside);
     }
-    
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
@@ -45,7 +45,7 @@ function ContextMenuWrapper({ children, menuItems }) {
 
 
   return (
-    <div className="w-full" onContextMenu={handleContextMenu}>
+    <div className="w-full" onContextMenu={handleContextMenu} onClick={onClick}>
       {children}
       {contextMenu.visible && (
         <div

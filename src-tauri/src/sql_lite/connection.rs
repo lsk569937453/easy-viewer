@@ -39,16 +39,49 @@ impl AppState {
             )",
         )
         .await?;
-        conn.execute(
-            "CREATE TABLE IF NOT EXISTS sql_query (
-            id   INTEGER PRIMARY KEY AUTOINCREMENT, 
-            connection_id    INTEGER NOT NULL, 
-            query_name  TEXT NOT NULL, 
-            query  TEXT,
-            UNIQUE (connection_id, query_name)  
-            )",
-        )
-        .await?;
+        // Migrate sql_query table: add database_name column if missing
+        {
+            // First, ensure the table exists (for fresh installs)
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS sql_query (
+                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                connection_id    INTEGER NOT NULL,
+                query_name  TEXT NOT NULL,
+                query  TEXT,
+                UNIQUE (connection_id, query_name)
+                )",
+            )
+            .await?;
+
+            // Check if database_name column already exists
+            let has_db_name: bool = sqlx::query_scalar(
+                "SELECT COUNT(*) > 0 FROM pragma_table_info('sql_query') WHERE name='database_name'",
+            )
+            .fetch_one(&mut *conn)
+            .await?;
+
+            if !has_db_name {
+                // Migrate: create new table, copy data, swap
+                conn.execute(
+                    "CREATE TABLE IF NOT EXISTS sql_query_v2 (
+                    id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                    connection_id    INTEGER NOT NULL,
+                    database_name    TEXT NOT NULL DEFAULT '',
+                    query_name  TEXT NOT NULL,
+                    query  TEXT,
+                    UNIQUE (connection_id, database_name, query_name)
+                    )",
+                )
+                .await?;
+                conn.execute(
+                    "INSERT OR IGNORE INTO sql_query_v2 (id, connection_id, database_name, query_name, query)
+                     SELECT id, connection_id, '', query_name, query FROM sql_query",
+                )
+                .await?;
+                conn.execute("DROP TABLE sql_query").await?;
+                conn.execute("ALTER TABLE sql_query_v2 RENAME TO sql_query").await?;
+            }
+        }
         conn.execute(
             "CREATE TABLE IF NOT EXISTS complete_words (
             id   INTEGER PRIMARY KEY AUTOINCREMENT, 

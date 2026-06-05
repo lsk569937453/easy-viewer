@@ -9,6 +9,7 @@ use clickhouse::Client;
 use linked_hash_map::LinkedHashMap;
 use serde::Deserialize;
 use serde::Serialize;
+use sqlx::Row;
 use std::collections::BTreeMap;
 use std::sync::OnceLock;
 use std::time::Duration;
@@ -116,7 +117,7 @@ impl ClickhouseConfig {
         Ok(ExeSqlResponse::from(headers, rows, None))
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
-        let _ = self.get_connection_for_query().await?;
+        let _ = self.get_connection().await?;
         Ok(())
     }
 
@@ -150,7 +151,7 @@ impl ClickhouseConfig {
     pub async fn list_node_info(
         &self,
         list_node_info_req: ListNodeInfoReq,
-        _appstate: &AppState,
+        appstate: &AppState,
     ) -> Result<ListNodeInfoResponse, anyhow::Error> {
         let mut vec = vec![];
         let level_infos = list_node_info_req.level_infos;
@@ -219,6 +220,7 @@ WHERE database = '{}'",
                 return Ok(ListNodeInfoResponse::new(vec));
             }
             3 => {
+                let base_config_id = level_infos[0].config_value.parse::<i32>()?;
                 let db_name = level_infos[1].config_value.clone();
                 let node_name = level_infos[2].config_value.clone();
                 if node_name == "Tables" {
@@ -235,6 +237,26 @@ WHERE database = '{}'",
                         );
                         vec.push(list_node_info_response_item);
                     }
+                } else if node_name == "Query" {
+                    let rows =
+                        sqlx::query("select query_name from sql_query where connection_id=?1 and database_name=?2")
+                            .bind(base_config_id)
+                            .bind(&db_name)
+                            .fetch_all(&appstate.pool)
+                            .await?;
+                    let mut vec = vec![];
+                    for row in rows {
+                        let row_str: String = row.try_get(0)?;
+                        let list_node_info_response_item = ListNodeInfoResponseItem::new(
+                            false,
+                            true,
+                            "singleQuery".to_string(),
+                            row_str,
+                            None,
+                        );
+                        vec.push(list_node_info_response_item);
+                    }
+                    return Ok(ListNodeInfoResponse::new(vec));
                 }
                 return Ok(ListNodeInfoResponse::new(vec));
             }
@@ -250,7 +272,10 @@ WHERE database = '{}'",
         let url = format!("http://{}:{}", self.config.host, self.config.port);
         let sql = "SELECT version() FORMAT JSON";
 
-        let mut request = reqwest::Client::new()
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(1))
+            .build()?;
+        let mut request = client
             .post(&url)
             .body(sql)
             .header("Content-Type", "application/x-www-form-urlencoded");

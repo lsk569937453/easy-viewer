@@ -322,9 +322,10 @@ pub async fn save_query(
     connection_id: i32,
     query_name: String,
     sql: Option<String>,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
+    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql, database_name).await);
     info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }
@@ -484,10 +485,11 @@ pub async fn rename_query(
     connection_id: i32,
     old_query_name: String,
     new_query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(
-        rename_query_with_error(state, connection_id, old_query_name, new_query_name).await
+        rename_query_with_error(state, connection_id, old_query_name, new_query_name, database_name).await
     );
     info!("rename_query: {:?}", time.elapsed());
     Ok(res)
@@ -498,9 +500,10 @@ pub async fn remove_query(
     state: State<'_, AppState>,
     base_config_id: i32,
     query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name).await);
+    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name, database_name).await);
     info!("remove_query: {:?}", time.elapsed());
     Ok(res)
 }
@@ -510,9 +513,10 @@ pub async fn get_query(
     state: State<'_, AppState>,
     connection_id: i32,
     query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(get_query_with_error(state, connection_id, query_name).await);
+    let res = handle_response!(get_query_with_error(state, connection_id, query_name, database_name).await);
     info!("get_query: {:?}", time.elapsed());
     Ok(res)
 }

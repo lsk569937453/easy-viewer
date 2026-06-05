@@ -297,7 +297,7 @@ impl MongodbConfig {
     pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
         let client = self.get_connection().await?;
         let build_info = timeout(
-            Duration::from_secs(3),
+            Duration::from_secs(1),
             client
                 .database("admin")
                 .run_command(mongodb::bson::doc! { "buildInfo": 1 }),
@@ -326,7 +326,9 @@ impl MongodbConfig {
     async fn get_connection(&self) -> Result<Client, anyhow::Error> {
         let mongodb_url = self.config.to_url("mongodb".to_string());
         info!("mongodb_url: {}", mongodb_url);
-        let client_options = ClientOptions::parse(&mongodb_url).await?;
+        let mut client_options = ClientOptions::parse(&mongodb_url).await?;
+        client_options.server_selection_timeout = Some(Duration::from_secs(1));
+        client_options.connect_timeout = Some(Duration::from_secs(1));
         let client = Client::with_options(client_options)?;
         Ok(client)
     }

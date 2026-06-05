@@ -26,6 +26,23 @@ impl ElasticsearchConfig {
         Ok(description)
     }
 
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let client = self.get_connection()?;
+        let response = client.info().send().await?;
+        let status = response.status_code();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Elasticsearch info request failed with status {}: {}", status, error_text));
+        }
+        let body: serde_json::Value = response.json().await?;
+        let version = body
+            .get("version")
+            .and_then(|v| v.get("number"))
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| anyhow!("version.number not found in Elasticsearch response"))?;
+        Ok(version.to_string())
+    }
+
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let client = self.get_connection()?;
         let response = client.ping().send().await?;

@@ -24,6 +24,19 @@ impl RedisConfig {
         Ok(description)
     }
 
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let client = self.get_connection()?;
+        let mut con = client.get_connection()?;
+        let info: String = redis::cmd("INFO").arg("server").query(&mut con)?;
+        for line in info.lines() {
+            if line.starts_with("redis_version:") {
+                let version = line.trim_start_matches("redis_version:").trim();
+                return Ok(version.to_string());
+            }
+        }
+        Err(anyhow!("redis_version not found in INFO response"))
+    }
+
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let client = self.get_connection()?;
         let mut con = client.get_connection_with_timeout(Duration::from_secs(5))?;

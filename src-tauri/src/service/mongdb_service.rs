@@ -294,6 +294,21 @@ impl MongodbConfig {
 
         Ok(())
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let client = self.get_connection().await?;
+        let build_info = timeout(
+            Duration::from_secs(3),
+            client
+                .database("admin")
+                .run_command(mongodb::bson::doc! { "buildInfo": 1 }),
+        )
+        .await
+        .map_err(|_| anyhow!("MongoDB get_server_version timeout"))??;
+        let version = build_info
+            .get_str("version")
+            .map_err(|e| anyhow!("Failed to get version from buildInfo: {:?}", e))?;
+        Ok(version.to_string())
+    }
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
         let description = format!("{}:{}", self.config.host, self.config.port);
         Ok(description)

@@ -955,6 +955,14 @@ WHERE table_name = '{}'
 
         Ok(exe_sql_response)
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let mut conn = self.get_connection().await?;
+        let row = sqlx::query("SELECT version()")
+            .fetch_one(&mut conn)
+            .await?;
+        let version: String = row.try_get(0)?;
+        Ok(version)
+    }
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,

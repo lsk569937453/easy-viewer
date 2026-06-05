@@ -12,6 +12,7 @@ use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
 use crate::service::cmd_service::create_collection_with_error;
+use crate::service::cmd_service::get_server_version_with_error;
 use crate::service::cmd_service::delete_bucket_with_error;
 use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
@@ -267,6 +268,16 @@ pub async fn create_collection(
         create_collection_with_error(state, list_node_info_req, collection_name).await
     );
     info!("create_collection: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn get_server_version(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_server_version_with_error(state, base_config_id).await);
+    info!("get_server_version: {:?}", time.elapsed());
     Ok(res)
 }
 #[tauri::command]

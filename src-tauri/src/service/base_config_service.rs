@@ -664,6 +664,21 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let version = match self {
+            BaseConfigEnum::Mysql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Postgresql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Sqlite(config) => config.get_server_version().await?,
+            BaseConfigEnum::Oracledb(config) => config.get_server_version().await?,
+            BaseConfigEnum::Mssql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Mongodb(config) => config.get_server_version().await?,
+            BaseConfigEnum::Redis(config) => config.get_server_version().await?,
+            BaseConfigEnum::Clickhouse(config) => config.get_server_version().await?,
+            BaseConfigEnum::Elasticsearch(config) => config.get_server_version().await?,
+            _ => String::new(),
+        };
+        Ok(version)
+    }
     pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,

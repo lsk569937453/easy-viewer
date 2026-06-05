@@ -66,4 +66,12 @@ impl OracledbConfig {
         }
         Ok(ListNodeInfoResponse::new_with_empty())
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let conn = self.get_connection()?;
+        let version = conn.query_row_as::<String>(
+            "SELECT BANNER FROM v$version WHERE ROWNUM = 1",
+            &[],
+        )?;
+        Ok(version)
+    }
 }

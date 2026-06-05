@@ -740,6 +740,27 @@ pub async fn update_record_with_error(
 
     Ok(())
 }
+pub async fn get_server_version_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, anyhow::Error> {
+    info!("get_server_version base_config_id: {}", base_config_id);
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(base_config_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    // Unified 2-second timeout for all database types
+    let version = tokio::time::timeout(
+        std::time::Duration::from_secs(2),
+        base_config.base_config_enum.get_server_version(),
+    )
+    .await
+    .map_err(|_| anyhow!("Connection timeout (3s)"))??;
+    Ok(version)
+}
 pub async fn create_collection_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

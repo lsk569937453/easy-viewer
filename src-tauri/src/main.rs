@@ -136,6 +136,7 @@ async fn main() -> Result<(), anyhow::Error> {
             get_column_info_for_insert_sql,
             get_complete_words,
             get_ddl,
+            get_server_version,
             get_procedure_details,
             get_query,
             import_database,

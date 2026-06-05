@@ -127,6 +127,7 @@ function DatabaseViewer({
   const [createCollectionNode, setCreateCollectionNode] = useState(null);
 
   const [nodeToDelete, setNodeToDelete] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const deleteModalRef = useRef(null);
 
   const openNodesRef = useRef(openNodes);
@@ -216,6 +217,8 @@ function DatabaseViewer({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const loadTree = async () => {
     const newTreeData = (connections || []).map((conn) => {
       const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
@@ -238,12 +241,42 @@ function DatabaseViewer({
     });
     setTreeData(newTreeData);
 
+    // Fetch server versions in parallel, then update all nodes at once
+    setIsRefreshing(true);
+    const versionPromises = newTreeData.map(async (node) => {
+      try {
+        const res = await invoke("get_server_version", { baseConfigId: node.id });
+        const { response_code, response_msg } = JSON.parse(res);
+        if (response_code === 0 && response_msg) {
+          return { id: node.id, update: { version: response_msg, offline: false } };
+        }
+        return { id: node.id, update: { offline: true } };
+      } catch {
+        return { id: node.id, update: { offline: true } };
+      }
+    });
+
+    const results = await Promise.allSettled(versionPromises);
+    setTreeData((prev) => {
+      let updated = prev;
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) {
+          updated = updateNodeInTree(updated, r.value.id, r.value.update);
+        }
+      }
+      return updated;
+    });
+    setIsRefreshing(false);
+
     const currentOpenNodes = openNodesRef.current;
     newTreeData.forEach(async (node) => {
       if (currentOpenNodes[node.id] && node.children === null) {
         await fetchNodeChildren(node);
       }
     });
+    };
+    if (!cancelled) loadTree();
+    return () => { cancelled = true; };
   }, [connections, fetchNodeChildren]);
 
   const generateSqlForNode = (node, allConnections, limit = 100) => {
@@ -335,8 +368,8 @@ function DatabaseViewer({
     const seconds = now.getSeconds().toString().padStart(2, "0");
     const milliseconds = now.getMilliseconds().toString().padStart(3, "0");
 
-    const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
-    const finalQueryName = defaultName || `New_Query_${timestamp}`;
+    const timestamp = `${month}${day}${hours}${minutes}${seconds}`;
+    const finalQueryName = defaultName || `Query_${timestamp}`;
 
     try {
       const responseJson = await invoke("save_query", {
@@ -1142,10 +1175,16 @@ function DatabaseViewer({
 
   return (
     <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
-      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5">
+      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative">
         <div className="flex-shrink-0 border-b border-base-content/5 px-3 py-2">
           <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">导航</h2>
         </div>
+        {isRefreshing && (
+          <div className="absolute inset-0 top-[37px] bg-base-200/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-2">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <span className="text-xs text-base-content/60">正在检测连接状态...</span>
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
           {treeData && treeData.length > 0 ? (
             <ul className="menu p-0">

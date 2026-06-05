@@ -815,6 +815,15 @@ WHERE TABLE_SCHEMA = '{}'
 
         Ok(())
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let mut conn = MySqlConnection::connect(&connection_url).await?;
+        let row = sqlx::query("SELECT VERSION()")
+            .fetch_one(&mut conn)
+            .await?;
+        let version: String = row.try_get(0)?;
+        Ok(version)
+    }
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,

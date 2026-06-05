@@ -246,6 +246,40 @@ WHERE database = '{}'",
         Ok(ListNodeInfoResponse::new(vec))
     }
 
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let url = format!("http://{}:{}", self.config.host, self.config.port);
+        let sql = "SELECT version() FORMAT JSON";
+
+        let mut request = reqwest::Client::new()
+            .post(&url)
+            .body(sql)
+            .header("Content-Type", "application/x-www-form-urlencoded");
+
+        if !self.config.user_name.is_empty() {
+            request = request.basic_auth(&self.config.user_name, Some(&self.config.password));
+        }
+
+        let response = request.send().await?;
+        let status = response.status();
+        if !status.is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(anyhow!("ClickHouse HTTP error {}: {}", status, error_text));
+        }
+
+        let raw_json = response.text().await?;
+        let ch_response: ClickhouseJsonResponse =
+            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+
+        let version = ch_response
+            .data
+            .first()
+            .and_then(|row| row.get("version()"))
+            .and_then(|v| json_value_to_string(v))
+            .ok_or_else(|| anyhow!("No version found in ClickHouse response"))?;
+
+        Ok(version)
+    }
+
     pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,

@@ -23,6 +23,7 @@ const NODES_WITH_REFRESH_ADD = [
   "index",
   "partitions",
   "collections",
+  "database",
 ];
 
 const NODES_WITH_EDIT = ["singleTable"];
@@ -44,7 +45,9 @@ function DaisyTreeNode({
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
+  const isOffline = node.offline === true;
   const isExpandable =
+    !isOffline &&
     node.iconName !== "column" &&
     node.iconName !== "primary" &&
     node.iconName !== "singleQuery" &&
@@ -122,7 +125,7 @@ function DaisyTreeNode({
     <a
       className={`${
         isSelected ? "active" : ""
-      } group flex items-center w-full overflow-hidden`}
+      } ${isOffline ? "opacity-50" : ""} group flex items-center w-full overflow-hidden`}
       onClick={handleRowClick}
     >
       <div className="flex items-center overflow-hidden flex-1 min-w-0">
@@ -136,11 +139,21 @@ function DaisyTreeNode({
           )}
         </div>
         {nodeIconToRender && (
-          <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+          isRootNode && node.version ? (
+            <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+              <span>{nodeIconToRender}</span>
+              <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+            </div>
+          ) : (
+            <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+          )
         )}
-        <div className="flex items-baseline overflow-hidden flex-1 min-w-0">
-          <span className="truncate font-medium">{node.name}</span>
-          {node.description && (
+        <div className="flex items-baseline overflow-hidden flex-1 min-w-0" title={node.name}>
+          <span className="truncate font-medium">{node.name.length > 20 ? node.name.substring(0, 18) + '...' : node.name}</span>
+          {isOffline && (
+            <span className="ml-2 badge badge-xs badge-ghost text-[10px]">离线</span>
+          )}
+          {!isOffline && node.description && (
             <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
               {node.description}
             </span>

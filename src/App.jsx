@@ -16,6 +16,9 @@ function App() {
   // 辅助函数：解析 connection_json 字符串以获取 host 和 port
   const parseConnectionJson = (connectionType, connectionJsonString) => {
     try {
+      if (!connectionJsonString) {
+        return { host: null, port: null };
+      }
       const connJson = JSON.parse(connectionJsonString);
       if (connectionType === 1) {
         // MySQL

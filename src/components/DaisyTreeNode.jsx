@@ -239,7 +239,7 @@ function DaisyTreeNode({
   );
 
   return (
-    <li>
+    <li className="max-w-full overflow-hidden">
       {isRootNode ? (
         <ContextMenuWrapper menuItems={rootNodeMenuItems} onClick={handleRowClick}>
           <div
@@ -328,7 +328,7 @@ function DaisyTreeNode({
           </ul>
         ) : node.isLoading ? (
           <ul className="w-full">
-            <li>
+            <li className="max-w-full overflow-hidden">
               <span className="text-xs text-base-content/40 pl-9">加载中...</span>
             </li>
           </ul>

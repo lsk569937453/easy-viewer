@@ -167,6 +167,7 @@ function TabPanel({
                   tab={activeTab} // Pass the entire tab object
                   connections={connections}
                   setTabs={setTabs}
+                  setActiveTabId={setActiveTabId}
                   onQuerySaved={onQuerySaved}
                 />
               );

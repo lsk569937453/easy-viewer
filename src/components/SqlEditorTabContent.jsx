@@ -20,7 +20,7 @@ import {
 } from "@tanstack/react-table";
 import toast from "react-hot-toast";
 
-function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
+function SqlEditorTabContent({ tab, connections, setTabs, setActiveTabId, onQuerySaved }) {
   const [sqlContent, setSqlContent] = useState("");
   const [queryName, setQueryName] = useState(tab.name);
   const [executionTime, setExecutionTime] = useState(0);
@@ -233,19 +233,26 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
 
         updateTabDirtyState(false);
 
-        // 更新 Tab 面板自身的名称和ID（如果是新查询）
+        const newTabId = `sql-editor-${savedQueryId}`;
+
+        // 更新 Tab 面板自身的名称和ID
         setTabs((prevTabs) =>
           prevTabs.map((t) =>
             t.id === tab.id
               ? {
                   ...t,
-                  queryId: savedQueryId, // 确保tab的queryId是最新的
-                  id: `sql-editor-${savedQueryId}`, // 确保tab的id是最新的
-                  name: queryName, // 确保tab的名称是最新的
+                  queryId: savedQueryId,
+                  id: newTabId,
+                  name: queryName,
                 }
               : t
           )
         );
+
+        // 同步更新 activeTabId，防止 tab body 消失
+        if (setActiveTabId) {
+          setActiveTabId(newTabId);
+        }
 
         // 如果名称发生变化且存在有效的 queryId，则通知 DatabaseViewer 更新树节点
         if (savedQueryId && nameChanged) {
@@ -270,6 +277,7 @@ function SqlEditorTabContent({ tab, connections, setTabs, onQuerySaved }) {
     tab.name,
     setTabs,
     onQuerySaved,
+    setActiveTabId,
   ]);
 
   useEffect(() => {

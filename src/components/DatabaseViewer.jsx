@@ -1195,7 +1195,7 @@ function DatabaseViewer({
         )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
           {treeData && treeData.length > 0 ? (
-            <ul className="menu p-0">
+            <ul className="menu p-0 w-full">
               {treeData.map((rootNode) => (
                 <DaisyTreeNode
                   key={rootNode.id}

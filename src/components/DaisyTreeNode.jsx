@@ -307,7 +307,7 @@ function DaisyTreeNode({
 
       {isOpen &&
         (Array.isArray(node.children) && node.children.length > 0 ? (
-          <ul>
+          <ul className="w-full">
             {node.children.map((child) => (
               <DaisyTreeNode
                 key={child.id}
@@ -327,7 +327,7 @@ function DaisyTreeNode({
             ))}
           </ul>
         ) : node.isLoading ? (
-          <ul>
+          <ul className="w-full">
             <li>
               <span className="text-xs text-base-content/40 pl-9">加载中...</span>
             </li>

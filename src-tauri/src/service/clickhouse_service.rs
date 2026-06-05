@@ -227,13 +227,31 @@ WHERE database = '{}'",
                     let list_table_sql = format!("SHOW TABLES FROM {}", db_name);
                     let conn = self.get_connection().await?;
                     let res: Vec<String> = conn.query(&list_table_sql).fetch_all().await?;
+                    let row_count_sql = format!(
+                        "SELECT name, total_rows FROM system.tables WHERE database = '{}'",
+                        db_name
+                    );
+                    let row_counts: Vec<(String, Option<u64>)> =
+                        conn.query(&row_count_sql).fetch_all().await?;
+                    let row_count_map: std::collections::HashMap<String, Option<u64>> =
+                        row_counts.into_iter().collect();
                     for table_name in res {
+                        let description = row_count_map
+                            .get(&table_name)
+                            .and_then(|opt| *opt)
+                            .and_then(|count| {
+                                if count > 0 {
+                                    Some(format!("({})", count))
+                                } else {
+                                    None
+                                }
+                            });
                         let list_node_info_response_item = ListNodeInfoResponseItem::new(
                             true,
                             true,
                             "singleTable".to_string(),
                             table_name.clone(),
-                            None,
+                            description,
                         );
                         vec.push(list_node_info_response_item);
                     }

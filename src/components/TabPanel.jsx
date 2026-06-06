@@ -10,6 +10,8 @@ import KafkaTopicDetail from "./KafkaTopicDetail.jsx";
 import RocketmqMessagesPanel from "./RocketmqMessagesPanel.jsx";
 import RedisConsolePanel from "./RedisConsolePanel.jsx";
 import RedisKeyDetailPanel from "./RedisKeyDetailPanel.jsx";
+import S3UploadPanel from "./S3UploadPanel.jsx";
+import S3ObjectPanel from "./S3ObjectPanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -269,6 +271,16 @@ function TabPanel({
                   onKeyDeleted={onRedisKeyDeleted}
                 />
               );
+            }
+
+            // Render S3UploadPanel for "s3Upload" type tabs
+            if (activeTab.type === "s3Upload") {
+              return <S3UploadPanel tab={activeTab} />;
+            }
+
+            // Render S3ObjectPanel for "s3Object" type tabs
+            if (activeTab.type === "s3Object") {
+              return <S3ObjectPanel tab={activeTab} />;
             }
 
             // Default rendering for other tab types (e.g., info tabs for database/schema nodes)

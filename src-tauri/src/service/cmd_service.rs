@@ -667,6 +667,32 @@ pub async fn delete_bucket_with_error(
     Ok(())
 }
 
+pub async fn create_bucket_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    bucket_name: String,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "create_bucket_with_error: bucket_name={}, level_infos={:?}",
+        bucket_name, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .create_bucket(bucket_name)
+        .await?;
+    Ok(())
+}
+
 pub async fn get_complete_words_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

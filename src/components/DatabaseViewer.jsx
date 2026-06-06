@@ -126,6 +126,10 @@ function DatabaseViewer({
   const [newCollectionName, setNewCollectionName] = useState("");
   const [createCollectionNode, setCreateCollectionNode] = useState(null);
 
+  const createBucketModalRef = useRef(null);
+  const [newBucketName, setNewBucketName] = useState("");
+  const [createBucketNode, setCreateBucketNode] = useState(null);
+
   const [nodeToDelete, setNodeToDelete] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const deleteModalRef = useRef(null);
@@ -247,8 +251,8 @@ function DatabaseViewer({
       try {
         const res = await invoke("get_server_version", { baseConfigId: node.id });
         const { response_code, response_msg } = JSON.parse(res);
-        if (response_code === 0 && response_msg) {
-          return { id: node.id, update: { version: response_msg, offline: false } };
+        if (response_code === 0) {
+          return { id: node.id, update: { version: response_msg || null, offline: false } };
         }
         return { id: node.id, update: { offline: true } };
       } catch {
@@ -469,6 +473,24 @@ function DatabaseViewer({
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
       }
+      return;
+    } else if (node.iconName === "folder" || node.iconName === "textFile") {
+      const tabId = `s3-object-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: node.name,
+          icon: node.icon,
+          type: "s3Object",
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
       return;
     } else if (node.iconName === "singleTable") {
       const rootConfigId = node.path[0]?.config_value;
@@ -902,6 +924,28 @@ function DatabaseViewer({
       }
       generatedSql = generateCreateIndexSql(connectionType, tableName);
       defaultQueryName = `Add_Index_to_${tableName}`;
+    } else if (node.iconName === "s3") {
+      setNewBucketName("");
+      setCreateBucketNode(node);
+      createBucketModalRef.current?.showModal();
+      return;
+    } else if (node.iconName === "bucket") {
+      const tabId = `s3-upload-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(tabId);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `上传到 ${node.name}`,
+          icon: node.icon,
+          type: "s3Upload",
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
     } else if (node.iconName === "kafka_topics") {
       // 创建新 Kafka Topic
       const topicName = prompt("请输入新 Topic 名称:");
@@ -1060,6 +1104,88 @@ function DatabaseViewer({
         setNodeToDelete(null);
         deleteModalRef.current?.close();
       }
+    } else if (nodeToDelete.iconName === "bucket") {
+      try {
+        const responseJson = await invoke("delete_bucket", {
+          listNodeInfoReq: { level_infos: nodeToDelete.path },
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          setTreeData((prevTree) => {
+            const removeBucketNode = (nodes) =>
+              nodes
+                .map((n) => {
+                  if (n.id === nodeToDelete.id) return null;
+                  if (n.children) {
+                    const updated = removeBucketNode(n.children);
+                    if (updated !== n.children) {
+                      return { ...n, children: updated };
+                    }
+                  }
+                  return n;
+                })
+                .filter(Boolean);
+            return removeBucketNode(prevTree);
+          });
+
+          setOpenNodes((prev) => {
+            const next = { ...prev };
+            delete next[nodeToDelete.id];
+            return next;
+          });
+
+          showSuccess(`Bucket "${nodeToDelete.name}" 删除成功!`);
+        } else {
+          showError(`删除 Bucket 失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`删除 Bucket 时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
+    } else if (nodeToDelete.iconName === "folder" || nodeToDelete.iconName === "textFile") {
+      try {
+        const responseJson = await invoke("delete_bucket", {
+          listNodeInfoReq: { level_infos: nodeToDelete.path },
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          setTreeData((prevTree) => {
+            const removeNode = (nodes) =>
+              nodes
+                .map((n) => {
+                  if (n.id === nodeToDelete.id) return null;
+                  if (n.children) {
+                    const updated = removeNode(n.children);
+                    if (updated !== n.children) {
+                      return { ...n, children: updated };
+                    }
+                  }
+                  return n;
+                })
+                .filter(Boolean);
+            return removeNode(prevTree);
+          });
+
+          setOpenNodes((prev) => {
+            const next = { ...prev };
+            delete next[nodeToDelete.id];
+            return next;
+          });
+
+          showSuccess(`"${nodeToDelete.name}" 删除成功!`);
+        } else {
+          showError(`删除失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`删除时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
     } else {
       const connectionIdToDelete = nodeToDelete.id;
 
@@ -1146,7 +1272,61 @@ function DatabaseViewer({
     createCollectionModalRef.current?.close();
   };
 
-  const handleEditNode = (node) => {
+  const handleConfirmCreateBucket = async () => {
+    if (!newBucketName.trim() || !createBucketNode) return;
+
+    try {
+      const responseJson = await invoke("create_bucket", {
+        listNodeInfoReq: { level_infos: createBucketNode.path },
+        bucketName: newBucketName.trim(),
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      createBucketModalRef.current?.close();
+      if (response_code === 0) {
+        showSuccess(`Bucket "${newBucketName.trim()}" 创建成功!`);
+        await handleRefreshNode(createBucketNode);
+      } else {
+        showError(`创建 Bucket 失败: ${response_msg}`);
+      }
+    } catch (err) {
+      createBucketModalRef.current?.close();
+      showError(`创建 Bucket 时发生错误: ${err.message || err.toString()}`);
+    }
+  };
+
+  const handleCancelCreateBucket = () => {
+    setNewBucketName("");
+    setCreateBucketNode(null);
+    createBucketModalRef.current?.close();
+  };
+
+  const handleEditNode = async (node) => {
+    if (node.iconName === "folder" || node.iconName === "textFile") {
+      try {
+        const { save } = await import("@tauri-apps/plugin-dialog");
+        const isFolder = node.iconName === "folder";
+        const selected = await save({
+          title: isFolder ? "选择保存位置" : "保存文件",
+        });
+        if (!selected) return;
+
+        const responseJson = await invoke("download_file", {
+          listNodeInfoReq: { level_infos: node.path },
+          destination: selected,
+          isFolder: isFolder,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        if (response_code === 0) {
+          showSuccess("下载成功!");
+        } else {
+          showError(`下载失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`下载失败: ${err.message || err.toString()}`);
+      }
+      return;
+    }
+
     if (node.iconName !== "singleTable") return;
 
     const rootConfigId = node.path[0]?.config_value;
@@ -1245,7 +1425,7 @@ function DatabaseViewer({
           <h3 className="font-bold text-lg">确认删除</h3>
           <p className="py-4">
             <span className="font-semibold">
-              {nodeToDelete?.iconName === "singleQuery" ? "查询" : "连接"} "
+              {nodeToDelete?.iconName === "singleQuery" ? "查询" : nodeToDelete?.iconName === "bucket" ? "Bucket" : nodeToDelete?.iconName === "folder" ? "文件夹" : nodeToDelete?.iconName === "textFile" ? "文件" : "连接"} "
               {nodeToDelete?.name}"
             </span>
             此操作不可撤销。
@@ -1298,6 +1478,43 @@ function DatabaseViewer({
         </div>
         <form method="dialog" className="modal-backdrop">
           <button onClick={handleCancelCreateCollection}>close</button>
+        </form>
+      </dialog>
+
+      <dialog ref={createBucketModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">新建 Bucket</h3>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">Bucket 名称</span>
+            </label>
+            <input
+              type="text"
+              placeholder="请输入 Bucket 名称"
+              className="input input-bordered w-full"
+              value={newBucketName}
+              onChange={(e) => setNewBucketName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmCreateBucket();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelCreateBucket}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmCreateBucket}
+              disabled={!newBucketName.trim()}
+            >
+              创建
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelCreateBucket}>close</button>
         </form>
       </dialog>
     </div>

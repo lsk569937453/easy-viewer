@@ -264,6 +264,16 @@ impl S3Config {
         Ok(())
     }
 
+    pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
+        let client = self.get_connection().await?;
+        client
+            .create_bucket()
+            .bucket(bucket_name)
+            .send()
+            .await?;
+        Ok(())
+    }
+
     pub async fn create_folder(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -344,6 +354,119 @@ impl S3Config {
             .body(byte_stream)
             .send()
             .await?;
+        Ok(())
+    }
+
+    pub async fn upload_file_multipart<F: Fn(u64, u64)>(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        local_file_path: String,
+        on_progress: F,
+    ) -> Result<(), anyhow::Error> {
+        let list = list_node_info_req.level_infos;
+        let path = Path::new(&local_file_path);
+        let bucket_name = list[1].config_value.clone();
+        let s3_client = self.get_connection().await?;
+
+        let object_key_prefix = list
+            .iter()
+            .skip(2)
+            .map(|item| item.config_value.clone())
+            .join("/");
+
+        let object_key = format!(
+            "{}/{}",
+            object_key_prefix,
+            path.file_name()
+                .ok_or(anyhow!(""))?
+                .to_str()
+                .ok_or(anyhow!(""))?
+        );
+
+        let file_size = tokio::fs::metadata(&local_file_path).await?.len();
+        let part_size: u64 = 5 * 1024 * 1024; // 5MB per part
+
+        // Small file: upload directly
+        if file_size <= part_size {
+            on_progress(0, file_size);
+            let mut file = File::open(&local_file_path).await?;
+            let mut file_contents = Vec::new();
+            file.read_to_end(&mut file_contents).await?;
+            let byte_stream = ByteStream::from(file_contents);
+            s3_client
+                .put_object()
+                .bucket(&bucket_name)
+                .key(&object_key)
+                .body(byte_stream)
+                .send()
+                .await?;
+            on_progress(file_size, file_size);
+            return Ok(());
+        }
+
+        // Large file: multipart upload
+        let create_resp = s3_client
+            .create_multipart_upload()
+            .bucket(&bucket_name)
+            .key(&object_key)
+            .send()
+            .await?;
+        let upload_id = create_resp
+            .upload_id()
+            .ok_or(anyhow!("no upload id"))?
+            .to_string();
+
+        let mut completed_parts: Vec<aws_sdk_s3::types::CompletedPart> = Vec::new();
+        let mut file = File::open(&local_file_path).await?;
+        let mut offset: u64 = 0;
+        let mut part_number: i32 = 1;
+
+        loop {
+            let remaining = file_size - offset;
+            let chunk_size = std::cmp::min(part_size, remaining) as usize;
+            let mut chunk = vec![0u8; chunk_size];
+            use std::io::Read;
+            file.read_exact(&mut chunk).await?;
+
+            let resp = s3_client
+                .upload_part()
+                .bucket(&bucket_name)
+                .key(&object_key)
+                .upload_id(&upload_id)
+                .part_number(part_number)
+                .body(ByteStream::from(chunk))
+                .send()
+                .await?;
+
+            completed_parts.push(
+                aws_sdk_s3::types::CompletedPart::builder()
+                    .part_number(part_number)
+                    .set_e_tag(resp.e_tag().map(|s| s.to_string()))
+                    .build(),
+            );
+
+            offset += chunk_size as u64;
+            on_progress(offset, file_size);
+            part_number += 1;
+
+            if offset >= file_size {
+                break;
+            }
+        }
+
+        let completed_upload = aws_sdk_s3::types::CompletedMultipartUpload::builder()
+            .set_parts(Some(completed_parts))
+            .build();
+
+        s3_client
+            .complete_multipart_upload()
+            .bucket(&bucket_name)
+            .key(&object_key)
+            .upload_id(&upload_id)
+            .multipart_upload(completed_upload)
+            .send()
+            .await?;
+
         Ok(())
     }
     pub async fn download_file(
@@ -570,6 +693,24 @@ impl S3Config {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let _ = self.get_connection().await?;
         Ok(())
+    }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let endpoint = format!("http://{}:{}", self.config.host, self.config.port);
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(5))
+            .build()?;
+        let resp = client.head(&endpoint).send().await;
+        match resp {
+            Ok(response) => {
+                if let Some(server) = response.headers().get("server") {
+                    if let Ok(server_str) = server.to_str() {
+                        return Ok(server_str.to_string());
+                    }
+                }
+                Ok("S3".to_string())
+            }
+            Err(_) => Ok("S3".to_string()),
+        }
     }
     async fn get_connection(&self) -> Result<Client, anyhow::Error> {
         let access_key = self.config.access_key.clone();

@@ -11,9 +11,11 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
+use tauri::Emitter;
 use crate::service::cmd_service::create_collection_with_error;
 use crate::service::cmd_service::get_server_version_with_error;
 use crate::service::cmd_service::delete_bucket_with_error;
+use crate::service::cmd_service::create_bucket_with_error;
 use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
@@ -212,6 +214,51 @@ pub async fn upload_file(
     info!("upload_file: {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn upload_file_with_progress(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, String> {
+    let res = upload_file_with_progress_inner(state, app_handle, list_node_info_req, local_file_path).await;
+    match res {
+        Ok(_) => Ok("{}".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+async fn upload_file_with_progress_inner(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<(), anyhow::Error> {
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: crate::service::base_config_service::BaseConfig =
+        serde_json::from_str(&connection_json_str)?;
+    let ah = app_handle.clone();
+    base_config
+        .base_config_enum
+        .upload_file_multipart(list_node_info_req, local_file_path, move |uploaded, total| {
+            let _ = ah.emit(
+                "s3-upload-progress",
+                serde_json::json!({ "uploaded": uploaded, "total": total }),
+            );
+        })
+        .await?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn upload_folder(
     state: State<'_, AppState>,
@@ -225,6 +272,27 @@ pub async fn upload_folder(
     info!("upload_folder: {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn list_local_folder_files(
+    local_directory: String,
+) -> Result<String, ()> {
+    let mut files: Vec<String> = Vec::new();
+    for entry_res in walkdir::WalkDir::new(&local_directory) {
+        let entry = match entry_res {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        if !entry.file_type().is_dir() {
+            if let Some(path_str) = entry.path().to_str() {
+                files.push(path_str.to_string());
+            }
+        }
+    }
+    let res = serde_json::to_string(&files).unwrap_or_else(|_| "[]".to_string());
+    Ok(res)
+}
+
 #[tauri::command]
 pub async fn get_complete_words(
     state: State<'_, AppState>,
@@ -380,6 +448,21 @@ pub async fn delete_bucket(
     info!("save_query:  {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn create_bucket(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    bucket_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        create_bucket_with_error(state, list_node_info_req, bucket_name).await
+    );
+    info!("create_bucket:  {:?}", time.elapsed());
+    Ok(res)
+}
+
 #[tauri::command]
 
 pub async fn dump_database(

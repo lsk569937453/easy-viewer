@@ -13,7 +13,7 @@ const ACTION_ICON_MAP = {
   info: <FaInfoCircle />,
 };
 
-const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb", "clickhouse"];
+const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb", "clickhouse", "s3", "elasticsearch", "kafka", "rocketmq"];
 
 const NODES_WITH_REFRESH_ADD = [
   "query",
@@ -24,6 +24,7 @@ const NODES_WITH_REFRESH_ADD = [
   "partitions",
   "collections",
   "database",
+  "bucket",
 ];
 
 const NODES_WITH_EDIT = ["singleTable"];
@@ -199,7 +200,7 @@ function DaisyTreeNode({
                 <FaSyncAlt />
               </button>
             )}
-            {(NODES_WITH_REFRESH_ADD.includes(node.iconName) ||
+            {(NODES_WITH_REFRESH_ADD.includes(node.iconName) && node.iconName !== "bucket" ||
               NODES_WITH_ADD_ACTION.includes(node.iconName)) && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"
@@ -207,6 +208,42 @@ function DaisyTreeNode({
                 onClick={handleAddClick}
               >
                 <FaPlus />
+              </button>
+            )}
+            {node.iconName === "bucket" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="上传文件"
+                onClick={handleAddClick}
+              >
+                <FaPlus />
+              </button>
+            )}
+            {node.iconName === "bucket" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="删除 Bucket"
+                onClick={handleDeleteClick}
+              >
+                <FaTrashAlt />
+              </button>
+            )}
+            {(node.iconName === "folder" || node.iconName === "textFile") && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="下载"
+                onClick={handleEditClick}
+              >
+                <FaEdit />
+              </button>
+            )}
+            {(node.iconName === "folder" || node.iconName === "textFile") && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="删除"
+                onClick={handleDeleteClick}
+              >
+                <FaTrashAlt />
               </button>
             )}
             {NODES_WITH_EDIT.includes(node.iconName) && (
@@ -282,6 +319,15 @@ function DaisyTreeNode({
 
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
               <div className="flex items-center space-x-1">
+                {node.iconName === "s3" && (
+                  <button
+                    className="btn btn-ghost btn-circle btn-xs"
+                    title="新增 Bucket"
+                    onClick={handleAddClick}
+                  >
+                    <FaPlus />
+                  </button>
+                )}
                 <button
                   className="btn btn-ghost btn-circle btn-xs"
                   title="刷新"

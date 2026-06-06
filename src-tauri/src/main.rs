@@ -19,6 +19,7 @@ use tauri::tray::MouseButtonState;
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 use tauri::Manager;
+use tauri::Emitter;
 
 #[tauri::command]
 fn show_main_window(app: tauri::AppHandle) {
@@ -119,10 +120,13 @@ async fn main() -> Result<(), anyhow::Error> {
             delete_base_config,
             delete_table_row,
             delete_bucket,
+            create_bucket,
             download_file,
             download_bucket,
             upload_file,
+            upload_file_with_progress,
             upload_folder,
+            list_local_folder_files,
             drop_column,
             drop_index,
             drop_table,

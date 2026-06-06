@@ -614,6 +614,29 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => config.create_bucket(bucket_name).await?,
+            _ => Err(anyhow!("Only S3 supports create_bucket."))?,
+        }
+        Ok(())
+    }
+    pub async fn upload_file_multipart<F: Fn(u64, u64) + Send>(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        local_file_path: String,
+        on_progress: F,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => {
+                config
+                    .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
+                    .await?
+            }
+            _ => Err(anyhow!("Only S3 supports upload_file_multipart."))?,
+        }
+        Ok(())
+    }
     pub async fn get_complete_words(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -675,7 +698,17 @@ impl BaseConfigEnum {
             BaseConfigEnum::Redis(config) => config.get_server_version().await?,
             BaseConfigEnum::Clickhouse(config) => config.get_server_version().await?,
             BaseConfigEnum::Elasticsearch(config) => config.get_server_version().await?,
-            _ => String::new(),
+            BaseConfigEnum::S3(config) => config.get_server_version().await?,
+            BaseConfigEnum::Kafka(config) => {
+                let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.test_connection().await?;
+                String::new()
+            }
+            BaseConfigEnum::Rocketmq(config) => {
+                let service = crate::service::rocketmq_service::RocketmqService::new(config.clone());
+                service.test_connection().await?;
+                String::new()
+            }
         };
         Ok(version)
     }

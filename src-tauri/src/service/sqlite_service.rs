@@ -556,6 +556,7 @@ WHERE type = 'view';",
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;

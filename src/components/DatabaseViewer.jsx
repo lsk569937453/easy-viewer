@@ -79,6 +79,12 @@ const ICON_MAP = {
   redis_console: <FaTerminal color="#DC382D" />,
   // Elasticsearch specific icons
   es_indices: <FaColumns color="#FEC514" />,
+  es_aliases: <FaEye color="#FEC514" />,
+  es_templates: <FaLayerGroup color="#FEC514" />,
+  es_nodes: <FaDatabase color="#FEC514" />,
+  es_single_alias: <FaEye color="#FEC514" />,
+  es_single_template: <FaLayerGroup color="#FEC514" />,
+  es_single_node: <FaDatabase color="#FEC514" />,
   // S3 / OSS specific icons
   bucket: <FaDatabase size="1.2em" color="#FF9900" />,
   folder: <FaFolder color="#FFB347" />,
@@ -509,6 +515,28 @@ function DatabaseViewer({
             name: keyName,
             icon: node.icon,
             type: "redisKeyDetail",
+            node: node,
+            connectionDetails: connection,
+          };
+          setTabs((prevTabs) => [...prevTabs, newTab]);
+          setActiveTabId(newTab.id);
+        }
+        await handleToggleNode(node);
+        return;
+      }
+
+      // Elasticsearch index — use dedicated ElasticsearchIndexPanel
+      if (connection && connection.connection_type === 10) {
+        const tabId = `es-index-${node.id}`;
+        const existingTab = tabs.find((tab) => tab.id === tabId);
+        if (existingTab) {
+          setActiveTabId(existingTab.id);
+        } else {
+          const newTab = {
+            id: tabId,
+            name: node.name,
+            icon: node.icon,
+            type: "esIndexBrowser",
             node: node,
             connectionDetails: connection,
           };

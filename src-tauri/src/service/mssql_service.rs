@@ -1424,6 +1424,7 @@ WHERE table_name = '{}'
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let mut rows = conn.query(&sql, &[]).await?;

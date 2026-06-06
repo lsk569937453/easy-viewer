@@ -19,6 +19,7 @@ use crate::service::cmd_service::create_bucket_with_error;
 use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
+use crate::service::cmd_service::elasticsearch_search_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
 use crate::service::cmd_service::drop_table_with_error;
@@ -642,6 +643,25 @@ pub async fn kafka_produce_message(
     let time = Instant::now();
     let res = handle_response!(kafka_produce_message_with_error(state, connection_id, topic, key, value).await);
     info!("kafka_produce_message: {:?}", time.elapsed());
+    Ok(res)
+}
+
+// Elasticsearch commands
+#[tauri::command]
+pub async fn elasticsearch_search(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+    query: Option<String>,
+    search_query: Option<String>,
+    from: i64,
+    size: i64,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        elasticsearch_search_with_error(state, list_node_info_req, index_name, query, search_query, from, size).await
+    );
+    info!("elasticsearch_search: {:?}", time.elapsed());
     Ok(res)
 }
 

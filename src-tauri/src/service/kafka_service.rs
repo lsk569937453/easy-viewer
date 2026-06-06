@@ -383,6 +383,7 @@ impl KafkaService {
             header: headers,
             rows,
             table_name: Some(topic.to_string()),
+            total_count: None,
         })
     }
 

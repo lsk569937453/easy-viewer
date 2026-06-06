@@ -12,6 +12,7 @@ import RedisConsolePanel from "./RedisConsolePanel.jsx";
 import RedisKeyDetailPanel from "./RedisKeyDetailPanel.jsx";
 import S3UploadPanel from "./S3UploadPanel.jsx";
 import S3ObjectPanel from "./S3ObjectPanel.jsx";
+import ElasticsearchIndexPanel from "./ElasticsearchIndexPanel.jsx";
 
 const findNodeInTree = (nodes, nodeId) => {
   if (!Array.isArray(nodes)) {
@@ -269,6 +270,16 @@ function TabPanel({
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
                   onKeyDeleted={onRedisKeyDeleted}
+                />
+              );
+            }
+
+            // Render ElasticsearchIndexPanel for "esIndexBrowser" type tabs
+            if (activeTab.type === "esIndexBrowser") {
+              return (
+                <ElasticsearchIndexPanel
+                  activeTabNode={activeTab.node}
+                  connectionDetails={activeTab.connectionDetails}
                 />
               );
             }

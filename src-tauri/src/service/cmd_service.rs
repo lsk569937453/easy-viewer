@@ -882,3 +882,39 @@ pub async fn get_ddl_with_error(
 
     Ok(list)
 }
+
+pub async fn elasticsearch_search_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+    query: Option<String>,
+    search_query: Option<String>,
+    from: i64,
+    size: i64,
+) -> Result<ExeSqlResponse, anyhow::Error> {
+    info!(
+        "elasticsearch_search list_node_info_req: {:?}, index_name: {}, from: {}, size: {}",
+        list_node_info_req, index_name, from, size
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Elasticsearch(es_config) =
+        base_config.base_config_enum
+    {
+        let result = es_config
+            .search_documents(index_name, query, search_query, from, size)
+            .await?;
+        Ok(result)
+    } else {
+        Err(anyhow!("Not an Elasticsearch connection"))
+    }
+}

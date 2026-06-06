@@ -20,6 +20,7 @@ use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
 use crate::service::cmd_service::elasticsearch_search_with_error;
+use crate::service::cmd_service::elasticsearch_index_detail_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
 use crate::service::cmd_service::drop_table_with_error;
@@ -662,6 +663,20 @@ pub async fn elasticsearch_search(
         elasticsearch_search_with_error(state, list_node_info_req, index_name, query, search_query, from, size).await
     );
     info!("elasticsearch_search: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn elasticsearch_index_detail(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        elasticsearch_index_detail_with_error(state, list_node_info_req, index_name).await
+    );
+    info!("elasticsearch_index_detail: {:?}", time.elapsed());
     Ok(res)
 }
 

@@ -38,7 +38,35 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
   // Expanded rows for JSON detail
   const [expandedRows, setExpandedRows] = useState(new Set());
 
+  // Index detail (template, ILM, settings)
+  const [indexDetail, setIndexDetail] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+
   const indexName = activeTabNode?.name || "unknown";
+
+  // Fetch index detail (template + ILM)
+  const fetchIndexDetail = useCallback(async () => {
+    setDetailLoading(true);
+    try {
+      const responseJson = await invoke("elasticsearch_index_detail", {
+        listNodeInfoReq: { level_infos: activeTabNode.path },
+        indexName: indexName,
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      if (response_code === 0) {
+        setIndexDetail(response_msg);
+      }
+    } catch (err) {
+      console.error("Failed to fetch index detail:", err);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, [activeTabNode, indexName]);
+
+  useEffect(() => {
+    fetchIndexDetail();
+  }, [fetchIndexDetail]);
 
   const fetchDocuments = useCallback(async () => {
     setLoading(true);
@@ -124,7 +152,6 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
     setSearchMode(mode);
     setCurrentPage(0);
     setExpandedRows(new Set());
-    // Reset pending state when switching
     if (mode === "simple") {
       setPendingQuery(null);
     } else {
@@ -150,7 +177,6 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
   const formatCellValue = (value, headerName) => {
     if (value === null || value === undefined) return "-";
 
-    // Try to detect and pretty-print JSON strings
     if (typeof value === "string" && (value.startsWith("{") || value.startsWith("["))) {
       try {
         const parsed = JSON.parse(value);
@@ -163,11 +189,10 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
           </pre>
         );
       } catch {
-        // Not valid JSON, show as-is
+        // not JSON
       }
     }
 
-    // Truncate long values
     if (typeof value === "string" && value.length > 120) {
       return (
         <span className="font-mono text-xs break-all" title={value}>
@@ -178,6 +203,35 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
 
     return <span className="font-mono text-xs">{value}</span>;
   };
+
+  // --- ILM phase rendering helpers ---
+  const renderIlmPhase = (phaseName, phaseData) => {
+    if (!phaseData || typeof phaseData !== "object") return null;
+    const actions = phaseData.min_age
+      ? [<span key="age" className="badge badge-xs badge-ghost">min_age: {phaseName === "hot" ? phaseData.min_age : phaseData.min_age}</span>]
+      : [];
+
+    if (phaseData.actions) {
+      Object.entries(phaseData.actions).forEach(([action, config]) => {
+        actions.push(
+          <span key={action} className="badge badge-xs badge-outline">
+            {action}
+            {config && Object.keys(config).length > 0 && (
+              <span className="ml-1 opacity-60">
+                {Object.entries(config).map(([k, v]) => `${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`).join(", ")}
+              </span>
+            )}
+          </span>
+        );
+      });
+    }
+
+    return actions;
+  };
+
+  const ilmPhases = ["hot", "warm", "cold", "frozen", "delete"];
+  const ilmPolicyDetail = indexDetail?.ilm_policy_detail;
+  const ilmPhasesData = ilmPolicyDetail?.policy?.phases;
 
   return (
     <div className="flex flex-col h-full">
@@ -213,11 +267,18 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
                 自定义 Query
               </button>
             </div>
+
+            {/* Index detail toggle */}
+            <button
+              className={`btn btn-sm ${showDetail ? "btn-active" : "btn-outline"}`}
+              onClick={() => setShowDetail(!showDetail)}
+            >
+              📋 索引详情
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
             {searchMode === "simple" ? (
-              /* Simple text search */
               <div className="join">
                 <input
                   type="text"
@@ -246,7 +307,6 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
                 </button>
               </div>
             ) : (
-              /* Custom query - run/clear buttons only; editor is below */
               <div className="flex items-center gap-2">
                 <button
                   className="btn btn-sm btn-primary"
@@ -267,6 +327,155 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
           </div>
         </div>
       </div>
+
+      {/* Index detail panel (collapsible) */}
+      {showDetail && (
+        <div className="flex-shrink-0 border-b border-base-content/10 bg-base-200/50">
+          {detailLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <span className="loading loading-spinner loading-sm mr-2"></span>
+              <span className="text-sm text-base-content/60">加载索引详情...</span>
+            </div>
+          ) : indexDetail ? (
+            <div className="px-4 py-3 space-y-3">
+              {/* Row 1: Basic settings */}
+              <div className="flex flex-wrap gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="text-base-content/50">Shards:</span>
+                  <span className="font-mono font-semibold">{indexDetail.number_of_shards}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-base-content/50">Replicas:</span>
+                  <span className="font-mono font-semibold">{indexDetail.number_of_replicas}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-base-content/50">UUID:</span>
+                  <span className="font-mono">{indexDetail.uuid}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-base-content/50">创建时间:</span>
+                  <span className="font-mono">
+                    {indexDetail.creation_date && indexDetail.creation_date !== "-"
+                      ? new Date(parseInt(indexDetail.creation_date)).toLocaleString("zh-CN")
+                      : "-"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Row 2: Matching templates */}
+              <div>
+                <div className="text-xs font-semibold text-base-content/60 mb-1">
+                  📎 绑定模板 ({indexDetail.matching_templates?.length || 0})
+                </div>
+                {indexDetail.matching_templates?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {indexDetail.matching_templates.map((tmpl, i) => (
+                      <div key={i} className="bg-base-300/60 rounded-lg px-3 py-2 text-xs">
+                        <div className="font-semibold text-primary">{tmpl.name}</div>
+                        <div className="text-base-content/50 mt-0.5">
+                          patterns: <code className="text-info">{tmpl.index_patterns}</code>
+                          {tmpl.order && tmpl.order !== "0" && (
+                            <span className="ml-2">order: {tmpl.order}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-base-content/40">无匹配模板</div>
+                )}
+              </div>
+
+              {/* Row 3: ILM Policy */}
+              <div>
+                <div className="text-xs font-semibold text-base-content/60 mb-1">
+                  ♻️ 生命周期策略 (ILM)
+                </div>
+                {indexDetail.ilm_policy_name ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-primary">{indexDetail.ilm_policy_name}</span>
+                      {indexDetail.ilm_rollover_alias && (
+                        <span className="text-base-content/50">
+                          rollover alias: <code className="text-info">{indexDetail.ilm_rollover_alias}</code>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* ILM Phases timeline */}
+                    {ilmPhasesData && (
+                      <div className="flex items-start gap-1 overflow-x-auto pb-1">
+                        {ilmPhases.map((phase) => {
+                          const phaseData = ilmPhasesData[phase];
+                          if (!phaseData) return null;
+
+                          const phaseColors = {
+                            hot: "badge-error",
+                            warm: "badge-warning",
+                            cold: "badge-info",
+                            frozen: "badge-primary",
+                            delete: "badge-ghost",
+                          };
+
+                          return (
+                            <div
+                              key={phase}
+                              className="flex-shrink-0 bg-base-300/60 rounded-lg px-3 py-2 min-w-[140px]"
+                            >
+                              <div className="flex items-center gap-1 mb-1">
+                                <span className={`badge badge-xs ${phaseColors[phase] || "badge-ghost"}`}>
+                                  {phase.toUpperCase()}
+                                </span>
+                                {phaseData.min_age && (
+                                  <span className="text-[10px] text-base-content/40">
+                                    {phaseData.min_age}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-1">
+                                {phaseData.actions && Object.entries(phaseData.actions).map(([action, config]) => (
+                                  <div key={action} className="text-xs">
+                                    <span className="font-mono font-semibold">{action}</span>
+                                    {config && typeof config === "object" && Object.keys(config).length > 0 && (
+                                      <div className="text-[10px] text-base-content/40 mt-0.5">
+                                        {Object.entries(config).map(([k, v]) => (
+                                          <span key={k} className="mr-1">
+                                            {k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Full ILM policy JSON (collapsible) */}
+                    {ilmPolicyDetail && (
+                      <details className="text-xs">
+                        <summary className="cursor-pointer text-base-content/40 hover:text-base-content/60">
+                          查看完整策略 JSON
+                        </summary>
+                        <pre className="mt-1 bg-base-300 p-2 rounded-lg overflow-x-auto whitespace-pre-wrap text-[10px] max-h-48 overflow-y-auto">
+                          {JSON.stringify(ilmPolicyDetail, null, 2)}
+                        </pre>
+                      </details>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-xs text-base-content/40">未配置 ILM 策略</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="px-4 py-3 text-xs text-base-content/40">无法加载索引详情</div>
+          )}
+        </div>
+      )}
 
       {/* Custom query editor (only in query mode) */}
       {searchMode === "query" && (
@@ -309,10 +518,7 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
           </span>
         )}
         {hasActiveFilter && (
-          <button
-            className="btn btn-xs btn-ghost"
-            onClick={handleResetAll}
-          >
+          <button className="btn btn-xs btn-ghost" onClick={handleResetAll}>
             清除条件
           </button>
         )}
@@ -365,14 +571,10 @@ function ElasticsearchIndexPanel({ activeTabNode, connectionDetails }) {
                         key={cellIndex}
                         className="text-sm max-w-md overflow-hidden"
                       >
-                        {formatCellValue(
-                          cell,
-                          headers[cellIndex]?.name
-                        )}
+                        {formatCellValue(cell, headers[cellIndex]?.name)}
                       </td>
                     ))}
                   </tr>
-                  {/* Expanded JSON detail */}
                   {expandedRows.has(rowIndex) && (
                     <tr className="bg-base-200/50">
                       <td colSpan={headers.length + 1} className="p-0">

@@ -679,6 +679,144 @@ impl ElasticsearchConfig {
         resp.total_count = Some(total_hits);
         Ok(resp)
     }
+
+    /// Get index detail: settings, matching templates, ILM policy.
+    /// Returns a JSON string with all metadata.
+    pub async fn get_index_detail(
+        &self,
+        index_name: String,
+    ) -> Result<serde_json::Value, anyhow::Error> {
+        let client = self.get_connection()?;
+
+        // 1. Fetch index settings
+        let settings_response = client
+            .indices()
+            .get(elasticsearch::indices::IndicesGetParts::Index(&[&index_name]))
+            .send()
+            .await?;
+
+        let mut settings_info: serde_json::Value = serde_json::json!({});
+        if settings_response.status_code().is_success() {
+            let body: serde_json::Value = settings_response.json().await?;
+            // body is { "<index_name>": { "aliases": {}, "mappings": {}, "settings": { "index": { ... } } } }
+            if let Some(index_data) = body.get(&index_name).or_else(|| body.as_object().and_then(|m| m.values().next())) {
+                settings_info = index_data.clone();
+            }
+        }
+
+        // Extract key settings
+        let index_settings = settings_info
+            .get("settings")
+            .and_then(|s| s.get("index"))
+            .cloned()
+            .unwrap_or(serde_json::json!({}));
+
+        let ilm_policy_name = index_settings
+            .get("lifecycle")
+            .and_then(|l| l.get("name"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+
+        let ilm_rollover_alias = index_settings
+            .get("lifecycle")
+            .and_then(|l| l.get("rollover_alias"))
+            .and_then(|n| n.as_str())
+            .map(|s| s.to_string())
+            .unwrap_or_default();
+
+        let number_of_shards = index_settings
+            .get("number_of_shards")
+            .and_then(|v| v.as_str())
+            .unwrap_or("-")
+            .to_string();
+
+        let number_of_replicas = index_settings
+            .get("number_of_replicas")
+            .and_then(|v| v.as_str())
+            .unwrap_or("-")
+            .to_string();
+
+        let creation_date = index_settings
+            .get("creation_date")
+            .and_then(|v| v.as_str())
+            .unwrap_or("-")
+            .to_string();
+
+        let provided_name = index_settings
+            .get("provided_name")
+            .and_then(|v| v.as_str())
+            .unwrap_or("-")
+            .to_string();
+
+        let uuid = index_settings
+            .get("uuid")
+            .and_then(|v| v.as_str())
+            .unwrap_or("-")
+            .to_string();
+
+        // 2. Find matching templates
+        let templates_response = client
+            .cat()
+            .templates(CatTemplatesParts::None)
+            .format("json")
+            .send()
+            .await?;
+
+        let mut matching_templates: Vec<serde_json::Value> = vec![];
+        if templates_response.status_code().is_success() {
+            let templates: Vec<serde_json::Value> = templates_response.json().await?;
+            for tmpl in templates {
+                let tmpl_name = tmpl.get("name").and_then(|v| v.as_str()).unwrap_or("");
+                let patterns_str = tmpl.get("indexPatterns").and_then(|v| v.as_str()).unwrap_or("");
+
+                // Check if index name matches any pattern
+                let patterns: Vec<&str> = patterns_str.split(',').map(|p| p.trim()).collect();
+                for pattern in patterns {
+                    if matches_index_pattern(pattern, &index_name) {
+                        matching_templates.push(serde_json::json!({
+                            "name": tmpl_name,
+                            "index_patterns": patterns_str,
+                            "order": tmpl.get("order").and_then(|v| v.as_str()).unwrap_or("0"),
+                        }));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 3. Fetch ILM policy if present
+        let mut ilm_policy_detail: serde_json::Value = serde_json::json!(null);
+        if !ilm_policy_name.is_empty() {
+            let ilm_response = client
+                .ilm()
+                .get_lifecycle(elasticsearch::ilm::IlmGetLifecycleParts::Policy(&ilm_policy_name))
+                .send()
+                .await?;
+
+            if ilm_response.status_code().is_success() {
+                let ilm_body: serde_json::Value = ilm_response.json().await?;
+                // Structure: { "<policy_name>": { "version": ..., "modified_date": ..., "policy": { "phases": { ... } } } }
+                ilm_policy_detail = ilm_body
+                    .get(&ilm_policy_name)
+                    .cloned()
+                    .unwrap_or(ilm_body);
+            }
+        }
+
+        Ok(serde_json::json!({
+            "index_name": index_name,
+            "provided_name": provided_name,
+            "uuid": uuid,
+            "creation_date": creation_date,
+            "number_of_shards": number_of_shards,
+            "number_of_replicas": number_of_replicas,
+            "ilm_policy_name": ilm_policy_name,
+            "ilm_rollover_alias": ilm_rollover_alias,
+            "matching_templates": matching_templates,
+            "ilm_policy_detail": ilm_policy_detail,
+        }))
+    }
 }
 
 /// Parse SQL to extract index name and limit: SELECT * FROM <index> [LIMIT <n>]
@@ -721,4 +859,41 @@ fn json_value_to_string(value: &serde_json::Value) -> Option<String> {
         }
         serde_json::Value::Object(_) => serde_json::to_string(value).ok(),
     }
+}
+
+/// Check if an index name matches an Elasticsearch index pattern (e.g., "logs-*", "metricbeat-*.*")
+fn matches_index_pattern(pattern: &str, index_name: &str) -> bool {
+    if pattern == "*" || pattern == "_all" {
+        return true;
+    }
+    // Convert wildcard pattern to a simple glob match
+    let parts: Vec<&str> = pattern.split('*').collect();
+    if parts.len() == 1 {
+        // No wildcard — exact match
+        return parts[0] == index_name;
+    }
+
+    let mut idx = 0;
+    for (i, part) in parts.iter().enumerate() {
+        if part.is_empty() {
+            continue;
+        }
+        if let Some(pos) = index_name[idx..].find(part) {
+            if i == 0 && pos != 0 {
+                // First segment must match from the beginning
+                return false;
+            }
+            idx += pos + part.len();
+        } else {
+            return false;
+        }
+    }
+    // If last part is empty (pattern ends with *), any suffix is fine
+    // Otherwise the remainder must be empty
+    if let Some(last) = parts.last() {
+        if !last.is_empty() {
+            return idx == index_name.len();
+        }
+    }
+    true
 }

@@ -132,6 +132,7 @@ async fn main() -> Result<(), anyhow::Error> {
             drop_table,
             dump_database,
             elasticsearch_search,
+            elasticsearch_index_detail,
             exe_sql,
             generate_database_document,
             get_object_info,

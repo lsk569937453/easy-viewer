@@ -918,3 +918,33 @@ pub async fn elasticsearch_search_with_error(
         Err(anyhow!("Not an Elasticsearch connection"))
     }
 }
+
+pub async fn elasticsearch_index_detail_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+) -> Result<serde_json::Value, anyhow::Error> {
+    info!(
+        "elasticsearch_index_detail list_node_info_req: {:?}, index_name: {}",
+        list_node_info_req, index_name
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Elasticsearch(es_config) =
+        base_config.base_config_enum
+    {
+        let result = es_config.get_index_detail(index_name).await?;
+        Ok(result)
+    } else {
+        Err(anyhow!("Not an Elasticsearch connection"))
+    }
+}

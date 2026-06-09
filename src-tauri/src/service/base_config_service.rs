@@ -59,7 +59,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
             BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
             BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
-            BaseConfigEnum::Oracledb(config) => config.test_connection()?,
+            BaseConfigEnum::Oracledb(config) => config.test_connection().await?,
             BaseConfigEnum::Mssql(config) => config.test_connection().await?,
             BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
             BaseConfigEnum::S3(config) => config.test_connection().await?,
@@ -614,6 +614,29 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => config.create_bucket(bucket_name).await?,
+            _ => Err(anyhow!("Only S3 supports create_bucket."))?,
+        }
+        Ok(())
+    }
+    pub async fn upload_file_multipart<F: Fn(u64, u64) + Send>(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        local_file_path: String,
+        on_progress: F,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::S3(config) => {
+                config
+                    .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
+                    .await?
+            }
+            _ => Err(anyhow!("Only S3 supports upload_file_multipart."))?,
+        }
+        Ok(())
+    }
     pub async fn get_complete_words(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -664,6 +687,31 @@ impl BaseConfigEnum {
         };
         Ok(data)
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let version = match self {
+            BaseConfigEnum::Mysql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Postgresql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Sqlite(config) => config.get_server_version().await?,
+            BaseConfigEnum::Oracledb(config) => config.get_server_version().await?,
+            BaseConfigEnum::Mssql(config) => config.get_server_version().await?,
+            BaseConfigEnum::Mongodb(config) => config.get_server_version().await?,
+            BaseConfigEnum::Redis(config) => config.get_server_version().await?,
+            BaseConfigEnum::Clickhouse(config) => config.get_server_version().await?,
+            BaseConfigEnum::Elasticsearch(config) => config.get_server_version().await?,
+            BaseConfigEnum::S3(config) => config.get_server_version().await?,
+            BaseConfigEnum::Kafka(config) => {
+                let service = crate::service::kafka_service::KafkaService::new(config.clone());
+                service.test_connection().await?;
+                String::new()
+            }
+            BaseConfigEnum::Rocketmq(config) => {
+                let service = crate::service::rocketmq_service::RocketmqService::new(config.clone());
+                service.test_connection().await?;
+                String::new()
+            }
+        };
+        Ok(version)
+    }
     pub async fn update_record(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -690,6 +738,55 @@ impl BaseConfigEnum {
             BaseConfigEnum::Mssql(config) => {
                 config
                     .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
+                config
+                    .update_record(list_node_info_req, appstate, sql)
+                    .await?
+            }
+            _ => (),
+        };
+        Ok(())
+    }
+    pub async fn create_collection(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        collection_name: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .create_collection(list_node_info_req, appstate, collection_name)
+                    .await?
+            }
+            _ => return Err(anyhow!("Unsupported database type for create_collection")),
+        };
+        Ok(())
+    }
+    pub async fn delete_table_row(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        appstate: &AppState,
+        table_name: String,
+        row_id: String,
+        id_column: String,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Mongodb(config) => {
+                config
+                    .delete_table_row(list_node_info_req, appstate, table_name, row_id)
+                    .await?
+            }
+            BaseConfigEnum::Clickhouse(config) => {
+                config
+                    .delete_table_row(list_node_info_req, appstate, table_name, row_id, id_column)
                     .await?
             }
             _ => (),
@@ -731,6 +828,9 @@ impl BaseConfigEnum {
                 config.get_ddl(list_node_info_req, appstate).await?
             }
             BaseConfigEnum::Mssql(config) => config.get_ddl(list_node_info_req, appstate).await?,
+            BaseConfigEnum::Clickhouse(config) => {
+                config.get_ddl(list_node_info_req, appstate).await?
+            }
             _ => "ExeSqlResponse::new()".to_string(),
         };
         Ok(data)

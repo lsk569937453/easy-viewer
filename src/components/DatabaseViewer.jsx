@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
@@ -17,6 +18,7 @@ import {
   FaColumns,
   FaStream,
   FaStar,
+  FaTerminal,
 } from "react-icons/fa";
 
 import {
@@ -74,8 +76,15 @@ const ICON_MAP = {
   lists: <FaColumns color="#50C878" />,
   sets: <FaStar color="#FFB347" />,
   zsets: <FaKey color="#DDA0DD" />,
+  redis_console: <FaTerminal color="#DC382D" />,
   // Elasticsearch specific icons
   es_indices: <FaColumns color="#FEC514" />,
+  es_aliases: <FaEye color="#FEC514" />,
+  es_templates: <FaLayerGroup color="#FEC514" />,
+  es_nodes: <FaDatabase color="#FEC514" />,
+  es_single_alias: <FaEye color="#FEC514" />,
+  es_single_template: <FaLayerGroup color="#FEC514" />,
+  es_single_node: <FaDatabase color="#FEC514" />,
   // S3 / OSS specific icons
   bucket: <FaDatabase size="1.2em" color="#FF9900" />,
   folder: <FaFolder color="#FFB347" />,
@@ -119,8 +128,16 @@ function DatabaseViewer({
   const [activeTabId, setActiveTabId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnectionId, setEditingConnectionId] = useState(null);
+  const createCollectionModalRef = useRef(null);
+  const [newCollectionName, setNewCollectionName] = useState("");
+  const [createCollectionNode, setCreateCollectionNode] = useState(null);
+
+  const createBucketModalRef = useRef(null);
+  const [newBucketName, setNewBucketName] = useState("");
+  const [createBucketNode, setCreateBucketNode] = useState(null);
 
   const [nodeToDelete, setNodeToDelete] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const deleteModalRef = useRef(null);
 
   const openNodesRef = useRef(openNodes);
@@ -140,20 +157,26 @@ function DatabaseViewer({
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
       if (response_code === 0) {
-        const childNodes = response_msg.list.map((child, index) => ({
-          id: `${parentNode.id}-${child.name}-${index}`,
-          name: child.name,
-          type: child.type || "default",
-          icon: getNodeIcon(child.type, child.icon_name),
-          description: child.description || "",
-          iconName: child.icon_name,
-          details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-          children: null,
-          path: [
-            ...parentNode.path,
-            { level: parentNode.path.length + 1, config_value: child.name },
-          ],
-        }));
+        // Build childNodes BEFORE setTreeData so the value is available
+        // for the caller regardless of React batching timing.
+        const childNodes = response_msg.list.map((child, index) => {
+          const childId = `${parentNode.id}-${child.name}-${index}`;
+
+          return {
+            id: childId,
+            name: child.name,
+            type: child.type || "default",
+            icon: getNodeIcon(child.type, child.icon_name),
+            description: child.description || "",
+            iconName: child.icon_name,
+            details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
+            children: null,
+            path: [
+              ...parentNode.path,
+              { level: parentNode.path.length + 1, config_value: child.name },
+            ],
+          };
+        });
 
         setTreeData((prevTree) =>
           updateNodeInTree(prevTree, parentNode.id, {
@@ -162,12 +185,7 @@ function DatabaseViewer({
           })
         );
 
-        const currentOpenNodes = openNodesRef.current;
-        childNodes.forEach(async (childNode) => {
-          if (currentOpenNodes[childNode.id]) {
-            await fetchNodeChildren(childNode);
-          }
-        });
+        return childNodes;
       } else {
         throw new Error(response_msg);
       }
@@ -209,6 +227,8 @@ function DatabaseViewer({
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    const loadTree = async () => {
     const newTreeData = (connections || []).map((conn) => {
       const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
@@ -231,12 +251,42 @@ function DatabaseViewer({
     });
     setTreeData(newTreeData);
 
+    // Fetch server versions in parallel, then update all nodes at once
+    setIsRefreshing(true);
+    const versionPromises = newTreeData.map(async (node) => {
+      try {
+        const res = await invoke("get_server_version", { baseConfigId: node.id });
+        const { response_code, response_msg } = JSON.parse(res);
+        if (response_code === 0) {
+          return { id: node.id, update: { version: response_msg || null, offline: false } };
+        }
+        return { id: node.id, update: { offline: true } };
+      } catch {
+        return { id: node.id, update: { offline: true } };
+      }
+    });
+
+    const results = await Promise.allSettled(versionPromises);
+    setTreeData((prev) => {
+      let updated = prev;
+      for (const r of results) {
+        if (r.status === "fulfilled" && r.value) {
+          updated = updateNodeInTree(updated, r.value.id, r.value.update);
+        }
+      }
+      return updated;
+    });
+    setIsRefreshing(false);
+
     const currentOpenNodes = openNodesRef.current;
     newTreeData.forEach(async (node) => {
       if (currentOpenNodes[node.id] && node.children === null) {
         await fetchNodeChildren(node);
       }
     });
+    };
+    if (!cancelled) loadTree();
+    return () => { cancelled = true; };
   }, [connections, fetchNodeChildren]);
 
   const generateSqlForNode = (node, allConnections, limit = 100) => {
@@ -317,7 +367,8 @@ function DatabaseViewer({
     connectionId,
     nodeIcon,
     generatedSql = "",
-    defaultName = ""
+    defaultName = "",
+    databaseName = ""
   ) => {
     const now = new Date();
     const year = now.getFullYear();
@@ -328,20 +379,20 @@ function DatabaseViewer({
     const seconds = now.getSeconds().toString().padStart(2, "0");
     const milliseconds = now.getMilliseconds().toString().padStart(3, "0");
 
-    const timestamp = `${year}${month}${day}${hours}${minutes}${seconds}${milliseconds}`;
-    const finalQueryName = defaultName || `New_Query_${timestamp}`;
+    const timestamp = `${month}${day}${hours}${minutes}${seconds}`;
+    const finalQueryName = defaultName || `Query_${timestamp}`;
 
     try {
       const responseJson = await invoke("save_query", {
         connectionId: connectionId,
         queryName: finalQueryName,
         sql: generatedSql,
-        queryId: null,
+        databaseName: databaseName || undefined,
       });
       const { response_code, response_msg } = JSON.parse(responseJson);
 
       if (response_code === 0) {
-        const { query_id } = response_msg;
+        const query_id = response_msg;
         const newTabId = `sql-editor-${query_id || Date.now()}`;
 
         const existingSqlEditorTab = tabs.find(
@@ -370,6 +421,7 @@ function DatabaseViewer({
             type: "sqlEditor",
             connectionId: connectionId,
             queryId: query_id,
+            databaseName: databaseName,
             initialSql: generatedSql,
             isDirty: !!generatedSql,
           };
@@ -382,12 +434,12 @@ function DatabaseViewer({
           "Failed to create new query via save_query:",
           response_msg
         );
-        alert(`创建新查询失败: ${response_msg}`);
+        showError(`创建新查询失败: ${response_msg}`);
         return false;
       }
     } catch (err) {
       console.error("Error invoking save_query for new query:", err);
-      alert(`创建新查询时发生错误: ${err.message || err.toString()}`);
+      showError(`创建新查询时发生错误: ${err.message || err.toString()}`);
       return false;
     }
   };
@@ -398,12 +450,13 @@ function DatabaseViewer({
 
     if (!connection) {
       console.error("Connection details not found for node:", node);
-      alert("无法找到数据库连接信息。");
+      showError("无法找到数据库连接信息。");
       return;
     }
 
     if (node.iconName === "singleQuery") {
       const queryId = node.path[node.path.length - 1].config_value;
+      const databaseName = node.path[1]?.config_value || "";
       const newTabId = `sql-editor-${queryId}`;
 
       const existingSqlEditorTab = tabs.find(
@@ -419,6 +472,7 @@ function DatabaseViewer({
           type: "sqlEditor",
           connectionId: connection.base_config_id,
           queryId: queryId,
+          databaseName: databaseName,
           initialSql: null,
           isDirty: false,
         };
@@ -426,7 +480,73 @@ function DatabaseViewer({
         setActiveTabId(newTab.id);
       }
       return;
+    } else if (node.iconName === "folder" || node.iconName === "textFile") {
+      const tabId = `s3-object-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: node.name,
+          icon: node.icon,
+          type: "s3Object",
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      await handleToggleNode(node);
+      return;
     } else if (node.iconName === "singleTable") {
+      const rootConfigId = node.path[0]?.config_value;
+      const connection = findConnectionByRootConfigId(connections, rootConfigId);
+
+      // Redis key — use dedicated RedisKeyDetailPanel
+      if (connection && connection.connection_type === 9) {
+        const keyName = node.name;
+        const tabId = `redis-key-${node.id}`;
+        const existingTab = tabs.find((tab) => tab.id === tabId);
+        if (existingTab) {
+          setActiveTabId(existingTab.id);
+        } else {
+          const newTab = {
+            id: tabId,
+            name: keyName,
+            icon: node.icon,
+            type: "redisKeyDetail",
+            node: node,
+            connectionDetails: connection,
+          };
+          setTabs((prevTabs) => [...prevTabs, newTab]);
+          setActiveTabId(newTab.id);
+        }
+        await handleToggleNode(node);
+        return;
+      }
+
+      // Elasticsearch index — use dedicated ElasticsearchIndexPanel
+      if (connection && connection.connection_type === 10) {
+        const tabId = `es-index-${node.id}`;
+        const existingTab = tabs.find((tab) => tab.id === tabId);
+        if (existingTab) {
+          setActiveTabId(existingTab.id);
+        } else {
+          const newTab = {
+            id: tabId,
+            name: node.name,
+            icon: node.icon,
+            type: "esIndexBrowser",
+            node: node,
+            connectionDetails: connection,
+          };
+          setTabs((prevTabs) => [...prevTabs, newTab]);
+          setActiveTabId(newTab.id);
+        }
+        await handleToggleNode(node);
+        return;
+      }
+
       const tableId = node.path[node.path.length - 1].config_value;
       const newTabId = `singleTable-${tableId}`;
       const existingSqlEditorTab = tabs.find(
@@ -436,8 +556,6 @@ function DatabaseViewer({
         setActiveTabId(existingSqlEditorTab.id);
       } else {
         let sql = generateSqlForNode(node, connections);
-        const rootConfigId = node.path[0]?.config_value;
-        const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
         const newTab = {
           id: newTabId,
@@ -544,6 +662,12 @@ function DatabaseViewer({
       return;
     }
 
+    // Redis 节点处理
+    if (node.iconName?.startsWith("redis_")) {
+      await handleRedisNodeActivate(node, connection);
+      return;
+    }
+
     // 纯文件夹节点（tables, views, columns, index, partitions 等）只展开/折叠，不创建 tab
     await handleToggleNode(node);
   };
@@ -640,6 +764,36 @@ function DatabaseViewer({
     await handleToggleNode(node);
   };
 
+  // Redis 节点激活处理
+  const handleRedisNodeActivate = async (node, connection) => {
+    const nodeType = node.iconName;
+
+    // Console 节点
+    if (nodeType === "redis_console") {
+      const tabId = `redis-console-${connection.base_config_id}`;
+
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(existingTab.id);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `Redis Console`,
+          icon: node.icon,
+          type: "redisConsole",
+          node: node,
+          connectionDetails: connection,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
+    }
+
+    // 默认展开/折叠
+    await handleToggleNode(node);
+  };
+
   const handleToggleNode = async (node) => {
     const isCurrentlyOpen = openNodes[node.id];
 
@@ -651,11 +805,105 @@ function DatabaseViewer({
   };
 
   const handleRefreshNode = async (node) => {
-    setTreeData((prevTree) =>
-      updateNodeInTree(prevTree, node.id, { children: null })
-    );
-    await fetchNodeChildren(node);
+    const childNodes = await fetchNodeChildren(node);
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
+
+    // Re-fetch data for open children using raw invoke calls, then
+    // update the tree in a SINGLE setTreeData to avoid React batching races.
+    if (childNodes && childNodes.length > 0) {
+      const currentOpenNodes = openNodesRef.current;
+      const openChildren = childNodes.filter(
+        (child) => currentOpenNodes[child.id]
+      );
+
+      if (openChildren.length > 0) {
+        // Fetch all open children's data in parallel via raw invoke
+        const results = await Promise.all(
+          openChildren.map(async (child) => {
+            try {
+              const responseJson = await invoke("list_node_info", {
+                listNodeInfoReq: { level_infos: child.path },
+              });
+              const { response_code, response_msg } = JSON.parse(responseJson);
+              if (response_code === 0) {
+                return { child, list: response_msg.list };
+              }
+            } catch (err) {
+              console.error("Failed to re-fetch child:", child.name, err);
+            }
+            return null;
+          })
+        );
+
+        // Update tree state ONCE with all results
+        setTreeData((prevTree) => {
+          let updated = prevTree;
+          for (const result of results.filter(Boolean)) {
+            const { child, list } = result;
+            const grandChildren = list.map((item, index) => ({
+              id: `${child.id}-${item.name}-${index}`,
+              name: item.name,
+              type: item.type || "default",
+              icon: getNodeIcon(item.type, item.icon_name),
+              description: item.description || "",
+              iconName: item.icon_name,
+              details: `节点: ${item.name}\n类型: ${item.type || "未知"}`,
+              children: null,
+              path: [
+                ...child.path,
+                { level: child.path.length + 1, config_value: item.name },
+              ],
+            }));
+            updated = updateNodeInTree(updated, child.id, {
+              children: grandChildren,
+              isLoading: false,
+            });
+          }
+          return updated;
+        });
+      }
+    }
+  };
+
+  // Remove a Redis key node from the tree and close its tab
+  const handleRedisKeyDeleted = (node) => {
+    const tabId = `redis-key-${node.id}`;
+
+    // Remove node from tree
+    setTreeData((prevTree) => {
+      const removeFromTree = (nodes) =>
+        nodes
+          .map((n) => {
+            if (n.id === node.id) return null;
+            if (n.children) {
+              const updated = removeFromTree(n.children);
+              if (updated !== n.children) {
+                return { ...n, children: updated };
+              }
+            }
+            return n;
+          })
+          .filter(Boolean);
+      return removeFromTree(prevTree);
+    });
+
+    // Remove the openNodes entry
+    setOpenNodes((prev) => {
+      const next = { ...prev };
+      delete next[node.id];
+      return next;
+    });
+
+    // Close the tab and switch to the previous one
+    setTabs((prevTabs) => {
+      const remaining = prevTabs.filter((tab) => tab.id !== tabId);
+      if (activeTabId === tabId) {
+        setActiveTabId(
+          remaining.length > 0 ? remaining[remaining.length - 1].id : null
+        );
+      }
+      return remaining;
+    });
   };
 
   const handleAddNode = async (node) => {
@@ -663,12 +911,13 @@ function DatabaseViewer({
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
 
     if (!connection) {
-      alert("无法找到数据库连接信息来执行此操作。");
+      showError("无法找到数据库连接信息来执行此操作。");
       return;
     }
 
     const connectionId = parseInt(rootConfigId);
     const connectionType = connection.connection_type;
+    const databaseName = node.path[1]?.config_value || "";
     let generatedSql = "";
     let defaultQueryName = "";
 
@@ -690,7 +939,7 @@ function DatabaseViewer({
       }
 
       if (!tableName) {
-        alert("无法确定表名来生成 CREATE COLUMN SQL。");
+        showError("无法确定表名来生成 CREATE COLUMN SQL。");
         return;
       }
       generatedSql = generateCreateColumnSql(connectionType, tableName);
@@ -698,11 +947,33 @@ function DatabaseViewer({
     } else if (node.iconName === "index") {
       const tableName = node.path[node.path.length - 2]?.config_value;
       if (!tableName) {
-        alert("无法确定表名来生成 CREATE INDEX SQL。");
+        showError("无法确定表名来生成 CREATE INDEX SQL。");
         return;
       }
       generatedSql = generateCreateIndexSql(connectionType, tableName);
       defaultQueryName = `Add_Index_to_${tableName}`;
+    } else if (node.iconName === "s3") {
+      setNewBucketName("");
+      setCreateBucketNode(node);
+      createBucketModalRef.current?.showModal();
+      return;
+    } else if (node.iconName === "bucket") {
+      const tabId = `s3-upload-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(tabId);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `上传到 ${node.name}`,
+          icon: node.icon,
+          type: "s3Upload",
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
     } else if (node.iconName === "kafka_topics") {
       // 创建新 Kafka Topic
       const topicName = prompt("请输入新 Topic 名称:");
@@ -721,17 +992,22 @@ function DatabaseViewer({
         const { response_code, response_msg } = JSON.parse(responseJson);
 
         if (response_code === 0) {
-          alert(`Topic "${topicName}" 创建成功!`);
+          showSuccess(`Topic "${topicName}" 创建成功!`);
           await handleRefreshNode(node);
         } else {
-          alert(`创建 Topic 失败: ${response_msg}`);
+          showError(`创建 Topic 失败: ${response_msg}`);
         }
       } catch (err) {
-        alert(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
+        showError(`创建 Topic 时发生错误: ${err.message || err.toString()}`);
       }
       return;
+    } else if (node.iconName === "collections") {
+      setNewCollectionName("");
+      setCreateCollectionNode(node);
+      createCollectionModalRef.current?.showModal();
+      return;
     } else {
-      alert(
+      showError(
         `触发了"新增"操作，目标节点: ${node.name}，但此节点类型不支持生成SQL。`
       );
       return;
@@ -741,7 +1017,8 @@ function DatabaseViewer({
       connectionId,
       node.icon,
       generatedSql,
-      defaultQueryName
+      defaultQueryName,
+      databaseName
     );
 
     if (node.iconName === "query" && success) {
@@ -779,16 +1056,18 @@ function DatabaseViewer({
         nodeToDelete.path[nodeToDelete.path.length - 1]?.config_value;
 
       if (!baseConfigId || !queryName || !queryId) {
-        alert("无法获取完整的查询信息来删除。");
+        showError("无法获取完整的查询信息来删除。");
         setNodeToDelete(null);
         deleteModalRef.current?.close();
         return;
       }
 
       try {
+        const databaseName = nodeToDelete.path[1]?.config_value || "";
         const responseJson = await invoke("remove_query", {
           baseConfigId: parseInt(baseConfigId),
           queryName: queryName,
+          databaseName: databaseName || undefined,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
 
@@ -844,11 +1123,93 @@ function DatabaseViewer({
           });
         } else {
           console.error("Failed to delete query:", response_msg);
-          alert(`删除查询失败: ${response_msg}`);
+          showError(`删除查询失败: ${response_msg}`);
         }
       } catch (err) {
         console.error("Error invoking remove_query:", err);
-        alert(`删除查询时发生错误: ${err.message || err.toString()}`);
+        showError(`删除查询时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
+    } else if (nodeToDelete.iconName === "bucket") {
+      try {
+        const responseJson = await invoke("delete_bucket", {
+          listNodeInfoReq: { level_infos: nodeToDelete.path },
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          setTreeData((prevTree) => {
+            const removeBucketNode = (nodes) =>
+              nodes
+                .map((n) => {
+                  if (n.id === nodeToDelete.id) return null;
+                  if (n.children) {
+                    const updated = removeBucketNode(n.children);
+                    if (updated !== n.children) {
+                      return { ...n, children: updated };
+                    }
+                  }
+                  return n;
+                })
+                .filter(Boolean);
+            return removeBucketNode(prevTree);
+          });
+
+          setOpenNodes((prev) => {
+            const next = { ...prev };
+            delete next[nodeToDelete.id];
+            return next;
+          });
+
+          showSuccess(`Bucket "${nodeToDelete.name}" 删除成功!`);
+        } else {
+          showError(`删除 Bucket 失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`删除 Bucket 时发生错误: ${err.message || err.toString()}`);
+      } finally {
+        setNodeToDelete(null);
+        deleteModalRef.current?.close();
+      }
+    } else if (nodeToDelete.iconName === "folder" || nodeToDelete.iconName === "textFile") {
+      try {
+        const responseJson = await invoke("delete_bucket", {
+          listNodeInfoReq: { level_infos: nodeToDelete.path },
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+
+        if (response_code === 0) {
+          setTreeData((prevTree) => {
+            const removeNode = (nodes) =>
+              nodes
+                .map((n) => {
+                  if (n.id === nodeToDelete.id) return null;
+                  if (n.children) {
+                    const updated = removeNode(n.children);
+                    if (updated !== n.children) {
+                      return { ...n, children: updated };
+                    }
+                  }
+                  return n;
+                })
+                .filter(Boolean);
+            return removeNode(prevTree);
+          });
+
+          setOpenNodes((prev) => {
+            const next = { ...prev };
+            delete next[nodeToDelete.id];
+            return next;
+          });
+
+          showSuccess(`"${nodeToDelete.name}" 删除成功!`);
+        } else {
+          showError(`删除失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`删除时发生错误: ${err.message || err.toString()}`);
       } finally {
         setNodeToDelete(null);
         deleteModalRef.current?.close();
@@ -893,11 +1254,11 @@ function DatabaseViewer({
             "Failed to delete connection via delete_base_config:",
             response_msg
           );
-          alert(`删除连接失败: ${response_msg}`);
+          showError(`删除连接失败: ${response_msg}`);
         }
       } catch (err) {
         console.error("Error invoking delete_base_config:", err);
-        alert(`删除连接时发生错误: ${err.message || err.toString()}`);
+        showError(`删除连接时发生错误: ${err.message || err.toString()}`);
       } finally {
         setNodeToDelete(null);
         deleteModalRef.current?.close();
@@ -910,14 +1271,97 @@ function DatabaseViewer({
     deleteModalRef.current?.close();
   };
 
-  const handleEditNode = (node) => {
+  const handleConfirmCreateCollection = async () => {
+    if (!newCollectionName.trim() || !createCollectionNode) return;
+
+    try {
+      const listNodeInfoReq = { level_infos: createCollectionNode.path };
+      const responseJson = await invoke("create_collection", {
+        listNodeInfoReq,
+        collectionName: newCollectionName.trim(),
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      createCollectionModalRef.current?.close();
+      if (response_code === 0) {
+        showSuccess(`Collection "${newCollectionName.trim()}" 创建成功!`);
+        await handleRefreshNode(createCollectionNode);
+      } else {
+        showError(`创建 Collection 失败: ${response_msg}`);
+      }
+    } catch (err) {
+      createCollectionModalRef.current?.close();
+      showError(`创建 Collection 时发生错误: ${err.message || err.toString()}`);
+    }
+  };
+
+  const handleCancelCreateCollection = () => {
+    setNewCollectionName("");
+    setCreateCollectionNode(null);
+    createCollectionModalRef.current?.close();
+  };
+
+  const handleConfirmCreateBucket = async () => {
+    if (!newBucketName.trim() || !createBucketNode) return;
+
+    try {
+      const responseJson = await invoke("create_bucket", {
+        listNodeInfoReq: { level_infos: createBucketNode.path },
+        bucketName: newBucketName.trim(),
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      createBucketModalRef.current?.close();
+      if (response_code === 0) {
+        showSuccess(`Bucket "${newBucketName.trim()}" 创建成功!`);
+        await handleRefreshNode(createBucketNode);
+      } else {
+        showError(`创建 Bucket 失败: ${response_msg}`);
+      }
+    } catch (err) {
+      createBucketModalRef.current?.close();
+      showError(`创建 Bucket 时发生错误: ${err.message || err.toString()}`);
+    }
+  };
+
+  const handleCancelCreateBucket = () => {
+    setNewBucketName("");
+    setCreateBucketNode(null);
+    createBucketModalRef.current?.close();
+  };
+
+  const handleEditNode = async (node) => {
+    if (node.iconName === "folder" || node.iconName === "textFile") {
+      try {
+        const { save } = await import("@tauri-apps/plugin-dialog");
+        const isFolder = node.iconName === "folder";
+        const selected = await save({
+          title: isFolder ? "选择保存位置" : "保存文件",
+        });
+        if (!selected) return;
+
+        const responseJson = await invoke("download_file", {
+          listNodeInfoReq: { level_infos: node.path },
+          destination: selected,
+          isFolder: isFolder,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        if (response_code === 0) {
+          showSuccess("下载成功!");
+        } else {
+          showError(`下载失败: ${response_msg}`);
+        }
+      } catch (err) {
+        showError(`下载失败: ${err.message || err.toString()}`);
+      }
+      return;
+    }
+
     if (node.iconName !== "singleTable") return;
 
     const rootConfigId = node.path[0]?.config_value;
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
     if (!connection) {
       console.error("Connection details not found for node:", node);
-      alert("无法找到数据库连接信息来编辑表详情。");
+      showError("无法找到数据库连接信息来编辑表详情。");
       return;
     }
 
@@ -947,13 +1391,19 @@ function DatabaseViewer({
 
   return (
     <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
-      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5">
+      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative">
         <div className="flex-shrink-0 border-b border-base-content/5 px-3 py-2">
           <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">导航</h2>
         </div>
+        {isRefreshing && (
+          <div className="absolute inset-0 top-[37px] bg-base-200/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-2">
+            <span className="loading loading-spinner loading-lg text-primary"></span>
+            <span className="text-xs text-base-content/60">正在检测连接状态...</span>
+          </div>
+        )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
           {treeData && treeData.length > 0 ? (
-            <ul className="menu p-0">
+            <ul className="menu p-0 w-full">
               {treeData.map((rootNode) => (
                 <DaisyTreeNode
                   key={rootNode.id}
@@ -990,6 +1440,7 @@ function DatabaseViewer({
         connections={connections}
         treeData={treeData}
         onQuerySaved={updateQueryNodeNameInTree}
+        onRedisKeyDeleted={handleRedisKeyDeleted}
       />
       <NewConnectionModal
         isOpen={isModalOpen}
@@ -1002,7 +1453,7 @@ function DatabaseViewer({
           <h3 className="font-bold text-lg">确认删除</h3>
           <p className="py-4">
             <span className="font-semibold">
-              {nodeToDelete?.iconName === "singleQuery" ? "查询" : "连接"} "
+              {nodeToDelete?.iconName === "singleQuery" ? "查询" : nodeToDelete?.iconName === "bucket" ? "Bucket" : nodeToDelete?.iconName === "folder" ? "文件夹" : nodeToDelete?.iconName === "textFile" ? "文件" : "连接"} "
               {nodeToDelete?.name}"
             </span>
             此操作不可撤销。
@@ -1018,6 +1469,80 @@ function DatabaseViewer({
         </div>
         <form method="dialog" className="modal-backdrop">
           <button onClick={handleCancelDelete}>close</button>
+        </form>
+      </dialog>
+
+      <dialog ref={createCollectionModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">新建 Collection</h3>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">Collection 名称</span>
+            </label>
+            <input
+              type="text"
+              placeholder="请输入 Collection 名称"
+              className="input input-bordered w-full"
+              value={newCollectionName}
+              onChange={(e) => setNewCollectionName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmCreateCollection();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelCreateCollection}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmCreateCollection}
+              disabled={!newCollectionName.trim()}
+            >
+              创建
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelCreateCollection}>close</button>
+        </form>
+      </dialog>
+
+      <dialog ref={createBucketModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">新建 Bucket</h3>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">Bucket 名称</span>
+            </label>
+            <input
+              type="text"
+              placeholder="请输入 Bucket 名称"
+              className="input input-bordered w-full"
+              value={newBucketName}
+              onChange={(e) => setNewBucketName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmCreateBucket();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelCreateBucket}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmCreateBucket}
+              disabled={!newBucketName.trim()}
+            >
+              创建
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelCreateBucket}>close</button>
         </form>
       </dialog>
     </div>

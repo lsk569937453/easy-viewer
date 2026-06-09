@@ -19,6 +19,7 @@ use tauri::tray::MouseButtonState;
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 use tauri::Manager;
+use tauri::Emitter;
 
 #[tauri::command]
 fn show_main_window(app: tauri::AppHandle) {
@@ -98,7 +99,7 @@ async fn main() -> Result<(), anyhow::Error> {
                         message
                     ))
                 })
-                .level(LevelFilter::Info)
+                .level(LevelFilter::Debug)
                 .level_for(
                     "tao::platform_impl::platform::event_loop::runner",
                     log::LevelFilter::Error,
@@ -115,16 +116,23 @@ async fn main() -> Result<(), anyhow::Error> {
         .invoke_handler(tauri::generate_handler![
             show_main_window,
             create_folder,
+            create_collection,
             delete_base_config,
+            delete_table_row,
             delete_bucket,
+            create_bucket,
             download_file,
             download_bucket,
             upload_file,
+            upload_file_with_progress,
             upload_folder,
+            list_local_folder_files,
             drop_column,
             drop_index,
             drop_table,
             dump_database,
+            elasticsearch_search,
+            elasticsearch_index_detail,
             exe_sql,
             generate_database_document,
             get_object_info,
@@ -134,6 +142,7 @@ async fn main() -> Result<(), anyhow::Error> {
             get_column_info_for_insert_sql,
             get_complete_words,
             get_ddl,
+            get_server_version,
             get_procedure_details,
             get_query,
             import_database,
@@ -143,6 +152,7 @@ async fn main() -> Result<(), anyhow::Error> {
             kafka_produce_message,
             list_node_info,
             move_column,
+            redis_execute_command,
             remove_column,
             remove_query,
             rename_query,

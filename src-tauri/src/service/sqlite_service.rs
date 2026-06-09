@@ -556,6 +556,7 @@ WHERE type = 'view';",
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
@@ -631,6 +632,14 @@ WHERE type = 'view';",
         }
 
         Ok(())
+    }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let mut conn = SqliteConnection::connect(&self.file_path).await?;
+        let row = sqlx::query("SELECT sqlite_version()")
+            .fetch_one(&mut conn)
+            .await?;
+        let version: String = row.try_get(0)?;
+        Ok(version)
     }
     pub async fn get_ddl(
         &self,

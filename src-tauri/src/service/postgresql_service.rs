@@ -156,7 +156,13 @@ impl PostgresqlConfig {
     }
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("postgres".to_string());
-        PgConnection::connect(&test_url).await.map(|_| ())?;
+        timeout(
+            Duration::from_secs(1),
+            PgConnection::connect(&test_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
+        .map_err(|e| anyhow!(e))?;
         Ok(())
     }
     pub async fn init_dump_data(
@@ -910,6 +916,7 @@ WHERE table_name = '{}'
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
@@ -954,6 +961,14 @@ WHERE table_name = '{}'
             ExeSqlResponse::from(headers, response_rows, is_simple_select_option);
 
         Ok(exe_sql_response)
+    }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let mut conn = self.get_connection().await?;
+        let row = sqlx::query("SELECT version()")
+            .fetch_one(&mut conn)
+            .await?;
+        let version: String = row.try_get(0)?;
+        Ok(version)
     }
     pub async fn get_ddl(
         &self,

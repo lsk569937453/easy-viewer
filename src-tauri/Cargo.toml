@@ -45,10 +45,11 @@ rdkafka = { version = "=0.38.0", default-features = false, features = [
     "cmake-build",
 ] }
 rdkafka-sys = { version = "=4.9.0+2.10.0", default-features = false }
-rocketmq = "5.0.0"
-redis = "1.2.2"
+redis = { version = "=1.2.2" }
 reqwest = { version = "0.12", features = ["json"] }
+rocketmq = "5.0.0"
 rust_decimal = "1.42.0"
+rust_xlsxwriter = "=0.95.0"
 
 serde = { version = "1.0.228", features = ["derive"] }
 serde-xml-rs = "0.8.2"
@@ -88,7 +89,6 @@ uuid = { version = "1.23.1", features = [
     "macro-diagnostics",
 ] }
 walkdir = "2.5.0"
-rust_xlsxwriter = "=0.95.0"
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL

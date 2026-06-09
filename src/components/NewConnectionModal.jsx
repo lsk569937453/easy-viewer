@@ -320,7 +320,11 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     if (isNaN(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
       return { isValid: false, message: "端口必须是有效的数字 (1-65535)！" };
     }
-    if (!cleanUsername) return { isValid: false, message: "用户名不能为空！" };
+    // Redis and Elasticsearch typically don't require a username
+    const usernameOptionalTypes = ["redis", "elasticsearch"];
+    if (!usernameOptionalTypes.includes(dbType) && !cleanUsername) {
+      return { isValid: false, message: "用户名不能为空！" };
+    }
     return {
       isValid: true,
       details: {
@@ -328,7 +332,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         port: parsedPort,
         user_name: cleanUsername,
         password: cleanPassword,
-        database: cleanDatabaseName,
+        database: cleanDatabaseName || (dbType === "redis" ? "0" : ""),
       },
     };
   };
@@ -455,6 +459,14 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
           details = parseOracleUrl(connectionString.trim());
         } else if (dbType === "postgresql") {
           details = parsePostgresqlUrl(connectionString.trim());
+        } else if (dbType === "mongodb") {
+          details = parseMongodbUrl(connectionString.trim());
+        } else if (dbType === "redis") {
+          details = parseRedisUrl(connectionString.trim());
+        } else if (dbType === "clickhouse") {
+          details = parseClickhouseUrl(connectionString.trim());
+        } else if (dbType === "elasticsearch") {
+          details = parseElasticsearchUrl(connectionString.trim());
         } else {
           throw new Error(`不支持的数据库类型: ${dbType}`);
         }
@@ -834,7 +846,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">
-                      用户名 <span className="text-error">*</span>
+                      用户名 {dbType !== "redis" && dbType !== "elasticsearch" && <span className="text-error">*</span>}
                     </span>
                   </label>
                   <input

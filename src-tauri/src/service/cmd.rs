@@ -11,9 +11,16 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
+use tauri::Emitter;
+use crate::service::cmd_service::create_collection_with_error;
+use crate::service::cmd_service::get_server_version_with_error;
 use crate::service::cmd_service::delete_bucket_with_error;
+use crate::service::cmd_service::create_bucket_with_error;
+use crate::service::cmd_service::delete_table_row_with_error;
 use crate::service::cmd_service::download_bucket_with_error;
 use crate::service::cmd_service::download_file_with_error;
+use crate::service::cmd_service::elasticsearch_search_with_error;
+use crate::service::cmd_service::elasticsearch_index_detail_with_error;
 use crate::service::cmd_service::drop_column_with_error;
 use crate::service::cmd_service::drop_index_with_error;
 use crate::service::cmd_service::drop_table_with_error;
@@ -209,6 +216,51 @@ pub async fn upload_file(
     info!("upload_file: {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn upload_file_with_progress(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, String> {
+    let res = upload_file_with_progress_inner(state, app_handle, list_node_info_req, local_file_path).await;
+    match res {
+        Ok(_) => Ok("{}".to_string()),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+async fn upload_file_with_progress_inner(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<(), anyhow::Error> {
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: crate::service::base_config_service::BaseConfig =
+        serde_json::from_str(&connection_json_str)?;
+    let ah = app_handle.clone();
+    base_config
+        .base_config_enum
+        .upload_file_multipart(list_node_info_req, local_file_path, move |uploaded, total| {
+            let _ = ah.emit(
+                "s3-upload-progress",
+                serde_json::json!({ "uploaded": uploaded, "total": total }),
+            );
+        })
+        .await?;
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn upload_folder(
     state: State<'_, AppState>,
@@ -222,6 +274,27 @@ pub async fn upload_folder(
     info!("upload_folder: {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn list_local_folder_files(
+    local_directory: String,
+) -> Result<String, ()> {
+    let mut files: Vec<String> = Vec::new();
+    for entry_res in walkdir::WalkDir::new(&local_directory) {
+        let entry = match entry_res {
+            Ok(e) => e,
+            Err(_) => continue,
+        };
+        if !entry.file_type().is_dir() {
+            if let Some(path_str) = entry.path().to_str() {
+                files.push(path_str.to_string());
+            }
+        }
+    }
+    let res = serde_json::to_string(&files).unwrap_or_else(|_| "[]".to_string());
+    Ok(res)
+}
+
 #[tauri::command]
 pub async fn get_complete_words(
     state: State<'_, AppState>,
@@ -255,6 +328,45 @@ pub async fn update_record(
     Ok(res)
 }
 #[tauri::command]
+pub async fn create_collection(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    collection_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        create_collection_with_error(state, list_node_info_req, collection_name).await
+    );
+    info!("create_collection: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn get_server_version(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(get_server_version_with_error(state, base_config_id).await);
+    info!("get_server_version: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
+pub async fn delete_table_row(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    table_name: String,
+    row_id: String,
+    id_column: String,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        delete_table_row_with_error(state, base_config_id, table_name, row_id, id_column, list_node_info_req).await
+    );
+    info!("delete_table_row: {:?}", time.elapsed());
+    Ok(res)
+}
+#[tauri::command]
 pub async fn show_columns(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -280,9 +392,10 @@ pub async fn save_query(
     connection_id: i32,
     query_name: String,
     sql: Option<String>,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql).await);
+    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql, database_name).await);
     info!("save_query: {:?}", time.elapsed());
     Ok(res)
 }
@@ -337,6 +450,21 @@ pub async fn delete_bucket(
     info!("save_query:  {:?}", time.elapsed());
     Ok(res)
 }
+
+#[tauri::command]
+pub async fn create_bucket(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    bucket_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        create_bucket_with_error(state, list_node_info_req, bucket_name).await
+    );
+    info!("create_bucket:  {:?}", time.elapsed());
+    Ok(res)
+}
+
 #[tauri::command]
 
 pub async fn dump_database(
@@ -442,10 +570,11 @@ pub async fn rename_query(
     connection_id: i32,
     old_query_name: String,
     new_query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
     let res = handle_response!(
-        rename_query_with_error(state, connection_id, old_query_name, new_query_name).await
+        rename_query_with_error(state, connection_id, old_query_name, new_query_name, database_name).await
     );
     info!("rename_query: {:?}", time.elapsed());
     Ok(res)
@@ -456,9 +585,10 @@ pub async fn remove_query(
     state: State<'_, AppState>,
     base_config_id: i32,
     query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name).await);
+    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name, database_name).await);
     info!("remove_query: {:?}", time.elapsed());
     Ok(res)
 }
@@ -468,9 +598,10 @@ pub async fn get_query(
     state: State<'_, AppState>,
     connection_id: i32,
     query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
     let time = Instant::now();
-    let res = handle_response!(get_query_with_error(state, connection_id, query_name).await);
+    let res = handle_response!(get_query_with_error(state, connection_id, query_name, database_name).await);
     info!("get_query: {:?}", time.elapsed());
     Ok(res)
 }
@@ -513,6 +644,39 @@ pub async fn kafka_produce_message(
     let time = Instant::now();
     let res = handle_response!(kafka_produce_message_with_error(state, connection_id, topic, key, value).await);
     info!("kafka_produce_message: {:?}", time.elapsed());
+    Ok(res)
+}
+
+// Elasticsearch commands
+#[tauri::command]
+pub async fn elasticsearch_search(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+    query: Option<String>,
+    search_query: Option<String>,
+    from: i64,
+    size: i64,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        elasticsearch_search_with_error(state, list_node_info_req, index_name, query, search_query, from, size).await
+    );
+    info!("elasticsearch_search: {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn elasticsearch_index_detail(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        elasticsearch_index_detail_with_error(state, list_node_info_req, index_name).await
+    );
+    info!("elasticsearch_index_detail: {:?}", time.elapsed());
     Ok(res)
 }
 
@@ -629,4 +793,91 @@ async fn rocketmq_send_message_with_error(
     } else {
         Err(anyhow::anyhow!("Connection is not a RocketMQ connection"))
     }
+}
+
+// Redis commands
+#[tauri::command]
+pub async fn redis_execute_command(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    command: String,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(redis_execute_command_with_error(state, connection_id, command).await);
+    info!("redis_execute_command: {:?}", time.elapsed());
+    Ok(res)
+}
+
+async fn redis_execute_command_with_error(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    command: String,
+) -> Result<String, anyhow::Error> {
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(connection_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("Connection not found"))?;
+
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Redis(redis_config) = base_config.base_config_enum {
+        // 解析命令：按空格分割，支持引号内的空格
+        let parsed = parse_redis_command(&command);
+        if parsed.is_empty() {
+            return Err(anyhow::anyhow!("Empty command"));
+        }
+
+        let cmd = &parsed[0];
+        let args = &parsed[1..];
+
+        let response = redis_config.execute_raw_command(cmd, args)?;
+        serde_json::to_string(&response).map_err(|e| anyhow::anyhow!("Failed to serialize response: {}", e))
+    } else {
+        Err(anyhow::anyhow!("Connection is not a Redis connection"))
+    }
+}
+
+/// 解析 Redis 命令，支持引号内的空格
+/// 例如：SET key "hello world" -> ["SET", "key", "hello world"]
+fn parse_redis_command(command: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut escape_next = false;
+
+    for ch in command.chars() {
+        if escape_next {
+            current.push(ch);
+            escape_next = false;
+            continue;
+        }
+
+        match ch {
+            '\\' => {
+                escape_next = true;
+            }
+            '"' => {
+                in_quotes = !in_quotes;
+            }
+            ' ' | '\t' => {
+                if in_quotes {
+                    current.push(ch);
+                } else if !current.is_empty() {
+                    result.push(current.trim().to_string());
+                    current = String::new();
+                }
+            }
+            _ => {
+                current.push(ch);
+            }
+        }
+    }
+
+    if !current.is_empty() {
+        result.push(current.trim().to_string());
+    }
+
+    result
 }

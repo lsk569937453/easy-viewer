@@ -82,7 +82,7 @@ impl KafkaService {
             .map_err(|e| anyhow::anyhow!("Failed to create Kafka admin client: {}", e))?;
 
         // 获取 metadata 来验证连接
-        let timeout = Timeout::After(Duration::from_secs(5));
+        let timeout = Timeout::After(Duration::from_secs(1));
         let _metadata = admin
             .inner()
             .fetch_metadata(None, timeout)
@@ -383,6 +383,7 @@ impl KafkaService {
             header: headers,
             rows,
             table_name: Some(topic.to_string()),
+            total_count: None,
         })
     }
 

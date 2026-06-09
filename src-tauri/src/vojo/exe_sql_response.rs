@@ -5,6 +5,8 @@ pub struct ExeSqlResponse {
     pub header: Vec<Header>,
     pub rows: Vec<Vec<Option<String>>>,
     pub table_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_count: Option<i64>,
 }
 impl ExeSqlResponse {
     pub fn new() -> ExeSqlResponse {
@@ -12,6 +14,7 @@ impl ExeSqlResponse {
             header: vec![],
             rows: vec![],
             table_name: None,
+            total_count: None,
         }
     }
     pub fn from(
@@ -23,6 +26,7 @@ impl ExeSqlResponse {
             header,
             rows,
             table_name,
+            total_count: None,
         }
     }
 }

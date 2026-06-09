@@ -3,6 +3,8 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::{ListNodeInfoResponse, ListNodeInfoResponseItem};
 use crate::AppState;
 use rocketmq::conf::{ClientOption, ProducerOption, SimpleConsumerOption};
+use std::time::Duration;
+use tokio::time::timeout;
 use rocketmq::model::common::{FilterExpression, FilterType};
 use rocketmq::model::message::MessageBuilder;
 use rocketmq::Producer;
@@ -63,9 +65,9 @@ impl RocketmqService {
         let mut consumer = SimpleConsumer::new(consumer_option, client_option.clone())
             .map_err(|e| anyhow::anyhow!("Failed to create RocketMQ consumer: {}", e))?;
 
-        consumer
-            .start()
+        timeout(Duration::from_secs(1), consumer.start())
             .await
+            .map_err(|_| anyhow::anyhow!("Connect to RocketMQ proxy timeout"))?
             .map_err(|e| anyhow::anyhow!("Failed to connect to RocketMQ proxy: {}", e))?;
 
         // Connection successful
@@ -233,6 +235,7 @@ impl RocketmqService {
             header: headers,
             rows,
             table_name: Some(topic.to_string()),
+            total_count: None,
         })
     }
 

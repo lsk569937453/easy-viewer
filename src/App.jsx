@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import DatabaseViewer from "./components/DatabaseViewer";
 import AppMenu from "./components/AppMenu";
-import { Toaster } from "react-hot-toast";
+import toast, { Toaster } from "react-hot-toast";
+import { showError } from "./utils/showToast.jsx";
 
 function App() {
   const [connections, setConnections] = useState([]);
@@ -15,6 +16,9 @@ function App() {
   // 辅助函数：解析 connection_json 字符串以获取 host 和 port
   const parseConnectionJson = (connectionType, connectionJsonString) => {
     try {
+      if (!connectionJsonString) {
+        return { host: null, port: null };
+      }
       const connJson = JSON.parse(connectionJsonString);
       if (connectionType === 1) {
         // MySQL
@@ -57,11 +61,11 @@ function App() {
         setConnections(processedConnections);
       } else {
         console.error("App: 获取所有连接列表失败:", baseResponse.response_msg);
-        alert(`获取所有连接列表失败: ${baseResponse.response_msg}`);
+        showError(`获取所有连接列表失败: ${baseResponse.response_msg}`);
       }
     } catch (error) {
       console.error("App: 调用 get_base_config 时发生异常:", error);
-      alert(`调用后端接口时出错: ${error.toString()}`);
+      showError(`调用后端接口时出错: ${error.toString()}`);
     }
   };
 
@@ -110,7 +114,7 @@ function App() {
           `App: 获取更新后的连接 (ID: ${updatedConnectionId}) 失败:`,
           baseResponse.response_msg
         );
-        alert(`获取更新后的连接失败: ${baseResponse.response_msg}`);
+        showError(`获取更新后的连接失败: ${baseResponse.response_msg}`);
         // 发生错误时，作为回退方案，重新获取所有连接以确保数据一致性
         fetchConnections();
       }
@@ -119,7 +123,7 @@ function App() {
         `App: 调用 get_base_config_by_id (ID: ${updatedConnectionId}) 时发生异常:`,
         error
       );
-      alert(`调用后端接口时出错: ${error.toString()}`);
+      showError(`调用后端接口时出错: ${error.toString()}`);
       // 发生错误时，作为回退方案，重新获取所有连接以确保数据一致性
       fetchConnections();
     }
@@ -150,11 +154,22 @@ function App() {
         position="top-center"
         reverseOrder={false}
         toastOptions={{
+          duration: 3000,
+          style: {
+            padding: "0",
+            background: "transparent",
+            boxShadow: "none",
+            border: "none",
+          },
+          success: {
+            duration: 3000,
+            icon: null,
+          },
+          error: {
+            duration: 4000,
+            icon: null,
+          },
           className: "",
-          duration: 5000,
-          style: {},
-          success: { duration: 3000 },
-          error: { duration: 4000 },
         }}
       />
     </div>

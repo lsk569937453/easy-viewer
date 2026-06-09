@@ -6,6 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
+import { showSuccess, showError } from "../utils/showToast.jsx";
 import {
   FaPlus,
   FaTrashAlt,
@@ -270,24 +271,29 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       }
 
       try {
+        const idColumn = columnHeaders[0]; // 使用第一列作为标识列
+        const realRowId = rowToDelete[idColumn]; // 获取真实的主键值
+        const listNodeInfoReq = { level_infos: activeTabNode.path };
         const responseJson = await invoke("delete_table_row", {
-          configId: connectionDetails.base_config_id,
+          baseConfigId: connectionDetails.base_config_id,
           tableName: activeTabNode.name,
-          rowId: rowToDelete.id, // 传递要删除的行ID
+          rowId: realRowId,
+          idColumn,
+          listNodeInfoReq,
         });
         const { response_code, response_msg } = JSON.parse(responseJson);
 
         if (response_code === 0) {
-          alert("数据删除成功！");
+          showSuccess("数据删除成功！");
           // 删除成功后，重新获取数据以更新UI和原始数据状态
           fetchTableData(sqlQuery);
         } else {
-          alert(`数据删除失败: ${response_msg}`);
+          showError(`数据删除失败: ${response_msg}`);
           console.error("DEBUG: Delete failed:", response_msg);
         }
       } catch (error) {
         console.error("DEBUG: Error deleting data:", error);
-        alert("删除数据时发生错误！");
+        showError(`删除数据时发生错误！${error.message || error}`);
       }
     },
     [connectionDetails, activeTabNode, sqlQuery, fetchTableData]
@@ -295,7 +301,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
 
   // 保存修改
   const handleSaveChanges = async () => {
-    // 对比 tableData 和 originalTableData，生成 UPDATE SQL
+    // 对比 tableData 和 originalTableData，生成 UPDATE/INSERT SQL
     const sqls = [];
     const idColumn = columnHeaders[0]; // 使用第一列作为标识列
 
@@ -304,7 +310,24 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       const original = originalTableData.find(
         (o) => o.id === current.id
       );
-      if (!original) continue;
+
+      if (!original) {
+        // 新增行：生成 INSERT SQL
+        const columns = [];
+        const values = [];
+        columnHeaders.forEach((col) => {
+          if (current[col] !== null && current[col] !== undefined && String(current[col]) !== "") {
+            columns.push(`\`${col}\``);
+            values.push(`'${String(current[col]).replace(/'/g, "''")}'`);
+          }
+        });
+        if (columns.length > 0) {
+          sqls.push(
+            `INSERT INTO \`${activeTabNode.name}\` (${columns.join(", ")}) VALUES (${values.join(", ")})`
+          );
+        }
+        continue;
+      }
 
       const changes = [];
       columnHeaders.forEach((col) => {
@@ -329,7 +352,7 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
     }
 
     if (sqls.length === 0) {
-      alert("没有检测到变更。");
+      showError("没有检测到变更。");
       return;
     }
 
@@ -344,14 +367,14 @@ function TableWorkspacePanel({ initialSql, activeTabNode, connectionDetails }) {
       if (response_code === 0) {
         setOriginalTableData(JSON.parse(JSON.stringify(tableData)));
         setIsEditing(false);
-        alert("数据保存成功！");
+        showSuccess("数据保存成功！");
       } else {
-        alert(`数据保存失败: ${response_msg}`);
+        showError(`数据保存失败: ${response_msg}`);
         console.error("Save failed:", response_msg);
       }
     } catch (error) {
       console.error("Error saving data:", error);
-      alert(`保存数据时发生错误: ${error.message || error}`);
+      showError(`保存数据时发生错误: ${error.message || error}`);
     }
   };
 

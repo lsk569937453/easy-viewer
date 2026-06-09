@@ -667,6 +667,32 @@ pub async fn delete_bucket_with_error(
     Ok(())
 }
 
+pub async fn create_bucket_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    bucket_name: String,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "create_bucket_with_error: bucket_name={}, level_infos={:?}",
+        bucket_name, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .create_bucket(bucket_name)
+        .await?;
+    Ok(())
+}
+
 pub async fn get_complete_words_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -740,6 +766,78 @@ pub async fn update_record_with_error(
 
     Ok(())
 }
+pub async fn get_server_version_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, anyhow::Error> {
+    info!("get_server_version base_config_id: {}", base_config_id);
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(base_config_id)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    // Unified 2-second timeout for all database types
+    let version = tokio::time::timeout(
+        std::time::Duration::from_secs(1),
+        base_config.base_config_enum.get_server_version(),
+    )
+    .await
+    .map_err(|_| anyhow!("Connection timeout (1s)"))??;
+    Ok(version)
+}
+pub async fn create_collection_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    collection_name: String,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "create_collection: collection_name={:?}, level_infos={:?}",
+        collection_name, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .create_collection(list_node_info_req, state.inner(), collection_name)
+        .await?;
+    Ok(())
+}
+pub async fn delete_table_row_with_error(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    table_name: String,
+    row_id: String,
+    id_column: String,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<(), anyhow::Error> {
+    info!(
+        "delete_table_row base_config_id: {}, table_name: {}, row_id: {}, id_column: {}",
+        base_config_id, table_name, row_id, id_column
+    );
+    let value = base_config_id;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .delete_table_row(list_node_info_req, state.inner(), table_name, row_id, id_column)
+        .await?;
+    Ok(())
+}
 pub async fn show_columns_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
@@ -783,4 +881,70 @@ pub async fn get_ddl_with_error(
         .await?;
 
     Ok(list)
+}
+
+pub async fn elasticsearch_search_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+    query: Option<String>,
+    search_query: Option<String>,
+    from: i64,
+    size: i64,
+) -> Result<ExeSqlResponse, anyhow::Error> {
+    info!(
+        "elasticsearch_search list_node_info_req: {:?}, index_name: {}, from: {}, size: {}",
+        list_node_info_req, index_name, from, size
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Elasticsearch(es_config) =
+        base_config.base_config_enum
+    {
+        let result = es_config
+            .search_documents(index_name, query, search_query, from, size)
+            .await?;
+        Ok(result)
+    } else {
+        Err(anyhow!("Not an Elasticsearch connection"))
+    }
+}
+
+pub async fn elasticsearch_index_detail_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    index_name: String,
+) -> Result<serde_json::Value, anyhow::Error> {
+    info!(
+        "elasticsearch_index_detail list_node_info_req: {:?}, index_name: {}",
+        list_node_info_req, index_name
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+
+    if let crate::service::base_config_service::BaseConfigEnum::Elasticsearch(es_config) =
+        base_config.base_config_enum
+    {
+        let result = es_config.get_index_detail(index_name).await?;
+        Ok(result)
+    } else {
+        Err(anyhow!("Not an Elasticsearch connection"))
+    }
 }

@@ -397,6 +397,18 @@ WHERE TABLE_NAME = '{}' AND TABLE_SCHEMA = '{}';",
 
         Ok(vecs.join(""))
     }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let mut conn = self.get_connection().await?;
+        let row = conn
+            .query("SELECT @@VERSION", &[])
+            .await?
+            .into_row()
+            .await?
+            .ok_or(anyhow!("No result"))?;
+        let version: &str = row.try_get(0)?.ok_or(anyhow!("No version"))?;
+        let version = version.lines().next().unwrap_or(version).to_string();
+        Ok(version)
+    }
     pub async fn get_ddl(
         &self,
         list_node_info_req: ListNodeInfoReq,
@@ -1412,6 +1424,7 @@ WHERE table_name = '{}'
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let mut rows = conn.query(&sql, &[]).await?;

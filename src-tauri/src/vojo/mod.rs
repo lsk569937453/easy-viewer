@@ -8,6 +8,7 @@ pub mod init_dump_data_response;
 pub mod list_node_info_req;
 pub mod list_node_info_response;
 pub mod menu_config;
+pub mod redis_command_response;
 pub mod save_connection_req;
 pub mod show_column_response;
 pub mod sql_parse_result;

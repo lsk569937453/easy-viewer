@@ -13,7 +13,7 @@ const ACTION_ICON_MAP = {
   info: <FaInfoCircle />,
 };
 
-const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle"];
+const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb", "clickhouse", "s3", "elasticsearch", "kafka", "rocketmq"];
 
 const NODES_WITH_REFRESH_ADD = [
   "query",
@@ -22,6 +22,9 @@ const NODES_WITH_REFRESH_ADD = [
   "columns",
   "index",
   "partitions",
+  "collections",
+  "database",
+  "bucket",
 ];
 
 const NODES_WITH_EDIT = ["singleTable"];
@@ -43,7 +46,9 @@ function DaisyTreeNode({
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
+  const isOffline = node.offline === true;
   const isExpandable =
+    !isOffline &&
     node.iconName !== "column" &&
     node.iconName !== "primary" &&
     node.iconName !== "singleQuery" &&
@@ -59,7 +64,6 @@ function DaisyTreeNode({
     onNodeClick(node);
     if (
       isExpandable &&
-      !isOpen &&
       !SELF_TOGGLE_TYPES.includes(node.iconName)
     ) {
       onToggle(node);
@@ -121,10 +125,10 @@ function DaisyTreeNode({
     <a
       className={`${
         isSelected ? "active" : ""
-      } group flex justify-between items-center w-full overflow-hidden`}
+      } ${isOffline ? "opacity-50" : ""} group flex items-center w-full overflow-hidden`}
       onClick={handleRowClick}
     >
-      <div className="flex items-center overflow-hidden flex-1">
+      <div className="flex items-center overflow-hidden flex-1 min-w-0">
         <div className="w-6 text-center mr-1 flex items-center justify-center">
           {node.isLoading ? (
             <span className="loading loading-spinner loading-xs"></span>
@@ -135,11 +139,21 @@ function DaisyTreeNode({
           )}
         </div>
         {nodeIconToRender && (
-          <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+          isRootNode && node.version ? (
+            <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+              <span>{nodeIconToRender}</span>
+              <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+            </div>
+          ) : (
+            <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+          )
         )}
-        <div className="flex items-baseline overflow-hidden flex-1">
-          <span className="truncate font-medium">{node.name}</span>
-          {node.description && (
+        <div className="flex items-baseline overflow-hidden flex-1 min-w-0" title={node.name}>
+          <span className="truncate font-medium">{node.name.length > 20 ? node.name.substring(0, 18) + '...' : node.name}</span>
+          {isOffline && (
+            <span className="ml-2 badge badge-xs badge-ghost text-[10px]">离线</span>
+          )}
+          {!isOffline && node.description && (
             <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
               {node.description}
             </span>
@@ -147,7 +161,7 @@ function DaisyTreeNode({
         </div>
       </div>
 
-      <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
         {isRootNode ? (
           <div className="flex items-center space-x-1">
             <button
@@ -186,7 +200,7 @@ function DaisyTreeNode({
                 <FaSyncAlt />
               </button>
             )}
-            {(NODES_WITH_REFRESH_ADD.includes(node.iconName) ||
+            {(NODES_WITH_REFRESH_ADD.includes(node.iconName) && node.iconName !== "bucket" ||
               NODES_WITH_ADD_ACTION.includes(node.iconName)) && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"
@@ -194,6 +208,42 @@ function DaisyTreeNode({
                 onClick={handleAddClick}
               >
                 <FaPlus />
+              </button>
+            )}
+            {node.iconName === "bucket" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="上传文件"
+                onClick={handleAddClick}
+              >
+                <FaPlus />
+              </button>
+            )}
+            {node.iconName === "bucket" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="删除 Bucket"
+                onClick={handleDeleteClick}
+              >
+                <FaTrashAlt />
+              </button>
+            )}
+            {(node.iconName === "folder" || node.iconName === "textFile") && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="下载"
+                onClick={handleEditClick}
+              >
+                <FaEdit />
+              </button>
+            )}
+            {(node.iconName === "folder" || node.iconName === "textFile") && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="删除"
+                onClick={handleDeleteClick}
+              >
+                <FaTrashAlt />
               </button>
             )}
             {NODES_WITH_EDIT.includes(node.iconName) && (
@@ -226,20 +276,84 @@ function DaisyTreeNode({
   );
 
   return (
-    <li>
+    <li className="max-w-full overflow-hidden">
       {isRootNode ? (
-        <ContextMenuWrapper menuItems={rootNodeMenuItems}>
-          {nodeContent}
+        <ContextMenuWrapper menuItems={rootNodeMenuItems} onClick={handleRowClick}>
+          <div
+            className={`${
+              isSelected ? "active" : ""
+            } ${isOffline ? "opacity-50" : ""} group flex items-center w-full overflow-hidden`}
+          >
+            <div className="flex items-center overflow-hidden flex-1 min-w-0">
+              <div className="w-6 text-center mr-1 flex items-center justify-center">
+                {node.isLoading ? (
+                  <span className="loading loading-spinner loading-xs"></span>
+                ) : (
+                  isExpandable && (
+                    <span className="cursor-pointer">{isOpen ? "▼" : "▶"}</span>
+                  )
+                )}
+              </div>
+              {nodeIconToRender && (
+                isRootNode && node.version ? (
+                  <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+                    <span>{nodeIconToRender}</span>
+                    <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+                  </div>
+                ) : (
+                  <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+                )
+              )}
+              <div className="flex items-baseline overflow-hidden flex-1 min-w-0" title={node.name}>
+                <span className="truncate font-medium">{node.name.length > 20 ? node.name.substring(0, 18) + '...' : node.name}</span>
+                {isOffline && (
+                  <span className="ml-2 badge badge-xs badge-ghost text-[10px]">离线</span>
+                )}
+                {!isOffline && node.description && (
+                  <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
+                    {node.description}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+              <div className="flex items-center space-x-1">
+                {node.iconName === "s3" && (
+                  <button
+                    className="btn btn-ghost btn-circle btn-xs"
+                    title="新增 Bucket"
+                    onClick={handleAddClick}
+                  >
+                    <FaPlus />
+                  </button>
+                )}
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="刷新"
+                  onClick={handleRefreshClick}
+                >
+                  <FaSyncAlt />
+                </button>
+
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="删除"
+                  onClick={handleDeleteClick}
+                >
+                  <FaTrashAlt />
+                </button>
+              </div>
+            </div>
+          </div>
         </ContextMenuWrapper>
       ) : (
         nodeContent
       )}
 
       {isOpen &&
-        Array.isArray(node.children) &&
-        node.children.length > 0 &&
-        !node.isLoading && (
-          <ul>
+        (Array.isArray(node.children) && node.children.length > 0 ? (
+          <ul className="w-full">
             {node.children.map((child) => (
               <DaisyTreeNode
                 key={child.id}
@@ -258,7 +372,13 @@ function DaisyTreeNode({
               />
             ))}
           </ul>
-        )}
+        ) : node.isLoading ? (
+          <ul className="w-full">
+            <li className="max-w-full overflow-hidden">
+              <span className="text-xs text-base-content/40 pl-9">加载中...</span>
+            </li>
+          </ul>
+        ) : null)}
     </li>
   );
 }

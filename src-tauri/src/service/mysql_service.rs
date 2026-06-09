@@ -77,7 +77,13 @@ pub struct MysqlConfig {
 impl MysqlConfig {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
         let test_url = self.config.to_url("mysql".to_string());
-        MySqlConnection::connect(&test_url).await.map(|_| ())?;
+        timeout(
+            Duration::from_secs(1),
+            MySqlConnection::connect(&test_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))?
+        .map_err(|e| anyhow!(e))?;
         Ok(())
     }
     pub fn get_description(&self) -> Result<String, anyhow::Error> {
@@ -740,6 +746,7 @@ WHERE TABLE_SCHEMA = '{}'
                 header: headers,
                 rows,
                 table_name: is_simple_select_option,
+                total_count: None,
             });
         }
         let rows = sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_all(&mut conn).await?;
@@ -814,6 +821,20 @@ WHERE TABLE_SCHEMA = '{}'
         }
 
         Ok(())
+    }
+    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
+        let connection_url = self.config.to_url("mysql".to_string());
+        let mut conn = timeout(
+            Duration::from_secs(1),
+            MySqlConnection::connect(&connection_url),
+        )
+        .await
+        .map_err(|_| anyhow!("Connect timeout"))??;
+        let row = sqlx::query("SELECT VERSION()")
+            .fetch_one(&mut conn)
+            .await?;
+        let version: String = row.try_get(0)?;
+        Ok(version)
     }
     pub async fn get_ddl(
         &self,

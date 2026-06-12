@@ -140,9 +140,9 @@ function DaisyTreeNode({
         </div>
         {nodeIconToRender && (
           isRootNode && node.version ? (
-            <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+            <div className="mr-2 flex-shrink-0 flex flex-col items-center w-[60px]">
               <span>{nodeIconToRender}</span>
-              <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+              <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{(node.version || '').padEnd(11, ' ').substring(0, 11)}</span>
             </div>
           ) : (
             <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
@@ -296,9 +296,9 @@ function DaisyTreeNode({
               </div>
               {nodeIconToRender && (
                 isRootNode && node.version ? (
-                  <div className="mr-2 flex-shrink-0 flex flex-col items-center">
+                  <div className="mr-2 flex-shrink-0 flex flex-col items-center w-[60px]">
                     <span>{nodeIconToRender}</span>
-                    <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{node.version}</span>
+                    <span className="text-[9px] text-base-content/40 leading-tight mt-0.5">{(node.version || '').padEnd(11, ' ').substring(0, 11)}</span>
                   </div>
                 ) : (
                   <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
@@ -353,7 +353,7 @@ function DaisyTreeNode({
 
       {isOpen &&
         (Array.isArray(node.children) && node.children.length > 0 ? (
-          <ul className="w-full">
+          <ul>
             {node.children.map((child) => (
               <DaisyTreeNode
                 key={child.id}
@@ -373,7 +373,7 @@ function DaisyTreeNode({
             ))}
           </ul>
         ) : node.isLoading ? (
-          <ul className="w-full">
+          <ul>
             <li className="max-w-full overflow-hidden">
               <span className="text-xs text-base-content/40 pl-9">加载中...</span>
             </li>

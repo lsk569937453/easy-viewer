@@ -27,6 +27,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const [password, setPassword] = useState("");
   const [databaseName, setDatabaseName] = useState("");
   const [rmqTopics, setRmqTopics] = useState("");
+  const [useTls, setUseTls] = useState(true);
 
   const [error, setError] = useState("");
   const [isTesting, setIsTesting] = useState(false);
@@ -51,6 +52,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     setPassword("");
     setDatabaseName("");
     setRmqTopics("");
+    setUseTls(true);
     setError("");
     setIsTesting(false);
     setIsCreating(false);
@@ -113,6 +115,17 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 setDatabaseName(config.region || "");
                 setConnectionMode("host");
                 setConnectionString("");
+              } else if (dbTypeKey === "webdav") {
+                // WebDAV: host / port / username / password / root_path / use_tls
+                const config = baseConfigEnum.webdav.config;
+                setHost(config.host || "");
+                setPort(config.port ? String(config.port) : "443");
+                setUsername(config.username || "");
+                setPassword(config.password || "");
+                setDatabaseName(config.root_path || "");
+                setUseTls(config.use_tls !== false);
+                setConnectionMode("host");
+                setConnectionString("");
               } else if (dbTypeKey === "rocketmq") {
                 // RocketMQ: proxy_url, access_key, secret_key, topics
                 const proxyUrl = baseConfigEnum.rocketmq.proxy_url || "";
@@ -168,6 +181,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
       setUsername("");
       setPassword("");
       setDatabaseName("");
+      setUseTls(true);
       setTestResult(null);
       setTestMessage("");
       setError("");
@@ -370,6 +384,31 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     };
   };
 
+  const getWebdavConnectionDetails = () => {
+    const cleanHost = host.trim();
+    const cleanPort = port.trim();
+    if (!cleanHost) return { isValid: false, message: "服务器地址不能为空！" };
+    const parsedPort = parseInt(cleanPort, 10) || 443;
+    if (isNaN(parsedPort) || parsedPort <= 0 || parsedPort > 65535) {
+      return { isValid: false, message: "端口必须是有效的数字 (1-65535)！" };
+    }
+    let cleanRootPath = databaseName.trim();
+    if (cleanRootPath && !cleanRootPath.startsWith("/")) {
+      cleanRootPath = `/${cleanRootPath}`;
+    }
+    return {
+      isValid: true,
+      details: {
+        host: cleanHost,
+        port: parsedPort,
+        username: username.trim(),
+        password: password.trim(),
+        root_path: cleanRootPath || "/",
+        use_tls: useTls,
+      },
+    };
+  };
+
   const getRocketmqConnectionDetails = () => {
     const cleanHost = host.trim();
     if (!cleanHost) return { isValid: false, message: "Proxy 地址不能为空！" };
@@ -395,6 +434,9 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
     if (connectionName.trim() === "") return false;
     if (isS3Type) {
       return getS3ConnectionDetails().isValid;
+    }
+    if (isWebdavType) {
+      return getWebdavConnectionDetails().isValid;
     }
     if (isRocketmqType) {
       return getRocketmqConnectionDetails().isValid;
@@ -442,6 +484,11 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
         const { isValid, message, details } = getS3ConnectionDetails();
         if (!isValid) throw new Error(message);
         baseConfigEnum = { s3: { config: details } };
+      } else if (isWebdavType) {
+        // WebDAV
+        const { isValid, message, details } = getWebdavConnectionDetails();
+        if (!isValid) throw new Error(message);
+        baseConfigEnum = { webdav: { config: details } };
       } else if (isRocketmqType) {
         // RocketMQ
         const { isValid, message, details } = getRocketmqConnectionDetails();
@@ -572,6 +619,14 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
             s3: { config: details },
           },
         };
+      } else if (isWebdavType) {
+        const { isValid, message, details } = getWebdavConnectionDetails();
+        if (!isValid) throw new Error(message);
+        testDatabaseRequest = {
+          base_config_enum: {
+            webdav: { config: details },
+          },
+        };
       } else if (isRocketmqType) {
         const { isValid, message, details } = getRocketmqConnectionDetails();
         if (!isValid) throw new Error(message);
@@ -677,6 +732,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
   const isKafkaType = dbType === "kafka";
   const isRocketmqType = dbType === "rocketmq";
   const isS3Type = dbType === "s3";
+  const isWebdavType = dbType === "webdav";
 
   return (
     <dialog id="new_connection_modal" className="modal" open={isOpen}>
@@ -732,6 +788,7 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                 <option value="clickhouse">ClickHouse</option>
                 <option value="elasticsearch">Elasticsearch</option>
                 <option value="s3">S3 / OSS</option>
+                <option value="webdav">WebDAV</option>
                 <option value="kafka">Kafka</option>
                 <option value="rocketmq">RocketMQ</option>
               </select>
@@ -1078,6 +1135,87 @@ function NewConnectionModal({ isOpen, onClose, onSaveSuccess, editingId }) {
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
                   />
+                </div>
+              </div>
+            )}
+
+            {isWebdavType && (
+              <div className="space-y-3">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      服务器地址 <span className="text-error">*</span>
+                    </span>
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="例如: dav.jianguoyun.com 或 192.168.1.10"
+                      className={`input input-bordered flex-1 ${
+                        error && error.includes("服务器地址") ? "input-error" : ""
+                      }`}
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="443"
+                      className={`input input-bordered w-24 ${
+                        error && error.includes("端口") ? "input-error" : ""
+                      }`}
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">用户名 (可选)</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: user@example.com"
+                    className="input input-bordered w-full"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">密码 (可选)</span>
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="请输入密码或应用密码"
+                    className="input input-bordered w-full"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">
+                      远程目录 (可选，默认 /)
+                    </span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="例如: /dav/ 或 /remote.php/dav/files/username"
+                    className="input input-bordered w-full"
+                    value={databaseName}
+                    onChange={(e) => setDatabaseName(e.target.value)}
+                  />
+                </div>
+                <div className="form-control">
+                  <label className="label cursor-pointer">
+                    <span className="label-text">使用 HTTPS (TLS)</span>
+                    <input
+                      type="checkbox"
+                      className="toggle toggle-primary"
+                      checked={useTls}
+                      onChange={(e) => setUseTls(e.target.checked)}
+                    />
+                  </label>
                 </div>
               </div>
             )}

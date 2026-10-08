@@ -13,7 +13,7 @@ const ACTION_ICON_MAP = {
   info: <FaInfoCircle />,
 };
 
-const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb", "clickhouse", "s3", "elasticsearch", "kafka", "rocketmq"];
+const ACTIONABLE_DB_TYPES = ["mysql", "sqlite", "postgresql", "oracle", "redis", "mongodb", "clickhouse", "s3", "elasticsearch", "kafka", "rocketmq", "webdav"];
 
 const NODES_WITH_REFRESH_ADD = [
   "query",
@@ -228,6 +228,15 @@ function DaisyTreeNode({
                 <FaTrashAlt />
               </button>
             )}
+            {node.iconName === "folder" && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs"
+                title="上传文件"
+                onClick={handleAddClick}
+              >
+                <FaPlus />
+              </button>
+            )}
             {(node.iconName === "folder" || node.iconName === "textFile") && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"
@@ -318,16 +327,25 @@ function DaisyTreeNode({
             </div>
 
             <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
-              <div className="flex items-center space-x-1">
-                {node.iconName === "s3" && (
-                  <button
-                    className="btn btn-ghost btn-circle btn-xs"
-                    title="新增 Bucket"
-                    onClick={handleAddClick}
-                  >
-                    <FaPlus />
-                  </button>
-                )}
+            <div className="flex items-center space-x-1">
+              {node.iconName === "s3" && (
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="新增 Bucket"
+                  onClick={handleAddClick}
+                >
+                  <FaPlus />
+                </button>
+              )}
+              {node.iconName === "webdav" && (
+                <button
+                  className="btn btn-ghost btn-circle btn-xs"
+                  title="上传文件"
+                  onClick={handleAddClick}
+                >
+                  <FaPlus />
+                </button>
+              )}
                 <button
                   className="btn btn-ghost btn-circle btn-xs"
                   title="刷新"

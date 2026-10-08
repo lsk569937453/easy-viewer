@@ -19,6 +19,7 @@ import {
   FaStream,
   FaStar,
   FaTerminal,
+  FaCloud,
 } from "react-icons/fa";
 
 import {
@@ -39,6 +40,7 @@ const ICON_MAP = {
   s3: <FaDatabase size="1.2em" color="#FF9900" />,
   kafka: <FaStream size="1.2em" color="#231F20" />,
   rocketmq: <FaStream size="1.2em" color="#D4213D" />,
+  webdav: <FaCloud size="1.2em" color="#3B82F6" />,
   table: <FaTable />,
   view: <FaEye />,
   query: <FaSearch />,
@@ -230,7 +232,7 @@ function DatabaseViewer({
     let cancelled = false;
     const loadTree = async () => {
     const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq" };
+      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq", 12: "webdav" };
       const dbType = dbTypeMap[conn.connection_type] || "default";
 
       return {
@@ -957,7 +959,26 @@ function DatabaseViewer({
       setCreateBucketNode(node);
       createBucketModalRef.current?.showModal();
       return;
-    } else if (node.iconName === "bucket") {
+    } else if (node.iconName === "webdav") {
+      // WebDAV 根目录:打开上传面板
+      const tabId = `s3-upload-${node.id}`;
+      const existingTab = tabs.find((tab) => tab.id === tabId);
+      if (existingTab) {
+        setActiveTabId(tabId);
+      } else {
+        const newTab = {
+          id: tabId,
+          name: `上传到 ${node.name}`,
+          icon: node.icon,
+          type: "s3Upload",
+          node: node,
+        };
+        setTabs((prevTabs) => [...prevTabs, newTab]);
+        setActiveTabId(newTab.id);
+      }
+      return;
+    } else if (node.iconName === "bucket" || node.iconName === "folder") {
+      // Bucket / 文件夹:打开上传面板
       const tabId = `s3-upload-${node.id}`;
       const existingTab = tabs.find((tab) => tab.id === tabId);
       if (existingTab) {

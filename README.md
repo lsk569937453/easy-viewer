@@ -33,6 +33,7 @@ Easy Viewer is a modern data-source management tool inspired by DBeaver, built w
 | **Messaging** | Kafka | Topic & message browser |
 | | RocketMQ | Message browser |
 | **Storage** | S3 / OSS-compatible | Bucket & file management, upload |
+| | WebDAV | Browse, upload, download, file management |
 
 ## 🚀 Installation
 
@@ -79,6 +80,7 @@ pnpm tauri build
 - **Message browsing** — view Kafka topics and RocketMQ messages.
 - **Elasticsearch** — search documents and inspect index settings, templates, and ILM policies.
 - **S3 / OSS** — create buckets, manage files, and upload with progress tracking.
+- **WebDAV** — browse remote directories, upload/download files, create folders, and delete files (works with Nextcloud, Jianguoyun, and other WebDAV servers).
 - **Export data** — dump structure and/or data to SQL / JSON / XML / CSV / Excel.
 
 ### Video walkthrough

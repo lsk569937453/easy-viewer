@@ -1,6 +1,7 @@
 // connectionType mapping (from backend get_connection_type):
 // 0: MySQL, 1: PostgreSQL, 2: Kafka, 3: SQLite, 4: MongoDB,
-// 5: OracleDB, 6: MSSQL, 7: Clickhouse, 8: S3
+// 5: OracleDB, 6: MSSQL, 7: Clickhouse, 8: S3, 9: Redis,
+// 10: Elasticsearch, 11: RocketMQ, 12: WebDAV
 
 export function getRootNode(node) {
   let tempNode = node;

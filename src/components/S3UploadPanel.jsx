@@ -19,6 +19,7 @@ function S3UploadPanel({ tab }) {
   const [progress, setProgress] = useState({ current: 0, total: 0, fileName: "" });
   const node = tab.node;
   const bucketName = node.name;
+  const isBucketTarget = node.iconName === "bucket";
   const unlistenRef = useRef(null);
 
   useEffect(() => {
@@ -132,7 +133,7 @@ function S3UploadPanel({ tab }) {
 
   return (
     <div className="flex flex-col h-full bg-base-100 p-6">
-      <h2 className="text-xl font-bold mb-1">上传到 Bucket</h2>
+      <h2 className="text-xl font-bold mb-1">{isBucketTarget ? "上传到 Bucket" : "上传文件"}</h2>
       <p className="text-sm text-base-content/60 mb-6">
         目标: <span className="font-semibold text-base-content">{bucketName}</span>
       </p>

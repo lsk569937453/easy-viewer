@@ -16,3 +16,4 @@ pub mod redis_service;
 pub mod rocketmq_service;
 pub mod s3_service;
 pub mod sqlite_service;
+pub mod webdav_service;

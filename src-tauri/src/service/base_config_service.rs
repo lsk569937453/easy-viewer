@@ -6,6 +6,7 @@ use super::mysql_service::MysqlConfig;
 use super::oracledb_service::OracledbConfig;
 use super::rocketmq_service::RocketmqConfig;
 use super::s3_service::S3Config;
+use super::webdav_service::WebdavConfig;
 use crate::service::mongdb_service::MongodbConfig;
 use crate::service::redis_service::RedisConfig;
 use crate::service::postgresql_service::PostgresqlConfig;
@@ -49,6 +50,8 @@ pub enum BaseConfigEnum {
     Elasticsearch(ElasticsearchConfig),
     #[serde(rename = "rocketmq")]
     Rocketmq(RocketmqConfig),
+    #[serde(rename = "webdav")]
+    Webdav(WebdavConfig),
 }
 impl BaseConfigEnum {
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
@@ -74,6 +77,9 @@ impl BaseConfigEnum {
                     crate::service::rocketmq_service::RocketmqService::new(config.clone());
                 service.test_connection().await?;
             }
+            BaseConfigEnum::Webdav(config) => {
+                config.test_connection().await?;
+            }
         }
 
         Ok(())
@@ -92,6 +98,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Elasticsearch(config) => config.get_description()?,
             BaseConfigEnum::Mssql(_) => "MSSQL Database".to_string(),
             BaseConfigEnum::Rocketmq(config) => format!("RocketMQ: {}", config.proxy_url),
+            BaseConfigEnum::Webdav(config) => config.get_description()?,
         };
         Ok(res)
     }
@@ -109,6 +116,7 @@ impl BaseConfigEnum {
             BaseConfigEnum::Redis(_) => 9,
             BaseConfigEnum::Elasticsearch(_) => 10,
             BaseConfigEnum::Rocketmq(_) => 11,
+            BaseConfigEnum::Webdav(_) => 12,
         }
     }
     pub async fn list_node_info(
@@ -158,7 +166,9 @@ impl BaseConfigEnum {
                     crate::service::rocketmq_service::RocketmqService::new(config.clone());
                 service.list_node_info(list_node_info_req, appstate).await?
             }
-            _ => ListNodeInfoResponse::new_with_empty(),
+            BaseConfigEnum::Webdav(config) => {
+                config.list_node_info(list_node_info_req, appstate).await?
+            }
         };
         Ok(vec)
     }
@@ -263,6 +273,10 @@ impl BaseConfigEnum {
             config
                 .download_file(list_node_info_req, appstate, destination, is_folder)
                 .await?
+        } else if let BaseConfigEnum::Webdav(config) = self {
+            config
+                .download_file(list_node_info_req, appstate, destination, is_folder)
+                .await?
         };
         Ok(())
     }
@@ -286,6 +300,10 @@ impl BaseConfigEnum {
         destination: String,
     ) -> Result<(), anyhow::Error> {
         if let BaseConfigEnum::S3(config) = self {
+            config
+                .upload_file(list_node_info_req, appstate, destination)
+                .await?
+        } else if let BaseConfigEnum::Webdav(config) = self {
             config
                 .upload_file(list_node_info_req, appstate, destination)
                 .await?
@@ -578,6 +596,11 @@ impl BaseConfigEnum {
                     .create_folder(list_node_info_req, appstate, folder_name)
                     .await?
             }
+            BaseConfigEnum::Webdav(config) => {
+                config
+                    .create_folder(list_node_info_req, appstate, folder_name)
+                    .await?
+            }
 
             _ => Err(anyhow!("Other type not support move column except mysql."))?,
         };
@@ -591,6 +614,11 @@ impl BaseConfigEnum {
     ) -> Result<GetObjectInfoRes, anyhow::Error> {
         let res = match self {
             BaseConfigEnum::S3(config) => {
+                config
+                    .get_object_info(list_node_info_req, appstate, is_folder)
+                    .await?
+            }
+            BaseConfigEnum::Webdav(config) => {
                 config
                     .get_object_info(list_node_info_req, appstate, is_folder)
                     .await?
@@ -609,6 +637,9 @@ impl BaseConfigEnum {
             BaseConfigEnum::S3(config) => {
                 config.delete_bucket(list_node_info_req, appstate).await?
             }
+            BaseConfigEnum::Webdav(config) => {
+                config.delete_object(list_node_info_req, appstate).await?
+            }
 
             _ => Err(anyhow!("Other type not support move column except mysql."))?,
         };
@@ -621,7 +652,7 @@ impl BaseConfigEnum {
         }
         Ok(())
     }
-    pub async fn upload_file_multipart<F: Fn(u64, u64) + Send>(
+    pub async fn upload_file_multipart<F: Fn(u64, u64) + Send + 'static>(
         &self,
         list_node_info_req: ListNodeInfoReq,
         local_file_path: String,
@@ -629,6 +660,11 @@ impl BaseConfigEnum {
     ) -> Result<(), anyhow::Error> {
         match self {
             BaseConfigEnum::S3(config) => {
+                config
+                    .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
+                    .await?
+            }
+            BaseConfigEnum::Webdav(config) => {
                 config
                     .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
                     .await?
@@ -709,6 +745,7 @@ impl BaseConfigEnum {
                 service.test_connection().await?;
                 String::new()
             }
+            BaseConfigEnum::Webdav(config) => config.get_server_version().await?,
         };
         Ok(version)
     }

@@ -46,7 +46,9 @@ rdkafka = { version = "=0.38.0", default-features = false, features = [
 ] }
 rdkafka-sys = { version = "=4.9.0+2.10.0", default-features = false }
 redis = { version = "=1.2.2" }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "stream"] }
+# 0.3.x requires reqwest 0.13; keep 0.2.x to match the project's reqwest 0.12
+reqwest_dav = "0.2.2"
 rocketmq = "5.0.0"
 rust_decimal = "1.42.0"
 rust_xlsxwriter = "=0.95.0"

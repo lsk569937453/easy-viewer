@@ -11,6 +11,8 @@ use crate::common_tools::base_response::BaseResponse;
 use crate::common_tools::database::test_url_with_error;
 use crate::service::base_config_service::BaseConfig;
 use crate::service::cmd_service::create_folder_with_error;
+use crate::service::cmd_service::copy_object_with_error;
+use crate::service::cmd_service::rename_object_with_error;
 use tauri::Emitter;
 use crate::service::cmd_service::create_collection_with_error;
 use crate::service::cmd_service::get_server_version_with_error;
@@ -448,6 +450,36 @@ pub async fn delete_bucket(
     let time = Instant::now();
     let res = handle_response!(delete_bucket_with_error(state, list_node_info_req).await);
     info!("save_query:  {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn rename_object(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    new_name: String,
+    is_folder: bool,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        rename_object_with_error(state, list_node_info_req, new_name, is_folder).await
+    );
+    info!("rename_object:  {:?}", time.elapsed());
+    Ok(res)
+}
+
+#[tauri::command]
+pub async fn copy_object(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    target_dir: String,
+    is_folder: bool,
+) -> Result<String, ()> {
+    let time = Instant::now();
+    let res = handle_response!(
+        copy_object_with_error(state, list_node_info_req, target_dir, is_folder).await
+    );
+    info!("copy_object:  {:?}", time.elapsed());
     Ok(res)
 }
 

@@ -119,6 +119,31 @@ const findConnectionByRootConfigId = (connections, rootConfigId) => {
   );
 };
 
+// 按节点 id 查找父节点；返回 null 表示是根节点，undefined 表示未找到
+const findParentNode = (nodes, nodeId, parent = null) => {
+  for (const node of nodes) {
+    if (node.id === nodeId) return parent;
+    if (node.children) {
+      const found = findParentNode(node.children, nodeId, node);
+      if (found !== undefined) return found;
+    }
+  }
+  return undefined;
+};
+
+const collectSubtreeIds = (node) => {
+  const ids = [node.id];
+  if (node.children) {
+    node.children.forEach((child) => ids.push(...collectSubtreeIds(child)));
+  }
+  return ids;
+};
+
+// path 以 prefix 为前缀（按 config_value 序列比较）
+const isPathPrefix = (prefix, path) =>
+  prefix.length <= path.length &&
+  prefix.every((seg, i) => seg.config_value === path[i]?.config_value);
+
 function DatabaseViewer({
   connections,
   onConnectionUpdated,
@@ -137,6 +162,14 @@ function DatabaseViewer({
   const createBucketModalRef = useRef(null);
   const [newBucketName, setNewBucketName] = useState("");
   const [createBucketNode, setCreateBucketNode] = useState(null);
+
+  const renameModalRef = useRef(null);
+  const [nodeToRename, setNodeToRename] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const copyModalRef = useRef(null);
+  const [nodeToCopy, setNodeToCopy] = useState(null);
+  const [copyTargetDir, setCopyTargetDir] = useState("");
 
   const [nodeToDelete, setNodeToDelete] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -172,7 +205,8 @@ function DatabaseViewer({
             description: child.description || "",
             iconName: child.icon_name,
             details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-            children: null,
+            // 文件节点是叶子：置为空数组避免显示展开箭头，文件夹保持 null 懒加载
+            children: child.icon_name === "textFile" ? [] : null,
             path: [
               ...parentNode.path,
               { level: parentNode.path.length + 1, config_value: child.name },
@@ -850,7 +884,7 @@ function DatabaseViewer({
               description: item.description || "",
               iconName: item.icon_name,
               details: `节点: ${item.name}\n类型: ${item.type || "未知"}`,
-              children: null,
+              children: item.icon_name === "textFile" ? [] : null,
               path: [
                 ...child.path,
                 { level: child.path.length + 1, config_value: item.name },
@@ -1063,6 +1097,26 @@ function DatabaseViewer({
     }
   };
 
+  // 关闭节点路径位于给定前缀之下的标签页（删除/重命名后旧引用已失效）
+  const closeTabsUnderPath = (prefix) => {
+    setTabs((prevTabs) => {
+      const remaining = prevTabs.filter(
+        (tab) =>
+          !(
+            tab.type === "s3Object" &&
+            tab.node?.path &&
+            isPathPrefix(prefix, tab.node.path)
+          )
+      );
+      if (activeTabId && !remaining.some((tab) => tab.id === activeTabId)) {
+        setActiveTabId(
+          remaining.length > 0 ? remaining[remaining.length - 1].id : null
+        );
+      }
+      return remaining;
+    });
+  };
+
   const handleRequestDeleteConnection = (node) => {
     setNodeToDelete(node);
     deleteModalRef.current?.showModal();
@@ -1225,6 +1279,8 @@ function DatabaseViewer({
             return next;
           });
 
+          closeTabsUnderPath(nodeToDelete.path);
+
           showSuccess(`"${nodeToDelete.name}" 删除成功!`);
         } else {
           showError(`删除失败: ${response_msg}`);
@@ -1290,6 +1346,134 @@ function DatabaseViewer({
   const handleCancelDelete = () => {
     setNodeToDelete(null);
     deleteModalRef.current?.close();
+  };
+
+  // ---- WebDAV 节点右键菜单：复制 / 重命名 / 删除 ----
+  const handleRequestRename = (node) => {
+    setNodeToRename(node);
+    setRenameValue(node.name);
+    renameModalRef.current?.showModal();
+  };
+
+  const handleCancelRename = () => {
+    setNodeToRename(null);
+    renameModalRef.current?.close();
+  };
+
+  const handleConfirmRename = async () => {
+    if (!nodeToRename) return;
+    const newName = renameValue.trim();
+    if (!newName || newName.includes("/") || newName === "." || newName === "..") {
+      showError("名称不能为空，且不能包含 / 等特殊字符");
+      return;
+    }
+    if (newName === nodeToRename.name) {
+      handleCancelRename();
+      return;
+    }
+
+    const isFolder = nodeToRename.iconName === "folder";
+    try {
+      const responseJson = await invoke("rename_object", {
+        listNodeInfoReq: { level_infos: nodeToRename.path },
+        newName,
+        isFolder,
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      if (response_code === 0) {
+        showSuccess(`重命名成功: "${nodeToRename.name}" -> "${newName}"`);
+
+        closeTabsUnderPath(nodeToRename.path);
+
+        // 路径已变，清理该子树的展开状态并刷新父节点以重建子节点
+        const subtreeIds = collectSubtreeIds(nodeToRename);
+        setOpenNodes((prev) => {
+          const next = { ...prev };
+          subtreeIds.forEach((id) => delete next[id]);
+          return next;
+        });
+
+        const parent = findParentNode(treeData, nodeToRename.id);
+        if (parent) {
+          await handleRefreshNode(parent);
+        }
+      } else {
+        showError(`重命名失败: ${response_msg}`);
+      }
+    } catch (err) {
+      showError(`重命名时发生错误: ${err.message || err.toString()}`);
+    } finally {
+      setNodeToRename(null);
+      renameModalRef.current?.close();
+    }
+  };
+
+  const handleRequestCopy = (node) => {
+    setNodeToCopy(node);
+    // 预填当前所在目录，便于在其基础上修改
+    const parentSegments = node.path.slice(1, -1).map((p) => p.config_value);
+    setCopyTargetDir("/" + parentSegments.join("/"));
+    copyModalRef.current?.showModal();
+  };
+
+  const handleCancelCopy = () => {
+    setNodeToCopy(null);
+    copyModalRef.current?.close();
+  };
+
+  const handleConfirmCopy = async () => {
+    if (!nodeToCopy) return;
+    const targetDir = copyTargetDir.trim();
+    if (!targetDir) {
+      showError("请输入目标目录路径");
+      return;
+    }
+    const parentSegments = nodeToCopy.path
+      .slice(1, -1)
+      .map((p) => p.config_value);
+    const targetSegments = targetDir
+      .split("/")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    if (targetSegments.join("/") === parentSegments.join("/")) {
+      showError("目标目录不能与当前目录相同");
+      return;
+    }
+
+    const isFolder = nodeToCopy.iconName === "folder";
+    try {
+      const responseJson = await invoke("copy_object", {
+        listNodeInfoReq: { level_infos: nodeToCopy.path },
+        targetDir,
+        isFolder,
+      });
+      const { response_code, response_msg } = JSON.parse(responseJson);
+      if (response_code === 0) {
+        showSuccess(`已复制 "${nodeToCopy.name}" 到 ${targetDir}`);
+      } else {
+        showError(`复制失败: ${response_msg}`);
+      }
+    } catch (err) {
+      showError(`复制时发生错误: ${err.message || err.toString()}`);
+    } finally {
+      setNodeToCopy(null);
+      copyModalRef.current?.close();
+    }
+  };
+
+  // 仅 WebDAV 连接下的文件/文件夹节点提供右键菜单
+  const buildNodeContextMenuItems = (node) => {
+    if (node.iconName !== "folder" && node.iconName !== "textFile") return null;
+    const connection = findConnectionByRootConfigId(
+      connections,
+      node.path?.[0]?.config_value
+    );
+    if (!connection || connection.connection_type !== 12) return null;
+    return [
+      { label: "复制到其他目录...", onClick: () => handleRequestCopy(node) },
+      { label: "重命名...", onClick: () => handleRequestRename(node) },
+      { label: "删除", onClick: () => handleRequestDeleteConnection(node) },
+    ];
   };
 
   const handleConfirmCreateCollection = async () => {
@@ -1440,6 +1624,7 @@ function DatabaseViewer({
                   onDelete={handleRequestDeleteConnection}
                   onDeleteConnection={handleRequestDeleteConnection}
                   onDeleteQuery={handleDeleteQuery}
+                  nodeContextMenuItems={buildNodeContextMenuItems}
                 />
               ))}
             </ul>
@@ -1564,6 +1749,86 @@ function DatabaseViewer({
         </div>
         <form method="dialog" className="modal-backdrop">
           <button onClick={handleCancelCreateBucket}>close</button>
+        </form>
+      </dialog>
+      <dialog ref={renameModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">重命名</h3>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">新名称</span>
+            </label>
+            <input
+              type="text"
+              placeholder="请输入新名称"
+              className="input input-bordered w-full"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmRename();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelRename}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmRename}
+              disabled={
+                !renameValue.trim() || renameValue.trim() === nodeToRename?.name
+              }
+            >
+              确定
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelRename}>close</button>
+        </form>
+      </dialog>
+
+      <dialog ref={copyModalRef} className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">复制到其他目录</h3>
+          <p className="py-1 text-xs text-base-content/60">
+            将 "{nodeToCopy?.name}"
+            {nodeToCopy?.iconName === "folder" ? "（含全部嵌套内容）" : ""}{" "}
+            复制到以下 WebDAV 目录，保留原名称；目标已有同名内容时会被覆盖。
+          </p>
+          <div className="form-control w-full mt-4">
+            <label className="label">
+              <span className="label-text">目标目录</span>
+            </label>
+            <input
+              type="text"
+              placeholder="如 /docs/backup，/ 表示根目录"
+              className="input input-bordered w-full"
+              value={copyTargetDir}
+              onChange={(e) => setCopyTargetDir(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleConfirmCopy();
+              }}
+              autoFocus
+            />
+          </div>
+          <div className="modal-action">
+            <button className="btn" onClick={handleCancelCopy}>
+              取消
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={handleConfirmCopy}
+              disabled={!copyTargetDir.trim()}
+            >
+              复制
+            </button>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancelCopy}>close</button>
         </form>
       </dialog>
     </div>

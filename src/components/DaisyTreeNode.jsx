@@ -43,6 +43,7 @@ function DaisyTreeNode({
   onEditConnection,
   onDeleteConnection,
   onDeleteQuery,
+  nodeContextMenuItems,
 }) {
   const isSelected = selectedNode?.id === node.id;
   const isOpen = openNodes[node.id];
@@ -117,6 +118,11 @@ function DaisyTreeNode({
       onClick: () => onDeleteConnection && onDeleteConnection(node),
     },
   ];
+
+  // 非根节点按需生成右键菜单（如 WebDAV 的复制/重命名/删除）；不传 onClick，
+  // 行点击仍由 nodeContent 内部的 <a> 处理，避免冒泡导致双重 toggle
+  const nodeMenuItems =
+    !isRootNode && nodeContextMenuItems ? nodeContextMenuItems(node) : null;
 
   const nodeIconToRender =
     node.iconName === "singleQuery" ? <FaDatabase /> : node.icon;
@@ -365,6 +371,8 @@ function DaisyTreeNode({
             </div>
           </div>
         </ContextMenuWrapper>
+      ) : nodeMenuItems && nodeMenuItems.length > 0 ? (
+        <ContextMenuWrapper menuItems={nodeMenuItems}>{nodeContent}</ContextMenuWrapper>
       ) : (
         nodeContent
       )}
@@ -387,6 +395,7 @@ function DaisyTreeNode({
                 onEditConnection={onEditConnection}
                 onDeleteConnection={onDeleteConnection}
                 onDeleteQuery={onDeleteQuery}
+                nodeContextMenuItems={nodeContextMenuItems}
               />
             ))}
           </ul>

@@ -667,6 +667,60 @@ pub async fn delete_bucket_with_error(
     Ok(())
 }
 
+pub async fn rename_object_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    new_name: String,
+    is_folder: bool,
+) -> Result<(), anyhow::Error> {
+    info!(
+        " rename_object_with_error: new_name={}, is_folder={}, level_infos={:?}",
+        new_name, is_folder, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .rename_object(state.inner(), list_node_info_req, new_name, is_folder)
+        .await?;
+    Ok(())
+}
+
+pub async fn copy_object_with_error(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    target_dir: String,
+    is_folder: bool,
+) -> Result<(), anyhow::Error> {
+    info!(
+        " copy_object_with_error: target_dir={}, is_folder={}, level_infos={:?}",
+        target_dir, is_folder, list_node_info_req.level_infos
+    );
+    let value = list_node_info_req.level_infos[0]
+        .config_value
+        .parse::<i32>()?;
+    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
+        .bind(value)
+        .fetch_optional(&state.pool)
+        .await?
+        .ok_or(anyhow!("not found"))?;
+    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
+    let base_config: BaseConfig = serde_json::from_str(&connection_json_str)?;
+    base_config
+        .base_config_enum
+        .copy_object(state.inner(), list_node_info_req, target_dir, is_folder)
+        .await?;
+    Ok(())
+}
+
 pub async fn create_bucket_with_error(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,

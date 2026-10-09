@@ -124,6 +124,16 @@ fn name_of(path: &str) -> Option<String> {
     }
 }
 
+// " docs //2024/ " -> ["docs", "2024"]; "" and "/" -> [] (connection root)
+fn parse_target_dir(target_dir: &str) -> Vec<String> {
+    target_dir
+        .split('/')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+        .collect()
+}
+
 struct UploadState {
     file: File,
     total: u64,
@@ -550,6 +560,77 @@ impl WebdavConfig {
             },
         }
     }
+
+    // Renaming maps to the WebDAV MOVE verb: same parent directory, new last
+    // segment. Collection paths keep a trailing slash for picky servers.
+    pub async fn rename_object(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        new_name: String,
+        is_folder: bool,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            "webdav rename_object: {:?},new_name:{},is_folder:{}",
+            list_node_info_req, new_name, is_folder
+        );
+        let mut segments = self.dir_segments(&list_node_info_req);
+        if segments.is_empty() {
+            return Err(anyhow!("Nothing to rename"));
+        }
+        let new_name = new_name.trim().to_string();
+        if new_name.is_empty() || new_name.contains('/') || new_name == "." || new_name == ".." {
+            return Err(anyhow!("Invalid new name"));
+        }
+
+        let from = object_path(&segments, is_folder);
+        *segments.last_mut().unwrap() = new_name;
+        let to = object_path(&segments, is_folder);
+        if from == to {
+            return Ok(());
+        }
+
+        let client = self.get_connection().await?;
+        client
+            .mv(&from, &to)
+            .await
+            .map_err(|e| anyhow!("WebDAV rename failed: {}", e))
+    }
+
+    // Copying maps to the WebDAV COPY verb (Depth defaults to infinity, so a
+    // folder is copied with all nested content). The target directory is a
+    // remote path relative to the connection root, e.g. "docs" or "docs/2024".
+    pub async fn copy_object(
+        &self,
+        list_node_info_req: ListNodeInfoReq,
+        _appstate: &AppState,
+        target_dir: String,
+        is_folder: bool,
+    ) -> Result<(), anyhow::Error> {
+        info!(
+            "webdav copy_object: {:?},target_dir:{},is_folder:{}",
+            list_node_info_req, target_dir, is_folder
+        );
+        let segments = self.dir_segments(&list_node_info_req);
+        if segments.is_empty() {
+            return Err(anyhow!("Nothing to copy"));
+        }
+        let target_segments = parse_target_dir(&target_dir);
+        let source_parent: Vec<String> = segments[..segments.len() - 1].to_vec();
+        if target_segments == source_parent {
+            return Err(anyhow!("目标目录不能与当前目录相同"));
+        }
+        let name = segments.last().unwrap().clone();
+
+        let from = object_path(&segments, is_folder);
+        let to = child_path(&target_segments, &name, is_folder);
+
+        let client = self.get_connection().await?;
+        client
+            .cp(&from, &to)
+            .await
+            .map_err(|e| anyhow!("WebDAV copy failed: {}", e))
+    }
 }
 
 #[cfg(test)]
@@ -589,6 +670,36 @@ mod tests {
         assert_eq!(name_of("/dav/docs/"), Some("docs".to_string()));
         assert_eq!(name_of("/dav/a b.txt"), Some("a b.txt".to_string()));
         assert_eq!(name_of("/"), None);
+    }
+
+    #[test]
+    fn test_parse_target_dir() {
+        assert_eq!(parse_target_dir(""), Vec::<String>::new());
+        assert_eq!(parse_target_dir("/"), Vec::<String>::new());
+        assert_eq!(parse_target_dir("  "), Vec::<String>::new());
+        assert_eq!(
+            parse_target_dir(" docs //2024/ "),
+            vec!["docs".to_string(), "2024".to_string()]
+        );
+        assert_eq!(parse_target_dir("/a b/c"), vec!["a b".to_string(), "c".to_string()]);
+    }
+
+    #[test]
+    fn test_rename_and_copy_destination_paths() {
+        // rename keeps the sibling path shape (folder trailing slash included)
+        let mut segments = vec!["docs".to_string(), "旧 名".to_string()];
+        assert_eq!(object_path(&segments, true), "/docs/%E6%97%A7%20%E5%90%8D/");
+        *segments.last_mut().unwrap() = "新名".to_string();
+        assert_eq!(object_path(&segments, true), "/docs/%E6%96%B0%E5%90%8D/");
+        assert_eq!(object_path(&segments, false), "/docs/%E6%96%B0%E5%90%8D");
+
+        // copy lands inside the parsed target dir, keeping the source name
+        let source = vec!["docs".to_string(), "f.txt".to_string()];
+        let target = parse_target_dir(" backup//2024 ");
+        assert_eq!(
+            child_path(&target, source.last().unwrap(), false),
+            "/backup/2024/f.txt"
+        );
     }
 
     #[test]
@@ -721,12 +832,53 @@ mod tests {
         let docs2 = config.list_node_info(req(&["docs"]), &appstate).await.unwrap();
         assert!(docs2.list.iter().any(|i| i.name == "文件 名.txt"));
 
+        // Rename the unicode file, then copy it to the connection root
         config
-            .delete_object(req(&["docs", "文件 名.txt"]), &appstate)
+            .rename_object(
+                req(&["docs", "文件 名.txt"]),
+                &appstate,
+                "改名.txt".to_string(),
+                false,
+            )
             .await
             .unwrap();
+        let docs3 = config.list_node_info(req(&["docs"]), &appstate).await.unwrap();
+        assert!(!docs3.list.iter().any(|i| i.name == "文件 名.txt"));
+        assert!(docs3.list.iter().any(|i| i.name == "改名.txt"));
+
         config
-            .delete_object(req(&["docs"]), &appstate)
+            .copy_object(req(&["docs", "改名.txt"]), &appstate, "/".to_string(), false)
+            .await
+            .unwrap();
+        let root_after_copy = config.list_node_info(req(&[]), &appstate).await.unwrap();
+        assert!(root_after_copy.list.iter().any(|i| i.name == "改名.txt"));
+
+        // Copying into the source's own directory must be rejected
+        assert!(
+            config
+                .copy_object(req(&["docs", "改名.txt"]), &appstate, "docs".to_string(), false)
+                .await
+                .is_err()
+        );
+
+        config
+            .delete_object(req(&["改名.txt"]), &appstate)
+            .await
+            .unwrap();
+
+        // Rename a folder (with nested content), then delete it recursively
+        config
+            .rename_object(req(&["docs"]), &appstate, "docs_renamed".to_string(), true)
+            .await
+            .unwrap();
+        let renamed_dir = config
+            .list_node_info(req(&["docs_renamed"]), &appstate)
+            .await
+            .unwrap();
+        assert!(renamed_dir.list.iter().any(|i| i.name == "webdav_e2e_upload.txt"));
+
+        config
+            .delete_object(req(&["docs_renamed"]), &appstate)
             .await
             .unwrap();
         let after = config.list_node_info(req(&[]), &appstate).await.unwrap();

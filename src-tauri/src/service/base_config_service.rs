@@ -645,6 +645,40 @@ impl BaseConfigEnum {
         };
         Ok(())
     }
+    pub async fn rename_object(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        new_name: String,
+        is_folder: bool,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Webdav(config) => {
+                config
+                    .rename_object(list_node_info_req, appstate, new_name, is_folder)
+                    .await?
+            }
+            _ => Err(anyhow!("Only WebDAV supports rename_object."))?,
+        };
+        Ok(())
+    }
+    pub async fn copy_object(
+        &self,
+        appstate: &AppState,
+        list_node_info_req: ListNodeInfoReq,
+        target_dir: String,
+        is_folder: bool,
+    ) -> Result<(), anyhow::Error> {
+        match self {
+            BaseConfigEnum::Webdav(config) => {
+                config
+                    .copy_object(list_node_info_req, appstate, target_dir, is_folder)
+                    .await?
+            }
+            _ => Err(anyhow!("Only WebDAV supports copy_object."))?,
+        };
+        Ok(())
+    }
     pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
         match self {
             BaseConfigEnum::S3(config) => config.create_bucket(bucket_name).await?,

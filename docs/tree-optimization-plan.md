@@ -1,5 +1,14 @@
 # easy-viewer 左侧树重构技术方案（P0–P3 全量）
 
+> **状态：已完成（按 TypeScript 落地）。** 本文档编写于 JavaScript 时期，实际施工时仓库已全量迁移 TypeScript，因此正文中的 `.js/.jsx` 路径对应现在的 `.ts/.tsx`：
+> - `DatabaseViewer.jsx` → `src/components/DatabaseViewer.tsx`
+> - `DaisyTreeNode.jsx`、`treeData.js` 已按 B4 删除
+> - `tree/treeModel.js` → `src/components/tree/treeModel.ts`（另有 `treePersistence.ts`、`TreeRow.tsx`、`TreeSidebar.tsx`）
+> - `nodeIcons.jsx` → `src/components/tree/nodeIcons.tsx`
+> - `package.json` 的 `react-arborist` 已移除，`vitest` 已生效（`pnpm test`）
+>
+> 下方正文保留为历史施工记录，不再逐行维护。
+
 > 本文档是给执行 AI 的完整施工说明书。目标：**独立完成本文所有任务，不需要向用户提问**。
 > 优先级标记对应前期分析：P0=行为 bug，P1=性能与结构，P2=功能补齐，P3=清理与小修。
 

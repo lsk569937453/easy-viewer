@@ -5,7 +5,8 @@
 - 技术栈：React 19 + Vite 7 + Tailwind 4 + daisyUI 5 + Tauri 2（桌面端）。
 - 前端代码在 `src/`，Rust 端在 `src-tauri/`；**未经明确要求不改 `src-tauri/`**。
 - 左侧树的优化施工规范见 `docs/tree-optimization-plan.md`，涉及树的任务以该文档为准。
-- 验证门禁：任何改动完成后 `pnpm build` 必须零报错；涉及纯函数模块（如 `src/components/tree/treeModel.js`）时跑 `pnpm test`（vitest，配置后生效）。项目当前无 eslint/tsconfig，不要自行新增 lint/类型检查配置，除非任务明确要求。
+- 验证门禁：任何改动完成后必须全绿 —— `pnpm build`（零报错）、`pnpm typecheck`（`tsc --noEmit`）、`pnpm test`（vitest）、`pnpm lint`（biome，可用 `pnpm lint:fix` 自动修复）。仓库已有 `tsconfig.json`、`biome.json` 与真实测试用例，不要新增其他 lint/类型检查配置，除非任务明确要求。
+- Rust 门禁：改动 `src-tauri/` 前后各跑一次 `cargo clippy --all-targets`（冷编译耗时长，建议后台执行），并与基线告警数对比。注意：当前仓库并非 rustfmt 全绿（`cargo fmt --check` 有存量 diff），约定只对本次触碰的 Rust 文件执行 `rustfmt`，全仓库格式化需另行安排，避免混入无关 diff。
 ## 通用代码规范
 
 1. 项目单个函数最大行数限制为200行，不含空行、纯注释行，仅统计有效代码行。
@@ -63,7 +64,7 @@
 
 ## 前端通用约定
 
-- 当前存量代码为 JavaScript（JSX），已计划整体迁移 TypeScript；迁移完成前新代码保持 JS，不混写 TS 文件；迁移时使用严格类型，避免 `any`
+- 代码库已全量迁移 TypeScript（`.ts/.tsx`，`strict: true` 且开启 `noUnusedLocals`/`noUnusedParameters`）：新代码一律写 TS，禁止 `any`，跨组件/跨模块边界写显式 interface/type
 - **禁止复制粘贴大块雷同代码**：两处及以上出现高度相似的实现（列表、详情、编辑、弹窗等）时，必须先抽取公共实现再复用，不允许整段复制后局部微调
 - 新写组件前，先查阅 `src/components/`、`src/utils/` 已有资源，优先复用现有组件和工具函数；确实缺失时才新建，并放到公共目录供后续复用
 - 抽取公共组件时保持单一职责、最小 props API，避免为复用而过度参数化；本次改动涉及的范围内如发现明显雷同代码，顺手去重，不涉及范围的重构仍遵循「不主动重构无关代码」

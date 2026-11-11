@@ -15,6 +15,11 @@ import {
   syncRootsWithConnections,
   updateNodeInTree,
 } from "./tree/treeModel.js";
+import {
+  loadPersistedOpenNodes,
+  savePersistedOpenNodes,
+  TREE_STATE_SAVE_DEBOUNCE_MS,
+} from "./tree/treePersistence.js";
 
 import {
   generateCreateTableSql,
@@ -39,7 +44,7 @@ function DatabaseViewer({
   onConnectionDeleted,
 }) {
   const [treeData, setTreeData] = useState([]);
-  const [openNodes, setOpenNodes] = useState({});
+  const [openNodes, setOpenNodes] = useState(() => loadPersistedOpenNodes());
   const [tabs, setTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +72,15 @@ function DatabaseViewer({
   const openNodesRef = useRef(openNodes);
   useEffect(() => {
     openNodesRef.current = openNodes;
+  }, [openNodes]);
+
+  // 展开状态持久化：防抖后整表覆盖写入 localStorage
+  useEffect(() => {
+    const timer = setTimeout(
+      () => savePersistedOpenNodes(openNodes),
+      TREE_STATE_SAVE_DEBOUNCE_MS
+    );
+    return () => clearTimeout(timer);
   }, [openNodes]);
 
   // 树数据的最新快照：connections 同步时需要读取"当前"树，而 effect 闭包里的

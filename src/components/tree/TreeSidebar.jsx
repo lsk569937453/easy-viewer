@@ -1,16 +1,19 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { FaSearch, FaTimes } from "react-icons/fa";
 import TreeRow from "./TreeRow.jsx";
 import {
+  filterTreeByQuery,
   flattenVisibleNodes,
   isNodeExpandable,
   shouldToggleOnActivate,
 } from "./treeModel.js";
 
 const ESTIMATED_ROW_HEIGHT = 36;
+const SEARCH_DEBOUNCE_MS = 300;
 
 /**
- * 树展示层：扁平化 + 虚拟滚动 + 键盘导航。
+ * 树展示层：搜索框 + 扁平化虚拟滚动 + 键盘导航。
  * 展开状态（openNodes）与选中状态（selectedNodeId）都由 DatabaseViewer 持有。
  */
 function TreeSidebar({
@@ -25,11 +28,48 @@ function TreeSidebar({
   onDeleteConnection,
 }) {
   const scrollRef = useRef(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState(null);
 
+  // 输入防抖：让最后一次输入生效
+  useEffect(() => {
+    if (!searchInput) {
+      setQuery("");
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      setQuery(searchInput.trim());
+    }, SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchInput("");
+    setQuery("");
+  }, []);
+
+  const { filteredRoots, matchCount, forcedOpenNodes } = useMemo(() => {
+    if (!query) {
+      return { filteredRoots: roots, matchCount: 0, forcedOpenNodes: null };
+    }
+    const result = filterTreeByQuery(roots, query);
+    return {
+      filteredRoots: result.roots,
+      matchCount: result.matchCount,
+      forcedOpenNodes: result.expanded,
+    };
+  }, [roots, query]);
+
+  // 过滤态下强制展开展开命中节点的祖先链，但不写回 openNodes
+  const effectiveOpenNodes = useMemo(
+    () => (forcedOpenNodes ? { ...openNodes, ...forcedOpenNodes } : openNodes),
+    [openNodes, forcedOpenNodes]
+  );
+
   const flatRows = useMemo(
-    () => flattenVisibleNodes(roots, openNodes),
-    [roots, openNodes]
+    () => flattenVisibleNodes(filteredRoots, effectiveOpenNodes),
+    [filteredRoots, effectiveOpenNodes]
   );
 
   const virtualizer = useVirtualizer({
@@ -127,8 +167,29 @@ function TreeSidebar({
         event.preventDefault();
         focusRowAt(flatRows.length - 1);
         break;
+      case "Escape":
+        if (searchInput || query) {
+          event.preventDefault();
+          handleClearSearch();
+        }
+        break;
       default:
         break;
+    }
+  };
+
+  const handleSearchKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleClearSearch();
+      return;
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      if (flatRows.length > 0) {
+        scrollRef.current?.focus();
+        focusRowAt(0);
+      }
     }
   };
 
@@ -137,46 +198,91 @@ function TreeSidebar({
       ? focusedId
       : null;
 
+  const noMatch = Boolean(query) && matchCount === 0;
+
   return (
-    <div
-      ref={scrollRef}
-      role="tree"
-      aria-label="导航树"
-      tabIndex={0}
-      aria-activedescendant={focusedKey ? `tree-item-${focusedKey}` : undefined}
-      className="flex-1 overflow-y-auto overflow-x-hidden outline-none"
-      onKeyDown={handleKeyDown}
-    >
-      <div
-        className="relative w-full"
-        style={{ height: virtualizer.getTotalSize() }}
-      >
-        {virtualizer.getVirtualItems().map((virtualRow) => {
-          const row = flatRows[virtualRow.index];
-          if (!row) return null;
-          return (
-            <div
-              key={virtualRow.key}
-              data-index={virtualRow.index}
-              ref={virtualizer.measureElement}
-              className="absolute left-0 top-0 w-full"
-              style={{ transform: `translateY(${virtualRow.start}px)` }}
+    <>
+      <div className="flex-shrink-0 px-2 pt-2">
+        <div className="relative">
+          <input
+            className="input input-sm input-ghost w-full pr-8"
+            placeholder="搜索节点..."
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
+            aria-label="搜索节点"
+          />
+          {searchInput ? (
+            <button
+              type="button"
+              className="absolute right-0 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
+              title="清空搜索"
+              onClick={handleClearSearch}
             >
-              <TreeRow
-                row={row}
-                selectedNodeId={selectedNodeId}
-                focused={row.key === focusedKey}
-                onRowClick={activateRow}
-                onAction={onAction}
-                nodeContextMenuItems={nodeContextMenuItems}
-                onEditConnection={onEditConnection}
-                onDeleteConnection={onDeleteConnection}
-              />
-            </div>
-          );
-        })}
+              <FaTimes />
+            </button>
+          ) : (
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-base-content/30 pointer-events-none">
+              <FaSearch />
+            </span>
+          )}
+        </div>
+        {query && (
+          <div className="px-1 pt-1 text-[11px] text-base-content/50">
+            {matchCount > 0 ? `${matchCount} 项匹配` : "无匹配结果"}
+          </div>
+        )}
       </div>
-    </div>
+
+      {noMatch ? (
+        <div className="flex-1 overflow-hidden p-6 text-center text-base-content/40">
+          <p className="text-sm">无匹配结果</p>
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          role="tree"
+          aria-label="导航树"
+          tabIndex={0}
+          aria-activedescendant={
+            focusedKey ? `tree-item-${focusedKey}` : undefined
+          }
+          className="flex-1 overflow-y-auto overflow-x-hidden outline-none"
+          onKeyDown={handleKeyDown}
+        >
+          <div
+            className="relative w-full"
+            style={{ height: virtualizer.getTotalSize() }}
+          >
+            {virtualizer.getVirtualItems().map((virtualRow) => {
+              const row = flatRows[virtualRow.index];
+              if (!row) return null;
+              return (
+                <div
+                  key={virtualRow.key}
+                  data-index={virtualRow.index}
+                  ref={virtualizer.measureElement}
+                  className="absolute left-0 top-0 w-full"
+                  style={{ transform: `translateY(${virtualRow.start}px)` }}
+                >
+                  <TreeRow
+                    row={row}
+                    selectedNodeId={selectedNodeId}
+                    query={query}
+                    focused={row.key === focusedKey}
+                    onRowClick={activateRow}
+                    onAction={onAction}
+                    nodeContextMenuItems={nodeContextMenuItems}
+                    onEditConnection={onEditConnection}
+                    onDeleteConnection={onDeleteConnection}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

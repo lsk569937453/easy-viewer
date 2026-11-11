@@ -358,3 +358,51 @@ export const flattenVisibleNodes = (roots, openNodes) => {
   return rows;
 };
 
+/**
+ * 按 name + description 做大小写不敏感的子串匹配。
+ * 命中节点标记 _matched；祖先链保留并计入 expanded（供过滤态强制展开，
+ * 调用方不得写回 openNodes）。
+ * 返回 { roots, matchCount, expanded }
+ */
+export const filterTreeByQuery = (roots, query) => {
+  const keyword = (query || "").trim().toLowerCase();
+  if (!keyword) {
+    return { roots: roots || [], matchCount: 0, expanded: {} };
+  }
+
+  const expanded = {};
+  let matchCount = 0;
+
+  const isMatch = (node) =>
+    `${node.name ?? ""} ${node.description ?? ""}`
+      .toLowerCase()
+      .includes(keyword);
+
+  const walk = (nodes) => {
+    const kept = [];
+    for (const node of nodes || []) {
+      const selfMatched = isMatch(node);
+      const matchedChildren = Array.isArray(node.children)
+        ? walk(node.children)
+        : [];
+
+      if (!selfMatched && matchedChildren.length === 0) continue;
+
+      const nextNode = { ...node };
+      if (selfMatched) {
+        nextNode._matched = true;
+        matchCount += 1;
+      }
+      if (matchedChildren.length > 0) {
+        nextNode.children = matchedChildren;
+        expanded[String(node.id)] = true;
+      }
+      kept.push(nextNode);
+    }
+    return kept;
+  };
+
+  return { roots: walk(roots), matchCount, expanded };
+};
+
+

@@ -1,24 +1,9 @@
-import { invoke } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
-import type { ShowColumnsResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
-import { parseBaseResponse } from "../utils/backendResponse";
-import { getErrorMessage } from "../utils/error";
+import { useColumnDetail } from "./column-detail/useColumnDetail";
 import { TABLE_CLASS } from "./ui/DataTableShell";
 import KeyValueTable from "./ui/KeyValueTable";
 import StatusChip from "./ui/StatusChip";
 import { EmptyState, ErrorState, LoadingState } from "./ui/states";
-
-interface ColumnInfo {
-  name: string;
-  type: string;
-  nullable: string | null;
-  defaultValue: string | null;
-  isPrimaryKey: boolean;
-  extra: string | null;
-  tableName: string;
-  rawInfo: Record<string, string> | null;
-}
 
 interface ColumnDetailPageProps {
   activeTabNode?: TreeNode | null;
@@ -26,121 +11,38 @@ interface ColumnDetailPageProps {
 }
 
 function ColumnDetailPage({ activeTabNode, tableName }: ColumnDetailPageProps) {
-  const [columnInfo, setColumnInfo] = useState<ColumnInfo | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { columnInfo, isLoading, error } = useColumnDetail(
+    activeTabNode,
+    tableName,
+  );
 
-  useEffect(() => {
-    const fetchColumnDetails = async () => {
-      if (!activeTabNode?.path) {
-        setError("无法加载列详情：缺少必要信息。");
-        return;
-      }
+  const renderRawInfoTable = () => {
+    if (!columnInfo?.rawInfo) return null;
 
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const listNodeInfoReq = { level_infos: activeTabNode.path };
-        const responseJson = await invoke<string>("show_columns", {
-          listNodeInfoReq,
-        });
-        const { response_code, response_msg } =
-          parseBaseResponse<ShowColumnsResponse>(responseJson);
-
-        if (response_code === 0) {
-          const headers = response_msg.header.map((h) => h.name);
-          const targetColumnName = activeTabNode.name;
-
-          // 从所有行中找到匹配的列
-          const matchedRow = response_msg.rows.find((row) => {
-            const nameIdx = headers.findIndex(
-              (h) =>
-                h.toLowerCase() === "field" ||
-                h.toLowerCase() === "name" ||
-                h.toLowerCase() === "column_name",
-            );
-            return nameIdx >= 0 && row[nameIdx] === targetColumnName;
-          });
-
-          if (matchedRow) {
-            // 动态构建列信息对象
-            const info: Record<string, string> = {};
-            headers.forEach((header, idx) => {
-              const cell = matchedRow[idx];
-              info[header] = cell ?? "NULL";
-            });
-
-            // 提取通用字段（不同数据库 header 名不同）
-            const getValueByHeaderKeys = (keys: string[]): string | null => {
-              for (const key of keys) {
-                const found = Object.keys(info).find(
-                  (h) => h.toLowerCase() === key.toLowerCase(),
-                );
-                if (found) return info[found];
-              }
-              return null;
-            };
-
-            const isPrimaryKey =
-              activeTabNode.iconName === "primary" ||
-              getValueByHeaderKeys(["key"]) === "PRI" ||
-              getValueByHeaderKeys(["pk"]) === "1";
-
-            setColumnInfo({
-              name: targetColumnName,
-              type:
-                getValueByHeaderKeys(["type", "column_type", "data_type"]) ||
-                activeTabNode.description ||
-                "",
-              nullable:
-                getValueByHeaderKeys(["null", "is_nullable", "nullable"]) || "",
-              defaultValue:
-                getValueByHeaderKeys([
-                  "default",
-                  "column_default",
-                  "dflt_value",
-                ]) || "",
-              isPrimaryKey: isPrimaryKey,
-              extra:
-                getValueByHeaderKeys(["extra", "column_comment", "comment"]) ||
-                "",
-              tableName:
-                tableName ||
-                activeTabNode.path[activeTabNode.path.length - 3]
-                  ?.config_value ||
-                "",
-              rawInfo: info,
-            });
-          } else {
-            // 没找到匹配行，用节点基本信息兜底
-            setColumnInfo({
-              name: targetColumnName,
-              type: activeTabNode.description || "未知",
-              nullable: "",
-              defaultValue: "",
-              isPrimaryKey: activeTabNode.iconName === "primary",
-              extra: "",
-              tableName:
-                tableName ||
-                activeTabNode.path[activeTabNode.path.length - 3]
-                  ?.config_value ||
-                "",
-              rawInfo: null,
-            });
-          }
-        } else {
-          setError("无法获取列信息。");
-        }
-      } catch (err) {
-        setError(`加载失败: ${getErrorMessage(err) || "未知错误"}`);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchColumnDetails();
-  }, [activeTabNode, tableName]);
+    return (
+      <div>
+        <div className="mb-1 text-micro font-medium text-base-content/45">
+          完整字段
+        </div>
+        <table className={TABLE_CLASS}>
+          <thead>
+            <tr>
+              <th className="w-[140px]">字段</th>
+              <th>值</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.entries(columnInfo.rawInfo).map(([key, value]) => (
+              <tr key={key}>
+                <td className="font-mono text-base-content/60">{key}</td>
+                <td className="font-mono">{String(value)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   const renderContent = () => {
     if (isLoading) {
@@ -153,7 +55,6 @@ function ColumnDetailPage({ activeTabNode, tableName }: ColumnDetailPageProps) {
       );
     }
 
-    // 原来这里是 return null（白屏），改为明确的空态
     if (!columnInfo) {
       return (
         <EmptyState
@@ -203,30 +104,7 @@ function ColumnDetailPage({ activeTabNode, tableName }: ColumnDetailPageProps) {
           ]}
         />
 
-        {/* 如果有原始信息，显示完整字段 */}
-        {columnInfo.rawInfo ? (
-          <div>
-            <div className="mb-1 text-micro font-medium text-base-content/45">
-              完整字段
-            </div>
-            <table className={TABLE_CLASS}>
-              <thead>
-                <tr>
-                  <th className="w-[140px]">字段</th>
-                  <th>值</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(columnInfo.rawInfo).map(([key, value]) => (
-                  <tr key={key}>
-                    <td className="font-mono text-base-content/60">{key}</td>
-                    <td className="font-mono">{String(value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : null}
+        {renderRawInfoTable()}
       </div>
     );
   };

@@ -1,6 +1,5 @@
 use super::config::PostgresqlConfig;
 use crate::sql_lite::connection::AppState;
-use crate::util::sql_utils::postgres_row_to_json;
 use crate::vojo::exe_sql_response::ExeSqlResponse;
 use crate::vojo::exe_sql_response::Header;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
@@ -129,21 +128,7 @@ WHERE table_name = '{}'
         }
         let mut response_rows = vec![];
         for item in rows.iter() {
-            let columns = item.columns();
-            let len = columns.len();
-            let mut row = vec![];
-            for (i, _) in columns.iter().enumerate().take(len) {
-                let type_name = columns[i].type_info().name();
-                let val = postgres_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
-                }
-            }
-            response_rows.push(row);
+            response_rows.push(super::rows::postgres_row_to_strings(item)?);
         }
         let exe_sql_response =
             ExeSqlResponse::from(headers, response_rows, is_simple_select_option);

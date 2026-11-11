@@ -1,7 +1,6 @@
 use super::config::PostgresqlConfig;
 use super::queries::GET_SCHEMA_SQL;
 use crate::sql_lite::connection::AppState;
-use crate::util::sql_utils::postgres_row_to_json;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::show_column_response::ShowColumnHeader;
 use crate::vojo::show_column_response::ShowColumnsResponse;
@@ -94,21 +93,7 @@ WHERE table_name = '{}' AND table_schema = '{}';",
         }
         let mut response_rows = vec![];
         for item in rows.iter() {
-            let columns = item.columns();
-            let len = columns.len();
-            let mut row = vec![];
-            for (i, _) in columns.iter().enumerate().take(len) {
-                let type_name = columns[i].type_info().name();
-                let val = postgres_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
-                }
-            }
-            response_rows.push(row);
+            response_rows.push(super::rows::postgres_row_to_strings(item)?);
         }
         let exe_sql_response = ShowColumnsResponse::from(headers, response_rows);
 

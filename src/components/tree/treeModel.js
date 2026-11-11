@@ -327,7 +327,8 @@ export const getRowActions = (node) => {
 
 /**
  * DFS 展平"当前可见"节点：跳过未展开节点的 children。
- * 返回 [{ key, node, depth, parentId, hasChildren, isExpandable, isOpen }]
+ * 已展开但仍在加载的节点会追加一行占位行（isPlaceholder: true, node: null）。
+ * 返回 [{ key, node, depth, parentId, hasChildren, isExpandable, isOpen, isPlaceholder }]
  */
 export const flattenVisibleNodes = (roots, openNodes) => {
   const rows = [];
@@ -346,10 +347,24 @@ export const flattenVisibleNodes = (roots, openNodes) => {
         hasChildren,
         isExpandable: isNodeExpandable(node),
         isOpen,
+        isPlaceholder: false,
       });
 
-      if (isOpen && hasChildren) {
+      if (!isOpen) continue;
+
+      if (hasChildren) {
         walk(node.children, node.id, depth + 1);
+      } else if (node.isLoading) {
+        rows.push({
+          key: `${node.id}::loading`,
+          node: null,
+          depth: depth + 1,
+          parentId: node.id,
+          hasChildren: false,
+          isExpandable: false,
+          isOpen: false,
+          isPlaceholder: true,
+        });
       }
     }
   };
@@ -357,6 +372,7 @@ export const flattenVisibleNodes = (roots, openNodes) => {
   walk(roots, null, 0);
   return rows;
 };
+
 
 /**
  * 按 name + description 做大小写不敏感的子串匹配。

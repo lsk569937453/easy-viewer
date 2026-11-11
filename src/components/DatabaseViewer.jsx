@@ -289,7 +289,7 @@ function DatabaseViewer({
     let cancelled = false;
 
     const syncTree = async () => {
-      const { roots, addedIds, removedIds } = syncRootsWithConnections(
+      const { roots, addedIds, removedIds, resetIds } = syncRootsWithConnections(
         treeDataRef.current,
         connections,
         toRootDescriptor
@@ -301,9 +301,11 @@ function DatabaseViewer({
         setOpenNodes((prev) => pruneOpenNodes(prev, removedIds));
       }
 
-      // 只有新增连接（含首次挂载）才探测版本，未变化的连接不再重复探测
-      if (addedIds.length > 0) {
-        await probeServerVersions(addedIds);
+      // 只有新增连接（含首次挂载）与端点变更的连接才探测版本，
+      // 未变化的连接不再重复探测，也不再触发全屏"正在检测连接状态"遮罩
+      const idsToProbe = [...addedIds, ...resetIds];
+      if (idsToProbe.length > 0) {
+        await probeServerVersions(idsToProbe);
       }
       if (cancelled) return;
 

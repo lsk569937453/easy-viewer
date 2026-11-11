@@ -61,7 +61,7 @@ function TreeSidebar({
     };
   }, [roots, query]);
 
-  // 过滤态下强制展开展开命中节点的祖先链，但不写回 openNodes
+  // 过滤态下强制展开命中节点的祖先链，但不写回 openNodes
   const effectiveOpenNodes = useMemo(
     () => (forcedOpenNodes ? { ...openNodes, ...forcedOpenNodes } : openNodes),
     [openNodes, forcedOpenNodes]
@@ -94,7 +94,7 @@ function TreeSidebar({
 
   const activateRow = useCallback(
     (row) => {
-      if (!row) return;
+      if (!row || !row.node) return;
       setFocusedId(row.key);
       onRowClick(row.node);
       // handleNodeActivate 内部已自处理的类型不再重复 toggle，避免双展开
@@ -250,39 +250,43 @@ function TreeSidebar({
           className="flex-1 overflow-y-auto overflow-x-hidden outline-none"
           onKeyDown={handleKeyDown}
         >
-          <div
-            className="relative w-full"
-            style={{ height: virtualizer.getTotalSize() }}
-          >
-            {virtualizer.getVirtualItems().map((virtualRow) => {
-              const row = flatRows[virtualRow.index];
-              if (!row) return null;
-              return (
-                <div
-                  key={virtualRow.key}
-                  data-index={virtualRow.index}
-                  ref={virtualizer.measureElement}
-                  className="absolute left-0 top-0 w-full"
-                  style={{ transform: `translateY(${virtualRow.start}px)` }}
-                >
-                  <TreeRow
-                    row={row}
-                    selectedNodeId={selectedNodeId}
-                    query={query}
-                    focused={row.key === focusedKey}
-                    onRowClick={activateRow}
-                    onAction={onAction}
-                    nodeContextMenuItems={nodeContextMenuItems}
-                    onEditConnection={onEditConnection}
-                    onDeleteConnection={onDeleteConnection}
-                  />
-                </div>
-              );
-            })}
-          </div>
+        <div
+          className="relative w-full"
+          role="presentation"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const row = flatRows[virtualRow.index];
+            if (!row) return null;
+            // 不用 transform 定位：transform 会成为 position:fixed 后代的包含块，
+            // 导致右键菜单坐标错位
+            return (
+              <div
+                key={virtualRow.key}
+                data-index={virtualRow.index}
+                ref={virtualizer.measureElement}
+                role="presentation"
+                className="absolute left-0 w-full"
+                style={{ top: virtualRow.start }}
+              >
+                <TreeRow
+                  row={row}
+                  selectedNodeId={selectedNodeId}
+                  query={query}
+                  focused={row.key === focusedKey}
+                  onRowClick={activateRow}
+                  onAction={onAction}
+                  nodeContextMenuItems={nodeContextMenuItems}
+                  onEditConnection={onEditConnection}
+                  onDeleteConnection={onDeleteConnection}
+                />
+              </div>
+            );
+          })}
         </div>
-      )}
-    </>
+      </div>
+    )}
+  </>
   );
 }
 

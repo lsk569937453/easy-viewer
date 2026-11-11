@@ -49,6 +49,20 @@ function TreeRow({
   onDeleteConnection,
 }) {
   const { node, depth, isExpandable, isOpen } = row;
+
+  // 占位行：父节点已展开但仍在加载
+  if (row.isPlaceholder || !node) {
+    return (
+      <div
+        role="presentation"
+        className="text-xs text-base-content/40 py-1"
+        style={{ paddingLeft: 8 + depth * 16 + 24 }}
+      >
+        加载中...
+      </div>
+    );
+  }
+
   const isSelected =
     selectedNodeId != null && String(selectedNodeId) === String(node.id);
   const isOffline = node.offline === true;
@@ -75,7 +89,8 @@ function TreeRow({
   const nodeIconToRender = node.icon;
 
   const handleRowClick = () => {
-    onRowClick(node, row.key);
+    // 交给展示层决定"激活 + 是否额外 toggle"，行本身不做递归/展开判断
+    onRowClick(row);
   };
 
   const handleActionClick = (event, actionKey) => {

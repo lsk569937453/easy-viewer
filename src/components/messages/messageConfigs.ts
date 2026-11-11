@@ -1,3 +1,6 @@
+import type { BackendCommand } from "../../services/invoke";
+import { BACKEND_COMMANDS } from "../../services/invoke";
+
 /**
  * Kafka / RocketMQ 消息面板的差异配置。
  * 两个面板的结构完全一样，只有"元数据字段名、正文列名、时间列名、发送命令"
@@ -7,7 +10,7 @@ export interface MessagePanelConfig {
   /** 面板标签（显示在页头） */
   label: string;
   /** 发送消息的后端命令 */
-  sendCommand: string;
+  sendCommand: BackendCommand;
   /** 元数据字段名：Kafka 用 key，RocketMQ 用 tag */
   metaField: "key" | "tag";
   /** 元数据输入框标签与占位符 */
@@ -41,7 +44,7 @@ export const formatMessageTimestamp = (timestampStr: string): string => {
 
 export const KAFKA_MESSAGE_CONFIG: MessagePanelConfig = {
   label: "Kafka",
-  sendCommand: "kafka_produce_message",
+  sendCommand: BACKEND_COMMANDS.kafkaProduceMessage,
   metaField: "key",
   metaLabel: "Key",
   metaPlaceholder: "例如：user-id-123",
@@ -53,7 +56,7 @@ export const KAFKA_MESSAGE_CONFIG: MessagePanelConfig = {
 
 export const ROCKETMQ_MESSAGE_CONFIG: MessagePanelConfig = {
   label: "RocketMQ",
-  sendCommand: "rocketmq_send_message",
+  sendCommand: BACKEND_COMMANDS.rocketmqSendMessage,
   metaField: "tag",
   metaLabel: "Tag",
   metaPlaceholder: "例如：order_created",

@@ -18,6 +18,7 @@ import {
   isNodeExpandable,
   mapChildList,
   pruneOpenNodes,
+  removeNodeFromTree,
   shouldToggleOnActivate,
   syncRootsWithConnections,
   updateNodeInTree,
@@ -462,5 +463,52 @@ describe("getRowActions", () => {
     });
     expect(keys(failed)).toEqual(["refresh", "edit"]);
     expect(titleOf(failed, "refresh")).toBe("重试");
+  });
+});
+
+describe("removeNodeFromTree", () => {
+  const tree = (): TreeNode[] => [
+    {
+      id: 1,
+      name: "root",
+      type: "mysql",
+      path: [{ level: 1, config_value: "1" }],
+      children: [
+        {
+          id: "1/db",
+          name: "db",
+          type: "default",
+          path: [
+            { level: 1, config_value: "1" },
+            { level: 2, config_value: "db" },
+          ],
+          children: [
+            {
+              id: "1/db/t",
+              name: "t",
+              type: "default",
+              path: [],
+            },
+          ],
+        },
+        { id: "1/other", name: "other", type: "default", path: [] },
+      ],
+    },
+  ];
+
+  it("移除孙节点后保留其祖先与兄弟", () => {
+    const next = removeNodeFromTree(tree(), "1/db/t");
+    expect(next[0].children?.[0].children).toEqual([]);
+    expect(next[0].children).toHaveLength(2);
+  });
+
+  it("移除根节点得到空数组", () => {
+    expect(removeNodeFromTree(tree(), 1)).toEqual([]);
+  });
+
+  it("未命中时返回原引用", () => {
+    const roots = tree();
+    expect(removeNodeFromTree(roots, "missing")).toBe(roots);
+    expect(removeNodeFromTree(null, "x")).toEqual([]);
   });
 });

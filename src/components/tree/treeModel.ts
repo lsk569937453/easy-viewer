@@ -176,6 +176,38 @@ export const collectSubtreeIds = (
 };
 
 /**
+ * 按 id 移除节点（连同其子树），未命中的分支保持原引用。
+ * 原 DatabaseViewer 在删除查询/表/文件/连接等 4 处各写了一遍同形递归。
+ */
+export const removeNodeFromTree = (
+  nodes: TreeNode[] | null | undefined,
+  nodeId: TreeNodeId,
+): TreeNode[] => {
+  if (!Array.isArray(nodes)) return nodes ?? [];
+
+  let changed = false;
+  const next: TreeNode[] = [];
+
+  for (const node of nodes) {
+    if (node.id === nodeId) {
+      changed = true;
+      continue;
+    }
+    if (Array.isArray(node.children)) {
+      const updatedChildren = removeNodeFromTree(node.children, nodeId);
+      if (updatedChildren !== node.children) {
+        changed = true;
+        next.push({ ...node, children: updatedChildren });
+        continue;
+      }
+    }
+    next.push(node);
+  }
+
+  return changed ? next : nodes;
+};
+
+/**
  * 按 id 合并 connections 与已有根节点，避免全量重建导致已加载 children 丢失。
  * 返回 { roots, addedIds, removedIds, resetIds }：
  * - 同 id 根节点：保留 children/isLoading/展开态/version/offline/error，

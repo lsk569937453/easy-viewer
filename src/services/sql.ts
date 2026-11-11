@@ -17,11 +17,13 @@ export const updateRecord = (
     sqls,
   });
 
+/** 参数名与 `delete_table_row` 的 Tauri 入参一致（见 `src-tauri/src/service/cmd.rs`）。 */
 export interface DeleteTableRowParams {
   baseConfigId: number;
   tableName: string;
-  primaryKeyColumn: string;
-  primaryKeyValue: string;
+  rowId: string | null;
+  idColumn: string;
+  listNodeInfoReq: ListNodeInfoReq;
 }
 
 export const deleteTableRow = (params: DeleteTableRowParams): Promise<string> =>

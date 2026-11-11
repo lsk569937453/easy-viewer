@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 html,
 body,
 #root {
@@ -14,7 +16,6 @@ body,
   width: 100%;
 }
 
-@import "tailwindcss";
 @plugin "daisyui" {
   themes: all;
 }

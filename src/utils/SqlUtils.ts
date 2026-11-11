@@ -3,19 +3,6 @@
 // 5: OracleDB, 6: MSSQL, 7: Clickhouse, 8: S3, 9: Redis,
 // 10: Elasticsearch, 11: RocketMQ, 12: WebDAV
 
-interface SqlNodeLike {
-  level: number;
-  parent: SqlNodeLike;
-}
-
-export function getRootNode(node: SqlNodeLike): SqlNodeLike {
-  let tempNode = node;
-  while (tempNode.level > 0) {
-    tempNode = tempNode.parent;
-  }
-  return tempNode;
-}
-
 export function generateCreateTableSql(
   connectionType: number,
   tableName = "new_table",
@@ -126,35 +113,4 @@ export function generateCreateIndexSql(
     return clickhouseCreateIndex;
   }
   return `/* Warning: Unknown connection type (${connectionType}), using generic CREATE INDEX for ${tableName} */\nCREATE INDEX idx_${tableName}_column ON ${tableName} (column_name_to_index);`;
-}
-
-// The following functions are provided in your context but not directly used by the current request.
-// Keeping them as is, but commenting out their internal logic that relies on `getRootNode`
-// which might not work with the current node structure without further adaptation.
-export function getAlterColumnSql(
-  _node: unknown,
-  tableName: string,
-  column: string,
-  description: string,
-): string {
-  const mysqlAlterColumn = `ALTER TABLE \`${tableName}\`
-	CHANGE \`${column}\` \`${column}\` ${description} DEFAULT NULL ;`;
-  return `/* getAlterColumnSql: Feature not fully implemented for dynamic connection types. */\n${mysqlAlterColumn}`;
-}
-
-export function getCreateColumnAfterAnotherSql(
-  _node: unknown,
-  tableName: string,
-  column: string,
-): string {
-  const mysqlCreateColumn = `ALTER TABLE ${tableName}
-    ADD COLUMN  [type] COMMENT '' AFTER \`${column}\`;`;
-  return `/* getCreateColumnAfterAnotherSql: Feature not fully implemented for dynamic connection types. */\n${mysqlCreateColumn}`;
-}
-
-export function getCreateIndexForColumn(
-  _node: unknown,
-  _tableName: string,
-): string {
-  return `/* getCreateIndexForColumn: Feature not fully implemented for dynamic connection types. */`;
 }

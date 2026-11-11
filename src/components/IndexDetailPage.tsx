@@ -7,11 +7,24 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  vs,
+  vscDarkPlus,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { ExeSqlResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import useIsDarkTheme from "../utils/useIsDarkTheme";
+import DataTableShell, { TABLE_CLASS } from "./ui/DataTableShell";
+import KeyValueTable from "./ui/KeyValueTable";
+import { EmptyState, ErrorState, LoadingState } from "./ui/states";
+
+const INDEX_TABS = [
+  { id: "info", label: "基本信息" },
+  { id: "columns", label: "索引列" },
+  { id: "sql", label: "创建 SQL" },
+] as const;
 
 interface IndexInfo {
   name: string;
@@ -41,6 +54,7 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("columns");
+  const isDarkTheme = useIsDarkTheme();
 
   useEffect(() => {
     const fetchIndexDetails = async () => {
@@ -213,49 +227,33 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-full">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      );
+      return <LoadingState label="正在读取索引信息…" />;
     }
 
     if (error) {
       return (
-        <div role="alert" className="alert alert-error">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
+        <ErrorState className="m-3" title="读取失败" description={error} />
       );
     }
 
     if (activeTab === "columns") {
       return (
-        <div className="overflow-x-auto">
-          <table
-            className="table table-zebra w-full"
-            style={{ fontSize: "12px" }}
-          >
+        <DataTableShell
+          isEmpty={indexColumns.length === 0}
+          placeholder={
+            <EmptyState
+              compact
+              title="没有索引列"
+              description="该索引没有返回列定义。"
+            />
+          }
+        >
+          <table className={TABLE_CLASS}>
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      style={{ width: "120px", fontSize: "12px" }}
-                    >
+                    <th key={header.id}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -269,12 +267,11 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
             </thead>
             <tbody>
               {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} style={{ fontSize: "12px" }}>
+                <tr key={row.id}>
                   {row.getVisibleCells().map((cell) => (
                     <td
                       key={cell.id}
-                      style={{ width: "120px" }}
-                      className="truncate"
+                      className="max-w-[240px] truncate"
                       title={String(cell.getValue() || "")}
                     >
                       {flexRender(
@@ -287,7 +284,7 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTableShell>
       );
     }
 
@@ -295,8 +292,13 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
       return (
         <SyntaxHighlighter
           language="sql"
-          style={vscDarkPlus}
-          customStyle={{ margin: 0, height: "100%", fontSize: "12px" }}
+          style={isDarkTheme ? vscDarkPlus : vs}
+          customStyle={{
+            margin: 0,
+            minHeight: "100%",
+            fontSize: 12,
+            background: "transparent",
+          }}
         >
           {createIndexSql || "-- 无法生成创建索引的 SQL"}
         </SyntaxHighlighter>
@@ -304,34 +306,25 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
     }
 
     if (activeTab === "info") {
+      if (!indexInfo) {
+        return (
+          <EmptyState
+            title="没有索引信息"
+            description="该索引在当前连接上无法读取到详细属性。"
+          />
+        );
+      }
       return (
-        <div className="space-y-4" style={{ fontSize: "12px" }}>
-          {indexInfo && (
-            <table className="table table-zebra w-full">
-              <tbody>
-                <tr>
-                  <th className="w-[120px]">索引名称</th>
-                  <td>{indexInfo.name}</td>
-                </tr>
-                <tr>
-                  <th>索引类型</th>
-                  <td>{indexInfo.type}</td>
-                </tr>
-                <tr>
-                  <th>是否唯一</th>
-                  <td>{indexInfo.nonUnique ? "否" : "是"}</td>
-                </tr>
-                <tr>
-                  <th>所属表</th>
-                  <td>{indexInfo.tableName}</td>
-                </tr>
-                <tr>
-                  <th>列数量</th>
-                  <td>{indexColumns.length}</td>
-                </tr>
-              </tbody>
-            </table>
-          )}
+        <div className="p-3">
+          <KeyValueTable
+            rows={[
+              { label: "索引名称", value: indexInfo.name },
+              { label: "索引类型", value: indexInfo.type },
+              { label: "是否唯一", value: indexInfo.nonUnique ? "否" : "是" },
+              { label: "所属表", value: indexInfo.tableName },
+              { label: "列数量", value: indexColumns.length },
+            ]}
+          />
         </div>
       );
     }
@@ -340,38 +333,30 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
   };
 
   return (
-    <div className="p-4 h-full flex flex-col">
-      <div className="tabs tabs-boxed mb-4 self-start">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "info"}
-          className={`tab ${activeTab === "info" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("info")}
-        >
-          基本信息
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "columns"}
-          className={`tab ${activeTab === "columns" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("columns")}
-        >
-          索引列
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "sql"}
-          className={`tab ${activeTab === "sql" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("sql")}
-        >
-          创建SQL
-        </button>
+    <div className="flex h-full min-h-0 flex-col">
+      <div
+        role="tablist"
+        className="flex h-9 flex-shrink-0 items-stretch border-b border-hairline px-1"
+      >
+        {INDEX_TABS.map((indexTab) => (
+          <button
+            key={indexTab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === indexTab.id}
+            className={`-mb-px border-b-2 px-3 text-xs transition-colors ${
+              activeTab === indexTab.id
+                ? "border-primary font-medium text-base-content"
+                : "border-transparent text-base-content/55 hover:text-base-content/85"
+            }`}
+            onClick={() => setActiveTab(indexTab.id)}
+          >
+            {indexTab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="flex-grow overflow-auto">{renderContent()}</div>
+      <div className="min-h-0 flex-1 overflow-auto">{renderContent()}</div>
     </div>
   );
 }

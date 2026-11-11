@@ -1,4 +1,5 @@
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import { FaChevronRight } from "react-icons/fa";
 import type {
   RowActionKey,
   TreeNode,
@@ -8,6 +9,7 @@ import type {
 import ContextMenuWrapper, {
   type ContextMenuItem,
 } from "../ContextMenuWrapper";
+import StatusChip from "../ui/StatusChip";
 import { getRowActions, isRootNode } from "./treeModel";
 
 // 命中片段包 <mark>；query 为空时原样返回
@@ -56,6 +58,7 @@ export interface TreeRowProps {
 
 /**
  * 单行渲染（非递归）：行内容 + hover 动作，动作集合由 getRowActions 决定。
+ * 视觉：30px 行高、chevron 代替 ▼▶、版本号改为右侧胶囊、选中态带左侧强调条。
  */
 function TreeRow({
   row,
@@ -75,8 +78,8 @@ function TreeRow({
     return (
       <div
         role="presentation"
-        className="text-xs text-base-content/40 py-1"
-        style={{ paddingLeft: 8 + depth * 16 + 24 }}
+        className="py-1 text-micro text-base-content/40"
+        style={{ paddingLeft: 6 + depth * 14 + 20 }}
       >
         加载中…
       </div>
@@ -128,77 +131,88 @@ function TreeRow({
       aria-selected={isSelected}
       aria-expanded={isExpandable ? !!isOpen : undefined}
       tabIndex={-1}
-      className={`group flex items-center w-full overflow-hidden rounded-md pr-1 select-none cursor-pointer transition-colors ${
-        isSelected ? "bg-primary/10 text-primary" : "hover:bg-base-content/5"
-      } ${isOffline ? "opacity-50" : ""} ${focused ? "ring-1 ring-primary/40" : ""}`}
-      style={{ paddingLeft: 8 + depth * 16 }}
+      className={[
+        "group relative flex min-h-[30px] w-full select-none items-center gap-1.5 rounded-[var(--radius-control)] pr-1 transition-colors cursor-pointer",
+        isSelected ? "bg-accent-soft text-primary" : "hover:bg-hover",
+        isOffline ? "opacity-50" : "",
+        focused ? "ring-1 ring-inset ring-primary/40" : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+      style={{ paddingLeft: 6 + depth * 14 }}
       onClick={handleRowClick}
     >
-      <div className="flex items-center overflow-hidden flex-1 min-w-0">
-        <div className="w-6 text-center mr-1 flex items-center justify-center flex-shrink-0">
-          {node.isLoading ? (
-            <span className="loading loading-spinner loading-xs"></span>
-          ) : (
-            isExpandable && (
-              <span className="cursor-pointer text-[10px] text-base-content/60">
-                {isOpen ? "▼" : "▶"}
-              </span>
-            )
-          )}
-        </div>
-        {nodeIconToRender &&
-          (isRoot && node.version ? (
-            <div className="mr-2 flex-shrink-0 flex flex-col items-center w-[60px]">
-              <span>{nodeIconToRender}</span>
-              <span className="block w-14 truncate text-center text-[9px] text-base-content/40 leading-tight mt-0.5">
-                {node.version}
-              </span>
-            </div>
-          ) : (
-            <span className="mr-2 flex-shrink-0" aria-hidden="true">
-              {nodeIconToRender}
-            </span>
-          ))}
-        <div
-          className="flex items-baseline overflow-hidden flex-1 min-w-0"
-          title={node.name}
-        >
-          <span className="truncate font-medium">
-            {highlightMatch(node.name, query)}
-          </span>
-          {isOffline && (
-            <span className="ml-2 badge badge-xs badge-ghost text-[10px] flex-shrink-0">
-              离线
-            </span>
-          )}
-          {!isOffline && node.error && !node.isLoading && (
-            <span className="ml-2 text-xs text-error flex-shrink-0">
-              加载失败
-            </span>
-          )}
-          {!isOffline && node.description && (
-            <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
-              {highlightMatch(node.description, query)}
-            </span>
-          )}
-        </div>
-      </div>
+      {isSelected ? (
+        <span
+          className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-primary"
+          aria-hidden="true"
+        />
+      ) : null}
 
-      <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity flex items-center space-x-1">
+      <span
+        className="flex w-4 flex-shrink-0 items-center justify-center text-base-content/45"
+        aria-hidden="true"
+      >
+        {node.isLoading ? (
+          <span className="loading loading-spinner loading-xs" />
+        ) : isExpandable ? (
+          <FaChevronRight
+            size="0.62em"
+            className={`transition-transform ${isOpen ? "rotate-90" : ""}`}
+          />
+        ) : null}
+      </span>
+
+      {nodeIconToRender ? (
+        <span
+          className="mr-0.5 flex flex-shrink-0 items-center text-[13px] leading-none"
+          aria-hidden="true"
+        >
+          {nodeIconToRender}
+        </span>
+      ) : null}
+
+      <span
+        className="min-w-0 flex-1 truncate text-[12.5px] font-medium"
+        title={node.name}
+      >
+        {highlightMatch(node.name, query)}
+      </span>
+
+      {isOffline ? (
+        <StatusChip className="flex-shrink-0">离线</StatusChip>
+      ) : null}
+      {!isOffline && node.error && !node.isLoading ? (
+        <StatusChip tone="error" className="flex-shrink-0">
+          加载失败
+        </StatusChip>
+      ) : null}
+      {!isOffline && node.description ? (
+        <span className="max-w-[180px] flex-shrink-0 truncate text-micro text-base-content/45">
+          {highlightMatch(node.description, query)}
+        </span>
+      ) : null}
+      {isRoot && node.version ? (
+        <StatusChip className="flex-shrink-0" title={node.version}>
+          {node.version}
+        </StatusChip>
+      ) : null}
+
+      <div className="flex flex-shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
         {actions.map((action) => {
           const ActionIcon = action.icon;
           return (
             <button
               key={action.key}
               type="button"
-              className={`btn btn-ghost btn-circle btn-xs ${
+              className={`app-icon-btn h-6 w-6 ${
                 action.key === "refresh" && node.error ? "text-error" : ""
               }`}
               title={action.title}
               aria-label={`${action.title} ${node.name}`}
               onClick={(event) => handleActionClick(event, action.key)}
             >
-              <ActionIcon aria-hidden="true" />
+              <ActionIcon size="0.75em" aria-hidden="true" />
             </button>
           );
         })}

@@ -6,10 +6,18 @@ import {
   useRef,
   useState,
 } from "react";
+import { FaTerminal } from "react-icons/fa";
+import { IoHelpCircleOutline, IoSend, IoTrashOutline } from "react-icons/io5";
 import type { ConnectionSummary, RedisCommandResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import ActionButton from "./ui/ActionButton";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import PageHeader from "./ui/PageHeader";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState } from "./ui/states";
+import Toolbar from "./ui/Toolbar";
 
 interface ConsoleEntry {
   command: string;
@@ -24,8 +32,28 @@ interface RedisConsolePanelProps {
   connectionDetails: ConnectionSummary;
 }
 
-import { FaTerminal } from "react-icons/fa";
-import { IoHelpCircleOutline, IoSend, IoTrashOutline } from "react-icons/io5";
+/** 需要二次确认的危险命令 */
+const DANGEROUS_COMMANDS = ["FLUSHALL", "FLUSHDB", "SHUTDOWN"];
+
+const COMMON_COMMANDS = [
+  { cmd: "PING", desc: "测试连接" },
+  { cmd: "SET key value", desc: "设置键值" },
+  { cmd: "GET key", desc: "获取键值" },
+  { cmd: "DEL key", desc: "删除键" },
+  { cmd: "DBSIZE", desc: "获取数据库大小" },
+  { cmd: "KEYS pattern", desc: "查找键（如 KEYS *）" },
+  { cmd: "HSET key field value", desc: "设置哈希字段" },
+  { cmd: "HGETALL key", desc: "获取哈希所有字段" },
+  { cmd: "LPUSH key value", desc: "列表左侧推入" },
+  { cmd: "LRANGE key 0 -1", desc: "获取列表所有元素" },
+  { cmd: "SADD key member", desc: "集合添加成员" },
+  { cmd: "SMEMBERS key", desc: "获取集合所有成员" },
+  { cmd: "ZADD key score member", desc: "有序集合添加" },
+  { cmd: "ZRANGE key 0 -1 WITHSCORES", desc: "获取有序集合" },
+  { cmd: "EXISTS key", desc: "检查键是否存在" },
+  { cmd: "TTL key", desc: "获取键的过期时间" },
+  { cmd: "EXPIRE key seconds", desc: "设置键的过期时间" },
+];
 
 function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
   const [commandHistory, setCommandHistory] = useState<ConsoleEntry[]>([]);
@@ -33,13 +61,14 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  /** 待确认的危险命令 */
+  const [pendingCommand, setPendingCommand] = useState<string | null>(null);
 
   const outputEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const connectionId = connectionDetails.base_config_id;
-  // 列表接口不返回连接 config；保持原有的空主机/端口展示
-  const connectionName = ":";
+  const connectionName = connectionDetails.connection_name || "未知连接";
 
   // 自动滚动到底部
   useEffect(() => {
@@ -55,22 +84,17 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
     }
   }, []);
 
-  const handleExecute = async () => {
-    const command = currentInput.trim();
-    if (!command) return;
+  /** 追加一条历史记录，并重置输入框与历史游标 */
+  const pushEntry = (entry: ConsoleEntry) => {
+    setCommandHistory((prev) => [...prev, entry]);
+    setCurrentInput("");
+    setHistoryIndex(-1);
+  };
 
-    // 危险命令确认
-    const dangerousCommands = ["FLUSHALL", "FLUSHDB", "SHUTDOWN"];
-    const commandUpper = command.toUpperCase().split(/\s+/)[0];
-    if (dangerousCommands.includes(commandUpper)) {
-      const confirmed = window.confirm(
-        `⚠️ 警告：${commandUpper} 是危险命令，确定要执行吗？`,
-      );
-      if (!confirmed) return;
-    }
-
+  const runCommand = async (command: string) => {
     setLoading(true);
     const startTime = Date.now();
+    const timestamp = new Date().toLocaleTimeString();
 
     try {
       const responseJson = await invoke<string>("redis_execute_command", {
@@ -82,45 +106,49 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         parseBaseResponse<RedisCommandResponse>(responseJson);
 
       if (response_code === 0) {
-        setCommandHistory((prev) => [
-          ...prev,
-          {
-            command,
-            response: response_msg,
-            timestamp: new Date().toLocaleTimeString(),
-            duration: Date.now() - startTime,
-          },
-        ]);
-        setCurrentInput("");
-        setHistoryIndex(-1);
+        pushEntry({
+          command,
+          response: response_msg,
+          timestamp,
+          duration: Date.now() - startTime,
+        });
       } else {
-        setCommandHistory((prev) => [
-          ...prev,
-          {
-            command,
-            error: response_msg || "执行失败",
-            timestamp: new Date().toLocaleTimeString(),
-            duration: Date.now() - startTime,
-          },
-        ]);
-        setCurrentInput("");
-        setHistoryIndex(-1);
+        pushEntry({
+          command,
+          error: response_msg || "执行失败",
+          timestamp,
+          duration: Date.now() - startTime,
+        });
       }
     } catch (err) {
-      setCommandHistory((prev) => [
-        ...prev,
-        {
-          command,
-          error: getErrorMessage(err),
-          timestamp: new Date().toLocaleTimeString(),
-          duration: Date.now() - startTime,
-        },
-      ]);
-      setCurrentInput("");
-      setHistoryIndex(-1);
+      pushEntry({
+        command,
+        error: getErrorMessage(err),
+        timestamp,
+        duration: Date.now() - startTime,
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExecute = () => {
+    const command = currentInput.trim();
+    if (!command || loading) return;
+
+    const commandUpper = command.toUpperCase().split(/\s+/)[0];
+    if (DANGEROUS_COMMANDS.includes(commandUpper)) {
+      setPendingCommand(command);
+      return;
+    }
+
+    void runCommand(command);
+  };
+
+  const handleConfirmDangerous = () => {
+    const command = pendingCommand;
+    setPendingCommand(null);
+    if (command) void runCommand(command);
   };
 
   const handleKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -155,32 +183,30 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
     }
   };
 
-  const handleClear = () => {
-    setCommandHistory([]);
-  };
-
   const formatResponse = (response?: RedisCommandResponse): ReactNode => {
     if (!response) return null;
 
     const { response_type, value, array_items, execution_time_ms } = response;
 
-    const timeBadge = (
-      <span className="text-xs opacity-50 ml-2">({execution_time_ms}ms)</span>
+    const timeHint = (
+      <span className="ml-2 text-micro text-base-content/40">
+        {execution_time_ms}ms
+      </span>
     );
 
     switch (response_type) {
       case "nil":
         return (
           <div>
-            <span className="text-base-content/40">(nil)</span>
-            {timeBadge}
+            <span className="text-base-content/40">（空）</span>
+            {timeHint}
           </div>
         );
       case "integer":
         return (
           <div>
-            <span className="text-info">(integer) {value}</span>
-            {timeBadge}
+            <span className="text-info">（整数）{value}</span>
+            {timeHint}
           </div>
         );
       case "string": {
@@ -189,26 +215,30 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         try {
           JSON.parse(displayValue);
           isJson = true;
-        } catch (_e) {
-          // Not JSON
+        } catch {
+          // 非 JSON
         }
 
         if (isJson) {
           try {
             displayValue = JSON.stringify(JSON.parse(displayValue), null, 2);
-          } catch (_e) {
-            // Keep original if formatting fails
+          } catch {
+            // 格式化失败时保留原文
           }
         }
 
         return (
           <div>
             <pre
-              className={`text-success ${isJson ? "bg-base-300/30 p-2 rounded" : ""}`}
+              className={`whitespace-pre-wrap break-all text-success ${
+                isJson
+                  ? "rounded-[var(--radius-control)] bg-base-200/60 p-2"
+                  : ""
+              }`}
             >
               "{displayValue}"
             </pre>
-            {timeBadge}
+            {timeHint}
           </div>
         );
       }
@@ -216,14 +246,14 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         return (
           <div>
             <span className="text-warning">OK</span>
-            {timeBadge}
+            {timeHint}
           </div>
         );
       case "status":
         return (
           <div>
             <span className="text-warning">{value}</span>
-            {timeBadge}
+            {timeHint}
           </div>
         );
       case "array":
@@ -232,20 +262,20 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
             {array_items && array_items.length > 0 ? (
               <div>
                 {array_items.map((item, index) => (
-                  <div key={index} className="font-mono">
+                  <div key={index} className="break-all font-mono">
                     <span className="text-base-content/50">{index + 1})</span>{" "}
                     <span>{item}</span>
                   </div>
                 ))}
-                <span className="text-xs opacity-50">
-                  ({array_items.length} elements)
+                <span className="text-micro text-base-content/40">
+                  （{array_items.length} 个元素）
                 </span>
-                {timeBadge}
+                {timeHint}
               </div>
             ) : (
               <div>
-                <span className="text-base-content/40">(empty array)</span>
-                {timeBadge}
+                <span className="text-base-content/40">（空数组）</span>
+                {timeHint}
               </div>
             )}
           </div>
@@ -254,121 +284,133 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         return (
           <div>
             <span className="text-error">{value}</span>
-            {timeBadge}
+            {timeHint}
           </div>
         );
       default:
         return (
           <div>
-            <span>{value || "(unknown response type)"}</span>
-            {timeBadge}
+            <span className="text-base-content/60">
+              （未知响应类型）{value || ""}
+            </span>
+            {timeHint}
           </div>
         );
     }
   };
 
-  const commonCommands = [
-    { cmd: "PING", desc: "测试连接" },
-    { cmd: "SET key value", desc: "设置键值" },
-    { cmd: "GET key", desc: "获取键值" },
-    { cmd: "DEL key", desc: "删除键" },
-    { cmd: "DBSIZE", desc: "获取数据库大小" },
-    { cmd: "KEYS pattern", desc: "查找键（如 KEYS *）" },
-    { cmd: "HSET key field value", desc: "设置哈希字段" },
-    { cmd: "HGETALL key", desc: "获取哈希所有字段" },
-    { cmd: "LPUSH key value", desc: "列表左侧推入" },
-    { cmd: "LRANGE key 0 -1", desc: "获取列表所有元素" },
-    { cmd: "SADD key member", desc: "集合添加成员" },
-    { cmd: "SMEMBERS key", desc: "获取集合所有成员" },
-    { cmd: "ZADD key score member", desc: "有序集合添加" },
-    { cmd: "ZRANGE key 0 -1 WITHSCORES", desc: "获取有序集合" },
-    { cmd: "EXISTS key", desc: "检查键是否存在" },
-    { cmd: "TTL key", desc: "获取键的过期时间" },
-    { cmd: "EXPIRE key seconds", desc: "设置键的过期时间" },
-  ];
-
   return (
-    <div className="flex flex-col h-full bg-base-100">
-      {/* 工具栏 */}
-      <div className="flex items-center justify-between px-4 py-2 bg-base-200/30 border-b border-base-content/10">
-        <div className="flex items-center gap-2">
-          <FaTerminal className="text-primary" />
-          <span className="font-semibold text-sm">
-            Redis Console - {connectionName}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={handleClear}
-            className="btn btn-ghost btn-xs"
-            title="清空历史"
-          >
-            <IoTrashOutline />
-            清空
-          </button>
-          <button
-            onClick={() => setShowHelp(!showHelp)}
-            className="btn btn-ghost btn-xs"
-            title="帮助"
-          >
-            <IoHelpCircleOutline />
-            帮助
-          </button>
-        </div>
-      </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title="Redis 控制台"
+        subtitle={`连接 ${connectionName}`}
+        actions={
+          <>
+            <ActionButton
+              size="sm"
+              title="清空历史"
+              icon={<IoTrashOutline aria-hidden="true" />}
+              onClick={() => setCommandHistory([])}
+              disabled={commandHistory.length === 0}
+            >
+              清空
+            </ActionButton>
+            <ActionButton
+              size="sm"
+              title="常用命令帮助"
+              aria-expanded={showHelp}
+              icon={<IoHelpCircleOutline aria-hidden="true" />}
+              onClick={() => setShowHelp((prev) => !prev)}
+            >
+              帮助
+            </ActionButton>
+          </>
+        }
+      />
 
       {/* 帮助面板 */}
-      {showHelp && (
-        <div className="bg-base-200/50 border-b border-base-content/10 p-4">
-          <h3 className="font-semibold mb-2">常用 Redis 命令</h3>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            {commonCommands.map((item, index) => (
-              <div key={index} className="flex gap-2">
-                <code className="text-primary font-mono">{item.cmd}</code>
-                <span className="text-base-content/60">{item.desc}</span>
+      {showHelp ? (
+        <div className="flex-shrink-0 border-b border-hairline bg-base-200/30 px-3 py-2">
+          <h3 className="mb-1.5 text-xs font-medium text-base-content/70">
+            常用 Redis 命令
+          </h3>
+          <div className="grid grid-cols-1 gap-x-4 gap-y-1 text-micro md:grid-cols-2">
+            {COMMON_COMMANDS.map((item) => (
+              <div key={item.cmd} className="flex min-w-0 gap-2">
+                <code className="flex-shrink-0 font-mono text-primary">
+                  {item.cmd}
+                </code>
+                <span className="truncate text-base-content/60">
+                  {item.desc}
+                </span>
               </div>
             ))}
           </div>
-          <div className="mt-3 text-xs text-base-content/50">
-            <p>• 按 Enter 执行命令，↑↓ 浏览历史</p>
-            <p>• 支持引号内的空格，如 SET key "hello world"</p>
-            <p>• FLUSHALL、FLUSHDB、SHUTDOWN 命令会弹出确认框</p>
+          <div className="mt-2 space-y-0.5 text-micro text-base-content/45">
+            <p>按 Enter 执行命令，↑↓ 浏览历史，ESC 清空输入</p>
+            <p>支持引号内的空格，如 SET key "hello world"</p>
+            <p>FLUSHALL、FLUSHDB、SHUTDOWN 会弹出二次确认</p>
           </div>
         </div>
-      )}
+      ) : null}
+
+      {/* 输出区标题栏 */}
+      <Toolbar
+        left={
+          <>
+            <span className="text-xs font-medium text-base-content/70">
+              命令输出
+            </span>
+            {loading ? (
+              <StatusChip tone="info" dot>
+                执行中…
+              </StatusChip>
+            ) : null}
+          </>
+        }
+        right={
+          <span className="text-micro text-base-content/45">
+            {commandHistory.length} 条记录
+          </span>
+        }
+      />
 
       {/* 输出区域 */}
       <div
         role="log"
         aria-live="polite"
         aria-label="命令输出"
-        className="flex-1 overflow-y-auto overscroll-contain p-4 bg-base-300/20 font-mono text-sm"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-base-300/20 p-3 font-mono text-xs"
       >
         {commandHistory.length === 0 ? (
-          <div className="text-center text-base-content/50 py-8">
-            <FaTerminal size={48} className="mx-auto mb-4" aria-hidden="true" />
-            <p>输入 Redis 命令开始使用</p>
-            <p className="text-xs mt-2">试试 PING 命令</p>
-          </div>
+          <EmptyState
+            icon={<FaTerminal size="1.5em" aria-hidden="true" />}
+            title="还没有执行过命令"
+            description="在下方输入 Redis 命令并回车，例如 PING。"
+          />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {commandHistory.map((item, index) => (
               <div
                 key={index}
-                className="border-l-2 border-base-content/10 pl-3 hover:border-primary/30 transition-colors"
+                className="border-l-2 border-hairline pl-3 transition-colors hover:border-primary/30"
               >
-                <div className="flex items-center gap-2 text-xs text-base-content/50 mb-1">
-                  <span>{item.timestamp}</span>
-                  <span>•</span>
-                  <span>{item.duration}ms</span>
+                <div className="mb-1 flex items-center gap-1.5 text-micro text-base-content/45">
+                  <span className="tabular-nums">{item.timestamp}</span>
+                  <span aria-hidden="true">·</span>
+                  <span className="tabular-nums">{item.duration}ms</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-primary font-bold">&gt;</span>
-                  <span className="text-base-content">{item.command}</span>
+                <div className="flex items-start gap-1.5">
+                  <span className="font-bold text-primary" aria-hidden="true">
+                    &gt;
+                  </span>
+                  <span className="break-all text-base-content">
+                    {item.command}
+                  </span>
                 </div>
-                <div className="ml-4 mt-1">
+                <div className="ml-3 mt-1">
                   {item.error ? (
-                    <div className="text-error">{item.error}</div>
+                    <div className="break-all text-error">{item.error}</div>
                   ) : (
                     formatResponse(item.response)
                   )}
@@ -380,42 +422,72 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         )}
       </div>
 
-      {/* 输入栏 */}
-      <div className="border-t border-base-content/10 bg-base-200/30 p-3">
-        <div className="flex gap-2">
-          <span className="text-primary font-bold flex items-center">&gt;</span>
-          <input
-            ref={inputRef}
-            type="text"
-            aria-label="Redis 命令输入"
-            value={currentInput}
-            onChange={(e) => setCurrentInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="输入 Redis 命令…"
-            className="flex-1 bg-base-100 border border-base-content/20 rounded px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus:border-primary/50"
-            disabled={loading}
-          />
-          <button
-            type="button"
+      {/* 输入行 */}
+      <Toolbar
+        className="border-b-0 border-t"
+        left={
+          <>
+            <span
+              className="font-mono font-bold text-primary"
+              aria-hidden="true"
+            >
+              &gt;
+            </span>
+            <input
+              ref={inputRef}
+              type="text"
+              aria-label="Redis 命令输入"
+              value={currentInput}
+              onChange={(e) => setCurrentInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="输入 Redis 命令…"
+              className="input h-8 min-w-0 flex-1 rounded-[var(--radius-control)] border-hairline bg-base-200/60 px-2 font-mono text-xs focus-visible:border-primary/50"
+              disabled={loading}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </>
+        }
+        right={
+          <ActionButton
+            variant="primary"
+            size="sm"
             aria-label="执行命令"
+            title="执行（Enter）"
+            icon={<IoSend aria-hidden="true" />}
+            loading={loading}
+            disabled={!currentInput.trim()}
             onClick={handleExecute}
-            disabled={loading || !currentInput.trim()}
-            className="btn btn-primary btn-sm"
-            title="执行 (Enter)"
           >
-            {loading ? (
-              <span className="loading loading-spinner loading-xs"></span>
-            ) : (
-              <IoSend aria-hidden="true" />
-            )}
-          </button>
-        </div>
-        <div className="flex gap-4 mt-2 text-xs text-base-content/40">
-          <span>Enter 执行</span>
-          <span>↑↓ 历史</span>
-          <span>ESC 清空</span>
-        </div>
+            执行
+          </ActionButton>
+        }
+      />
+      <div className="flex flex-shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-t border-hairline px-3 py-1 text-micro text-base-content/40">
+        <span>Enter 执行</span>
+        <span>↑↓ 浏览历史</span>
+        <span>ESC 清空输入</span>
+        <span>危险命令需二次确认</span>
       </div>
+
+      {/* 危险命令确认 */}
+      <ConfirmDialog
+        open={pendingCommand !== null}
+        title="确认执行危险命令"
+        description={
+          <>
+            即将执行{" "}
+            <span className="break-all font-mono text-error">
+              {pendingCommand}
+            </span>
+            ，该操作可能清空数据且无法撤销，确定继续吗？
+          </>
+        }
+        confirmText="执行"
+        busy={loading}
+        onConfirm={handleConfirmDangerous}
+        onCancel={() => setPendingCommand(null)}
+      />
     </div>
   );
 }

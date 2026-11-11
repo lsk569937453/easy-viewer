@@ -10,21 +10,21 @@ import {
   useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
 import toast from "react-hot-toast";
-import {
-  FaChevronLeft,
-  FaChevronRight,
-  FaPlay,
-  FaSave,
-  FaSearch,
-} from "react-icons/fa";
+import { FaPlay, FaSave } from "react-icons/fa";
 import type { ConnectionSummary, ExeSqlResponse } from "../types/backend";
 import type { SetActiveTabId, SetTabs, SqlEditorTab } from "../types/tab";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import ActionButton from "./ui/ActionButton";
+import DataTableShell, { TABLE_CLASS } from "./ui/DataTableShell";
+import Pagination from "./ui/Pagination";
+import SearchBox from "./ui/SearchBox";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState, ErrorState } from "./ui/states";
+import Toolbar from "./ui/Toolbar";
 
 type TableRowData = Record<string, string | null>;
 
@@ -58,7 +58,6 @@ function SqlEditorTabContent({
   const connectionId = tab.connectionId;
   const queryId = tab.queryId;
   const databaseName = tab.databaseName;
-  const tableContainerRef = useRef<HTMLDivElement>(null);
 
   const tableColumns = useMemo<ColumnDef<TableRowData>[]>(() => {
     return columns.map((col) => ({
@@ -331,185 +330,144 @@ function SqlEditorTabContent({
 
   return (
     // 3. 移除之前添加的 relative 定位和 Notification 组件渲染
-    <div className="flex flex-col h-full bg-base-100 p-4">
-      {/* ... 页面其余部分保持不变 ... */}
-
-      {/* Action Bar */}
-      <div className="flex items-center space-x-2 mb-4 flex-shrink-0">
+    <div className="flex h-full min-h-0 flex-col">
+      {/* 页头：查询名称 + 执行/保存 */}
+      <div className="flex flex-shrink-0 items-center gap-2 border-b border-hairline px-3 py-2">
         <input
           type="text"
-          className="input input-bordered input-sm font-semibold text-lg flex-grow max-w-xs"
+          className="input h-8 min-w-0 max-w-xs flex-1 border-transparent bg-transparent px-1 text-[13px] font-semibold"
           aria-label="查询名称"
           name="queryName"
           value={queryName}
           onChange={handleQueryNameChange}
           title="查询名称"
         />
-        <button
-          className="btn btn-primary btn-sm flex items-center gap-2"
-          onClick={handleExecuteSql}
-          disabled={isLoading}
-          title="执行 SQL (F5)"
-        >
-          {isLoading ? (
-            <span className="loading loading-spinner loading-xs"></span>
-          ) : (
-            <FaPlay aria-hidden="true" />
-          )}
-          执行
-        </button>
-        <button
-          className="btn btn-ghost btn-sm flex items-center gap-2"
-          onClick={handleSaveQuery}
-          disabled={isLoading}
-          title="保存查询 (Ctrl+S)"
-        >
-          <FaSave aria-hidden="true" />
-          保存
-          {isDirty && (
-            <span className="text-red-500 text-xl leading-none ml-1">•</span>
-          )}{" "}
-        </button>
+        {isDirty ? <StatusChip tone="warning">未保存</StatusChip> : null}
+        <div className="ml-auto flex flex-shrink-0 items-center gap-1.5">
+          <ActionButton
+            variant="primary"
+            size="sm"
+            icon={<FaPlay size="0.8em" aria-hidden="true" />}
+            loading={isLoading}
+            onClick={() => void handleExecuteSql()}
+            title="执行 SQL (F5)"
+          >
+            执行
+          </ActionButton>
+          <ActionButton
+            size="sm"
+            icon={<FaSave size="0.85em" aria-hidden="true" />}
+            onClick={() => void handleSaveQuery()}
+            disabled={isLoading}
+            title="保存查询 (Ctrl+S)"
+          >
+            保存
+          </ActionButton>
+        </div>
       </div>
 
-      <div className="mb-4 flex-shrink-0">
+      <div className="flex-shrink-0 px-3 pt-2">
         <textarea
-          className="textarea textarea-bordered w-full font-mono text-sm resize-y"
+          className="textarea h-40 w-full resize-y rounded-[var(--radius-control)] border-hairline bg-base-100 font-mono text-xs leading-relaxed"
           rows={10}
-          placeholder="在此输入 SQL 查询..."
+          placeholder="在此输入 SQL 查询…"
           aria-label="SQL 查询内容"
           name="sqlContent"
           value={sqlContent}
           onChange={handleSqlContentChange}
-        ></textarea>
+        />
       </div>
 
-      {error && (
-        <div role="alert" className="alert alert-error mb-4 flex-shrink-0">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
+      {error ? (
+        <ErrorState
+          className="mx-3 mt-2"
+          title="执行失败"
+          description={error}
+        />
+      ) : null}
 
-      {/* Data Operations Area */}
-      <div className="flex items-center justify-between mb-4 flex-shrink-0 flex-wrap gap-2">
-        <div className="flex items-center space-x-2">
-          {/* 搜索输入框，现在带有FaSearch图标，但没有独立的搜索按钮 */}
-          <label className="input input-bordered input-sm flex items-center gap-2 w-48">
-            <FaSearch aria-hidden="true" />
-            <input
-              type="text"
-              className="grow"
-              placeholder="搜索数据..."
-              aria-label="搜索数据"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)} // 实时更新搜索词
-            />
-          </label>
-        </div>
-        <div className="flex items-center space-x-4">
-          {executionTime > 0 && (
-            <span className="text-sm">耗时: {executionTime} ms</span>
-          )}
-          <div className="join">
-            <button
-              className="join-item btn btn-sm"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1 || isLoading}
-              aria-label="上一页"
-            >
-              <FaChevronLeft aria-hidden="true" />
-            </button>
-            <span className="join-item btn btn-sm btn-disabled">
-              页 {currentPage} / {totalPages || 1}
+      {/* 数据操作区 */}
+      <Toolbar
+        className="mt-2"
+        left={
+          <SearchBox
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="搜索数据…"
+            ariaLabel="搜索数据"
+            className="max-w-xs"
+          />
+        }
+        right={
+          <>
+            {executionTime > 0 ? (
+              <span className="text-micro text-base-content/45">
+                耗时 {executionTime} ms
+              </span>
+            ) : null}
+            <span className="text-micro text-base-content/45">
+              总计 {totalRows} 行
             </span>
-            <button
-              className="join-item btn btn-sm"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={
-                currentPage === totalPages || isLoading || totalPages === 0
-              }
-              aria-label="下一页"
-            >
-              <FaChevronRight aria-hidden="true" />
-            </button>
-          </div>
-          <span className="text-sm">总计: {totalRows} 行</span>
-        </div>
-      </div>
-      {/* Data Table Area */}
-      <div
-        className="flex-1 overflow-auto rounded-lg border border-base-content/20"
-        ref={tableContainerRef}
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
+        }
+      />
+
+      {/* 结果表格 */}
+      <DataTableShell
+        className="m-3"
+        loading={isLoading && allFetchedData.length === 0}
+        isEmpty={filteredData.length === 0}
+        placeholder={
+          <EmptyState
+            compact
+            title={searchTerm ? "没有匹配的数据" : "还没有查询结果"}
+            description={
+              searchTerm
+                ? `没有找到与「${searchTerm}」匹配的数据。`
+                : "在上方输入 SQL 并执行，结果会显示在这里。"
+            }
+          />
+        }
       >
-        {isLoading && allFetchedData.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
-        ) : filteredData.length > 0 ? (
-          <table className="table table-sm w-full" style={{ fontSize: "12px" }}>
-            {/* Table Head */}
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="bg-base-200"
-                      style={{ width: "150px", fontSize: "12px" }}
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            {/* Table Body */}
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id} style={{ fontSize: "12px" }}>
-                  {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      className="truncate"
-                      style={{ width: "150px" }}
-                      title={String(cell.getValue() || "")}
-                    >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="p-4 text-center text-base-content/60">
-            {searchTerm
-              ? `没有找到与"${searchTerm}"匹配的数据。`
-              : "没有数据可显示。请执行 SQL 查询。"}
-          </div>
-        )}
-      </div>
+        <table className={TABLE_CLASS}>
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id}>
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    className="max-w-[320px] truncate"
+                    title={String(cell.getValue() || "")}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </DataTableShell>
     </div>
   );
 }

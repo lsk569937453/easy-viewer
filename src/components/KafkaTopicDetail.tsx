@@ -1,21 +1,26 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
-import {
-  IoInformationCircle,
-  IoLayers,
-  IoRefresh,
-  IoServer,
-  IoTrashOutline,
-} from "react-icons/io5";
+import { FaStream } from "react-icons/fa";
+import { IoRefresh, IoTrashOutline } from "react-icons/io5";
 import type { ConnectionSummary, ListNodeInfoResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
 import { showError, showSuccess } from "../utils/showToast";
+import ActionButton from "./ui/ActionButton";
+import ConfirmDialog from "./ui/ConfirmDialog";
+import DataTableShell, { TABLE_CLASS } from "./ui/DataTableShell";
+import KeyValueTable from "./ui/KeyValueTable";
+import PageHeader from "./ui/PageHeader";
+import Panel from "./ui/Panel";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState, ErrorState, LoadingState } from "./ui/states";
 
 interface KafkaTopicDetailProps {
   activeTabNode: TreeNode;
   connectionDetails: ConnectionSummary;
+  /** 删除成功后通知外层关闭标签页并刷新树 */
+  onTopicDeleted?: (node: TreeNode) => void;
 }
 
 interface TopicInfo {
@@ -28,15 +33,31 @@ interface TopicPartition {
   leader: string;
 }
 
+const TOPIC_TABS = [
+  { id: "overview", label: "概览" },
+  { id: "partitions", label: "分区" },
+  { id: "config", label: "配置" },
+] as const;
+
+const STATIC_CONFIG_ROWS = [
+  { key: "default.replication.factor", value: "1", note: "默认副本因子" },
+  { key: "retention.ms", value: "604800000 (7 days)", note: "消息保留时间" },
+  { key: "retention.bytes", value: "-1 (unlimited)", note: "消息保留大小" },
+  { key: "cleanup.policy", value: "delete", note: "清理策略" },
+];
+
 function KafkaTopicDetail({
   activeTabNode,
   connectionDetails,
+  onTopicDeleted,
 }: KafkaTopicDetailProps) {
   const [topicInfo, setTopicInfo] = useState<TopicInfo | null>(null);
   const [partitions, setPartitions] = useState<TopicPartition[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const topicName =
     activeTabNode?.path?.[activeTabNode.path.length - 2]?.config_value ||
@@ -69,7 +90,7 @@ function KafkaTopicDetail({
             const match = p.name.match(/Partition (\d+)/);
             return {
               id: match ? Number.parseInt(match[1], 10) : -1,
-              leader: p.description || "Unknown",
+              leader: p.description || "未知",
             };
           }),
         );
@@ -87,14 +108,10 @@ function KafkaTopicDetail({
     }
   };
 
-  // 删除 Topic
+  // 删除 Topic：确认走 ConfirmDialog，成功后局部刷新并关闭标签页，
+  // 不再使用 window.location.reload()（会丢掉全部标签页状态）。
   const handleDeleteTopic = async () => {
-    if (
-      !window.confirm(`确定要删除 Topic "${topicName}" 吗？此操作不可撤销！`)
-    ) {
-      return;
-    }
-
+    setDeleting(true);
     try {
       const responseJson = await invoke<string>("kafka_delete_topic", {
         connectionId: connectionDetails.base_config_id,
@@ -106,247 +123,224 @@ function KafkaTopicDetail({
 
       if (response_code === 0) {
         showSuccess(`Topic "${topicName}" 已删除`);
-        window.location.reload(); // 简单刷新页面
+        setConfirmDeleteOpen(false);
+        onTopicDeleted?.(activeTabNode);
       } else {
         showError(`删除失败: ${response_msg}`);
       }
     } catch (err) {
       showError(`删除 Topic 时发生错误: ${getErrorMessage(err)}`);
+    } finally {
+      setDeleting(false);
     }
   };
 
   useEffect(() => {
-    fetchTopicInfo();
+    void fetchTopicInfo();
   }, [topicName]);
 
   if (loading && !topicInfo) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
+    return <LoadingState label="正在读取 Topic 信息…" />;
   }
 
   if (error && !topicInfo) {
     return (
-      <div className="alert alert-error m-4">
-        <span>{error}</span>
-        <button className="btn btn-sm btn-ghost ml-2" onClick={fetchTopicInfo}>
-          重试
-        </button>
-      </div>
+      <ErrorState
+        className="m-3"
+        title="读取失败"
+        description={error}
+        onRetry={() => void fetchTopicInfo()}
+      />
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 顶部标题栏 */}
-      <div className="flex-shrink-0 border-b border-base-content/10 px-6 py-4 bg-base-200/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">📋</span>
-            <div>
-              <h2 className="text-xl font-bold text-primary">{topicName}</h2>
-              <p className="text-sm text-base-content/60">Kafka Topic</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              className={`btn btn-sm btn-outline ${loading ? "loading" : ""}`}
-              onClick={fetchTopicInfo}
-              disabled={loading}
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title={topicName}
+        subtitle="Kafka Topic"
+        meta={
+          <>
+            <FaStream aria-hidden="true" />
+            <StatusChip tone="info">{partitions.length} 个分区</StatusChip>
+          </>
+        }
+        actions={
+          <>
+            <ActionButton
+              size="sm"
+              icon={<IoRefresh aria-hidden="true" />}
+              loading={loading}
+              onClick={() => void fetchTopicInfo()}
             >
-              <IoRefresh className="mr-1" />
               刷新
-            </button>
-            <button
-              className="btn btn-sm btn-error"
-              onClick={handleDeleteTopic}
+            </ActionButton>
+            <ActionButton
+              size="sm"
+              variant="danger"
+              icon={<IoTrashOutline aria-hidden="true" />}
+              onClick={() => setConfirmDeleteOpen(true)}
             >
-              <IoTrashOutline className="mr-1" />
-              删除 Topic
-            </button>
-          </div>
-        </div>
+              删除
+            </ActionButton>
+          </>
+        }
+      />
 
-        {/* Tab 切换 */}
-        <div className="flex gap-1 mt-4" role="tablist">
+      <div
+        role="tablist"
+        className="flex h-9 flex-shrink-0 items-stretch border-b border-hairline px-1"
+      >
+        {TOPIC_TABS.map((topicTab) => (
           <button
-            className={`tab ${activeTab === "overview" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("overview")}
+            key={topicTab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === topicTab.id}
+            className={`-mb-px border-b-2 px-3 text-xs transition-colors ${
+              activeTab === topicTab.id
+                ? "border-primary font-medium text-base-content"
+                : "border-transparent text-base-content/55 hover:text-base-content/85"
+            }`}
+            onClick={() => setActiveTab(topicTab.id)}
           >
-            <IoInformationCircle className="mr-1" />
-            概览
+            {topicTab.label}
           </button>
-          <button
-            className={`tab ${activeTab === "partitions" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("partitions")}
-          >
-            <IoLayers className="mr-1" />
-            分区 ({partitions.length})
-          </button>
-          <button
-            className={`tab ${activeTab === "config" ? "tab-active" : ""}`}
-            onClick={() => setActiveTab("config")}
-          >
-            <IoServer className="mr-1" />
-            配置
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* 内容区域 */}
-      <div className="flex-1 overflow-auto p-6">
-        {activeTab === "overview" && (
-          <div className="space-y-6">
-            {/* 基本信息 */}
-            <div className="card bg-base-200/50">
-              <div className="card-body">
-                <h3 className="card-title text-lg">基本信息</h3>
-                <div className="grid grid-cols-2 gap-4 mt-4">
-                  <div>
-                    <p className="text-sm text-base-content/60">Topic 名称</p>
-                    <p className="font-semibold">{topicName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-base-content/60">分区数</p>
-                    <p className="font-semibold">{partitions.length}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="min-h-0 flex-1 overflow-auto p-3">
+        {activeTab === "overview" ? (
+          <div className="space-y-3">
+            <Panel className="p-3">
+              <h3 className="mb-2 text-[13px] font-semibold">基本信息</h3>
+              <KeyValueTable
+                rows={[
+                  {
+                    label: "Topic 名称",
+                    value: <span className="font-mono">{topicName}</span>,
+                  },
+                  { label: "分区数", value: partitions.length },
+                ]}
+              />
+            </Panel>
 
-            {/* 分区列表预览 */}
-            <div className="card bg-base-200/50">
-              <div className="card-body">
-                <h3 className="card-title text-lg">分区列表</h3>
-                <div className="overflow-x-auto">
-                  <table className="table table-zebra">
-                    <thead>
-                      <tr>
-                        <th>分区 ID</th>
-                        <th>Leader</th>
-                        <th>状态</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {partitions.map((partition) => (
-                        <tr key={partition.id}>
-                          <td className="font-mono">
-                            Partition {partition.id}
-                          </td>
-                          <td>{partition.leader}</td>
-                          <td>
-                            <span className="badge badge-success">在线</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "partitions" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold">分区详情</h3>
-              <span className="badge badge-primary">
-                共 {partitions.length} 个分区
-              </span>
-            </div>
-
-            {partitions.length === 0 ? (
-              <div className="text-center text-base-content/40 py-12">
-                <p>暂无分区信息</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {partitions.map((partition) => (
-                  <div key={partition.id} className="card bg-base-200/50">
-                    <div className="card-body">
-                      <div className="flex items-center justify-between">
-                        <h4 className="card-title">Partition {partition.id}</h4>
-                        <span className="badge badge-success badge-sm">
-                          Active
-                        </span>
-                      </div>
-                      <div className="space-y-2 text-sm mt-4">
-                        <div className="flex justify-between">
-                          <span className="text-base-content/60">Leader:</span>
-                          <span className="font-mono">{partition.leader}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-base-content/60">
-                            Replicas:
-                          </span>
-                          <span>1</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-base-content/60">ISR:</span>
-                          <span>1</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === "config" && (
-          <div className="space-y-6">
-            <div className="card bg-base-200/50">
-              <div className="card-body">
-                <h3 className="card-title text-lg">Topic 配置</h3>
-                <div className="overflow-x-auto mt-4">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>配置项</th>
-                        <th>值</th>
-                        <th>说明</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="font-mono text-sm">num.partitions</td>
-                        <td>{partitions.length}</td>
-                        <td>分区数量</td>
-                      </tr>
-                      <tr>
-                        <td className="font-mono text-sm">
-                          default.replication.factor
+            <Panel className="p-0">
+              <h3 className="px-3 pt-3 text-[13px] font-semibold">分区列表</h3>
+              <DataTableShell
+                className="mt-2"
+                isEmpty={partitions.length === 0}
+                placeholder={
+                  <EmptyState
+                    compact
+                    title="暂无分区"
+                    description="该 Topic 没有返回分区信息。"
+                  />
+                }
+              >
+                <table className={TABLE_CLASS}>
+                  <thead>
+                    <tr>
+                      <th>分区 ID</th>
+                      <th>Leader</th>
+                      <th>状态</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partitions.map((partition) => (
+                      <tr key={partition.id}>
+                        <td className="font-mono">Partition {partition.id}</td>
+                        <td>{partition.leader}</td>
+                        <td>
+                          <StatusChip tone="success" dot>
+                            在线
+                          </StatusChip>
                         </td>
-                        <td>1</td>
-                        <td>默认副本因子</td>
                       </tr>
-                      <tr>
-                        <td className="font-mono text-sm">retention.ms</td>
-                        <td>604800000 (7 days)</td>
-                        <td>消息保留时间</td>
-                      </tr>
-                      <tr>
-                        <td className="font-mono text-sm">retention.bytes</td>
-                        <td>-1 (unlimited)</td>
-                        <td>消息保留大小</td>
-                      </tr>
-                      <tr>
-                        <td className="font-mono text-sm">cleanup.policy</td>
-                        <td>delete</td>
-                        <td>清理策略</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+                    ))}
+                  </tbody>
+                </table>
+              </DataTableShell>
+            </Panel>
           </div>
-        )}
+        ) : null}
+
+        {activeTab === "partitions" ? (
+          partitions.length === 0 ? (
+            <EmptyState
+              title="暂无分区信息"
+              description="该 Topic 没有返回任何分区。"
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {partitions.map((partition) => (
+                <Panel key={partition.id} className="p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[13px] font-semibold">
+                      Partition {partition.id}
+                    </span>
+                    <StatusChip tone="success" dot>
+                      在线
+                    </StatusChip>
+                  </div>
+                  <KeyValueTable
+                    labelWidth="4.5rem"
+                    rows={[
+                      {
+                        label: "Leader",
+                        value: (
+                          <span className="font-mono">{partition.leader}</span>
+                        ),
+                      },
+                      { label: "副本", value: "1" },
+                      { label: "ISR", value: "1" },
+                    ]}
+                  />
+                </Panel>
+              ))}
+            </div>
+          )
+        ) : null}
+
+        {activeTab === "config" ? (
+          <Panel className="p-0">
+            <h3 className="px-3 pt-3 text-[13px] font-semibold">Topic 配置</h3>
+            <table className={`${TABLE_CLASS} mt-2`}>
+              <thead>
+                <tr>
+                  <th>配置项</th>
+                  <th>值</th>
+                  <th>说明</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="font-mono">num.partitions</td>
+                  <td>{partitions.length}</td>
+                  <td>分区数量</td>
+                </tr>
+                {STATIC_CONFIG_ROWS.map((row) => (
+                  <tr key={row.key}>
+                    <td className="font-mono">{row.key}</td>
+                    <td>{row.value}</td>
+                    <td>{row.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </Panel>
+        ) : null}
       </div>
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        title={`删除 Topic「${topicName}」？`}
+        description="该操作不可撤销，Topic 及其消息将被永久删除。"
+        confirmText="删除"
+        busy={deleting}
+        onConfirm={() => void handleDeleteTopic()}
+        onCancel={() => setConfirmDeleteOpen(false)}
+      />
     </div>
   );
 }

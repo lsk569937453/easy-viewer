@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { FaDatabase, FaPlus } from "react-icons/fa";
 import type { ConnectionSummary, ListNodeInfoResponse } from "../types/backend";
 import type { Tab } from "../types/tab";
 import type {
@@ -40,6 +41,10 @@ import {
   savePersistedOpenNodes,
   TREE_STATE_SAVE_DEBOUNCE_MS,
 } from "./tree/treePersistence";
+import ActionButton from "./ui/ActionButton";
+import Panel from "./ui/Panel";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState } from "./ui/states";
 
 const findConnectionByRootConfigId = (
   connections: ConnectionSummary[],
@@ -1052,6 +1057,28 @@ function DatabaseViewer({
     });
   };
 
+  // Kafka Topic 删除后：关闭该 Topic 下的标签页并刷新父节点（替代整页 reload）
+  const handleKafkaTopicDeleted = (node: TreeNode) => {
+    setTabs((prevTabs) => {
+      const remaining = prevTabs.filter((tab) => {
+        const tabNode = "node" in tab ? tab.node : undefined;
+        if (!tabNode?.path) return true;
+        return !isPathPrefix(node.path, tabNode.path);
+      });
+      if (activeTabId && !remaining.some((tab) => tab.id === activeTabId)) {
+        setActiveTabId(
+          remaining.length > 0 ? remaining[remaining.length - 1].id : null,
+        );
+      }
+      return remaining;
+    });
+
+    const parent = findParentNode(treeData, node.id);
+    if (parent) {
+      void handleRefreshNode(parent);
+    }
+  };
+
   const handleAddNode = async (node: TreeNode) => {
     const rootConfigId = node.path[0]?.config_value;
     const connection = findConnectionByRootConfigId(connections, rootConfigId);
@@ -1200,6 +1227,12 @@ function DatabaseViewer({
 
   const handleEditConnection = (node: TreeNode) => {
     setEditingConnectionId(Number(node.id));
+    setIsModalOpen(true);
+  };
+
+  // 新建连接：复用编辑弹窗的创建模式（editingId 为 null）
+  const handleOpenCreateConnection = () => {
+    setEditingConnectionId(null);
     setIsModalOpen(true);
   };
 
@@ -1763,42 +1796,68 @@ function DatabaseViewer({
     null;
 
   return (
-    <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
-      <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative">
-        <div className="flex-shrink-0 border-b border-base-content/5 px-3 py-2">
-          <h2 className="text-sm font-semibold text-base-content/60 uppercase tracking-wider">
-            导航
-          </h2>
-        </div>
-        {isRefreshing && (
-          <div className="absolute inset-0 top-[37px] bg-base-200/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-2">
-            <span className="loading loading-spinner loading-lg text-primary"></span>
-            <span className="text-xs text-base-content/60">
-              正在检测连接状态...
+    <div className="grid h-full min-h-0 w-full grid-cols-1 gap-2 md:grid-cols-[minmax(260px,300px)_1fr]">
+      <Panel className="relative flex min-h-0 flex-col overflow-hidden">
+        <div className="flex h-9 flex-shrink-0 items-center justify-between gap-2 border-b border-hairline px-2.5">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <span className="text-micro font-medium tracking-wider text-base-content/45">
+              连接
             </span>
+            {connections.length > 0 ? (
+              <StatusChip>{connections.length}</StatusChip>
+            ) : null}
           </div>
-        )}
-        {treeData && treeData.length > 0 ? (
-          <TreeSidebar
-            roots={treeData}
-            openNodes={openNodes}
-            selectedNodeId={selectedNodeId}
-            onRowClick={handleNodeActivate}
-            onToggle={handleToggleNode}
-            onAction={handleTreeRowAction}
-            onEditConnection={handleEditConnection}
-            onDeleteConnection={handleRequestDeleteConnection}
-            nodeContextMenuItems={buildNodeContextMenuItems}
-          />
-        ) : (
-          <div className="flex-1 overflow-y-auto text-center text-base-content/40 p-6">
-            <p className="text-sm">暂无数据库连接</p>
-            <p className="text-xs mt-2">
-              请通过 "连接" &gt; "新建连接..." 添加
-            </p>
-          </div>
-        )}
-      </div>
+          <button
+            type="button"
+            className="app-icon-btn h-6 w-6"
+            title="新建连接"
+            aria-label="新建连接"
+            onClick={handleOpenCreateConnection}
+          >
+            <FaPlus size="0.7em" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {isRefreshing && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 bg-base-100/80">
+              <span className="loading loading-spinner loading-md text-primary"></span>
+              <span className="text-micro text-base-content/50">
+                正在检测连接状态…
+              </span>
+            </div>
+          )}
+          {treeData && treeData.length > 0 ? (
+            <TreeSidebar
+              roots={treeData}
+              openNodes={openNodes}
+              selectedNodeId={selectedNodeId}
+              onRowClick={handleNodeActivate}
+              onToggle={handleToggleNode}
+              onAction={handleTreeRowAction}
+              onEditConnection={handleEditConnection}
+              onDeleteConnection={handleRequestDeleteConnection}
+              nodeContextMenuItems={buildNodeContextMenuItems}
+            />
+          ) : (
+            <EmptyState
+              className="flex-1"
+              icon={<FaDatabase size="1.6em" />}
+              title="还没有连接"
+              description="添加 MySQL、Redis、Kafka 或 S3 连接，就能在左侧浏览数据。"
+              action={
+                <ActionButton
+                  variant="primary"
+                  size="sm"
+                  icon={<FaPlus size="0.75em" aria-hidden="true" />}
+                  onClick={handleOpenCreateConnection}
+                >
+                  新建连接
+                </ActionButton>
+              }
+            />
+          )}
+        </div>
+      </Panel>
       <TabPanel
         tabs={tabs}
         setTabs={setTabs}
@@ -1808,6 +1867,7 @@ function DatabaseViewer({
         treeData={treeData}
         onQuerySaved={updateQueryNodeNameInTree}
         onRedisKeyDeleted={handleRedisKeyDeleted}
+        onKafkaTopicDeleted={handleKafkaTopicDeleted}
       />
       <NewConnectionModal
         isOpen={isModalOpen}
@@ -1864,9 +1924,9 @@ function DatabaseViewer({
           <h3 id="create-collection-dialog-title" className="font-bold text-lg">
             新建 Collection
           </h3>
-          <div className="form-control w-full mt-4">
+          <div className="flex flex-col gap-1.5 w-full mt-4">
             <label className="label" htmlFor="new-collection-name">
-              <span className="label-text">Collection 名称</span>
+              <span className="text-xs font-medium">Collection 名称</span>
             </label>
             <input
               id="new-collection-name"
@@ -1875,7 +1935,7 @@ function DatabaseViewer({
               placeholder="例如：orders_2024…"
               autoComplete="off"
               spellCheck={false}
-              className="input input-bordered w-full"
+              className="input w-full"
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
               onKeyDown={(e) => {
@@ -1911,9 +1971,9 @@ function DatabaseViewer({
           <h3 id="create-bucket-dialog-title" className="font-bold text-lg">
             新建 Bucket
           </h3>
-          <div className="form-control w-full mt-4">
+          <div className="flex flex-col gap-1.5 w-full mt-4">
             <label className="label" htmlFor="new-bucket-name">
-              <span className="label-text">Bucket 名称</span>
+              <span className="text-xs font-medium">Bucket 名称</span>
             </label>
             <input
               id="new-bucket-name"
@@ -1922,7 +1982,7 @@ function DatabaseViewer({
               placeholder="例如：backup-2024…"
               autoComplete="off"
               spellCheck={false}
-              className="input input-bordered w-full"
+              className="input w-full"
               value={newBucketName}
               onChange={(e) => setNewBucketName(e.target.value)}
               onKeyDown={(e) => {
@@ -1957,9 +2017,9 @@ function DatabaseViewer({
           <h3 id="rename-dialog-title" className="font-bold text-lg">
             重命名
           </h3>
-          <div className="form-control w-full mt-4">
+          <div className="flex flex-col gap-1.5 w-full mt-4">
             <label className="label" htmlFor="rename-input">
-              <span className="label-text">新名称</span>
+              <span className="text-xs font-medium">新名称</span>
             </label>
             <input
               id="rename-input"
@@ -1968,7 +2028,7 @@ function DatabaseViewer({
               placeholder="请输入新名称…"
               autoComplete="off"
               spellCheck={false}
-              className="input input-bordered w-full"
+              className="input w-full"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={(e) => {
@@ -2011,9 +2071,9 @@ function DatabaseViewer({
             {nodeToCopy?.iconName === "folder" ? "（含全部嵌套内容）" : ""}{" "}
             复制到以下 WebDAV 目录，保留原名称；目标已有同名内容时会被覆盖。
           </p>
-          <div className="form-control w-full mt-4">
+          <div className="flex flex-col gap-1.5 w-full mt-4">
             <label className="label" htmlFor="copy-target-dir">
-              <span className="label-text">目标目录</span>
+              <span className="text-xs font-medium">目标目录</span>
             </label>
             <input
               id="copy-target-dir"
@@ -2022,7 +2082,7 @@ function DatabaseViewer({
               placeholder="例如：/docs/backup，/ 表示根目录…"
               autoComplete="off"
               spellCheck={false}
-              className="input input-bordered w-full"
+              className="input w-full"
               value={copyTargetDir}
               onChange={(e) => setCopyTargetDir(e.target.value)}
               onKeyDown={(e) => {

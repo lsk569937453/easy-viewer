@@ -1,5 +1,17 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { useEffect, useRef, useState } from "react";
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  FaCheck,
+  FaRegWindowMaximize,
+  FaTimes,
+  FaWindowMinimize,
+} from "react-icons/fa";
 import AboutModal from "./AboutModal";
 import NewConnectionModal from "./NewConnectionModal";
 
@@ -46,6 +58,51 @@ interface AppMenuProps {
   onConnectionCreated: () => void;
 }
 
+const TITLEBAR_TRIGGER_CLASS =
+  "dropdown-toggle flex-shrink-0 rounded-[var(--radius-control)] px-2.5 py-1 text-[13px] font-medium text-base-content/70 transition-colors hover:bg-hover hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50";
+
+const MENU_ITEM_CLASS =
+  "flex w-full items-center justify-between gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-[13px]";
+
+const WINDOW_BUTTON_CLASS =
+  "app-icon-btn h-7 w-7 rounded-[var(--radius-control)]";
+
+interface MenuDropdownProps {
+  label: string;
+  children: ReactNode;
+  onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
+  panelClassName?: string;
+}
+
+/** 标题栏菜单触发器 + 下拉面板（4 个菜单共用，避免复制粘贴） */
+function MenuDropdown({
+  label,
+  children,
+  onKeyDown,
+  panelClassName = "w-52",
+}: MenuDropdownProps) {
+  return (
+    <li>
+      <div className="dropdown dropdown-hover">
+        <button
+          type="button"
+          className={TITLEBAR_TRIGGER_CLASS}
+          aria-haspopup="menu"
+          data-tauri-no-drag
+          onKeyDown={onKeyDown}
+        >
+          {label}
+        </button>
+        <ul
+          className={`app-panel dropdown-content z-[20] menu p-1 text-[13px] ${panelClassName}`}
+        >
+          {children}
+        </ul>
+      </div>
+    </li>
+  );
+}
+
 function AppMenu({ onConnectionCreated }: AppMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [showAboutModal, setShowAboutModal] = useState(false);
@@ -83,7 +140,9 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
     }
     if (event.key === "Escape") {
       event.preventDefault();
+      // daisyUI 5 的下拉在 :focus-within 时同样展开，因此 Esc 还需要移开焦点
       dropdown.classList.remove("dropdown-open");
+      event.currentTarget.blur();
     }
   };
 
@@ -189,181 +248,165 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
   return (
     <div
       id="app-menu-titlebar"
-      className="navbar h-10 min-h-10 max-h-10 select-none bg-base-300 border-b border-base-content/10"
+      className="navbar h-10 min-h-10 max-h-10 select-none gap-0 border-b border-hairline bg-base-100 px-2"
       ref={menuRef}
       style={{ position: "relative", zIndex: 10 }}
     >
-      <div className="flex-1 flex items-center">
-        <span
-          className="btn btn-ghost text-sm font-bold normal-case px-3 tracking-wide opacity-70 select-none"
+      <div className="flex flex-1 items-center gap-0.5">
+        <div
+          className="mr-1 flex items-center gap-2 pl-1 pr-2"
           data-tauri-no-drag
         >
-          DB Viewer
-        </span>
-        <ul className="menu menu-horizontal p-0" data-tauri-no-drag>
-          <li>
-            <div className="dropdown dropdown-hover">
-              <label
-                tabIndex={0}
-                role="button"
-                aria-haspopup="menu"
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                data-tauri-no-drag
-                onKeyDown={handleDropdownKeyDown}
-              >
-                连接
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
-              >
-                <li>
-                  <button type="button" onClick={handleNewConnectionClick}>
-                    新建连接…
-                  </button>
-                </li>
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    打开连接…
-                  </button>
-                </li>
-                <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    断开所有连接
-                  </button>
-                </li>
-                <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    退出
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </li>
+          <span
+            className="flex h-[18px] w-[18px] items-center justify-center rounded-[4px] bg-primary text-[9px] font-bold leading-none text-primary-content"
+            aria-hidden="true"
+          >
+            DB
+          </span>
+          <span className="text-[13px] font-semibold tracking-tight">
+            DB Viewer
+          </span>
+        </div>
 
-          <li>
-            <div className="dropdown dropdown-hover">
-              <label
-                tabIndex={0}
-                role="button"
-                aria-haspopup="menu"
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                data-tauri-no-drag
-                onKeyDown={handleDropdownKeyDown}
+        <ul className="menu menu-horizontal gap-0.5 p-0">
+          <MenuDropdown label="连接" onKeyDown={handleDropdownKeyDown}>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleNewConnectionClick}
               >
-                主题
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-56 max-h-96 overflow-y-auto"
+                新建连接…
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
               >
-                {themes.map((themeName) => (
-                  <li key={themeName}>
-                    <button
-                      type="button"
-                      aria-current={theme === themeName}
-                      className={theme === themeName ? "active" : ""}
-                      onClick={() => handleThemeChange(themeName)}
-                    >
-                      {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </li>
+                打开连接…
+              </button>
+            </li>
+            <li className="my-1 h-px bg-hairline" aria-hidden="true" />
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
+              >
+                断开所有连接
+              </button>
+            </li>
+            <li className="my-1 h-px bg-hairline" aria-hidden="true" />
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
+              >
+                退出
+              </button>
+            </li>
+          </MenuDropdown>
 
-          <li>
-            <div className="dropdown dropdown-hover">
-              <label
-                tabIndex={0}
-                role="button"
-                aria-haspopup="menu"
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                data-tauri-no-drag
-                onKeyDown={handleDropdownKeyDown}
-              >
-                视图
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
-              >
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    刷新
-                  </button>
-                </li>
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    全屏
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </li>
+          <MenuDropdown
+            label="主题"
+            onKeyDown={handleDropdownKeyDown}
+            panelClassName="w-56 max-h-96 overflow-y-auto"
+          >
+            {themes.map((themeName) => (
+              <li key={themeName}>
+                <button
+                  type="button"
+                  aria-current={theme === themeName}
+                  className={`${MENU_ITEM_CLASS} ${
+                    theme === themeName ? "bg-accent-soft text-primary" : ""
+                  }`}
+                  onClick={() => handleThemeChange(themeName)}
+                >
+                  <span>
+                    {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
+                  </span>
+                  {theme === themeName ? (
+                    <FaCheck size="0.7em" aria-hidden="true" />
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </MenuDropdown>
 
-          <li>
-            <div className="dropdown dropdown-hover">
-              <label
-                tabIndex={0}
-                role="button"
-                aria-haspopup="menu"
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-                data-tauri-no-drag
-                onKeyDown={handleDropdownKeyDown}
+          <MenuDropdown label="视图" onKeyDown={handleDropdownKeyDown}>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
               >
-                帮助
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
+                刷新
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
               >
-                <li>
-                  <button type="button" onClick={handleAboutClick}>
-                    关于
-                  </button>
-                </li>
-                <li>
-                  <button type="button" onClick={handleItemClick}>
-                    检查更新…
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </li>
+                全屏
+              </button>
+            </li>
+          </MenuDropdown>
+
+          <MenuDropdown label="帮助" onKeyDown={handleDropdownKeyDown}>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleAboutClick}
+              >
+                关于
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                className={MENU_ITEM_CLASS}
+                onClick={handleItemClick}
+              >
+                检查更新…
+              </button>
+            </li>
+          </MenuDropdown>
         </ul>
       </div>
 
-      <div className="flex-none" data-tauri-no-drag>
+      <div className="flex flex-none items-center gap-0.5" data-tauri-no-drag>
         <button
           type="button"
           aria-label="最小化窗口"
           title="最小化"
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className={WINDOW_BUTTON_CLASS}
           onClick={() => appWindow?.minimize()}
         >
-          <span aria-hidden="true">─</span>
+          <FaWindowMinimize size="0.72em" aria-hidden="true" />
         </button>
         <button
           type="button"
           aria-label="最大化或还原窗口"
           title="最大化 / 还原"
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className={WINDOW_BUTTON_CLASS}
           onClick={() => appWindow?.toggleMaximize()}
         >
-          <span aria-hidden="true">□</span>
+          <FaRegWindowMaximize size="0.72em" aria-hidden="true" />
         </button>
         <button
           type="button"
           aria-label="关闭窗口"
           title="关闭"
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:bg-error hover:text-error-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+          className={`${WINDOW_BUTTON_CLASS} hover:bg-error hover:text-error-content`}
           onClick={() => appWindow?.close()}
         >
-          <span aria-hidden="true">✕</span>
+          <FaTimes size="0.72em" aria-hidden="true" />
         </button>
       </div>
 

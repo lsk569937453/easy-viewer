@@ -1,12 +1,20 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
   <head>
     <meta charset="UTF-8" />
-    <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#1d232a" />
     <title>DB Viewer</title>
+    <script>
+      // 在首帧之前落地用户上次选择的主题，避免亮/暗闪烁
+      try {
+        const stored = localStorage.getItem("theme");
+        if (stored) document.documentElement.dataset.theme = stored;
+      } catch {
+        /* 隐私模式等存储不可用时保持 index.html 上的默认主题 */
+      }
+    </script>
   </head>
 
   <body>

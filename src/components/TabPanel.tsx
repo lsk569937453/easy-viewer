@@ -22,6 +22,7 @@ import S3UploadPanel from "./S3UploadPanel";
 import SqlEditorTabContent from "./SqlEditorTabContent";
 import TableDetailPage from "./TableDetailPage";
 import TableWorkspacePanel from "./TableWorkspacePanel";
+import StatusChip from "./ui/StatusChip";
 
 interface TabPanelProps {
   tabs: Tab[];
@@ -32,6 +33,7 @@ interface TabPanelProps {
   treeData: TreeNode[];
   onQuerySaved?: (queryId: string, newName: string) => void;
   onRedisKeyDeleted?: (node: TreeNode) => void;
+  onKafkaTopicDeleted?: (node: TreeNode) => void;
 }
 
 function TabPanel({
@@ -42,6 +44,7 @@ function TabPanel({
   connections,
   onQuerySaved,
   onRedisKeyDeleted,
+  onKafkaTopicDeleted,
 }: TabPanelProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
@@ -164,7 +167,7 @@ function TabPanel({
   return (
     <div
       ref={tabPanelContainerRef}
-      className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative"
+      className="app-panel relative flex min-h-0 flex-col overflow-hidden"
     >
       {/* Tab Bar */}
       {tabs.length > 0 && (
@@ -172,7 +175,7 @@ function TabPanel({
           role="tablist"
           aria-label="打开的标签页"
           onKeyDown={handleTabListKeyDown}
-          className="flex border-b border-base-content/5 bg-base-200/50 w-full overflow-x-auto"
+          className="flex w-full flex-shrink-0 items-stretch overflow-x-auto border-b border-hairline bg-base-200/40"
         >
           {tabs.map((tab) => (
             <div
@@ -181,15 +184,13 @@ function TabPanel({
               aria-selected={activeTabId === tab.id}
               tabIndex={activeTabId === tab.id ? 0 : -1}
               data-tab-id={tab.id}
-              className={`
-                flex items-center px-3 py-1.5 cursor-pointer border-r border-base-content/5
-                flex-1 min-w-[60px] max-w-[220px] transition-colors
-                ${
-                  activeTabId === tab.id
-                    ? "bg-base-100 text-primary font-semibold"
-                    : "text-base-content/50 hover:bg-base-200 hover:text-base-content/80"
-                }
-              `}
+              className={[
+                "group flex h-9 shrink-0 cursor-pointer items-center gap-1.5 border-r border-hairline px-2.5 transition-colors",
+                "min-w-[96px] max-w-[200px]",
+                activeTabId === tab.id
+                  ? "bg-base-100 font-medium text-base-content shadow-[inset_0_2px_0_0_var(--color-primary)]"
+                  : "text-base-content/55 hover:bg-hover hover:text-base-content/85",
+              ].join(" ")}
               onClick={() => handleTabClick(tab.id)}
               onContextMenu={(e) => handleContextMenu(e, tab.id)}
               onKeyDown={(e) => {
@@ -200,16 +201,22 @@ function TabPanel({
               }}
             >
               <span
-                className="mr-1.5 flex-shrink-0 opacity-60"
+                className="flex-shrink-0 text-[13px] opacity-70"
                 aria-hidden="true"
               >
                 {tab.icon}
               </span>
-              <span className="truncate flex-grow text-xs">{tab.name}</span>
+              <span className="min-w-0 flex-1 truncate text-xs">
+                {tab.name}
+              </span>
               <button
                 type="button"
                 aria-label={`关闭 ${tab.name} 标签页`}
-                className="ml-1 flex-shrink-0 rounded text-base-content/40 hover:text-error transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+                className={`app-icon-btn ml-0.5 h-5 w-5 hover:text-error ${
+                  activeTabId === tab.id
+                    ? "opacity-100"
+                    : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                }`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCloseTab(tab.id);
@@ -221,7 +228,7 @@ function TabPanel({
           ))}
         </div>
       )}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-base-100">
         {activeTabId && tabs.length > 0 ? (
           (() => {
             const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -303,6 +310,7 @@ function TabPanel({
                 <KafkaTopicDetail
                   activeTabNode={activeTab.node}
                   connectionDetails={activeTab.connectionDetails}
+                  onTopicDeleted={onKafkaTopicDeleted}
                 />
               );
             }
@@ -377,23 +385,26 @@ function TabPanel({
             );
           })()
         ) : (
-          <div className="flex justify-center items-center h-full">
-            <div className="text-center text-base-content/30">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mx-auto h-10 w-10"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1}
+          <div className="flex h-full items-center justify-center px-6">
+            <div className="max-w-sm text-center">
+              <span
+                className="mx-auto flex h-9 w-9 items-center justify-center rounded-[var(--radius-control)] bg-primary text-[11px] font-bold leading-none text-primary-content"
+                aria-hidden="true"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"
-                />
-              </svg>
-              <p className="mt-3 text-sm">从左侧选择节点以查看内容</p>
+                DB
+              </span>
+              <p className="mt-3 text-[13px] font-medium text-base-content/70">
+                选择左侧的节点开始浏览
+              </p>
+              <p className="mt-1 text-micro leading-relaxed text-base-content/45">
+                表结构与数据、SQL
+                编辑器、消息与对象存储详情都会在这里以标签页打开。
+              </p>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-1.5">
+                <StatusChip>数据库</StatusChip>
+                <StatusChip>消息队列</StatusChip>
+                <StatusChip>对象存储</StatusChip>
+              </div>
             </div>
           </div>
         )}
@@ -417,10 +428,10 @@ function TabPanel({
           role="menu"
           tabIndex={-1}
           onKeyDown={handleMenuKeyDown}
-          className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2 min-w-[160px]"
+          className="app-context-menu absolute z-50 min-w-[160px]"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
-          <ul className="menu menu-compact">
+          <ul className="menu w-full p-0">
             <li>
               <button type="button" role="menuitem" onClick={handleCloseLeft}>
                 关闭左侧标签页

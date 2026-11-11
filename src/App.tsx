@@ -113,7 +113,7 @@ function App() {
     <div className="App flex h-screen flex-col bg-base-200">
       {/* 将创建连接后的刷新函数传递给 AppMenu */}
       <AppMenu onConnectionCreated={fetchConnections} />
-      <main className="main-content flex-grow p-3 h-full w-full overflow-hidden ">
+      <main className="flex min-h-0 flex-1 overflow-hidden px-2 pb-2 pt-1.5">
         {/*
           将 connections 数据传递给 DatabaseViewer。
           传递 handleSingleConnectionUpdated 作为 onConnectionUpdated prop，用于单个连接的更新。

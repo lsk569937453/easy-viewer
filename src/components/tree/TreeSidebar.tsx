@@ -7,7 +7,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { FaSearch, FaTimes } from "react-icons/fa";
 import type {
   OpenNodes,
   RowActionKey,
@@ -16,6 +15,8 @@ import type {
   VisibleTreeRow,
 } from "../../types/tree";
 import type { ContextMenuItem } from "../ContextMenuWrapper";
+import SearchBox from "../ui/SearchBox";
+import { EmptyState } from "../ui/states";
 import TreeRow from "./TreeRow";
 import {
   filterTreeByQuery,
@@ -24,7 +25,7 @@ import {
   shouldToggleOnActivate,
 } from "./treeModel";
 
-const ESTIMATED_ROW_HEIGHT = 36;
+const ESTIMATED_ROW_HEIGHT = 30;
 const SEARCH_DEBOUNCE_MS = 300;
 
 interface TreeSidebarProps {
@@ -213,21 +214,6 @@ function TreeSidebar({
     }
   };
 
-  const handleSearchKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Escape") {
-      event.preventDefault();
-      handleClearSearch();
-      return;
-    }
-    if (event.key === "Enter") {
-      event.preventDefault();
-      if (flatRows.length > 0) {
-        scrollRef.current?.focus();
-        focusRowAt(0);
-      }
-    }
-  };
-
   const focusedKey =
     focusedId && flatRows.some((row) => row.key === focusedId)
       ? focusedId
@@ -237,47 +223,33 @@ function TreeSidebar({
 
   return (
     <>
-      <div className="flex-shrink-0 px-2 pt-2">
-        <div className="relative">
-          <input
-            className="input input-sm input-ghost w-full pr-8"
-            placeholder="搜索节点…"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            aria-label="搜索节点"
-            autoComplete="off"
-            spellCheck={false}
-          />
-          {searchInput ? (
-            <button
-              type="button"
-              className="absolute right-0 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
-              title="清空搜索"
-              aria-label="清空搜索"
-              onClick={handleClearSearch}
-            >
-              <FaTimes aria-hidden="true" />
-            </button>
-          ) : (
-            <span
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-base-content/30 pointer-events-none"
-              aria-hidden="true"
-            >
-              <FaSearch />
-            </span>
-          )}
-        </div>
-        {query && (
-          <div className="px-1 pt-1 text-[11px] text-base-content/50">
+      <div className="flex-shrink-0 px-2 pb-1 pt-2">
+        <SearchBox
+          value={searchInput}
+          onChange={setSearchInput}
+          placeholder="搜索节点…"
+          ariaLabel="搜索节点"
+          onClear={handleClearSearch}
+          onSubmit={() => {
+            if (flatRows.length === 0) return;
+            scrollRef.current?.focus();
+            focusRowAt(0);
+          }}
+        />
+        {query ? (
+          <div className="px-1 pt-1 text-micro text-base-content/45">
             {matchCount > 0 ? `${matchCount} 项匹配` : "无匹配结果"}
           </div>
-        )}
+        ) : null}
       </div>
 
       {noMatch ? (
-        <div className="flex-1 overflow-hidden p-6 text-center text-base-content/40">
-          <p className="text-sm">无匹配结果</p>
+        <div className="flex-1 overflow-hidden">
+          <EmptyState
+            compact
+            title="无匹配结果"
+            description="换个关键词，或按 Esc 退出搜索。"
+          />
         </div>
       ) : (
         <div

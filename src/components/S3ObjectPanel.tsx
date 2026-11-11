@@ -6,6 +6,12 @@ import type { S3ObjectTab } from "../types/tab";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
 import { showError, showSuccess } from "../utils/showToast";
+import ActionButton from "./ui/ActionButton";
+import KeyValueTable from "./ui/KeyValueTable";
+import PageHeader from "./ui/PageHeader";
+import Panel from "./ui/Panel";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState, ErrorState, LoadingState } from "./ui/states";
 
 interface S3ObjectPanelProps {
   tab: S3ObjectTab;
@@ -86,69 +92,48 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
     : [];
 
   return (
-    <div className="flex flex-col h-full bg-base-100 p-6">
-      <div className="flex items-center gap-3 mb-6">
-        {isFolder ? (
-          <FaFolder size="1.5em" className="text-warning" />
-        ) : (
-          <FaFile size="1.5em" className="text-info" />
-        )}
-        <div className="min-w-0">
-          <h2 className="text-lg font-bold truncate" title={node.name}>
-            {node.name}
-          </h2>
-          <p
-            className="text-xs text-base-content/60 truncate"
-            title={`${bucketName} / ${objectPath}`}
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title={node.name}
+        subtitle={`${bucketName} / ${objectPath}`}
+        meta={
+          <StatusChip>
+            {isFolder ? (
+              <FaFolder aria-hidden="true" />
+            ) : (
+              <FaFile aria-hidden="true" />
+            )}
+            {isFolder ? "文件夹" : "文件"}
+          </StatusChip>
+        }
+        actions={
+          <ActionButton
+            size="sm"
+            variant="primary"
+            icon={<FaDownload aria-hidden="true" />}
+            onClick={() => void handleDownload()}
+            disabled={isLoading}
           >
-            {bucketName} / {objectPath}
-          </p>
-        </div>
-      </div>
+            下载
+          </ActionButton>
+        }
+      />
 
-      {isLoading ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex items-center justify-center py-12"
-        >
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      ) : error ? (
-        <div role="alert" className="alert alert-error">
-          <span>{error}</span>
-        </div>
-      ) : (
-        <div className="card bg-base-200">
-          <div className="card-body">
-            <h3 className="card-title text-sm">对象信息</h3>
-            <div className="overflow-x-auto">
-              <table className="table table-sm">
-                <tbody>
-                  {infoFields.map((field) => (
-                    <tr key={field.label}>
-                      <td className="font-semibold w-32 text-base-content/60">
-                        {field.label}
-                      </td>
-                      <td className="break-all">{field.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6 flex gap-2">
-        <button
-          className="btn btn-primary btn-sm gap-2"
-          onClick={handleDownload}
-          disabled={isLoading}
-        >
-          <FaDownload />
-          下载
-        </button>
+      <div className="min-h-0 flex-1 overflow-auto p-3">
+        {isLoading ? (
+          <LoadingState label="正在读取对象信息…" />
+        ) : error ? (
+          <ErrorState title="读取失败" description={error} />
+        ) : infoFields.length === 0 ? (
+          <EmptyState
+            title="没有对象信息"
+            description="该对象没有返回可展示的属性。"
+          />
+        ) : (
+          <Panel className="p-3">
+            <KeyValueTable labelWidth="6rem" rows={infoFields} />
+          </Panel>
+        )}
       </div>
     </div>
   );

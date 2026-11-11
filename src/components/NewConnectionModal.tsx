@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast"; // 导入 toast
 import {
   BACKEND_TO_UI_DB_TYPE,
@@ -23,6 +23,7 @@ import {
   parseConnectionConfig,
 } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import ConfirmDialog from "./ui/ConfirmDialog";
 
 const generateRandomString = (length: number): string => {
   const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -67,6 +68,9 @@ function NewConnectionModal({
   const [connectionName, setConnectionName] = useState("");
   const [dbType, setDbType] = useState<UiDbType>("sqlite");
   const [connectionMode, setConnectionMode] = useState<ConnectionMode>("url");
+  // 连接测试失败时是否仍要保存：用对话框确认，替代 window.confirm
+  const [confirmWeakSave, setConfirmWeakSave] = useState(false);
+  const createFormRef = useRef<HTMLFormElement>(null);
   const [connectionString, setConnectionString] = useState("");
 
   const [host, setHost] = useState("");
@@ -523,9 +527,9 @@ function NewConnectionModal({
     }
 
     if (testResult === "failure") {
-      if (!window.confirm("连接测试失败，确定仍要保存此连接吗？")) {
-        return;
-      }
+      // 先弹确认对话框；确认后用 requestSubmit 重新走一遍提交流程
+      setConfirmWeakSave(true);
+      return;
     }
 
     setIsCreating(true);
@@ -797,11 +801,11 @@ function NewConnectionModal({
           {isEditMode ? "编辑数据库连接" : "新建数据库连接"}
         </h2>
 
-        <form onSubmit={handleCreate}>
+        <form ref={createFormRef} onSubmit={handleCreate}>
           <div className="py-4 space-y-4">
-            <div className="form-control">
+            <div className="flex flex-col gap-1.5">
               <label className="label" htmlFor="conn-name">
-                <span className="label-text text-lg">
+                <span className="text-lg font-semibold">
                   连接名称 <span className="text-error">*</span>
                 </span>
               </label>
@@ -813,7 +817,7 @@ function NewConnectionModal({
                 autoComplete="off"
                 required
                 aria-required="true"
-                className={`input input-bordered w-full ${
+                className={`input w-full ${
                   error?.includes("名称") ? "input-error" : ""
                 }`}
                 value={connectionName}
@@ -821,14 +825,14 @@ function NewConnectionModal({
               />
             </div>
 
-            <div className="form-control">
+            <div className="flex flex-col gap-1.5">
               <label className="label" htmlFor="conn-type">
-                <span className="label-text text-lg">数据库类型</span>
+                <span className="text-lg font-semibold">数据库类型</span>
               </label>
               <select
                 id="conn-type"
                 name="dbType"
-                className="select select-bordered w-full"
+                className="select w-full"
                 value={dbType}
                 onChange={(e) => {
                   const newDbType = e.target.value;
@@ -862,7 +866,7 @@ function NewConnectionModal({
               <div
                 role="tablist"
                 aria-label="连接方式"
-                className="tabs tabs-boxed w-fit"
+                className="tabs tabs-box w-fit"
               >
                 <button
                   type="button"
@@ -890,11 +894,11 @@ function NewConnectionModal({
             )}
 
             {connectionMode === "url" && (
-              <div className="form-control">
+              <div className="flex flex-col gap-1.5">
                 {dbType === "sqlite" ? (
                   <>
                     <label className="label" htmlFor="conn-sqlite-file">
-                      <span className="label-text text-lg">
+                      <span className="text-lg font-semibold">
                         数据库文件 <span className="text-error">*</span>
                       </span>
                     </label>
@@ -905,7 +909,7 @@ function NewConnectionModal({
                         type="text"
                         placeholder="点击右侧按钮选择文件…"
                         readOnly
-                        className={`input input-bordered join-item w-full ${
+                        className={`input join-item w-full ${
                           error?.includes("路径") ? "input-error" : ""
                         }`}
                         value={connectionString}
@@ -922,7 +926,7 @@ function NewConnectionModal({
                 ) : (
                   <>
                     <label className="label" htmlFor="conn-url">
-                      <span className="label-text text-lg">
+                      <span className="text-lg font-semibold">
                         连接字符串 <span className="text-error">*</span>
                       </span>
                     </label>
@@ -933,7 +937,7 @@ function NewConnectionModal({
                       placeholder={getUrlPlaceholder()}
                       autoComplete="off"
                       spellCheck={false}
-                      className={`input input-bordered w-full ${
+                      className={`input w-full ${
                         error?.includes("字符串") ? "input-error" : ""
                       }`}
                       value={connectionString}
@@ -946,9 +950,9 @@ function NewConnectionModal({
 
             {connectionMode === "host" && (
               <div className="space-y-3">
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="conn-host">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       主机 <span className="text-error">*</span>
                     </span>
                   </label>
@@ -959,16 +963,16 @@ function NewConnectionModal({
                     placeholder="例如: localhost 或 192.168.1.1"
                     autoComplete="off"
                     spellCheck={false}
-                    className={`input input-bordered w-full ${
+                    className={`input w-full ${
                       error?.includes("主机") ? "input-error" : ""
                     }`}
                     value={host}
                     onChange={(e) => setHost(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="conn-port">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       端口 <span className="text-error">*</span>
                     </span>
                   </label>
@@ -993,16 +997,16 @@ function NewConnectionModal({
                                   ? "9200"
                                   : "1521"
                     }
-                    className={`input input-bordered w-full ${
+                    className={`input w-full ${
                       error?.includes("端口") ? "input-error" : ""
                     }`}
                     value={port}
                     onChange={(e) => setPort(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="conn-username">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       用户名{" "}
                       {dbType !== "redis" && dbType !== "elasticsearch" && (
                         <span className="text-error">*</span>
@@ -1016,16 +1020,16 @@ function NewConnectionModal({
                     placeholder="例如: root 或 system"
                     autoComplete="off"
                     spellCheck={false}
-                    className={`input input-bordered w-full ${
+                    className={`input w-full ${
                       error?.includes("用户名") ? "input-error" : ""
                     }`}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="conn-password">
-                    <span className="label-text">密码</span>
+                    <span className="text-xs font-medium">密码</span>
                   </label>
                   <input
                     id="conn-password"
@@ -1033,14 +1037,14 @@ function NewConnectionModal({
                     type="password"
                     placeholder="请输入密码…"
                     autoComplete="off"
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="conn-dbname">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       {dbType === "oracle"
                         ? "服务名/SID (可选)"
                         : dbType === "postgresql"
@@ -1063,7 +1067,7 @@ function NewConnectionModal({
                           ? "例如: 0"
                           : "例如: mydatabase"
                     }
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
                   />
@@ -1073,9 +1077,9 @@ function NewConnectionModal({
 
             {isKafkaType && (
               <div className="space-y-3">
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="kafka-host">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Broker 地址 <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1087,7 +1091,7 @@ function NewConnectionModal({
                       placeholder="例如: localhost"
                       autoComplete="off"
                       spellCheck={false}
-                      className={`input input-bordered flex-1 ${
+                      className={`input flex-1 ${
                         error?.includes("主机") ? "input-error" : ""
                       }`}
                       value={host}
@@ -1101,7 +1105,7 @@ function NewConnectionModal({
                       autoComplete="off"
                       aria-label="端口"
                       placeholder="9092"
-                      className={`input input-bordered w-24 ${
+                      className={`input w-24 ${
                         error?.includes("端口") ? "input-error" : ""
                       }`}
                       value={port}
@@ -1114,9 +1118,9 @@ function NewConnectionModal({
 
             {isRocketmqType && (
               <div className="space-y-3">
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="rmq-host">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Proxy 地址 <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1128,7 +1132,7 @@ function NewConnectionModal({
                       placeholder="例如: localhost"
                       autoComplete="off"
                       spellCheck={false}
-                      className={`input input-bordered flex-1 ${
+                      className={`input flex-1 ${
                         error?.includes("主机") ? "input-error" : ""
                       }`}
                       value={host}
@@ -1142,7 +1146,7 @@ function NewConnectionModal({
                       autoComplete="off"
                       aria-label="端口"
                       placeholder="8081"
-                      className={`input input-bordered w-24 ${
+                      className={`input w-24 ${
                         error?.includes("端口") ? "input-error" : ""
                       }`}
                       value={port}
@@ -1150,9 +1154,11 @@ function NewConnectionModal({
                     />
                   </div>
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="rmq-access-key">
-                    <span className="label-text">Access Key (可选)</span>
+                    <span className="text-xs font-medium">
+                      Access Key (可选)
+                    </span>
                   </label>
                   <input
                     id="rmq-access-key"
@@ -1161,14 +1167,16 @@ function NewConnectionModal({
                     placeholder="例如: your-access-key"
                     autoComplete="off"
                     spellCheck={false}
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="rmq-secret-key">
-                    <span className="label-text">Secret Key (可选)</span>
+                    <span className="text-xs font-medium">
+                      Secret Key (可选)
+                    </span>
                   </label>
                   <input
                     id="rmq-secret-key"
@@ -1176,14 +1184,14 @@ function NewConnectionModal({
                     type="password"
                     placeholder="请输入 Secret Key…"
                     autoComplete="off"
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="rmq-topics">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Topics <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1192,12 +1200,12 @@ function NewConnectionModal({
                     name="topics"
                     autoComplete="off"
                     spellCheck={false}
-                    className="textarea textarea-bordered h-24 font-mono text-sm"
+                    className="textarea h-24 font-mono text-sm"
                     placeholder="输入 Topic 名称，逗号或换行分隔&#10;例如: topic1, topic2, topic3"
                     value={rmqTopics}
                     onChange={(e) => setRmqTopics(e.target.value)}
                   />
-                  <span className="label-text-alt px-2 pt-1">
+                  <span className="text-micro text-base-content/45 px-2 pt-1">
                     逗号或换行分隔多个 Topic
                   </span>
                 </div>
@@ -1206,9 +1214,9 @@ function NewConnectionModal({
 
             {isS3Type && (
               <div className="space-y-3">
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="s3-endpoint">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Endpoint <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1220,9 +1228,8 @@ function NewConnectionModal({
                       placeholder="例如: s3.amazonaws.com 或 oss-cn-hangzhou.aliyuncs.com"
                       autoComplete="off"
                       spellCheck={false}
-                      className={`input input-bordered flex-1 ${
-                        error?.includes("Endpoint") ||
-                        error?.includes("主机")
+                      className={`input flex-1 ${
+                        error?.includes("Endpoint") || error?.includes("主机")
                           ? "input-error"
                           : ""
                       }`}
@@ -1237,7 +1244,7 @@ function NewConnectionModal({
                       autoComplete="off"
                       aria-label="端口"
                       placeholder="443"
-                      className={`input input-bordered w-24 ${
+                      className={`input w-24 ${
                         error?.includes("端口") ? "input-error" : ""
                       }`}
                       value={port}
@@ -1245,9 +1252,9 @@ function NewConnectionModal({
                     />
                   </div>
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="s3-access-key">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Access Key <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1258,16 +1265,16 @@ function NewConnectionModal({
                     placeholder="例如: AKIAIOSFODNN7EXAMPLE"
                     autoComplete="off"
                     spellCheck={false}
-                    className={`input input-bordered w-full ${
+                    className={`input w-full ${
                       error?.includes("Access Key") ? "input-error" : ""
                     }`}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="s3-secret-key">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Secret Key <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1277,14 +1284,14 @@ function NewConnectionModal({
                     type="password"
                     placeholder="请输入 Secret Key…"
                     autoComplete="off"
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="s3-region">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       Region (可选，默认 us-east-1)
                     </span>
                   </label>
@@ -1295,7 +1302,7 @@ function NewConnectionModal({
                     placeholder="例如: us-east-1 或 cn-hangzhou"
                     autoComplete="off"
                     spellCheck={false}
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
                   />
@@ -1305,9 +1312,9 @@ function NewConnectionModal({
 
             {isWebdavType && (
               <div className="space-y-3">
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="dav-host">
-                    <span className="label-text">
+                    <span className="text-xs font-medium">
                       服务器地址 <span className="text-error">*</span>
                     </span>
                   </label>
@@ -1319,7 +1326,7 @@ function NewConnectionModal({
                       placeholder="例如: dav.jianguoyun.com 或 192.168.1.10"
                       autoComplete="off"
                       spellCheck={false}
-                      className={`input input-bordered flex-1 ${
+                      className={`input flex-1 ${
                         error?.includes("服务器地址") ? "input-error" : ""
                       }`}
                       value={host}
@@ -1333,7 +1340,7 @@ function NewConnectionModal({
                       autoComplete="off"
                       aria-label="端口"
                       placeholder="443"
-                      className={`input input-bordered w-24 ${
+                      className={`input w-24 ${
                         error?.includes("端口") ? "input-error" : ""
                       }`}
                       value={port}
@@ -1341,9 +1348,9 @@ function NewConnectionModal({
                     />
                   </div>
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="dav-username">
-                    <span className="label-text">用户名 (可选)</span>
+                    <span className="text-xs font-medium">用户名 (可选)</span>
                   </label>
                   <input
                     id="dav-username"
@@ -1352,14 +1359,14 @@ function NewConnectionModal({
                     placeholder="例如: user@example.com"
                     autoComplete="off"
                     spellCheck={false}
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="dav-password">
-                    <span className="label-text">密码 (可选)</span>
+                    <span className="text-xs font-medium">密码 (可选)</span>
                   </label>
                   <input
                     id="dav-password"
@@ -1367,14 +1374,16 @@ function NewConnectionModal({
                     type="password"
                     placeholder="请输入密码或应用密码…"
                     autoComplete="off"
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label" htmlFor="dav-root">
-                    <span className="label-text">远程目录 (可选，默认 /)</span>
+                    <span className="text-xs font-medium">
+                      远程目录 (可选，默认 /)
+                    </span>
                   </label>
                   <input
                     id="dav-root"
@@ -1383,14 +1392,16 @@ function NewConnectionModal({
                     placeholder="例如: /dav/ 或 /remote.php/dav/files/username"
                     autoComplete="off"
                     spellCheck={false}
-                    className="input input-bordered w-full"
+                    className="input w-full"
                     value={databaseName}
                     onChange={(e) => setDatabaseName(e.target.value)}
                   />
                 </div>
-                <div className="form-control">
+                <div className="flex flex-col gap-1.5">
                   <label className="label cursor-pointer" htmlFor="dav-use-tls">
-                    <span className="label-text">使用 HTTPS (TLS)</span>
+                    <span className="text-xs font-medium">
+                      使用 HTTPS (TLS)
+                    </span>
                     <input
                       id="dav-use-tls"
                       name="useTls"
@@ -1493,6 +1504,21 @@ function NewConnectionModal({
             </button>
           </div>
         </form>
+
+        <ConfirmDialog
+          open={confirmWeakSave}
+          title="连接测试未通过"
+          description="测试失败通常意味着配置有误，确定仍要保存这个连接吗？保存后可以再回来修改。"
+          confirmText="仍要保存"
+          cancelText="返回修改"
+          tone="primary"
+          onConfirm={() => {
+            setConfirmWeakSave(false);
+            // requestSubmit 重新触发 onSubmit；此时 testResult 已重置，不会二次拦截
+            createFormRef.current?.requestSubmit();
+          }}
+          onCancel={() => setConfirmWeakSave(false)}
+        />
       </div>
     </dialog>
   );

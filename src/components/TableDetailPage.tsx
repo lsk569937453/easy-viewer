@@ -7,11 +7,17 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useMemo, useState } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  vs,
+  vscDarkPlus,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import type { ShowColumnsResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import useIsDarkTheme from "../utils/useIsDarkTheme";
+import DataTableShell, { TABLE_CLASS } from "./ui/DataTableShell";
+import { EmptyState, ErrorState } from "./ui/states";
 
 interface ColumnData {
   name: string;
@@ -27,61 +33,43 @@ interface TableDetailPageProps {
   defaultTab?: string;
 }
 
+const DETAIL_TABS = [
+  { id: "ddl", label: "DDL" },
+  { id: "column", label: "列信息" },
+] as const;
+
 const ColumnSkeleton = () => (
-  <div className="overflow-x-auto">
-    <table className="table table-zebra w-full">
-      <thead>
-        <tr>
-          <th>
-            <div className="skeleton h-4 w-32"></div>
-          </th>
-          <th>
-            <div className="skeleton h-4 w-24"></div>
-          </th>
-          <th>
-            <div className="skeleton h-4 w-20"></div>
-          </th>
-          <th>
-            <div className="skeleton h-4 w-24"></div>
-          </th>
-          <th>
-            <div className="skeleton h-4 w-28"></div>
-          </th>
+  <table className={TABLE_CLASS}>
+    <thead>
+      <tr>
+        <th>列名</th>
+        <th>数据类型</th>
+        <th>可为空</th>
+        <th>主键</th>
+        <th>默认值</th>
+      </tr>
+    </thead>
+    <tbody>
+      {[0, 1, 2, 3, 4].map((rowIndex) => (
+        <tr key={rowIndex}>
+          {[0, 1, 2, 3, 4].map((cellIndex) => (
+            <td key={cellIndex}>
+              <div className="skeleton h-3 w-full" />
+            </td>
+          ))}
         </tr>
-      </thead>
-      <tbody>
-        {[...Array(5)].map((_, i) => (
-          <tr key={i}>
-            <td>
-              <div className="skeleton h-4 w-full"></div>
-            </td>
-            <td>
-              <div className="skeleton h-4 w-full"></div>
-            </td>
-            <td>
-              <div className="skeleton h-4 w-full"></div>
-            </td>
-            <td>
-              <div className="skeleton h-4 w-full"></div>
-            </td>
-            <td>
-              <div className="skeleton h-4 w-full"></div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
+      ))}
+    </tbody>
+  </table>
 );
 
-// DDL 组件，用于在代码加载时显示骨架屏效果
 const DdlSkeleton = () => (
-  <div className="space-y-2">
-    <div className="skeleton h-4 w-full"></div>
-    <div className="skeleton h-4 w-11/12"></div>
-    <div className="skeleton h-4 w-full"></div>
-    <div className="skeleton h-4 w-10/12"></div>
-    <div className="skeleton h-4 w-full"></div>
+  <div className="space-y-2 p-3">
+    <div className="skeleton h-3 w-full" />
+    <div className="skeleton h-3 w-11/12" />
+    <div className="skeleton h-3 w-full" />
+    <div className="skeleton h-3 w-10/12" />
+    <div className="skeleton h-3 w-full" />
   </div>
 );
 
@@ -91,6 +79,7 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
   const [ddl, setDdl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isDarkTheme = useIsDarkTheme();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -179,31 +168,30 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
 
     if (error) {
       return (
-        <div role="alert" className="alert alert-error">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
+        <ErrorState className="m-3" title="读取失败" description={error} />
       );
     }
 
     if (activeTab === "ddl") {
+      if (!ddl) {
+        return (
+          <EmptyState
+            compact
+            title="没有 DDL"
+            description="该对象没有可展示的建表语句。"
+          />
+        );
+      }
       return (
         <SyntaxHighlighter
           language="sql"
-          style={vscDarkPlus}
-          customStyle={{ margin: 0, height: "100%" }}
+          style={isDarkTheme ? vscDarkPlus : vs}
+          customStyle={{
+            margin: 0,
+            minHeight: "100%",
+            fontSize: 12,
+            background: "transparent",
+          }}
         >
           {ddl}
         </SyntaxHighlighter>
@@ -212,8 +200,17 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
 
     if (activeTab === "column") {
       return (
-        <div className="overflow-x-auto">
-          <table className="table table-zebra w-full">
+        <DataTableShell
+          isEmpty={columnsData.length === 0}
+          placeholder={
+            <EmptyState
+              compact
+              title="没有列信息"
+              description="当前对象没有返回列定义。"
+            />
+          }
+        >
+          <table className={TABLE_CLASS}>
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
@@ -245,7 +242,7 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
               ))}
             </tbody>
           </table>
-        </div>
+        </DataTableShell>
       );
     }
 
@@ -253,29 +250,30 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
   };
 
   return (
-    <div className="p-4 h-full flex flex-col">
-      <div role="tablist" className="tabs tabs-boxed mb-4 self-start">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "ddl"}
-          className={`tab ${activeTab === "ddl" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("ddl")}
-        >
-          DDL
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "column"}
-          className={`tab ${activeTab === "column" ? "tab-active" : ""}`}
-          onClick={() => setActiveTab("column")}
-        >
-          列信息
-        </button>
+    <div className="flex h-full min-h-0 flex-col">
+      <div
+        role="tablist"
+        className="flex h-9 flex-shrink-0 items-stretch border-b border-hairline px-1"
+      >
+        {DETAIL_TABS.map((detailTab) => (
+          <button
+            key={detailTab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === detailTab.id}
+            className={`-mb-px border-b-2 px-3 text-xs transition-colors ${
+              activeTab === detailTab.id
+                ? "border-primary font-medium text-base-content"
+                : "border-transparent text-base-content/55 hover:text-base-content/85"
+            }`}
+            onClick={() => setActiveTab(detailTab.id)}
+          >
+            {detailTab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="flex-grow overflow-auto">{renderContent()}</div>
+      <div className="min-h-0 flex-1 overflow-auto">{renderContent()}</div>
     </div>
   );
 }

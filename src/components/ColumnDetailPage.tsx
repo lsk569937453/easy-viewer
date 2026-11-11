@@ -4,6 +4,10 @@ import type { ShowColumnsResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
+import { TABLE_CLASS } from "./ui/DataTableShell";
+import KeyValueTable from "./ui/KeyValueTable";
+import StatusChip from "./ui/StatusChip";
+import { EmptyState, ErrorState, LoadingState } from "./ui/states";
 
 interface ColumnInfo {
   name: string;
@@ -140,111 +144,104 @@ function ColumnDetailPage({ activeTabNode, tableName }: ColumnDetailPageProps) {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        <div className="flex justify-center items-center h-full">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      );
+      return <LoadingState label="正在读取列信息…" />;
     }
 
     if (error) {
       return (
-        <div role="alert" className="alert alert-error">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="stroke-current shrink-0 h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <span>{error}</span>
-        </div>
+        <ErrorState className="m-3" title="读取失败" description={error} />
       );
     }
 
-    if (!columnInfo) return null;
+    // 原来这里是 return null（白屏），改为明确的空态
+    if (!columnInfo) {
+      return (
+        <EmptyState
+          title="没有列信息"
+          description="该列在当前连接上无法读取到详细属性。"
+        />
+      );
+    }
 
     return (
-      <div className="space-y-4" style={{ fontSize: "12px" }}>
-        <table className="table table-zebra w-full">
-          <tbody>
-            <tr>
-              <th className="w-[120px]">列名</th>
-              <td className="font-mono font-semibold">{columnInfo.name}</td>
-            </tr>
-            <tr>
-              <th>数据类型</th>
-              <td className="font-mono">{columnInfo.type}</td>
-            </tr>
-            <tr>
-              <th>是否主键</th>
-              <td>
-                {columnInfo.isPrimaryKey ? (
-                  <span className="badge badge-primary badge-sm">是</span>
-                ) : (
-                  <span className="badge badge-ghost badge-sm">否</span>
-                )}
-              </td>
-            </tr>
-            <tr>
-              <th>可为空</th>
-              <td>{columnInfo.nullable}</td>
-            </tr>
-            <tr>
-              <th>默认值</th>
-              <td className="font-mono">{String(columnInfo.defaultValue)}</td>
-            </tr>
-            {columnInfo.extra && (
-              <tr>
-                <th>额外信息</th>
-                <td>{String(columnInfo.extra)}</td>
-              </tr>
-            )}
-            <tr>
-              <th>所属表</th>
-              <td>{columnInfo.tableName}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div className="space-y-3 p-3">
+        <KeyValueTable
+          rows={[
+            {
+              label: "列名",
+              value: (
+                <span className="font-mono font-semibold">
+                  {columnInfo.name}
+                </span>
+              ),
+            },
+            {
+              label: "数据类型",
+              value: <span className="font-mono">{columnInfo.type}</span>,
+            },
+            {
+              label: "是否主键",
+              value: columnInfo.isPrimaryKey ? (
+                <StatusChip tone="success">是</StatusChip>
+              ) : (
+                <StatusChip>否</StatusChip>
+              ),
+            },
+            { label: "可为空", value: columnInfo.nullable },
+            {
+              label: "默认值",
+              value: (
+                <span className="font-mono">
+                  {String(columnInfo.defaultValue)}
+                </span>
+              ),
+            },
+            ...(columnInfo.extra
+              ? [{ label: "额外信息", value: String(columnInfo.extra) }]
+              : []),
+            { label: "所属表", value: columnInfo.tableName },
+          ]}
+        />
 
         {/* 如果有原始信息，显示完整字段 */}
-        {columnInfo.rawInfo && (
-          <>
-            <div className="divider text-base-content/50 text-xs">完整字段</div>
-            <table className="table table-compact w-full">
+        {columnInfo.rawInfo ? (
+          <div>
+            <div className="mb-1 text-micro font-medium text-base-content/45">
+              完整字段
+            </div>
+            <table className={TABLE_CLASS}>
               <thead>
                 <tr>
-                  <th>字段</th>
+                  <th className="w-[140px]">字段</th>
                   <th>值</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(columnInfo.rawInfo).map(([key, value]) => (
                   <tr key={key}>
-                    <td className="font-mono text-base-content/70">{key}</td>
+                    <td className="font-mono text-base-content/60">{key}</td>
                     <td className="font-mono">{String(value)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </>
-        )}
+          </div>
+        ) : null}
       </div>
     );
   };
 
   return (
-    <div className="p-4 h-full flex flex-col">
-      <div className="tabs tabs-boxed mb-4 self-start">
-        <a className="tab tab-active">基本信息</a>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-9 flex-shrink-0 items-center border-b border-hairline px-3">
+        <span className="text-[13px] font-semibold">列详情</span>
+        {tableName ? (
+          <StatusChip className="ml-2" title={tableName}>
+            {tableName}
+          </StatusChip>
+        ) : null}
       </div>
-      <div className="flex-grow overflow-auto">{renderContent()}</div>
+      <div className="min-h-0 flex-1 overflow-auto">{renderContent()}</div>
     </div>
   );
 }

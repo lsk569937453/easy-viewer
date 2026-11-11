@@ -1,26 +1,63 @@
 import { invoke } from "@tauri-apps/api/core";
-import React, { type ReactNode, useCallback, useEffect, useState } from "react";
 import {
-  IoArrowBack,
-  IoArrowForward,
-  IoPlaySkipBack,
-  IoRefresh,
-  IoSearch,
-} from "react-icons/io5";
+  Fragment,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
+import {
+  FaChevronDown,
+  FaChevronRight,
+  FaDatabase,
+  FaKey,
+  FaList,
+  FaPaperclip,
+  FaRecycle,
+  FaSearch,
+} from "react-icons/fa";
+import { IoRefresh } from "react-icons/io5";
 import type {
   ConnectionSummary,
   ExeSqlResponse,
   SqlHeader,
 } from "../types/backend";
-import type { EsIndexDetail } from "../types/elasticsearch";
+import type { EsIndexDetail, EsMatchingTemplate } from "../types/elasticsearch";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
 import { showError } from "../utils/showToast";
+import ActionButton from "./ui/ActionButton";
+import DataTableShell, { TABLE_CLASS } from "./ui/DataTableShell";
+import FormField from "./ui/FormField";
+import KeyValueTable from "./ui/KeyValueTable";
+import PageHeader from "./ui/PageHeader";
+import Pagination from "./ui/Pagination";
+import SearchBox from "./ui/SearchBox";
+import StatusChip, { type StatusTone } from "./ui/StatusChip";
+import { EmptyState, ErrorState, LoadingState } from "./ui/states";
+import Toolbar from "./ui/Toolbar";
 
 const DEFAULT_QUERY = `{
   "match_all": {}
 }`;
+
+const PAGE_SIZE_OPTIONS = [20, 50, 100];
+
+const SEARCH_MODES = [
+  { id: "simple", label: "简单搜索" },
+  { id: "query", label: "自定义 Query" },
+] as const;
+
+const ILM_PHASES = ["hot", "warm", "cold", "frozen", "delete"] as const;
+
+const ILM_TONE: Record<string, StatusTone> = {
+  hot: "error",
+  warm: "warning",
+  cold: "info",
+  frozen: "neutral",
+  delete: "neutral",
+};
 
 interface ElasticsearchIndexPanelProps {
   activeTabNode: TreeNode;
@@ -57,6 +94,7 @@ function ElasticsearchIndexPanel({
   // Index detail (template, ILM, settings)
   const [indexDetail, setIndexDetail] = useState<EsIndexDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
 
   const indexName = activeTabNode?.name || "unknown";
@@ -64,6 +102,7 @@ function ElasticsearchIndexPanel({
   // Fetch index detail (template + ILM)
   const fetchIndexDetail = useCallback(async () => {
     setDetailLoading(true);
+    setDetailError(null);
     try {
       const responseJson = await invoke<string>("elasticsearch_index_detail", {
         listNodeInfoReq: { level_infos: activeTabNode.path },
@@ -73,8 +112,11 @@ function ElasticsearchIndexPanel({
         parseBaseResponse<EsIndexDetail>(responseJson);
       if (response_code === 0) {
         setIndexDetail(response_msg);
+      } else {
+        setDetailError(response_msg || "后端未返回索引详情");
       }
     } catch (err) {
+      setDetailError(getErrorMessage(err));
       console.error("Failed to fetch index detail:", err);
     } finally {
       setDetailLoading(false);
@@ -197,8 +239,17 @@ function ElasticsearchIndexPanel({
     });
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(Math.max(0, page - 1));
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(0);
+  };
+
   const totalPages = Math.ceil(totalCount / pageSize);
-  const hasActiveFilter = pendingSearch || pendingQuery;
+  const hasActiveFilter = Boolean(pendingSearch || pendingQuery);
 
   const formatCellValue = (
     value: string | null,
@@ -214,7 +265,7 @@ function ElasticsearchIndexPanel({
         const parsed: unknown = JSON.parse(value);
         return (
           <pre
-            className="text-xs bg-base-200 p-1.5 rounded overflow-x-auto max-w-md whitespace-pre-wrap break-all"
+            className="max-w-md whitespace-pre-wrap break-all rounded bg-base-200 p-1.5 font-mono text-xs"
             onClick={(e) => e.stopPropagation()}
           >
             {JSON.stringify(parsed, null, 2)}
@@ -227,7 +278,7 @@ function ElasticsearchIndexPanel({
 
     if (typeof value === "string" && value.length > 120) {
       return (
-        <span className="font-mono text-xs break-all" title={value}>
+        <span className="break-all font-mono text-xs" title={value}>
           {value.substring(0, 120)}...
         </span>
       );
@@ -236,310 +287,367 @@ function ElasticsearchIndexPanel({
     return <span className="font-mono text-xs">{value}</span>;
   };
 
-  const ilmPhases = ["hot", "warm", "cold", "frozen", "delete"];
-  const ilmPolicyDetail = indexDetail?.ilm_policy_detail;
-  const ilmPhasesData = ilmPolicyDetail?.policy?.phases;
+  const buildDocument = (row: (string | null)[]): Record<string, unknown> => {
+    const doc: Record<string, unknown> = {};
+    headers.forEach((header, cellIndex) => {
+      const value = row[cellIndex];
+      if (value !== null && value !== undefined) {
+        try {
+          doc[header.name] = JSON.parse(value);
+        } catch {
+          doc[header.name] = value;
+        }
+      }
+    });
+    return doc;
+  };
+
+  const ilmPhasesData = indexDetail?.ilm_policy_detail?.policy?.phases;
+  const matchingTemplates: EsMatchingTemplate[] =
+    indexDetail?.matching_templates ?? [];
+  const createdAt =
+    indexDetail?.creation_date && indexDetail.creation_date !== "-"
+      ? new Date(Number.parseInt(indexDetail.creation_date, 10)).toLocaleString(
+          "zh-CN",
+        )
+      : "-";
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex-shrink-0 border-b border-base-content/10 px-4 py-3 bg-base-200/30">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
-              <span className="text-2xl">🔍</span>
-              {indexName}
-            </h3>
-            <button
-              className={`btn btn-sm btn-outline ${loading ? "loading" : ""}`}
-              onClick={fetchDocuments}
-              disabled={loading}
+    <div className="flex h-full min-h-0 flex-col">
+      <PageHeader
+        title={indexName}
+        subtitle="Elasticsearch 索引"
+        meta={
+          <>
+            <FaSearch size="0.8em" aria-hidden="true" />
+            <StatusChip tone="info">{totalCount} 条文档</StatusChip>
+          </>
+        }
+        actions={
+          <>
+            <ActionButton
+              size="sm"
+              icon={<IoRefresh aria-hidden="true" />}
+              loading={loading}
+              onClick={() => void fetchDocuments()}
             >
-              <IoRefresh className="mr-1" />
               刷新
-            </button>
-
-            {/* Mode toggle */}
-            <div className="join">
-              <button
-                className={`btn btn-sm join-item ${searchMode === "simple" ? "btn-active" : ""}`}
-                onClick={() => switchMode("simple")}
-              >
-                简单搜索
-              </button>
-              <button
-                className={`btn btn-sm join-item ${searchMode === "query" ? "btn-active" : ""}`}
-                onClick={() => switchMode("query")}
-              >
-                自定义 Query
-              </button>
-            </div>
-
-            {/* Index detail toggle */}
-            <button
-              className={`btn btn-sm ${showDetail ? "btn-active" : "btn-outline"}`}
-              onClick={() => setShowDetail(!showDetail)}
+            </ActionButton>
+            <ActionButton
+              size="sm"
+              variant={showDetail ? "primary" : "secondary"}
+              icon={<FaList size="0.85em" aria-hidden="true" />}
+              onClick={() => setShowDetail((prev) => !prev)}
+              aria-pressed={showDetail}
             >
-              📋 索引详情
-            </button>
-          </div>
+              索引详情
+            </ActionButton>
+          </>
+        }
+      />
 
-          <div className="flex items-center gap-2">
+      {/* 搜索模式分段标签 */}
+      <div
+        role="tablist"
+        className="flex h-9 flex-shrink-0 items-stretch border-b border-hairline px-1"
+      >
+        {SEARCH_MODES.map((mode) => (
+          <button
+            key={mode.id}
+            type="button"
+            role="tab"
+            aria-selected={searchMode === mode.id}
+            className={`-mb-px border-b-2 px-3 text-xs transition-colors ${
+              searchMode === mode.id
+                ? "border-primary font-medium text-base-content"
+                : "border-transparent text-base-content/55 hover:text-base-content/85"
+            }`}
+            onClick={() => switchMode(mode.id)}
+          >
+            {mode.label}
+          </button>
+        ))}
+      </div>
+
+      <Toolbar
+        left={
+          <>
             {searchMode === "simple" ? (
-              <div className="join">
-                <input
-                  aria-label="搜索文档"
-                  type="text"
-                  placeholder="搜索文档..."
-                  className="input input-bordered input-sm join-item w-64"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleSimpleSearch();
-                  }}
-                />
-                {pendingSearch && (
-                  <button
-                    aria-label="清除搜索"
-                    className="btn btn-sm join-item btn-ghost"
-                    onClick={handleClearSearch}
-                    title="清除搜索"
-                  >
-                    ✕
-                  </button>
-                )}
-                <button
-                  aria-label="搜索"
-                  className="btn btn-sm join-item btn-primary"
-                  onClick={handleSimpleSearch}
-                >
-                  <IoSearch aria-hidden="true" />
-                </button>
-              </div>
+              <SearchBox
+                value={searchTerm}
+                onChange={setSearchTerm}
+                onSubmit={handleSimpleSearch}
+                onClear={handleClearSearch}
+                placeholder="搜索文档…"
+                ariaLabel="搜索文档"
+                className="w-64"
+              />
             ) : (
-              <div className="flex items-center gap-2">
-                <button
-                  className="btn btn-sm btn-primary"
+              <>
+                <ActionButton
+                  size="sm"
+                  variant="primary"
+                  icon={<FaSearch size="0.8em" aria-hidden="true" />}
+                  loading={loading}
                   onClick={handleRunQuery}
-                  disabled={loading}
                 >
-                  <IoSearch className="mr-1" />
                   执行 Query
-                </button>
-                <button
-                  className="btn btn-sm btn-ghost"
+                </ActionButton>
+                <ActionButton
+                  size="sm"
+                  variant="ghost"
                   onClick={handleClearQuery}
                 >
                   重置
-                </button>
-              </div>
+                </ActionButton>
+              </>
             )}
-          </div>
-        </div>
-      </div>
+            {hasActiveFilter ? (
+              <>
+                <StatusChip
+                  tone="info"
+                  title={
+                    searchMode === "simple"
+                      ? `搜索「${pendingSearch}」`
+                      : "自定义 Query"
+                  }
+                >
+                  已筛选
+                </StatusChip>
+                <ActionButton
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleResetAll}
+                >
+                  清除条件
+                </ActionButton>
+              </>
+            ) : null}
+          </>
+        }
+        right={
+          <>
+            <span className="whitespace-nowrap text-micro text-base-content/45">
+              显示 {documents.length} 条
+            </span>
+            <Pagination
+              page={currentPage + 1}
+              totalPages={totalPages}
+              total={totalCount}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </>
+        }
+      />
 
-      {/* Index detail panel (collapsible) */}
-      {showDetail && (
-        <div className="flex-shrink-0 border-b border-base-content/10 bg-base-200/50">
+      {/* 索引详情（可折叠） */}
+      {showDetail ? (
+        <div className="flex-shrink-0 space-y-2 border-b border-hairline bg-base-200/30 px-3 py-2">
           {detailLoading ? (
-            <div className="flex items-center justify-center py-6">
-              <span className="loading loading-spinner loading-sm mr-2"></span>
-              <span className="text-sm text-base-content/60">
-                加载索引详情...
-              </span>
-            </div>
+            <LoadingState label="正在读取索引详情…" />
+          ) : detailError ? (
+            <ErrorState
+              title="索引详情读取失败"
+              description={detailError}
+              onRetry={() => void fetchIndexDetail()}
+            />
           ) : indexDetail ? (
-            <div className="px-4 py-3 space-y-3">
-              {/* Row 1: Basic settings */}
-              <div className="flex flex-wrap gap-3 text-xs">
-                <div className="flex items-center gap-1">
-                  <span className="text-base-content/50">Shards:</span>
-                  <span className="font-mono font-semibold">
-                    {indexDetail.number_of_shards}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-base-content/50">Replicas:</span>
-                  <span className="font-mono font-semibold">
-                    {indexDetail.number_of_replicas}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-base-content/50">UUID:</span>
-                  <span className="font-mono">{indexDetail.uuid}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-base-content/50">创建时间:</span>
-                  <span className="font-mono">
-                    {indexDetail.creation_date &&
-                    indexDetail.creation_date !== "-"
-                      ? new Date(
-                          parseInt(indexDetail.creation_date, 10),
-                        ).toLocaleString("zh-CN")
-                      : "-"}
-                  </span>
-                </div>
-              </div>
+            <>
+              <KeyValueTable
+                labelWidth="4.5rem"
+                rows={[
+                  {
+                    label: "分片数",
+                    value: (
+                      <span className="font-mono">
+                        {indexDetail.number_of_shards ?? "-"}
+                      </span>
+                    ),
+                  },
+                  {
+                    label: "副本数",
+                    value: (
+                      <span className="font-mono">
+                        {indexDetail.number_of_replicas ?? "-"}
+                      </span>
+                    ),
+                  },
+                  {
+                    label: "UUID",
+                    value: (
+                      <span className="break-all font-mono">
+                        {indexDetail.uuid || "-"}
+                      </span>
+                    ),
+                  },
+                  {
+                    label: "创建时间",
+                    value: <span className="font-mono">{createdAt}</span>,
+                  },
+                ]}
+              />
 
-              {/* Row 2: Matching templates */}
               <div>
-                <div className="text-xs font-semibold text-base-content/60 mb-1">
-                  📎 绑定模板 ({indexDetail.matching_templates?.length || 0})
+                <div className="mb-1 flex items-center gap-1 text-micro text-base-content/45">
+                  <FaPaperclip size="0.8em" aria-hidden="true" />
+                  绑定模板（{matchingTemplates.length}）
                 </div>
-                {(indexDetail.matching_templates?.length ?? 0) > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {indexDetail.matching_templates?.map((tmpl, i) => (
+                {matchingTemplates.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {matchingTemplates.map((template) => (
                       <div
-                        key={i}
-                        className="bg-base-300/60 rounded-lg px-3 py-2 text-xs"
+                        key={template.name}
+                        className="rounded-[var(--radius-control)] border border-hairline bg-base-100 px-2 py-1"
                       >
-                        <div className="font-semibold text-primary">
-                          {tmpl.name}
+                        <div className="text-xs font-medium text-primary">
+                          {template.name}
                         </div>
-                        <div className="text-base-content/50 mt-0.5">
-                          patterns:{" "}
-                          <code className="text-info">
-                            {tmpl.index_patterns}
-                          </code>
-                          {tmpl.order && tmpl.order !== "0" && (
-                            <span className="ml-2">order: {tmpl.order}</span>
-                          )}
+                        <div className="mt-0.5 font-mono text-micro text-base-content/50">
+                          patterns: {template.index_patterns}
+                          {template.order && template.order !== "0" ? (
+                            <span className="ml-2">
+                              order: {template.order}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-base-content/40">无匹配模板</div>
+                  <span className="text-micro text-base-content/45">
+                    无绑定模板
+                  </span>
                 )}
               </div>
 
-              {/* Row 3: ILM Policy */}
               <div>
-                <div className="text-xs font-semibold text-base-content/60 mb-1">
-                  ♻️ 生命周期策略 (ILM)
+                <div className="mb-1 flex items-center gap-1 text-micro text-base-content/45">
+                  <FaRecycle size="0.8em" aria-hidden="true" />
+                  生命周期策略（ILM）
                 </div>
                 {indexDetail.ilm_policy_name ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="font-semibold text-primary">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <span className="font-medium text-primary">
                         {indexDetail.ilm_policy_name}
                       </span>
-                      {indexDetail.ilm_rollover_alias && (
-                        <span className="text-base-content/50">
+                      {indexDetail.ilm_rollover_alias ? (
+                        <span className="text-micro text-base-content/50">
                           rollover alias:{" "}
                           <code className="text-info">
                             {indexDetail.ilm_rollover_alias}
                           </code>
                         </span>
-                      )}
+                      ) : null}
                     </div>
 
-                    {/* ILM Phases timeline */}
-                    {ilmPhasesData && (
-                      <div className="flex items-start gap-1 overflow-x-auto pb-1">
-                        {ilmPhases.map((phase) => {
+                    {ilmPhasesData ? (
+                      <div className="flex items-start gap-1.5 overflow-x-auto pb-1">
+                        {ILM_PHASES.map((phase) => {
                           const phaseData = ilmPhasesData[phase];
                           if (!phaseData) return null;
-
-                          const phaseColors: Record<string, string> = {
-                            hot: "badge-error",
-                            warm: "badge-warning",
-                            cold: "badge-info",
-                            frozen: "badge-primary",
-                            delete: "badge-ghost",
-                          };
 
                           return (
                             <div
                               key={phase}
-                              className="flex-shrink-0 bg-base-300/60 rounded-lg px-3 py-2 min-w-[140px]"
+                              className="min-w-[150px] flex-shrink-0 rounded-[var(--radius-control)] border border-hairline bg-base-100 px-2 py-1.5"
                             >
-                              <div className="flex items-center gap-1 mb-1">
-                                <span
-                                  className={`badge badge-xs ${phaseColors[phase] || "badge-ghost"}`}
-                                >
+                              <div className="mb-1 flex items-center gap-1">
+                                <StatusChip tone={ILM_TONE[phase] ?? "neutral"}>
                                   {phase.toUpperCase()}
-                                </span>
-                                {phaseData.min_age && (
-                                  <span className="text-[10px] text-base-content/40">
+                                </StatusChip>
+                                {phaseData.min_age ? (
+                                  <span className="text-micro text-base-content/45">
                                     {phaseData.min_age}
                                   </span>
-                                )}
+                                ) : null}
                               </div>
-                              <div className="flex flex-wrap gap-1">
-                                {phaseData.actions &&
-                                  Object.entries(phaseData.actions).map(
-                                    ([action, config]) => (
-                                      <div key={action} className="text-xs">
-                                        <span className="font-mono font-semibold">
-                                          {action}
-                                        </span>
-                                        {typeof config === "object" &&
-                                          config !== null &&
-                                          Object.keys(config).length > 0 && (
-                                            <div className="text-[10px] text-base-content/40 mt-0.5">
-                                              {Object.entries(config).map(
-                                                ([k, v]) => (
-                                                  <span
-                                                    key={k}
-                                                    className="mr-1"
-                                                  >
-                                                    {k}:{" "}
-                                                    {typeof v === "object"
-                                                      ? JSON.stringify(v)
-                                                      : String(v)}
-                                                  </span>
-                                                ),
-                                              )}
-                                            </div>
-                                          )}
-                                      </div>
-                                    ),
-                                  )}
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 text-micro">
+                                {phaseData.actions
+                                  ? Object.entries(phaseData.actions).map(
+                                      ([action, config]) => (
+                                        <div key={action}>
+                                          <span className="font-mono font-medium">
+                                            {action}
+                                          </span>
+                                          {typeof config === "object" &&
+                                            config !== null &&
+                                            Object.keys(config).length > 0 && (
+                                              <div className="mt-0.5 text-base-content/45">
+                                                {Object.entries(config).map(
+                                                  ([key, value]) => (
+                                                    <span
+                                                      key={key}
+                                                      className="mr-1"
+                                                    >
+                                                      {key}:{" "}
+                                                      {typeof value === "object"
+                                                        ? JSON.stringify(value)
+                                                        : String(value)}
+                                                    </span>
+                                                  ),
+                                                )}
+                                              </div>
+                                            )}
+                                        </div>
+                                      ),
+                                    )
+                                  : null}
                               </div>
                             </div>
                           );
                         })}
                       </div>
-                    )}
+                    ) : null}
 
-                    {/* Full ILM policy JSON (collapsible) */}
-                    {ilmPolicyDetail && (
-                      <details className="text-xs">
-                        <summary className="cursor-pointer text-base-content/40 hover:text-base-content/60">
+                    {indexDetail.ilm_policy_detail ? (
+                      <details className="text-micro">
+                        <summary className="cursor-pointer text-base-content/45 hover:text-base-content/70">
                           查看完整策略 JSON
                         </summary>
-                        <pre className="mt-1 bg-base-300 p-2 rounded-lg overflow-x-auto whitespace-pre-wrap text-[10px] max-h-48 overflow-y-auto">
-                          {JSON.stringify(ilmPolicyDetail, null, 2)}
+                        <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded-[var(--radius-control)] bg-base-200 p-2 text-micro">
+                          {JSON.stringify(
+                            indexDetail.ilm_policy_detail,
+                            null,
+                            2,
+                          )}
                         </pre>
                       </details>
-                    )}
+                    ) : null}
                   </div>
                 ) : (
-                  <div className="text-xs text-base-content/40">
+                  <span className="text-micro text-base-content/45">
                     未配置 ILM 策略
-                  </div>
+                  </span>
                 )}
               </div>
-            </div>
+            </>
           ) : (
-            <div className="px-4 py-3 text-xs text-base-content/40">
-              无法加载索引详情
-            </div>
+            <EmptyState
+              compact
+              title="暂无索引详情"
+              description="后端没有返回该索引的模板与 ILM 信息。"
+            />
           )}
         </div>
-      )}
+      ) : null}
 
-      {/* Custom query editor (only in query mode) */}
-      {searchMode === "query" && (
-        <div className="flex-shrink-0 border-b border-base-content/10">
-          <div className="px-4 py-2">
-            <div className="text-xs text-base-content/50 mb-1">
-              Elasticsearch query DSL（仅需填写 query 部分）
-            </div>
+      {/* 自定义 Query 编辑器 */}
+      {searchMode === "query" ? (
+        <div className="flex-shrink-0 border-b border-hairline">
+          <FormField
+            className="px-3 py-2"
+            label="Elasticsearch Query DSL（仅需填写 query 部分）"
+            htmlFor="es-query-dsl"
+            help="Ctrl + Enter 执行；支持 term、match、bool、range 等任意 query DSL。"
+          >
             <textarea
+              id="es-query-dsl"
               aria-label="Elasticsearch Query DSL"
-              className="textarea textarea-bordered w-full font-mono text-xs leading-relaxed"
+              className="textarea h-32 w-full resize-y rounded-[var(--radius-control)] border-hairline bg-base-100 font-mono text-xs leading-relaxed"
               rows={6}
               value={queryText}
               onChange={(e) => setQueryText(e.target.value)}
@@ -552,167 +660,95 @@ function ElasticsearchIndexPanel({
               spellCheck={false}
               placeholder='{"match_all": {}}'
             />
-            <div className="text-xs text-base-content/40 mt-1">
-              Ctrl + Enter 执行 | 支持任何 Elasticsearch query DSL，如
-              term、match、bool、range 等
-            </div>
-          </div>
+          </FormField>
         </div>
-      )}
+      ) : null}
 
-      {/* Stats */}
-      <div className="flex-shrink-0 px-4 py-2 bg-base-300/30 text-xs text-base-content/70 flex items-center gap-2">
-        <span>
-          显示 {documents.length} 条文档 (共 {totalCount} 条)
-        </span>
-        {hasActiveFilter && (
-          <span className="badge badge-sm badge-primary">
-            {searchMode === "simple"
-              ? `搜索: "${pendingSearch}"`
-              : "自定义 Query"}
-          </span>
-        )}
-        {hasActiveFilter && (
-          <button className="btn btn-xs btn-ghost" onClick={handleResetAll}>
-            清除条件
-          </button>
-        )}
-      </div>
-
-      {/* Document table */}
-      <div className="flex-1 overflow-auto">
-        {error ? (
-          <div className="alert alert-error m-4">
-            <span className="whitespace-pre-wrap">{error}</span>
-          </div>
-        ) : loading ? (
-          <div className="flex items-center justify-center h-full">
-            <span className="loading loading-spinner loading-lg"></span>
-          </div>
-        ) : documents.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-base-content/40">
-            <p className="text-lg">暂无文档</p>
-            <p className="text-sm mt-2">
-              {hasActiveFilter ? "尝试调整搜索条件" : "此索引中没有文档"}
-            </p>
-          </div>
-        ) : (
-          <table className="table table-zebra table-pin-rows">
-            <thead className="bg-base-200">
+      {/* 文档表格 / 三态 */}
+      {error ? (
+        <div className="min-h-0 flex-1 overflow-auto p-3">
+          <ErrorState
+            title="读取文档失败"
+            description={error}
+            onRetry={() => void fetchDocuments()}
+          />
+        </div>
+      ) : (
+        <DataTableShell
+          loading={loading}
+          isEmpty={documents.length === 0 && !loading}
+          placeholder={
+            <EmptyState
+              title="暂无文档"
+              description={
+                hasActiveFilter
+                  ? "当前搜索条件下没有匹配的文档，试试调整条件。"
+                  : "该索引中还没有文档。"
+              }
+              icon={<FaDatabase size="1.6em" aria-hidden="true" />}
+            />
+          }
+        >
+          <table className={TABLE_CLASS}>
+            <thead>
               <tr>
-                <th className="w-10 text-sm"></th>
-                {headers.map((header, index) => (
-                  <th key={index} className="text-sm">
+                <th className="w-8" scope="col" aria-label="展开文档详情" />
+                {headers.map((header) => (
+                  <th key={header.name} scope="col">
                     {header.name}
-                    {header.is_primary_key && (
-                      <span className="ml-1 text-warning">★</span>
-                    )}
+                    {header.is_primary_key ? (
+                      <span
+                        className="ml-1 inline-flex gap-0.5 text-warning"
+                        title="主键"
+                      >
+                        <FaKey size="0.8em" aria-hidden="true" />
+                        <span className="sr-only">主键</span>
+                      </span>
+                    ) : null}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {documents.map((row, rowIndex) => (
-                <React.Fragment key={rowIndex}>
+                <Fragment key={rowIndex}>
                   <tr
-                    className="hover cursor-pointer"
+                    className="cursor-pointer"
                     onClick={() => toggleRowExpand(rowIndex)}
                   >
-                    <td className="text-center text-xs text-base-content/40">
-                      {expandedRows.has(rowIndex) ? "▼" : "▶"}
+                    <td className="w-8 text-center text-base-content/40">
+                      {expandedRows.has(rowIndex) ? (
+                        <FaChevronDown size="0.7em" aria-hidden="true" />
+                      ) : (
+                        <FaChevronRight size="0.7em" aria-hidden="true" />
+                      )}
                     </td>
                     {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
-                        className="text-sm max-w-md overflow-hidden"
-                      >
+                      <td key={cellIndex} className="max-w-md overflow-hidden">
                         {formatCellValue(cell, headers[cellIndex]?.name)}
                       </td>
                     ))}
                   </tr>
-                  {expandedRows.has(rowIndex) && (
-                    <tr className="bg-base-200/50">
+                  {expandedRows.has(rowIndex) ? (
+                    <tr>
                       <td colSpan={headers.length + 1} className="p-0">
-                        <div className="p-3">
-                          <div className="text-xs font-semibold text-base-content/60 mb-2">
+                        <div className="p-2">
+                          <div className="mb-1 text-micro font-medium text-base-content/50">
                             文档详情
                           </div>
-                          <pre className="text-xs bg-base-300 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto">
-                            {(() => {
-                              const doc: Record<string, unknown> = {};
-                              headers.forEach((h, i) => {
-                                const val = row[i];
-                                if (val !== null && val !== undefined) {
-                                  try {
-                                    doc[h.name] = JSON.parse(val);
-                                  } catch {
-                                    doc[h.name] = val;
-                                  }
-                                }
-                              });
-                              return JSON.stringify(doc, null, 2);
-                            })()}
+                          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-[var(--radius-control)] bg-base-200 p-2.5 font-mono text-xs">
+                            {JSON.stringify(buildDocument(row), null, 2)}
                           </pre>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
+                  ) : null}
+                </Fragment>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
-
-      {/* Pagination */}
-      <div className="flex-shrink-0 border-t border-base-content/10 px-4 py-3 bg-base-200/30">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-base-content/70">
-            第 {currentPage + 1} / {totalPages || 1} 页，每页
-            <select
-              aria-label="每页条数"
-              className="select select-bordered select-xs ml-2 mr-1"
-              value={pageSize}
-              onChange={(e) => {
-                setPageSize(Number.parseInt(e.target.value, 10));
-                setCurrentPage(0);
-              }}
-            >
-              <option value={20}>20</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            条
-          </div>
-
-          <div className="join">
-            <button
-              aria-label="第一页"
-              className="btn btn-sm join-item"
-              onClick={() => setCurrentPage(0)}
-              disabled={currentPage === 0}
-            >
-              <IoPlaySkipBack aria-hidden="true" />
-            </button>
-            <button
-              aria-label="上一页"
-              className="btn btn-sm join-item"
-              onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
-              disabled={currentPage === 0}
-            >
-              <IoArrowBack aria-hidden="true" />
-            </button>
-            <button
-              aria-label="下一页"
-              className="btn btn-sm join-item"
-              onClick={() => setCurrentPage((p) => p + 1)}
-              disabled={currentPage + 1 >= totalPages}
-            >
-              <IoArrowForward aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-      </div>
+        </DataTableShell>
+      )}
     </div>
   );
 }

@@ -2,16 +2,16 @@ use crate::vojo::exe_sql_response::{ExeSqlResponse, Header};
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::{ListNodeInfoResponse, ListNodeInfoResponseItem};
 use crate::AppState;
+use futures_util::StreamExt;
 use rdkafka::admin::{AdminClient, AdminOptions, NewTopic, TopicReplication};
 use rdkafka::client::ClientContext;
 use rdkafka::config::{ClientConfig, RDKafkaLogLevel};
-use rdkafka::consumer::{StreamConsumer, DefaultConsumerContext, Consumer};
+use rdkafka::consumer::{Consumer, DefaultConsumerContext, StreamConsumer};
 use rdkafka::message::Message;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::util::Timeout;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
-use futures_util::StreamExt;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub struct KafkaConfig {
@@ -294,7 +294,10 @@ impl KafkaService {
         limit: usize,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         let mut client_config = self.build_client_config();
-        client_config.set("group.id", format!("easy_viewer_consumer_{}", chrono::Utc::now().timestamp()));
+        client_config.set(
+            "group.id",
+            format!("easy_viewer_consumer_{}", chrono::Utc::now().timestamp()),
+        );
         client_config.set("enable.auto.commit", "false");
 
         let consumer: KafkaStreamConsumer = client_config
@@ -398,7 +401,12 @@ impl KafkaService {
             .key(key.as_deref().unwrap_or(""));
 
         // 等待发送完成
-        let _delivery = match tokio::time::timeout(Duration::from_secs(5), producer.send(record, Duration::from_secs(5))).await {
+        let _delivery = match tokio::time::timeout(
+            Duration::from_secs(5),
+            producer.send(record, Duration::from_secs(5)),
+        )
+        .await
+        {
             Ok(Ok(delivery)) => delivery,
             Ok(Err((e, _))) => return Err(anyhow::anyhow!("Failed to send message: {}", e)),
             Err(_) => return Err(anyhow::anyhow!("Timeout sending message")),
@@ -420,7 +428,11 @@ impl KafkaService {
             .map_err(|e| anyhow::anyhow!("Failed to create admin client: {}", e))?;
 
         // 使用 TopicReplication::Fixed
-        let new_topic = NewTopic::new(topic, num_partitions, TopicReplication::Fixed(replication_factor));
+        let new_topic = NewTopic::new(
+            topic,
+            num_partitions,
+            TopicReplication::Fixed(replication_factor),
+        );
 
         let opts = AdminOptions::new();
 

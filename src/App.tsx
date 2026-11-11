@@ -1,8 +1,12 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import AppMenu from "./components/AppMenu";
 import DatabaseViewer from "./components/DatabaseViewer";
+import {
+  fetchBaseConfigById,
+  fetchBaseConfigList,
+} from "./services/connections";
+import { showMainWindow } from "./services/system";
 import type {
   ConnectionSummary,
   GetBaseConnectionByIdResponse,
@@ -17,7 +21,7 @@ function App() {
 
   // 组件挂载完成后通知 Rust 端显示窗口
   useEffect(() => {
-    invoke("show_main_window");
+    void showMainWindow();
   }, []);
 
   /**
@@ -25,7 +29,7 @@ function App() {
    */
   const fetchConnections = async () => {
     try {
-      const responseJson = await invoke<string>("get_base_config");
+      const responseJson = await fetchBaseConfigList();
       const baseResponse =
         parseBaseResponse<GetBaseConnectionResponse>(responseJson);
 
@@ -56,9 +60,7 @@ function App() {
   const handleSingleConnectionUpdated = async (updatedConnectionId: number) => {
     try {
       // 调用您提供的后端接口获取单个连接的最新数据
-      const responseJson = await invoke<string>("get_base_config_by_id", {
-        baseConfigId: updatedConnectionId,
-      });
+      const responseJson = await fetchBaseConfigById(updatedConnectionId);
       const baseResponse =
         parseBaseResponse<GetBaseConnectionByIdResponse>(responseJson);
 

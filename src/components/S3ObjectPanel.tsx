@@ -1,6 +1,6 @@
-import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { FaDownload, FaFile, FaFolder } from "react-icons/fa";
+import { downloadNodeFile, fetchObjectInfo } from "../services/tree";
 import type { GetObjectInfoRes } from "../types/backend";
 import type { S3ObjectTab } from "../types/tab";
 import { parseBaseResponse } from "../utils/backendResponse";
@@ -26,14 +26,14 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
   const isFolder = node.iconName === "folder";
 
   useEffect(() => {
-    const fetchObjectInfo = async () => {
+    const loadObjectInfo = async () => {
       setIsLoading(true);
       setError(null);
       try {
-        const responseJson = await invoke<string>("get_object_info", {
-          listNodeInfoReq: { level_infos: node.path },
-          isFolder: isFolder,
-        });
+        const responseJson = await fetchObjectInfo(
+          { level_infos: node.path },
+          isFolder,
+        );
         const { response_code, response_msg } =
           parseBaseResponse<GetObjectInfoRes>(responseJson);
         if (response_code === 0) {
@@ -47,7 +47,7 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
         setIsLoading(false);
       }
     };
-    fetchObjectInfo();
+    void loadObjectInfo();
   }, [node.path, isFolder]);
 
   const handleDownload = async () => {
@@ -58,11 +58,11 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
       });
       if (!selected) return;
 
-      const responseJson = await invoke<string>("download_file", {
-        listNodeInfoReq: { level_infos: node.path },
-        destination: selected,
-        isFolder: isFolder,
-      });
+      const responseJson = await downloadNodeFile(
+        { level_infos: node.path },
+        selected,
+        isFolder,
+      );
       const { response_code, response_msg } =
         parseBaseResponse<null>(responseJson);
       if (response_code === 0) {

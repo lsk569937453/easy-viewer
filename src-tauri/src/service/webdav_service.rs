@@ -9,11 +9,11 @@ use percent_encoding::percent_decode_str;
 use percent_encoding::utf8_percent_encode;
 use percent_encoding::AsciiSet;
 use percent_encoding::NON_ALPHANUMERIC;
+use reqwest_dav::types::list_cmd::ListEntity;
 use reqwest_dav::Auth;
 use reqwest_dav::Client as DavClient;
 use reqwest_dav::ClientBuilder;
 use reqwest_dav::Depth;
-use reqwest_dav::types::list_cmd::ListEntity;
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::Path;
@@ -224,7 +224,10 @@ impl WebdavConfig {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(5))
             .build()?;
-        let resp = client.request(reqwest::Method::OPTIONS, &endpoint).send().await;
+        let resp = client
+            .request(reqwest::Method::OPTIONS, &endpoint)
+            .send()
+            .await;
         match resp {
             Ok(response) => {
                 if let Some(server) = response.headers().get("server") {
@@ -282,8 +285,8 @@ impl WebdavConfig {
                 }
             }
         }
-        folders.sort_by(|a, b| a.to_lowercase().cmp(&b.to_lowercase()));
-        files.sort_by(|a, b| a.0.to_lowercase().cmp(&b.0.to_lowercase()));
+        folders.sort_by_key(|name| name.to_lowercase());
+        files.sort_by_key(|item| item.0.to_lowercase());
 
         let mut items = vec![];
         for name in folders {
@@ -667,7 +670,7 @@ mod tests {
         assert_eq!(object_path(&["a".into()], true), "/a/");
         assert_eq!(child_path(&[], "f.txt", false), "/f.txt");
         assert_eq!(
-            child_path(&["a".into()], "新 建".into(), true),
+            child_path(&["a".into()], "新 建", true),
             "/a/%E6%96%B0%20%E5%BB%BA/"
         );
         assert_eq!(href_to_path("https://h:1/dav/x/"), "/dav/x/");
@@ -687,7 +690,10 @@ mod tests {
             parse_target_dir(" docs //2024/ "),
             vec!["docs".to_string(), "2024".to_string()]
         );
-        assert_eq!(parse_target_dir("/a b/c"), vec!["a b".to_string(), "c".to_string()]);
+        assert_eq!(
+            parse_target_dir("/a b/c"),
+            vec!["a b".to_string(), "c".to_string()]
+        );
     }
 
     #[test]
@@ -700,7 +706,7 @@ mod tests {
         assert_eq!(object_path(&segments, false), "/docs/%E6%96%B0%E5%90%8D");
 
         // copy lands inside the parsed target dir, keeping the source name
-        let source = vec!["docs".to_string(), "f.txt".to_string()];
+        let source = ["docs".to_string(), "f.txt".to_string()];
         let target = parse_target_dir(" backup//2024 ");
         assert_eq!(
             child_path(&target, source.last().unwrap(), false),
@@ -712,7 +718,10 @@ mod tests {
     fn test_self_path_matching() {
         let config = test_config();
         assert_eq!(config.self_path(&[]), "/dav");
-        assert_eq!(config.self_path(&["docs".into(), "a".into()]), "/dav/docs/a");
+        assert_eq!(
+            config.self_path(&["docs".into(), "a".into()]),
+            "/dav/docs/a"
+        );
         assert_eq!(config.normalize("/dav/docs/"), "/dav/docs");
     }
 
@@ -731,10 +740,12 @@ mod tests {
             level_infos: std::iter::once("1")
                 .chain(segments.iter().copied())
                 .enumerate()
-                .map(|(i, v)| crate::vojo::list_node_info_req::ListNodeInfoReqItem {
-                    level: i as i32 + 1,
-                    config_value: v.to_string(),
-                })
+                .map(
+                    |(i, v)| crate::vojo::list_node_info_req::ListNodeInfoReqItem {
+                        level: i as i32 + 1,
+                        config_value: v.to_string(),
+                    },
+                )
                 .collect(),
         }
     }
@@ -742,7 +753,9 @@ mod tests {
     async fn memory_appstate() -> AppState {
         use std::str::FromStr;
         let options = sqlx::sqlite::SqliteConnectOptions::from_str("sqlite::memory:").unwrap();
-        let pool = sqlx::sqlite::SqlitePool::connect_with(options).await.unwrap();
+        let pool = sqlx::sqlite::SqlitePool::connect_with(options)
+            .await
+            .unwrap();
         AppState { pool }
     }
 
@@ -788,7 +801,10 @@ mod tests {
             .unwrap();
         assert_eq!(uploaded.load(std::sync::atomic::Ordering::SeqCst), 12);
 
-        let docs = config.list_node_info(req(&["docs"]), &appstate).await.unwrap();
+        let docs = config
+            .list_node_info(req(&["docs"]), &appstate)
+            .await
+            .unwrap();
         assert_eq!(docs.list.len(), 1);
         assert_eq!(docs.list[0].name, "webdav_e2e_upload.txt");
         assert_eq!(docs.list[0].icon_name, "textFile");
@@ -832,10 +848,17 @@ mod tests {
         let tmp2 = std::env::temp_dir().join("文件 名.txt");
         std::fs::write(&tmp2, b"unicode name").unwrap();
         config
-            .upload_file(req(&["docs"]), &appstate, tmp2.to_str().unwrap().to_string())
+            .upload_file(
+                req(&["docs"]),
+                &appstate,
+                tmp2.to_str().unwrap().to_string(),
+            )
             .await
             .unwrap();
-        let docs2 = config.list_node_info(req(&["docs"]), &appstate).await.unwrap();
+        let docs2 = config
+            .list_node_info(req(&["docs"]), &appstate)
+            .await
+            .unwrap();
         assert!(docs2.list.iter().any(|i| i.name == "文件 名.txt"));
 
         // Rename the unicode file, then copy it to the connection root
@@ -848,24 +871,35 @@ mod tests {
             )
             .await
             .unwrap();
-        let docs3 = config.list_node_info(req(&["docs"]), &appstate).await.unwrap();
+        let docs3 = config
+            .list_node_info(req(&["docs"]), &appstate)
+            .await
+            .unwrap();
         assert!(!docs3.list.iter().any(|i| i.name == "文件 名.txt"));
         assert!(docs3.list.iter().any(|i| i.name == "改名.txt"));
 
         config
-            .copy_object(req(&["docs", "改名.txt"]), &appstate, "/".to_string(), false)
+            .copy_object(
+                req(&["docs", "改名.txt"]),
+                &appstate,
+                "/".to_string(),
+                false,
+            )
             .await
             .unwrap();
         let root_after_copy = config.list_node_info(req(&[]), &appstate).await.unwrap();
         assert!(root_after_copy.list.iter().any(|i| i.name == "改名.txt"));
 
         // Copying into the source's own directory must be rejected
-        assert!(
-            config
-                .copy_object(req(&["docs", "改名.txt"]), &appstate, "docs".to_string(), false)
-                .await
-                .is_err()
-        );
+        assert!(config
+            .copy_object(
+                req(&["docs", "改名.txt"]),
+                &appstate,
+                "docs".to_string(),
+                false
+            )
+            .await
+            .is_err());
 
         config
             .delete_object(req(&["改名.txt"]), &appstate)
@@ -881,7 +915,10 @@ mod tests {
             .list_node_info(req(&["docs_renamed"]), &appstate)
             .await
             .unwrap();
-        assert!(renamed_dir.list.iter().any(|i| i.name == "webdav_e2e_upload.txt"));
+        assert!(renamed_dir
+            .list
+            .iter()
+            .any(|i| i.name == "webdav_e2e_upload.txt"));
 
         config
             .delete_object(req(&["docs_renamed"]), &appstate)

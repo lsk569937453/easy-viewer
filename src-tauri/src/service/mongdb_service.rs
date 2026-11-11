@@ -60,11 +60,14 @@ impl MongodbConfig {
 
         // Build find options
         let find_options = mongodb::options::FindOptions::builder()
-            .limit(Some(limit as i64))
+            .limit(Some(limit))
             .skip(Some(offset as u64))
             .build();
 
-        let mut cursor = collection.find(Document::new()).with_options(find_options).await?;
+        let mut cursor = collection
+            .find(Document::new())
+            .with_options(find_options)
+            .await?;
 
         // Collect all field names across documents (using BTreeMap for consistent ordering)
         let mut all_keys: BTreeMap<String, ()> = BTreeMap::new();
@@ -103,7 +106,7 @@ impl MongodbConfig {
         for doc in &documents {
             let mut row: Vec<Option<String>> = Vec::new();
             for field_name in &field_names {
-                let value = doc.get(field_name).and_then(|v| bson_value_to_string(v));
+                let value = doc.get(field_name).and_then(bson_value_to_string);
                 row.push(value);
             }
             rows.push(row);
@@ -140,7 +143,8 @@ impl MongodbConfig {
                             "MongoDB parsed insert: collection={}, doc={:?}",
                             collection_name, insert_doc
                         );
-                        let collection: Collection<Document> = database.collection(&collection_name);
+                        let collection: Collection<Document> =
+                            database.collection(&collection_name);
                         if let Err(e) = collection.insert_one(insert_doc).await {
                             errors.push(format!("MongoDB insert error: {}", e));
                         }
@@ -157,8 +161,12 @@ impl MongodbConfig {
                             "MongoDB parsed update: collection={}, filter={:?}, update={:?}",
                             collection_name, filter_doc, update_doc
                         );
-                        let collection: Collection<Document> = database.collection(&collection_name);
-                        match collection.update_one(filter_doc.clone(), update_doc.clone()).await {
+                        let collection: Collection<Document> =
+                            database.collection(&collection_name);
+                        match collection
+                            .update_one(filter_doc.clone(), update_doc.clone())
+                            .await
+                        {
                             Ok(result) => {
                                 info!(
                                     "MongoDB update result: matched_count={}, modified_count={}",
@@ -166,33 +174,27 @@ impl MongodbConfig {
                                 );
                                 if result.matched_count == 0 {
                                     // If _id filter used ObjectId but didn't match, retry with String type
-                                    if let Some(id_value) = filter_doc.get("_id") {
-                                        if let Bson::ObjectId(oid) = id_value {
-                                            info!("Retrying _id as String instead of ObjectId");
-                                            let mut retry_filter = filter_doc.clone();
-                                            retry_filter.insert("_id", oid.to_hex());
-                                            match collection.update_one(retry_filter, update_doc).await {
-                                                Ok(retry_result) => {
-                                                    info!(
-                                                        "MongoDB retry update result: matched_count={}, modified_count={}",
-                                                        retry_result.matched_count, retry_result.modified_count
-                                                    );
-                                                    if retry_result.matched_count == 0 {
-                                                        errors.push(format!(
-                                                            "No document matched the filter for: {}",
-                                                            sql
-                                                        ));
-                                                    }
-                                                }
-                                                Err(e) => {
-                                                    errors.push(format!("MongoDB update error: {}", e));
+                                    if let Some(Bson::ObjectId(oid)) = filter_doc.get("_id") {
+                                        info!("Retrying _id as String instead of ObjectId");
+                                        let mut retry_filter = filter_doc.clone();
+                                        retry_filter.insert("_id", oid.to_hex());
+                                        match collection.update_one(retry_filter, update_doc).await
+                                        {
+                                            Ok(retry_result) => {
+                                                info!(
+                                                    "MongoDB retry update result: matched_count={}, modified_count={}",
+                                                    retry_result.matched_count, retry_result.modified_count
+                                                );
+                                                if retry_result.matched_count == 0 {
+                                                    errors.push(format!(
+                                                        "No document matched the filter for: {}",
+                                                        sql
+                                                    ));
                                                 }
                                             }
-                                        } else {
-                                            errors.push(format!(
-                                                "No document matched the filter for: {}",
-                                                sql
-                                            ));
+                                            Err(e) => {
+                                                errors.push(format!("MongoDB update error: {}", e));
+                                            }
                                         }
                                     } else {
                                         errors.push(format!(
@@ -246,10 +248,16 @@ impl MongodbConfig {
             filter_doc.insert("_id", row_id.as_str());
         }
 
-        info!("MongoDB delete: collection={}, filter={:?}", table_name, filter_doc);
+        info!(
+            "MongoDB delete: collection={}, filter={:?}",
+            table_name, filter_doc
+        );
 
         let result = collection.delete_one(filter_doc.clone()).await?;
-        info!("MongoDB delete result: deleted_count={}", result.deleted_count);
+        info!(
+            "MongoDB delete result: deleted_count={}",
+            result.deleted_count
+        );
 
         if result.deleted_count == 0 {
             // Retry with String type _id if ObjectId didn't match
@@ -257,10 +265,16 @@ impl MongodbConfig {
             retry_filter.insert("_id", row_id.as_str());
             info!("MongoDB delete retry with String _id: {:?}", retry_filter);
             let retry_result = collection.delete_one(retry_filter).await?;
-            info!("MongoDB delete retry result: deleted_count={}", retry_result.deleted_count);
+            info!(
+                "MongoDB delete retry result: deleted_count={}",
+                retry_result.deleted_count
+            );
 
             if retry_result.deleted_count == 0 {
-                return Err(anyhow!("No document matched for deletion with _id={}", row_id));
+                return Err(anyhow!(
+                    "No document matched for deletion with _id={}",
+                    row_id
+                ));
             }
         }
 
@@ -427,7 +441,6 @@ impl MongodbConfig {
 /// Parse SQL string to extract collection name, limit, and offset.
 /// Expected format: SELECT * FROM <collection> [LIMIT <n>] [OFFSET <m>]
 fn parse_sql_params(sql: &str) -> (String, i64, i64) {
-    let sql_upper = sql.to_uppercase();
     let parts: Vec<&str> = sql.split_whitespace().collect();
 
     let mut collection_name = String::new();
@@ -479,20 +492,16 @@ fn bson_value_to_string(value: &mongodb::bson::Bson) -> Option<String> {
         mongodb::bson::Bson::Int64(i) => Some(format!("{}", i)),
         mongodb::bson::Bson::Boolean(b) => Some(format!("{}", b)),
         mongodb::bson::Bson::ObjectId(oid) => Some(format!("{}", oid)),
-        mongodb::bson::Bson::DateTime(dt) => {
-            Some(dt.to_rfc3339_string())
-        }
+        mongodb::bson::Bson::DateTime(dt) => dt.try_to_rfc3339_string().ok(),
         mongodb::bson::Bson::Array(arr) => {
-            let str_arr: Vec<String> = arr.iter().filter_map(|v| bson_value_to_string(v)).collect();
+            let str_arr: Vec<String> = arr.iter().filter_map(bson_value_to_string).collect();
             Some(format!("[{}]", str_arr.join(", ")))
         }
         mongodb::bson::Bson::Document(doc) => {
             // Serialize nested document as JSON string
             serde_json::to_string(&doc).ok()
         }
-        mongodb::bson::Bson::Binary(bin) => {
-            Some(format!("Binary({})", hex::encode(&bin.bytes)))
-        }
+        mongodb::bson::Bson::Binary(bin) => Some(format!("Binary({})", hex::encode(&bin.bytes))),
         mongodb::bson::Bson::RegularExpression(regex) => {
             Some(format!("/{}/{}", regex.pattern, regex.options))
         }
@@ -596,9 +605,7 @@ fn parse_values_list(values_str: &str) -> Vec<Bson> {
 
 /// Parse a SQL UPDATE statement into MongoDB filter and update documents.
 /// Expected format: UPDATE `collection` SET `field1` = 'value1', `field2` = NULL WHERE `_id` = 'id_value'
-fn parse_update_sql(
-    sql: &str,
-) -> Result<(String, Document, Document), anyhow::Error> {
+fn parse_update_sql(sql: &str) -> Result<(String, Document, Document), anyhow::Error> {
     // Extract collection name: text between "UPDATE" and "SET"
     let sql_upper = sql.to_uppercase();
     let set_pos = sql_upper
@@ -702,7 +709,10 @@ fn parse_sql_value_to_bson(value_str: &str) -> Bson {
         // Remove surrounding quotes
         let inner = &trimmed[1..trimmed.len() - 1];
         // Unescape doubled quotes (e.g., '' -> ')
-        let unescaped = inner.replace(&format!("{}{}", quote_char, quote_char), &quote_char.to_string());
+        let unescaped = inner.replace(
+            &format!("{}{}", quote_char, quote_char),
+            &quote_char.to_string(),
+        );
         return Bson::String(unescaped);
     }
 

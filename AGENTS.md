@@ -6,7 +6,11 @@
 - 前端代码在 `src/`，Rust 端在 `src-tauri/`；**未经明确要求不改 `src-tauri/`**。
 - 左侧树的优化施工规范见 `docs/tree-optimization-plan.md`，涉及树的任务以该文档为准。
 - 验证门禁：任何改动完成后 `pnpm build` 必须零报错；涉及纯函数模块（如 `src/components/tree/treeModel.js`）时跑 `pnpm test`（vitest，配置后生效）。项目当前无 eslint/tsconfig，不要自行新增 lint/类型检查配置，除非任务明确要求。
+## 通用代码规范
 
+1. 项目单个函数最大行数限制为200行，不含空行、纯注释行，仅统计有效代码行。
+2. **单个.rs/.ts/.tsx文件超过1500行，必须进行模块拆分**：拆解为独立新文件。
+3. 任何新增、修改后的函数，若超出200行，必须自动拆解、抽取可复用公共方法/子函数，拆分后保证逻辑单一、职责清晰、不破坏原有业务流程。
 ## 基础准则
 
 - 1.以暗猜接口为耻，以认真查阅为荣
@@ -114,3 +118,36 @@
 2. 列出修改文件
 3. 说明测试执行情况
 4. 说明可能需要注意的问题
+## Rust强制规范
+
+> src-tauri/ 目录所有 Rust 代码变更强制遵守下面所有规则，AI 修改代码必须逐条满足，不得忽略、变通、省略
+#### 1. 函数行数拆分规范
+
+1. 禁止保留超行函数、禁止注释规避、禁止强行压缩代码凑行数，必须结构化拆分重构。
+2. 所有目录下的 `mod.rs` **仅允许用于声明子模块、以及使用 `pub use` 对外重导出类型/函数**。
+3. **mod.rs 文件内禁止编写任何业务逻辑代码**：不允许定义 struct、enum、函数、impl 实现、常量、业务变量等可执行逻辑。
+
+#### 2. 崩溃风险语法使用规范（unwrap / expect）
+1. 正式业务源代码（非测试代码）绝对禁止使用 unwrap()、expect() 语法，杜绝主动触发进程崩溃。
+2. 业务代码必须使用 Result 错误处理、match 匹配、? 错误传播、默认值兜底等安全写法，做好异常捕获与容错。
+3. 仅单元测试代码允许使用 `unwrap()`、`expect()`、`panic!()`，且必须完整包裹在 `#[cfg(test)]` 范围内；测试模块需添加 `#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]`，以上方法禁止溢出到业务代码。
+
+#### 3. API与函数参数设计规范
+1. 禁止使用无说明含义的布尔值、模糊Option作为函数位置参数，例如 `update_status(false)`。
+2. 优先选用枚举、命名构造方法、NewType包装类型，让调用代码自解释。
+3. 如果确实必须传入布尔/数字字面量位置参数，增加参数名注释：`update_status(/*force_save*/ true)`。
+4. 仅当方法名与唯一参数名称完全匹配时（`.enabled(false)`），豁免注释要求。
+
+#### 4. Async Trait 编写规范
+1. 业务Trait优先使用**返回impl Future的原生RPITIT写法**，禁止默认使用 `#[async_trait]`。
+2. 推荐范式：
+```rust
+fn execute(&self) -> impl std::future::Future<Output = Result<(),Error>> + Send;
+```
+#### 5. Clippy 与格式化校验规范
+1. 后端代码修改完成后，必须执行 `cargo clippy --all-targets`（含测试代码）：不允许出现 error，且不得引入新的 warning；本次修改触碰的文件中存在存量 warning 的应顺带修复。cargo 输出的环境类告警（如 ~/.cargo 配置、工具链、manifest key 提示）不计入。
+2. 必须执行 `cargo fmt` 统一代码格式后再提交；项目无 rustfmt.toml，使用默认格式化配置。
+3. clippy lint 级别以 Cargo.toml 中 `[lints.clippy]` 为准；全局性豁免（如 type_complexity、too_many_arguments）统一在 `[lints.clippy]` 配置为 allow 并在改动说明中交代理由；定点豁免在对应符号上加 `#[allow(...)]` 并附注释说明原因。
+4. 仅特定 feature（postgres / windows-gui）下使用的代码，优先跟随现有 `#[cfg(feature = ...)]` 门控模式；无法整体门控的混合文件用定点 allow + 注释。
+5. 死代码处理：全仓库（含各 feature 分支）确认零引用的代码直接删除，git 历史可找回，不用 allow 保留。
+

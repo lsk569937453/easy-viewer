@@ -1,12 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  type KeyboardEvent as ReactKeyboardEvent,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useDebouncedValue } from "../../hooks/useDebouncedValue";
 import type {
   OpenNodes,
   RowActionKey,
@@ -15,15 +9,16 @@ import type {
   VisibleTreeRow,
 } from "../../types/tree";
 import type { ContextMenuItem } from "../ContextMenuWrapper";
-import SearchBox from "../ui/SearchBox";
 import { EmptyState } from "../ui/states";
 import TreeRow from "./TreeRow";
+import TreeSearchHeader from "./TreeSearchHeader";
 import {
   filterTreeByQuery,
   flattenVisibleNodes,
   isNodeExpandable,
   shouldToggleOnActivate,
 } from "./treeModel";
+import { useTreeKeyboardNav } from "./useTreeKeyboardNav";
 
 const ESTIMATED_ROW_HEIGHT = 30;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -57,24 +52,17 @@ function TreeSidebar({
 }: TreeSidebarProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [searchInput, setSearchInput] = useState("");
-  const [query, setQuery] = useState("");
   const [focusedId, setFocusedId] = useState<string | null>(null);
 
-  // 输入防抖：让最后一次输入生效
-  useEffect(() => {
-    if (!searchInput) {
-      setQuery("");
-      return undefined;
-    }
-    const timer = setTimeout(() => {
-      setQuery(searchInput.trim());
-    }, SEARCH_DEBOUNCE_MS);
-    return () => clearTimeout(timer);
-  }, [searchInput]);
+  // 输入防抖：让最后一次输入生效；清空输入时立即退出过滤态
+  const debouncedSearchInput = useDebouncedValue(
+    searchInput,
+    SEARCH_DEBOUNCE_MS,
+  );
+  const query = searchInput ? debouncedSearchInput.trim() : "";
 
   const handleClearSearch = useCallback(() => {
     setSearchInput("");
-    setQuery("");
   }, []);
 
   const { filteredRoots, matchCount, forcedOpenNodes } = useMemo(() => {
@@ -136,83 +124,16 @@ function TreeSidebar({
     [onRowClick, onToggle],
   );
 
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (flatRows.length === 0) return;
-
-    const currentIndex = flatRows.findIndex((row) => row.key === focusedId);
-    const currentRow = currentIndex >= 0 ? flatRows[currentIndex] : null;
-
-    switch (event.key) {
-      case "ArrowDown":
-        event.preventDefault();
-        focusRowAt(
-          currentIndex < 0
-            ? 0
-            : Math.min(currentIndex + 1, flatRows.length - 1),
-        );
-        break;
-      case "ArrowUp":
-        event.preventDefault();
-        focusRowAt(currentIndex <= 0 ? 0 : currentIndex - 1);
-        break;
-      case "ArrowRight":
-        event.preventDefault();
-        if (!currentRow) {
-          focusRowAt(0);
-          break;
-        }
-        if (
-          currentRow.node &&
-          isNodeExpandable(currentRow.node) &&
-          !currentRow.isOpen
-        ) {
-          onToggle(currentRow.node);
-          break;
-        }
-        if (currentRow.isOpen && currentRow.hasChildren) {
-          focusRowAt(currentIndex + 1);
-        }
-        break;
-      case "ArrowLeft": {
-        event.preventDefault();
-        if (!currentRow) break;
-        if (currentRow.isOpen && currentRow.node) {
-          onToggle(currentRow.node);
-          break;
-        }
-        if (currentRow.parentId != null) {
-          const parentIndex = flatRows.findIndex(
-            (row) =>
-              (row.node ? String(row.node.id) : row.key) ===
-              String(currentRow.parentId),
-          );
-          if (parentIndex >= 0) focusRowAt(parentIndex);
-        }
-        break;
-      }
-      case "Enter":
-      case " ":
-        event.preventDefault();
-        if (currentRow) activateRow(currentRow);
-        break;
-      case "Home":
-        event.preventDefault();
-        focusRowAt(0);
-        break;
-      case "End":
-        event.preventDefault();
-        focusRowAt(flatRows.length - 1);
-        break;
-      case "Escape":
-        if (searchInput || query) {
-          event.preventDefault();
-          handleClearSearch();
-        }
-        break;
-      default:
-        break;
-    }
-  };
+  const handleKeyDown = useTreeKeyboardNav({
+    flatRows,
+    focusedId,
+    focusRowAt,
+    activateRow,
+    onToggle,
+    searchInput,
+    query,
+    onClearSearch: handleClearSearch,
+  });
 
   const focusedKey =
     focusedId && flatRows.some((row) => row.key === focusedId)
@@ -223,25 +144,18 @@ function TreeSidebar({
 
   return (
     <>
-      <div className="flex-shrink-0 px-2 pb-1 pt-2">
-        <SearchBox
-          value={searchInput}
-          onChange={setSearchInput}
-          placeholder="搜索节点…"
-          ariaLabel="搜索节点"
-          onClear={handleClearSearch}
-          onSubmit={() => {
-            if (flatRows.length === 0) return;
-            scrollRef.current?.focus();
-            focusRowAt(0);
-          }}
-        />
-        {query ? (
-          <div className="px-1 pt-1 text-micro text-base-content/45">
-            {matchCount > 0 ? `${matchCount} 项匹配` : "无匹配结果"}
-          </div>
-        ) : null}
-      </div>
+      <TreeSearchHeader
+        value={searchInput}
+        onChange={setSearchInput}
+        onClear={handleClearSearch}
+        onSubmit={() => {
+          if (flatRows.length === 0) return;
+          scrollRef.current?.focus();
+          focusRowAt(0);
+        }}
+        query={query}
+        matchCount={matchCount}
+      />
 
       {noMatch ? (
         <div className="flex-1 overflow-hidden">

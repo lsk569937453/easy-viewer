@@ -584,7 +584,10 @@ impl WebdavConfig {
         }
 
         let from = object_path(&segments, is_folder);
-        *segments.last_mut().unwrap() = new_name;
+        let Some(last_segment) = segments.last_mut() else {
+            return Err(anyhow!("Nothing to rename"));
+        };
+        *last_segment = new_name;
         let to = object_path(&segments, is_folder);
         if from == to {
             return Ok(());
@@ -620,7 +623,9 @@ impl WebdavConfig {
         if target_segments == source_parent {
             return Err(anyhow!("目标目录不能与当前目录相同"));
         }
-        let name = segments.last().unwrap().clone();
+        let Some(name) = segments.last().cloned() else {
+            return Err(anyhow!("Nothing to copy"));
+        };
 
         let from = object_path(&segments, is_folder);
         let to = child_path(&target_segments, &name, is_folder);
@@ -634,6 +639,7 @@ impl WebdavConfig {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
 

@@ -55,23 +55,34 @@ use crate::vojo::update_connection_req::UpdateConnectionRequest;
 use sqlx::Row;
 use std::time::Instant;
 use tauri::State;
+/// 把 `BaseResponse` 序列化成前端约定的 JSON 字符串。
+///
+/// 原实现在两个分支直接 `unwrap()`：一旦序列化失败（结构上几乎不可能，但 `unwrap`
+/// 会直接 panic 整个进程），命令层就会崩溃。这里改为记日志 + 固定兜底 JSON，
+/// 让前端仍能按 `response_code = 1` 展示错误。
+fn encode_base_response<T: serde::Serialize>(res: &BaseResponse<T>) -> String {
+    match serde_json::to_string(res) {
+        Ok(text) => text,
+        Err(err) => {
+            error!("serialize base response failed: {}", err);
+            r#"{"response_code":1,"response_msg":"响应序列化失败"}"#.to_string()
+        }
+    }
+}
+
 macro_rules! handle_response {
     ($result:expr) => {
         match $result {
-            Ok(item) => {
-                let res = BaseResponse {
-                    response_code: 0,
-                    response_msg: item,
-                };
-                serde_json::to_string(&res).unwrap()
-            }
+            Ok(item) => encode_base_response(&BaseResponse {
+                response_code: 0,
+                response_msg: item,
+            }),
             Err(e) => {
                 error!("{}", e);
-                let res = BaseResponse {
+                encode_base_response(&BaseResponse {
                     response_code: 1,
                     response_msg: e.to_string(),
-                };
-                serde_json::to_string(&res).unwrap()
+                })
             }
         }
     };

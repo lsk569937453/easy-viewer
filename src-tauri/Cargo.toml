@@ -112,3 +112,10 @@ debug = false
 STATIC_VCRUNTIME = false
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2.4.2"
+
+# 业务代码禁止 unwrap/expect（AGENTS.md「Rust 强制规范 / 2. 崩溃风险语法」）。
+# restriction lint 需要显式开启；测试模块用定点
+# `#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]` 放行。
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"

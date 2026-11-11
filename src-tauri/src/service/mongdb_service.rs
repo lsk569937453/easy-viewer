@@ -696,7 +696,9 @@ fn parse_sql_value_to_bson(value_str: &str) -> Bson {
     if (trimmed.starts_with('\'') && trimmed.ends_with('\''))
         || (trimmed.starts_with('"') && trimmed.ends_with('"'))
     {
-        let quote_char = trimmed.chars().next().unwrap();
+        let Some(quote_char) = trimmed.chars().next() else {
+            return Bson::String(trimmed.to_string());
+        };
         // Remove surrounding quotes
         let inner = &trimmed[1..trimmed.len() - 1];
         // Unescape doubled quotes (e.g., '' -> ')

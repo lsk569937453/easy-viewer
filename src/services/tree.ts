@@ -87,10 +87,12 @@ export const deleteBucket = (
 export const downloadNodeFile = (
   listNodeInfoReq: ListNodeInfoReq,
   destination: string,
+  isFolder = false,
 ): Promise<string> =>
   callBackend<string>(BACKEND_COMMANDS.downloadFile, {
     listNodeInfoReq,
     destination,
+    isFolder,
   });
 
 export const uploadNodeFile = (

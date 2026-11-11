@@ -141,13 +141,16 @@ const EditableCell = ({
         ref={ref}
         contentEditable
         suppressContentEditableWarning
+        role="textbox"
+        aria-label="单元格内容"
+        aria-multiline="false"
         onFocus={handleFocus}
         onBlur={handleBlur}
         onInput={handleInput}
         onKeyDown={handleKeyDown}
-        className={`px-1 py-0.5 cursor-text ${
+        className={`px-1 py-0.5 cursor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60 ${
           isFocused
-            ? "outline-none bg-base-300 overflow-y-auto whitespace-pre-wrap break-words"
+            ? "bg-base-300 overflow-y-auto whitespace-pre-wrap break-words"
             : "truncate"
         }`}
         style={{
@@ -485,8 +488,9 @@ function TableWorkspacePanel({
           className="btn btn-error btn-sm btn-circle"
           onClick={() => handleDeleteRow(row.original)}
           title="删除此行"
+          aria-label="删除该行"
         >
-          <FaTrashAlt />
+          <FaTrashAlt aria-hidden="true" />
         </button>
       ),
       enableResizing: false,
@@ -508,27 +512,33 @@ function TableWorkspacePanel({
   return (
     <div className="flex flex-col h-full">
       <div role="tablist" className="tabs tabs-boxed">
-        <a
+        <button
+          type="button"
           role="tab"
+          aria-selected={activeSubTab === "properties"}
           className={`tab ${activeSubTab === "properties" ? "tab-active" : ""}`}
           onClick={() => setActiveSubTab("properties")}
         >
           Properties
-        </a>
-        <a
+        </button>
+        <button
+          type="button"
           role="tab"
+          aria-selected={activeSubTab === "data"}
           className={`tab ${activeSubTab === "data" ? "tab-active" : ""}`}
           onClick={() => setActiveSubTab("data")}
         >
           Data
-        </a>
-        <a
+        </button>
+        <button
+          type="button"
           role="tab"
+          aria-selected={activeSubTab === "diagram"}
           className={`tab ${activeSubTab === "diagram" ? "tab-active" : ""}`}
           onClick={() => setActiveSubTab("diagram")}
         >
           Diagram
-        </a>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
@@ -543,6 +553,8 @@ function TableWorkspacePanel({
               <textarea
                 className="textarea textarea-bordered w-full h-10 min-h-[40px] max-h-[200px] resize-y font-mono text-sm"
                 placeholder="在此输入 SQL 查询..."
+                aria-label="SQL 查询"
+                name="sqlQuery"
                 value={sqlQuery}
                 onChange={handleSqlQueryChange}
               ></textarea>
@@ -560,11 +572,15 @@ function TableWorkspacePanel({
                   <input
                     type="text"
                     placeholder="检索表内容..."
+                    aria-label="检索表内容"
                     className="input input-bordered w-full pr-10"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
-                  <FaSearch className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60" />
+                  <FaSearch
+                    aria-hidden="true"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-base-content/60"
+                  />
                 </div>
 
                 {filteredTableData.length > 0 && (
@@ -574,7 +590,10 @@ function TableWorkspacePanel({
                       className="tooltip tooltip-right"
                       data-tip="表格单元格可直接点击编辑"
                     >
-                      <FaInfoCircle className="text-info cursor-pointer" />
+                      <FaInfoCircle
+                        aria-hidden="true"
+                        className="text-info cursor-pointer"
+                      />
                     </span>
                   </p>
                 )}
@@ -584,6 +603,7 @@ function TableWorkspacePanel({
                     <span>每页显示:</span>
                     <select
                       className="select select-bordered select-sm"
+                      aria-label="每页显示条数"
                       value={itemsPerPage}
                       onChange={(e) => {
                         setItemsPerPage(Number(e.target.value));
@@ -627,9 +647,10 @@ function TableWorkspacePanel({
                 <button
                   className="btn btn-ghost btn-circle"
                   title="新增数据"
+                  aria-label="新增数据"
                   onClick={handleAddRow}
                 >
-                  <FaPlus size="1.2em" />
+                  <FaPlus size="1.2em" aria-hidden="true" />
                 </button>
                 {hasChanges && (
                   <>
@@ -637,13 +658,13 @@ function TableWorkspacePanel({
                       className="btn btn-warning" // “取消修改”按钮
                       onClick={handleCancelChanges}
                     >
-                      <FaUndo className="mr-2" /> 取消修改
+                      <FaUndo className="mr-2" aria-hidden="true" /> 取消修改
                     </button>
                     <button
                       className="btn btn-success"
                       onClick={handleSaveChanges}
                     >
-                      <FaSave className="mr-2" /> 保存修改
+                      <FaSave className="mr-2" aria-hidden="true" /> 保存修改
                     </button>
                   </>
                 )}
@@ -709,7 +730,7 @@ function TableWorkspacePanel({
             <h3>表结构图</h3>
             <p>此区域将显示表的结构和关系图。</p>
             <div role="alert" className="alert alert-info mt-4">
-              <FaInfoCircle />
+              <FaInfoCircle aria-hidden="true" />
               <span>图表功能仍在开发中。</span>
             </div>
           </div>

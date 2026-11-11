@@ -339,6 +339,8 @@ function SqlEditorTabContent({
         <input
           type="text"
           className="input input-bordered input-sm font-semibold text-lg flex-grow max-w-xs"
+          aria-label="查询名称"
+          name="queryName"
           value={queryName}
           onChange={handleQueryNameChange}
           title="查询名称"
@@ -352,7 +354,7 @@ function SqlEditorTabContent({
           {isLoading ? (
             <span className="loading loading-spinner loading-xs"></span>
           ) : (
-            <FaPlay />
+            <FaPlay aria-hidden="true" />
           )}
           执行
         </button>
@@ -362,7 +364,7 @@ function SqlEditorTabContent({
           disabled={isLoading}
           title="保存查询 (Ctrl+S)"
         >
-          <FaSave />
+          <FaSave aria-hidden="true" />
           保存
           {isDirty && (
             <span className="text-red-500 text-xl leading-none ml-1">•</span>
@@ -375,6 +377,8 @@ function SqlEditorTabContent({
           className="textarea textarea-bordered w-full font-mono text-sm resize-y"
           rows={10}
           placeholder="在此输入 SQL 查询..."
+          aria-label="SQL 查询内容"
+          name="sqlContent"
           value={sqlContent}
           onChange={handleSqlContentChange}
         ></textarea>
@@ -404,11 +408,12 @@ function SqlEditorTabContent({
         <div className="flex items-center space-x-2">
           {/* 搜索输入框，现在带有FaSearch图标，但没有独立的搜索按钮 */}
           <label className="input input-bordered input-sm flex items-center gap-2 w-48">
-            <FaSearch />
+            <FaSearch aria-hidden="true" />
             <input
               type="text"
               className="grow"
               placeholder="搜索数据..."
+              aria-label="搜索数据"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)} // 实时更新搜索词
             />
@@ -423,8 +428,9 @@ function SqlEditorTabContent({
               className="join-item btn btn-sm"
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || isLoading}
+              aria-label="上一页"
             >
-              <FaChevronLeft />
+              <FaChevronLeft aria-hidden="true" />
             </button>
             <span className="join-item btn btn-sm btn-disabled">
               页 {currentPage} / {totalPages || 1}
@@ -435,8 +441,9 @@ function SqlEditorTabContent({
               disabled={
                 currentPage === totalPages || isLoading || totalPages === 0
               }
+              aria-label="下一页"
             >
-              <FaChevronRight />
+              <FaChevronRight aria-hidden="true" />
             </button>
           </div>
           <span className="text-sm">总计: {totalRows} 行</span>

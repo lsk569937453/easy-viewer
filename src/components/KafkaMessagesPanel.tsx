@@ -216,6 +216,7 @@ function KafkaMessagesPanel({
           <div className="flex items-center gap-2">
             {/* 分区过滤 */}
             <select
+              aria-label="分区筛选"
               className="select select-bordered select-sm"
               value={partitionFilter}
               onChange={(e) => setPartitionFilter(e.target.value)}
@@ -229,14 +230,15 @@ function KafkaMessagesPanel({
             {/* 搜索 */}
             <div className="join">
               <input
+                aria-label="搜索消息"
                 type="text"
                 placeholder="搜索消息..."
                 className="input input-bordered input-sm join-item"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button className="btn btn-sm join-item">
-                <IoSearch />
+              <button aria-label="搜索" className="btn btn-sm join-item">
+                <IoSearch aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -303,6 +305,7 @@ function KafkaMessagesPanel({
           <div className="text-sm text-base-content/70">
             第 {currentPage + 1} 页，每页
             <select
+              aria-label="每页条数"
               className="select select-bordered select-xs ml-2"
               value={pageSize}
               onChange={(e) => {
@@ -319,25 +322,28 @@ function KafkaMessagesPanel({
 
           <div className="join">
             <button
+              aria-label="第一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage(0)}
               disabled={currentPage === 0}
             >
-              <IoPlaySkipBack />
+              <IoPlaySkipBack aria-hidden="true" />
             </button>
             <button
+              aria-label="上一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
             >
-              <IoArrowBack />
+              <IoArrowBack aria-hidden="true" />
             </button>
             <button
+              aria-label="下一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={filteredMessages.length < pageSize}
             >
-              <IoArrowForward />
+              <IoArrowForward aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -351,10 +357,12 @@ function KafkaMessagesPanel({
 
             <div className="space-y-4">
               <div className="form-control">
-                <label className="label">
+                <label className="label" htmlFor="kafka-message-key">
                   <span className="label-text">Key (可选)</span>
                 </label>
                 <input
+                  id="kafka-message-key"
+                  name="kafka-message-key"
                   type="text"
                   className="input input-bordered"
                   value={newMessageKey}
@@ -364,11 +372,13 @@ function KafkaMessagesPanel({
               </div>
 
               <div className="form-control">
-                <label className="label">
+                <label className="label" htmlFor="kafka-message-value">
                   <span className="label-text">Value (消息内容)</span>
                   <span className="label-text-alt text-error">*</span>
                 </label>
                 <textarea
+                  id="kafka-message-value"
+                  name="kafka-message-value"
                   className="textarea textarea-bordered h-32 font-mono text-sm"
                   value={newMessageValue}
                   onChange={(e) => setNewMessageValue(e.target.value)}

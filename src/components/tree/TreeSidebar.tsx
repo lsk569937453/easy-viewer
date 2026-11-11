@@ -241,23 +241,29 @@ function TreeSidebar({
         <div className="relative">
           <input
             className="input input-sm input-ghost w-full pr-8"
-            placeholder="搜索节点..."
+            placeholder="搜索节点…"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
             onKeyDown={handleSearchKeyDown}
             aria-label="搜索节点"
+            autoComplete="off"
+            spellCheck={false}
           />
           {searchInput ? (
             <button
               type="button"
               className="absolute right-0 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs btn-circle"
               title="清空搜索"
+              aria-label="清空搜索"
               onClick={handleClearSearch}
             >
-              <FaTimes />
+              <FaTimes aria-hidden="true" />
             </button>
           ) : (
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-base-content/30 pointer-events-none">
+            <span
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-base-content/30 pointer-events-none"
+              aria-hidden="true"
+            >
               <FaSearch />
             </span>
           )}
@@ -282,7 +288,7 @@ function TreeSidebar({
           aria-activedescendant={
             focusedKey ? `tree-item-${focusedKey}` : undefined
           }
-          className="flex-1 overflow-y-auto overflow-x-hidden outline-none"
+          className="flex-1 overflow-y-auto overflow-x-hidden outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary/50"
           onKeyDown={handleKeyDown}
         >
           <div

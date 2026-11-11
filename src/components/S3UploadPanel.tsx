@@ -150,9 +150,9 @@ function S3UploadPanel({ tab }: S3UploadPanelProps) {
       }
 
       if (failCount === 0) {
-        showSuccess(`全部 ${total} 个文件上传成功!`);
+        showSuccess(`全部 ${total} 个文件上传成功！`);
       } else {
-        showSuccess(`上传完成: ${successCount} 成功, ${failCount} 失败`);
+        showError(`上传完成：${successCount} 个成功，${failCount} 个失败`);
       }
     } catch (err) {
       showError(`文件夹上传失败: ${getErrorMessage(err)}`);
@@ -214,6 +214,7 @@ function S3UploadPanel({ tab }: S3UploadPanelProps) {
           </div>
           <progress
             className="progress progress-primary w-full"
+            aria-label="文件上传进度"
             value={singleProgress.uploaded}
             max={singleProgress.total}
           ></progress>
@@ -235,6 +236,7 @@ function S3UploadPanel({ tab }: S3UploadPanelProps) {
           </div>
           <progress
             className="progress progress-secondary w-full"
+            aria-label="文件夹上传进度"
             value={progress.current}
             max={progress.total}
           ></progress>

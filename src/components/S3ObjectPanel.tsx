@@ -93,20 +93,29 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
         ) : (
           <FaFile size="1.5em" className="text-info" />
         )}
-        <div>
-          <h2 className="text-lg font-bold">{node.name}</h2>
-          <p className="text-xs text-base-content/60">
+        <div className="min-w-0">
+          <h2 className="text-lg font-bold truncate" title={node.name}>
+            {node.name}
+          </h2>
+          <p
+            className="text-xs text-base-content/60 truncate"
+            title={`${bucketName} / ${objectPath}`}
+          >
             {bucketName} / {objectPath}
           </p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-center py-12"
+        >
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       ) : error ? (
-        <div className="alert alert-error">
+        <div role="alert" className="alert alert-error">
           <span>{error}</span>
         </div>
       ) : (

@@ -78,7 +78,7 @@ function TreeRow({
         className="text-xs text-base-content/40 py-1"
         style={{ paddingLeft: 8 + depth * 16 + 24 }}
       >
-        加载中...
+        加载中…
       </div>
     );
   }
@@ -155,7 +155,9 @@ function TreeRow({
               </span>
             </div>
           ) : (
-            <span className="mr-2 flex-shrink-0">{nodeIconToRender}</span>
+            <span className="mr-2 flex-shrink-0" aria-hidden="true">
+              {nodeIconToRender}
+            </span>
           ))}
         <div
           className="flex items-baseline overflow-hidden flex-1 min-w-0"
@@ -193,9 +195,10 @@ function TreeRow({
                 action.key === "refresh" && node.error ? "text-error" : ""
               }`}
               title={action.title}
+              aria-label={`${action.title} ${node.name}`}
               onClick={(event) => handleActionClick(event, action.key)}
             >
-              <ActionIcon />
+              <ActionIcon aria-hidden="true" />
             </button>
           );
         })}

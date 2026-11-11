@@ -154,6 +154,6 @@ describe("TreeRow", () => {
 
     const html = renderToStaticMarkup(<TreeRow row={row} {...baseProps} />);
 
-    expect(html).toContain("加载中...");
+    expect(html).toContain("加载中…");
   });
 });

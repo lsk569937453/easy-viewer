@@ -147,6 +147,11 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
         setHistoryIndex(-1);
         setCurrentInput("");
       }
+    } else if (e.key === "Escape") {
+      // 与输入栏提示「ESC 清空」保持一致：只清空当前输入，不删除历史
+      e.preventDefault();
+      setCurrentInput("");
+      setHistoryIndex(-1);
     }
   };
 
@@ -333,10 +338,15 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
       )}
 
       {/* 输出区域 */}
-      <div className="flex-1 overflow-y-auto p-4 bg-base-300/20 font-mono text-sm">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label="命令输出"
+        className="flex-1 overflow-y-auto overscroll-contain p-4 bg-base-300/20 font-mono text-sm"
+      >
         {commandHistory.length === 0 ? (
-          <div className="text-center text-base-content/30 py-8">
-            <FaTerminal size={48} className="mx-auto mb-4" />
+          <div className="text-center text-base-content/50 py-8">
+            <FaTerminal size={48} className="mx-auto mb-4" aria-hidden="true" />
             <p>输入 Redis 命令开始使用</p>
             <p className="text-xs mt-2">试试 PING 命令</p>
           </div>
@@ -377,14 +387,17 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
           <input
             ref={inputRef}
             type="text"
+            aria-label="Redis 命令输入"
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="输入 Redis 命令..."
-            className="flex-1 bg-base-100 border border-base-content/20 rounded px-3 py-2 font-mono text-sm focus:outline-none focus:border-primary/50"
+            placeholder="输入 Redis 命令…"
+            className="flex-1 bg-base-100 border border-base-content/20 rounded px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus:border-primary/50"
             disabled={loading}
           />
           <button
+            type="button"
+            aria-label="执行命令"
             onClick={handleExecute}
             disabled={loading || !currentInput.trim()}
             className="btn btn-primary btn-sm"
@@ -393,7 +406,7 @@ function RedisConsolePanel({ connectionDetails }: RedisConsolePanelProps) {
             {loading ? (
               <span className="loading loading-spinner loading-xs"></span>
             ) : (
-              <IoSend />
+              <IoSend aria-hidden="true" />
             )}
           </button>
         </div>

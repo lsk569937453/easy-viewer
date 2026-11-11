@@ -20,21 +20,13 @@ body,
   themes: all;
 }
 
-/* 统一表单聚焦样式 */
-.input:focus,
-.textarea:focus,
-.select:focus,
-.btn:focus {
-  outline-offset: 0px;
-}
-
-.input-bordered:focus,
-.textarea-bordered:focus,
-.select-bordered:focus {
-  outline-offset: 0px;
-}
-.input-bordered > input:focus {
-  outline: none !important;
+/* 统一表单聚焦样式：只用 :focus-visible，并保留可见焦点环（不再全局 outline: none） */
+.input:focus-visible,
+.textarea:focus-visible,
+.select:focus-visible,
+.btn:focus-visible {
+  outline: 2px solid color-mix(in oklch, var(--color-primary) 70%, transparent);
+  outline-offset: 1px;
 }
 
 .input-bordered:focus-within {
@@ -47,7 +39,7 @@ table {
   border-collapse: collapse;
 }
 
-/* 滚动条美化 */
+/* 滚动条美化（daisyUI 5 的语义变量是 --color-base-content，--bc 已不存在） */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -56,14 +48,38 @@ table {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(var(--bc) / 0.15);
+  background: color-mix(in oklch, var(--color-base-content) 15%, transparent);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(var(--bc) / 0.3);
+  background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
+}
+
+/* 交互元素去掉移动端 300ms 双击缩放延迟 */
+button,
+a,
+[role="button"],
+label.dropdown-toggle,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* 尊重系统"减少动态效果"设置 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 右键菜单不要过大 padding */
-.menu menu-compact li > a {
+.menu.menu-compact li > a,
+.menu.menu-compact li > button {
   padding: 0.3rem 0.6rem;
 }

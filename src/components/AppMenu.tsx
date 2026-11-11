@@ -71,6 +71,22 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
     }
   };
 
+  // 键盘展开/收起下拉菜单（hover 菜单对键盘用户不可达，这里补 Enter/Space 与 Esc）
+  const handleDropdownKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    const dropdown = event.currentTarget.closest(".dropdown");
+    if (!dropdown) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      dropdown.classList.toggle("dropdown-open");
+      return;
+    }
+    if (event.key === "Escape") {
+      event.preventDefault();
+      dropdown.classList.remove("dropdown-open");
+    }
+  };
+
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
     handleItemClick();
@@ -178,19 +194,22 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
       style={{ position: "relative", zIndex: 10 }}
     >
       <div className="flex-1 flex items-center">
-        <a
-          className="btn btn-ghost text-sm font-bold normal-case px-3 tracking-wide opacity-70"
+        <span
+          className="btn btn-ghost text-sm font-bold normal-case px-3 tracking-wide opacity-70 select-none"
           data-tauri-no-drag
         >
           DB Viewer
-        </a>
+        </span>
         <ul className="menu menu-horizontal p-0" data-tauri-no-drag>
           <li>
             <div className="dropdown dropdown-hover">
               <label
                 tabIndex={0}
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
+                role="button"
+                aria-haspopup="menu"
+                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 data-tauri-no-drag
+                onKeyDown={handleDropdownKeyDown}
               >
                 连接
               </label>
@@ -198,19 +217,27 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
                 tabIndex={0}
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
               >
-                <li onClick={handleNewConnectionClick}>
-                  <a>新建连接...</a>
+                <li>
+                  <button type="button" onClick={handleNewConnectionClick}>
+                    新建连接…
+                  </button>
                 </li>
-                <li onClick={handleItemClick}>
-                  <a>打开连接...</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    打开连接…
+                  </button>
                 </li>
                 <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li onClick={handleItemClick}>
-                  <a>断开所有连接</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    断开所有连接
+                  </button>
                 </li>
                 <li className="my-1 h-[1px] bg-base-content/30"></li>
-                <li onClick={handleItemClick}>
-                  <a>退出</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    退出
+                  </button>
                 </li>
               </ul>
             </div>
@@ -220,8 +247,11 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
             <div className="dropdown dropdown-hover">
               <label
                 tabIndex={0}
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
+                role="button"
+                aria-haspopup="menu"
+                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 data-tauri-no-drag
+                onKeyDown={handleDropdownKeyDown}
               >
                 主题
               </label>
@@ -230,13 +260,15 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-56 max-h-96 overflow-y-auto"
               >
                 {themes.map((themeName) => (
-                  <li
-                    key={themeName}
-                    onClick={() => handleThemeChange(themeName)}
-                  >
-                    <a className={theme === themeName ? "active" : ""}>
+                  <li key={themeName}>
+                    <button
+                      type="button"
+                      aria-current={theme === themeName}
+                      className={theme === themeName ? "active" : ""}
+                      onClick={() => handleThemeChange(themeName)}
+                    >
                       {themeName.charAt(0).toUpperCase() + themeName.slice(1)}
-                    </a>
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -247,8 +279,11 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
             <div className="dropdown dropdown-hover">
               <label
                 tabIndex={0}
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
+                role="button"
+                aria-haspopup="menu"
+                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 data-tauri-no-drag
+                onKeyDown={handleDropdownKeyDown}
               >
                 视图
               </label>
@@ -256,11 +291,15 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
                 tabIndex={0}
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
               >
-                <li onClick={handleItemClick}>
-                  <a>刷新</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    刷新
+                  </button>
                 </li>
-                <li onClick={handleItemClick}>
-                  <a>全屏</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    全屏
+                  </button>
                 </li>
               </ul>
             </div>
@@ -270,8 +309,11 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
             <div className="dropdown dropdown-hover">
               <label
                 tabIndex={0}
-                className="dropdown-toggle cursor-pointer normal-case py-3 px-4"
+                role="button"
+                aria-haspopup="menu"
+                className="dropdown-toggle cursor-pointer normal-case py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 data-tauri-no-drag
+                onKeyDown={handleDropdownKeyDown}
               >
                 帮助
               </label>
@@ -279,11 +321,15 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
                 tabIndex={0}
                 className="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52"
               >
-                <li onClick={handleAboutClick}>
-                  <a>关于</a>
+                <li>
+                  <button type="button" onClick={handleAboutClick}>
+                    关于
+                  </button>
                 </li>
-                <li onClick={handleItemClick}>
-                  <a>检查更新...</a>
+                <li>
+                  <button type="button" onClick={handleItemClick}>
+                    检查更新…
+                  </button>
                 </li>
               </ul>
             </div>
@@ -293,22 +339,31 @@ function AppMenu({ onConnectionCreated }: AppMenuProps) {
 
       <div className="flex-none" data-tauri-no-drag>
         <button
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content"
+          type="button"
+          aria-label="最小化窗口"
+          title="最小化"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           onClick={() => appWindow?.minimize()}
         >
-          ─
+          <span aria-hidden="true">─</span>
         </button>
         <button
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content"
+          type="button"
+          aria-label="最大化或还原窗口"
+          title="最大化 / 还原"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:text-base-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           onClick={() => appWindow?.toggleMaximize()}
         >
-          □
+          <span aria-hidden="true">□</span>
         </button>
         <button
-          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:bg-error hover:text-error-content"
+          type="button"
+          aria-label="关闭窗口"
+          title="关闭"
+          className="btn btn-ghost btn-xs w-8 h-8 text-base-content/50 hover:bg-error hover:text-error-content focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
           onClick={() => appWindow?.close()}
         >
-          ✕
+          <span aria-hidden="true">✕</span>
         </button>
       </div>
 

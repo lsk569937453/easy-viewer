@@ -1,5 +1,6 @@
 // components/ContextMenuWrapper.ts
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   useEffect,
@@ -73,12 +74,56 @@ function ContextMenuWrapper({
     };
   }, [contextMenu.visible]);
 
+  // 菜单打开后聚焦第一项，保证键盘可操作
+  useEffect(() => {
+    if (!contextMenu.visible) return;
+    const firstItem = menuRef.current?.querySelector<HTMLButtonElement>(
+      "[role='menuitem']",
+    );
+    firstItem?.focus();
+  }, [contextMenu.visible]);
+
+  // Esc 关闭，上下键在菜单项间移动
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLButtonElement>("[role='menuitem']") ??
+        [],
+    );
+    const activeIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      handleClose();
+      return;
+    }
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (items.length === 0) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      const nextIndex =
+        activeIndex < 0
+          ? 0
+          : (activeIndex + step + items.length) % items.length;
+      items[nextIndex]?.focus();
+    }
+  };
+
   return (
-    <div className="w-full" onContextMenu={handleContextMenu} onClick={onClick}>
+    <div
+      role="presentation"
+      className="w-full"
+      onContextMenu={handleContextMenu}
+      onClick={onClick}
+    >
       {children}
       {contextMenu.visible && (
         <div
           ref={menuRef}
+          role="menu"
+          tabIndex={-1}
+          onKeyDown={handleMenuKeyDown}
           style={{
             position: "fixed",
             top: `${contextMenu.y}px`,
@@ -87,17 +132,19 @@ function ContextMenuWrapper({
           }}
         >
           {/* 这里就是 daisyUI 的 Menu 组件 */}
-          <ul className="menu bg-base-200 w-56 rounded-box shadow-lg">
+          <ul role="none" className="menu bg-base-200 w-56 rounded-box shadow-lg">
             {menuItems.map((item, index) => (
-              <li key={index}>
-                <a
+              <li key={`${item.label}-${index}`} role="none">
+                <button
+                  type="button"
+                  role="menuitem"
                   onClick={() => {
                     item.onClick();
                     handleClose();
                   }}
                 >
                   {item.label}
-                </a>
+                </button>
               </li>
             ))}
           </ul>

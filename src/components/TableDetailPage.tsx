@@ -254,19 +254,25 @@ function TableDetailPage({ activeTabNode, defaultTab }: TableDetailPageProps) {
 
   return (
     <div className="p-4 h-full flex flex-col">
-      <div className="tabs tabs-boxed mb-4 self-start">
-        <a
+      <div role="tablist" className="tabs tabs-boxed mb-4 self-start">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "ddl"}
           className={`tab ${activeTab === "ddl" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("ddl")}
         >
           DDL
-        </a>
-        <a
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "column"}
           className={`tab ${activeTab === "column" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("column")}
         >
           列信息
-        </a>
+        </button>
       </div>
 
       <div className="flex-grow overflow-auto">{renderContent()}</div>

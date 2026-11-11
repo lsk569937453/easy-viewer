@@ -288,6 +288,7 @@ function ElasticsearchIndexPanel({
             {searchMode === "simple" ? (
               <div className="join">
                 <input
+                  aria-label="搜索文档"
                   type="text"
                   placeholder="搜索文档..."
                   className="input input-bordered input-sm join-item w-64"
@@ -299,6 +300,7 @@ function ElasticsearchIndexPanel({
                 />
                 {pendingSearch && (
                   <button
+                    aria-label="清除搜索"
                     className="btn btn-sm join-item btn-ghost"
                     onClick={handleClearSearch}
                     title="清除搜索"
@@ -307,10 +309,11 @@ function ElasticsearchIndexPanel({
                   </button>
                 )}
                 <button
+                  aria-label="搜索"
                   className="btn btn-sm join-item btn-primary"
                   onClick={handleSimpleSearch}
                 >
-                  <IoSearch />
+                  <IoSearch aria-hidden="true" />
                 </button>
               </div>
             ) : (
@@ -535,6 +538,7 @@ function ElasticsearchIndexPanel({
               Elasticsearch query DSL（仅需填写 query 部分）
             </div>
             <textarea
+              aria-label="Elasticsearch Query DSL"
               className="textarea textarea-bordered w-full font-mono text-xs leading-relaxed"
               rows={6}
               value={queryText}
@@ -666,6 +670,7 @@ function ElasticsearchIndexPanel({
           <div className="text-sm text-base-content/70">
             第 {currentPage + 1} / {totalPages || 1} 页，每页
             <select
+              aria-label="每页条数"
               className="select select-bordered select-xs ml-2 mr-1"
               value={pageSize}
               onChange={(e) => {
@@ -682,25 +687,28 @@ function ElasticsearchIndexPanel({
 
           <div className="join">
             <button
+              aria-label="第一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage(0)}
               disabled={currentPage === 0}
             >
-              <IoPlaySkipBack />
+              <IoPlaySkipBack aria-hidden="true" />
             </button>
             <button
+              aria-label="上一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
             >
-              <IoArrowBack />
+              <IoArrowBack aria-hidden="true" />
             </button>
             <button
+              aria-label="下一页"
               className="btn btn-sm join-item"
               onClick={() => setCurrentPage((p) => p + 1)}
               disabled={currentPage + 1 >= totalPages}
             >
-              <IoArrowForward />
+              <IoArrowForward aria-hidden="true" />
             </button>
           </div>
         </div>

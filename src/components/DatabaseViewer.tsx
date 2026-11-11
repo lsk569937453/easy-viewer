@@ -1815,9 +1815,15 @@ function DatabaseViewer({
         onSaveSuccess={handleConnectionModalSaveSuccess}
         editingId={editingConnectionId}
       />
-      <dialog ref={deleteModalRef} className="modal">
+      <dialog
+        ref={deleteModalRef}
+        className="modal"
+        aria-labelledby="delete-dialog-title"
+      >
         <div className="modal-box">
-          <h3 className="font-bold text-lg">确认删除</h3>
+          <h3 id="delete-dialog-title" className="font-bold text-lg">
+            确认删除
+          </h3>
           <p className="py-4">
             <span className="font-semibold">
               {nodeToDelete?.iconName === "singleQuery"
@@ -1829,7 +1835,7 @@ function DatabaseViewer({
                     : nodeToDelete?.iconName === "textFile"
                       ? "文件"
                       : "连接"}{" "}
-              "{nodeToDelete?.name}"
+              “{nodeToDelete?.name}”
             </span>
             此操作不可撤销。
           </p>
@@ -1843,20 +1849,32 @@ function DatabaseViewer({
           </div>
         </div>
         <form method="dialog" className="modal-backdrop">
-          <button onClick={handleCancelDelete}>close</button>
+          <button aria-label="关闭对话框" onClick={handleCancelDelete}>
+            close
+          </button>
         </form>
       </dialog>
 
-      <dialog ref={createCollectionModalRef} className="modal">
+      <dialog
+        ref={createCollectionModalRef}
+        className="modal"
+        aria-labelledby="create-collection-dialog-title"
+      >
         <div className="modal-box">
-          <h3 className="font-bold text-lg">新建 Collection</h3>
+          <h3 id="create-collection-dialog-title" className="font-bold text-lg">
+            新建 Collection
+          </h3>
           <div className="form-control w-full mt-4">
-            <label className="label">
+            <label className="label" htmlFor="new-collection-name">
               <span className="label-text">Collection 名称</span>
             </label>
             <input
+              id="new-collection-name"
+              name="collectionName"
               type="text"
-              placeholder="请输入 Collection 名称"
+              placeholder="例如：orders_2024…"
+              autoComplete="off"
+              spellCheck={false}
               className="input input-bordered w-full"
               value={newCollectionName}
               onChange={(e) => setNewCollectionName(e.target.value)}
@@ -1884,16 +1902,26 @@ function DatabaseViewer({
         </form>
       </dialog>
 
-      <dialog ref={createBucketModalRef} className="modal">
+      <dialog
+        ref={createBucketModalRef}
+        className="modal"
+        aria-labelledby="create-bucket-dialog-title"
+      >
         <div className="modal-box">
-          <h3 className="font-bold text-lg">新建 Bucket</h3>
+          <h3 id="create-bucket-dialog-title" className="font-bold text-lg">
+            新建 Bucket
+          </h3>
           <div className="form-control w-full mt-4">
-            <label className="label">
+            <label className="label" htmlFor="new-bucket-name">
               <span className="label-text">Bucket 名称</span>
             </label>
             <input
+              id="new-bucket-name"
+              name="bucketName"
               type="text"
-              placeholder="请输入 Bucket 名称"
+              placeholder="例如：backup-2024…"
+              autoComplete="off"
+              spellCheck={false}
               className="input input-bordered w-full"
               value={newBucketName}
               onChange={(e) => setNewBucketName(e.target.value)}
@@ -1920,16 +1948,26 @@ function DatabaseViewer({
           <button onClick={handleCancelCreateBucket}>close</button>
         </form>
       </dialog>
-      <dialog ref={renameModalRef} className="modal">
+      <dialog
+        ref={renameModalRef}
+        className="modal"
+        aria-labelledby="rename-dialog-title"
+      >
         <div className="modal-box">
-          <h3 className="font-bold text-lg">重命名</h3>
+          <h3 id="rename-dialog-title" className="font-bold text-lg">
+            重命名
+          </h3>
           <div className="form-control w-full mt-4">
-            <label className="label">
+            <label className="label" htmlFor="rename-input">
               <span className="label-text">新名称</span>
             </label>
             <input
+              id="rename-input"
+              name="newName"
               type="text"
-              placeholder="请输入新名称"
+              placeholder="请输入新名称…"
+              autoComplete="off"
+              spellCheck={false}
               className="input input-bordered w-full"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
@@ -1959,21 +1997,31 @@ function DatabaseViewer({
         </form>
       </dialog>
 
-      <dialog ref={copyModalRef} className="modal">
+      <dialog
+        ref={copyModalRef}
+        className="modal"
+        aria-labelledby="copy-dialog-title"
+      >
         <div className="modal-box">
-          <h3 className="font-bold text-lg">复制到其他目录</h3>
+          <h3 id="copy-dialog-title" className="font-bold text-lg">
+            复制到其他目录
+          </h3>
           <p className="py-1 text-xs text-base-content/60">
-            将 "{nodeToCopy?.name}"
+            将 “{nodeToCopy?.name}”
             {nodeToCopy?.iconName === "folder" ? "（含全部嵌套内容）" : ""}{" "}
             复制到以下 WebDAV 目录，保留原名称；目标已有同名内容时会被覆盖。
           </p>
           <div className="form-control w-full mt-4">
-            <label className="label">
+            <label className="label" htmlFor="copy-target-dir">
               <span className="label-text">目标目录</span>
             </label>
             <input
+              id="copy-target-dir"
+              name="targetDir"
               type="text"
-              placeholder="如 /docs/backup，/ 表示根目录"
+              placeholder="例如：/docs/backup，/ 表示根目录…"
+              autoComplete="off"
+              spellCheck={false}
               className="input input-bordered w-full"
               value={copyTargetDir}
               onChange={(e) => setCopyTargetDir(e.target.value)}

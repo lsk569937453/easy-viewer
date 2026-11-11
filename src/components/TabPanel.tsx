@@ -1,4 +1,5 @@
 import {
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   useEffect,
   useRef,
@@ -47,6 +48,22 @@ function TabPanel({
   const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
 
   const tabPanelContainerRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // 菜单打开后聚焦第一项，Esc 关闭，保证键盘可用
+  useEffect(() => {
+    if (!menuVisible) return;
+    menuRef.current
+      ?.querySelector<HTMLButtonElement>("[role='menuitem']")
+      ?.focus();
+  }, [menuVisible]);
+
+  const handleMenuKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setMenuVisible(false);
+    }
+  };
 
   const handleContextMenu = (
     e: ReactMouseEvent<HTMLDivElement>,
@@ -121,6 +138,29 @@ function TabPanel({
     setActiveTabId(tabId);
   };
 
+  // 标签栏键盘导航：←/→ 循环移动焦点并激活对应标签页
+  const handleTabListKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    const tabElements = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="tab"]'),
+    );
+    if (tabElements.length === 0) return;
+
+    event.preventDefault();
+    const currentIndex = tabElements.indexOf(
+      document.activeElement as HTMLElement,
+    );
+    const step = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex =
+      currentIndex < 0
+        ? 0
+        : (currentIndex + step + tabElements.length) % tabElements.length;
+    const nextTab = tabElements[nextIndex];
+    const nextTabId = nextTab?.dataset.tabId;
+    nextTab?.focus();
+    if (nextTabId) setActiveTabId(nextTabId);
+  };
+
   return (
     <div
       ref={tabPanelContainerRef}
@@ -128,10 +168,19 @@ function TabPanel({
     >
       {/* Tab Bar */}
       {tabs.length > 0 && (
-        <div className="flex border-b border-base-content/5 bg-base-200/50 w-full">
+        <div
+          role="tablist"
+          aria-label="打开的标签页"
+          onKeyDown={handleTabListKeyDown}
+          className="flex border-b border-base-content/5 bg-base-200/50 w-full overflow-x-auto"
+        >
           {tabs.map((tab) => (
             <div
               key={tab.id}
+              role="tab"
+              aria-selected={activeTabId === tab.id}
+              tabIndex={activeTabId === tab.id ? 0 : -1}
+              data-tab-id={tab.id}
               className={`
                 flex items-center px-3 py-1.5 cursor-pointer border-r border-base-content/5
                 flex-1 min-w-[60px] max-w-[220px] transition-colors
@@ -143,25 +192,36 @@ function TabPanel({
               `}
               onClick={() => handleTabClick(tab.id)}
               onContextMenu={(e) => handleContextMenu(e, tab.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleTabClick(tab.id);
+                }
+              }}
             >
-              <span className="mr-1.5 flex-shrink-0 opacity-60">
+              <span
+                className="mr-1.5 flex-shrink-0 opacity-60"
+                aria-hidden="true"
+              >
                 {tab.icon}
               </span>
               <span className="truncate flex-grow text-xs">{tab.name}</span>
               <button
-                className="ml-1 flex-shrink-0 text-base-content/30 hover:text-error transition-colors"
+                type="button"
+                aria-label={`关闭 ${tab.name} 标签页`}
+                className="ml-1 flex-shrink-0 rounded text-base-content/40 hover:text-error transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleCloseTab(tab.id);
                 }}
               >
-                <FaTimes size="0.7em" />
+                <FaTimes size="0.7em" aria-hidden="true" />
               </button>
             </div>
           ))}
         </div>
       )}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {activeTabId && tabs.length > 0 ? (
           (() => {
             const activeTab = tabs.find((tab) => tab.id === activeTabId);
@@ -342,6 +402,7 @@ function TabPanel({
       {menuVisible && (
         <div
           ref={(el) => {
+            menuRef.current = el;
             if (el && tabPanelContainerRef.current) {
               const containerRect =
                 tabPanelContainerRef.current.getBoundingClientRect();
@@ -353,18 +414,27 @@ function TabPanel({
               }
             }
           }}
+          role="menu"
+          tabIndex={-1}
+          onKeyDown={handleMenuKeyDown}
           className="absolute z-50 bg-base-100 shadow-lg rounded-md p-2 min-w-[160px]"
           style={{ top: menuPosition.y, left: menuPosition.x }}
         >
           <ul className="menu menu-compact">
-            <li onClick={handleCloseLeft}>
-              <a>关闭标签左边页面</a>
+            <li>
+              <button type="button" role="menuitem" onClick={handleCloseLeft}>
+                关闭左侧标签页
+              </button>
             </li>
-            <li onClick={handleCloseRight}>
-              <a>关闭右边页面</a>
+            <li>
+              <button type="button" role="menuitem" onClick={handleCloseRight}>
+                关闭右侧标签页
+              </button>
             </li>
-            <li onClick={handleCloseAll}>
-              <a>关闭所有页面</a>
+            <li>
+              <button type="button" role="menuitem" onClick={handleCloseAll}>
+                关闭所有标签页
+              </button>
             </li>
           </ul>
         </div>

@@ -342,24 +342,33 @@ function IndexDetailPage({ activeTabNode, tableName }: IndexDetailPageProps) {
   return (
     <div className="p-4 h-full flex flex-col">
       <div className="tabs tabs-boxed mb-4 self-start">
-        <a
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "info"}
           className={`tab ${activeTab === "info" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("info")}
         >
           基本信息
-        </a>
-        <a
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "columns"}
           className={`tab ${activeTab === "columns" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("columns")}
         >
           索引列
-        </a>
-        <a
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "sql"}
           className={`tab ${activeTab === "sql" ? "tab-active" : ""}`}
           onClick={() => setActiveTab("sql")}
         >
           创建SQL
-        </a>
+        </button>
       </div>
 
       <div className="flex-grow overflow-auto">{renderContent()}</div>

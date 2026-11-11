@@ -420,14 +420,20 @@ function RedisKeyDetailPanel({
             </button>
             <div className="join">
               <input
-                type="text"
-                placeholder="Search..."
+                type="search"
+                aria-label="搜索键值"
+                placeholder="搜索键值…"
                 className="input input-bordered input-sm join-item w-36"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <button className="btn btn-sm join-item" disabled>
-                <IoSearch />
+              <button
+                type="button"
+                className="btn btn-sm join-item"
+                aria-label="搜索"
+                disabled
+              >
+                <IoSearch aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -449,11 +455,15 @@ function RedisKeyDetailPanel({
       {/* ─── Value Content ─── */}
       <div className="flex-1 overflow-auto">
         {error ? (
-          <div className="alert alert-error m-4">
+          <div role="alert" className="alert alert-error m-4">
             <span>{error}</span>
           </div>
         ) : loading ? (
-          <div className="flex items-center justify-center h-full">
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center justify-center h-full"
+          >
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         ) : filteredRows.length === 0 ? (
@@ -509,6 +519,7 @@ function RedisKeyDetailPanel({
               </span>
               <select
                 className="select select-bordered select-xs"
+                aria-label="每页条数"
                 value={pageSize}
                 onChange={(e) => setPageSize(Number(e.target.value))}
               >
@@ -521,20 +532,24 @@ function RedisKeyDetailPanel({
             </div>
             <div className="join">
               <button
+                type="button"
                 className="btn btn-sm join-item"
+                aria-label="上一页"
                 onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
                 disabled={safeCurrentPage === 0}
               >
-                <IoArrowBack />
+                <IoArrowBack aria-hidden="true" />
               </button>
               <button
+                type="button"
                 className="btn btn-sm join-item"
+                aria-label="下一页"
                 onClick={() =>
                   setCurrentPage((p) => Math.min(totalPages - 1, p + 1))
                 }
                 disabled={safeCurrentPage >= totalPages - 1}
               >
-                <IoArrowForward />
+                <IoArrowForward aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -543,12 +558,14 @@ function RedisKeyDetailPanel({
 
       {/* ─── Delete Confirmation Modal ─── */}
       {showDeleteConfirm && (
-        <dialog className="modal modal-open">
+        <dialog className="modal modal-open" aria-labelledby="redis-delete-title">
           <div className="modal-box">
-            <h3 className="font-bold text-lg text-error">Delete Key</h3>
+            <h3 id="redis-delete-title" className="font-bold text-lg text-error">
+              Delete Key
+            </h3>
             <p className="py-4">
               Are you sure you want to delete key{" "}
-              <span className="font-semibold text-primary">"{keyName}"</span>?
+              <span className="font-semibold text-primary">“{keyName}”</span>?
               This action cannot be undone.
             </p>
             <div className="modal-action">
@@ -579,21 +596,27 @@ function RedisKeyDetailPanel({
 
       {/* ─── Set TTL Modal ─── */}
       {showTtlModal && (
-        <dialog className="modal modal-open">
+        <dialog className="modal modal-open" aria-labelledby="redis-ttl-title">
           <div className="modal-box">
-            <h3 className="font-bold text-lg">Set TTL</h3>
+            <h3 id="redis-ttl-title" className="font-bold text-lg">
+              Set TTL
+            </h3>
             <p className="py-2 text-sm text-base-content/70">
               Set expiration for key{" "}
-              <span className="font-semibold text-primary">"{keyName}"</span>
+              <span className="font-semibold text-primary">“{keyName}”</span>
             </p>
             <div className="form-control py-2">
-              <label className="label">
+              <label className="label" htmlFor="redis-ttl-seconds">
                 <span className="label-text">Seconds until expiry</span>
               </label>
               <input
+                id="redis-ttl-seconds"
+                name="ttlSeconds"
                 type="number"
+                inputMode="numeric"
+                aria-label="过期秒数"
                 className="input input-bordered"
-                placeholder="e.g. 3600 (1 hour), 86400 (1 day)"
+                placeholder="例如：3600（1 小时）…"
                 value={newTtlSeconds}
                 onChange={(e) => setNewTtlSeconds(e.target.value)}
                 min="0"

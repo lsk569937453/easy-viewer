@@ -42,7 +42,7 @@ const DaisyToast = ({ message, type }: DaisyToastProps) => {
   const maxLength = 200;
   const displayMessage =
     message.length > maxLength
-      ? `${message.substring(0, maxLength)}...`
+      ? `${message.substring(0, maxLength)}…`
       : message;
 
   return (
@@ -66,7 +66,7 @@ export function showSuccess(
   return toast.custom(
     (t) => (
       <div
-        className={`transition-all duration-300 ${t.visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+        className={`transition-[opacity,transform] duration-300 ${t.visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
       >
         <DaisyToast message={message} type="success" />
       </div>
@@ -82,11 +82,11 @@ export function showError(
   return toast.custom(
     (t) => (
       <div
-        className={`transition-all duration-300 ${t.visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
+        className={`transition-[opacity,transform] duration-300 ${t.visible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"}`}
       >
         <DaisyToast message={message} type="error" />
       </div>
     ),
-    { duration: 4000, ...options },
+    { duration: 6000, ...options },
   );
 }

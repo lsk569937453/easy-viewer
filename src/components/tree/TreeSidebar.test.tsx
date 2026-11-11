@@ -60,7 +60,7 @@ describe("TreeSidebar", () => {
   it("渲染搜索框与可聚焦的 tree 容器", () => {
     const html = renderToStaticMarkup(<TreeSidebar {...baseProps} />);
 
-    expect(html).toContain('placeholder="搜索节点..."');
+    expect(html).toContain('placeholder="搜索节点…"');
     expect(html).toContain('role="tree"');
     expect(html).toContain('aria-label="导航树"');
     expect(html).toContain('tabindex="0"');

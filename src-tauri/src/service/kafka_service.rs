@@ -27,13 +27,13 @@ pub struct KafkaConfig {
 }
 
 // 自定义 Context 用于处理日志
-struct CustomContext;
+pub(crate) struct CustomContext;
 
 impl ClientContext for CustomContext {}
 
-pub type KafkaAdminClient = AdminClient<CustomContext>;
+pub(crate) type KafkaAdminClient = AdminClient<CustomContext>;
 pub type KafkaStreamConsumer = StreamConsumer<DefaultConsumerContext>;
-pub type KafkaFutureProducer = FutureProducer<CustomContext>;
+pub(crate) type KafkaFutureProducer = FutureProducer<CustomContext>;
 
 pub struct KafkaService {
     config: KafkaConfig,
@@ -242,11 +242,6 @@ impl KafkaService {
         Ok(topics)
     }
 
-    async fn list_consumer_groups(&self) -> Result<Vec<String>, anyhow::Error> {
-        // 暂时返回空列表，消费者组查询需要不同的实现
-        Ok(vec![])
-    }
-
     async fn get_topic_partitions(&self, topic: &str) -> Result<Vec<(i32, i32)>, anyhow::Error> {
         let client_config = self.build_client_config();
         let admin: KafkaAdminClient = client_config
@@ -299,7 +294,7 @@ impl KafkaService {
         limit: usize,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
         let mut client_config = self.build_client_config();
-        client_config.set("group.id", &format!("easy_viewer_consumer_{}", chrono::Utc::now().timestamp()));
+        client_config.set("group.id", format!("easy_viewer_consumer_{}", chrono::Utc::now().timestamp()));
         client_config.set("enable.auto.commit", "false");
 
         let consumer: KafkaStreamConsumer = client_config

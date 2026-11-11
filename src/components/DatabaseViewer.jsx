@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { showSuccess, showError } from "../utils/showToast.jsx";
 import { invoke } from "@tauri-apps/api/core";
-import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
 import TableDetailPage from "./TableDetailPage.jsx";
+import TreeSidebar from "./tree/TreeSidebar.jsx";
 import { getNodeIcon } from "./tree/nodeIcons.jsx";
 import {
   collectSubtreeIds,
@@ -497,6 +497,8 @@ function DatabaseViewer({
           databaseName: databaseName,
           initialSql: null,
           isDirty: false,
+          // 该分支的 tab 没有 node 对象，用 sourceNodeId 支撑树的选中高亮
+          sourceNodeId: node.id,
         };
         setTabs((prevTabs) => [...prevTabs, newTab]);
         setActiveTabId(newTab.id);
@@ -1611,6 +1613,29 @@ function DatabaseViewer({
     deleteModalRef.current?.showModal();
   };
 
+  // TreeRow 的动作 key -> 现有 handler
+  const handleTreeRowAction = (node, actionKey) => {
+    switch (actionKey) {
+      case "refresh":
+        return handleRefreshNode(node);
+      case "add":
+        return handleAddNode(node);
+      case "edit":
+      case "download":
+        // 下载沿用编辑通道（S3/WebDAV 文件与文件夹）
+        return handleEditNode(node);
+      case "deleteQuery":
+        return handleDeleteQuery(node);
+      case "delete":
+      default:
+        return handleRequestDeleteConnection(node);
+    }
+  };
+
+  // 选中态跟随当前 tab：tab id 带前缀，需回退到 tab.node / tab.sourceNodeId
+  const activeTab = tabs.find((tab) => tab.id === activeTabId);
+  const selectedNodeId = activeTab?.node?.id ?? activeTab?.sourceNodeId ?? null;
+
   return (
     <div className="grid h-full w-full grid-cols-1 gap-3 md:grid-cols-[minmax(280px,_1fr)_3fr]">
       <div className="flex flex-col overflow-hidden rounded-md bg-base-100 border border-base-content/5 relative">
@@ -1623,37 +1648,26 @@ function DatabaseViewer({
             <span className="text-xs text-base-content/60">正在检测连接状态...</span>
           </div>
         )}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
-          {treeData && treeData.length > 0 ? (
-            <ul className="menu p-0 w-full">
-              {treeData.map((rootNode) => (
-                <DaisyTreeNode
-                  key={rootNode.id}
-                  node={rootNode}
-                  selectedNode={tabs.find((tab) => tab.id === activeTabId)}
-                  openNodes={openNodes}
-                  onNodeClick={handleNodeActivate}
-                  onToggle={handleToggleNode}
-                  onRefresh={handleRefreshNode}
-                  onAdd={handleAddNode}
-                  onEdit={handleEditNode}
-                  onEditConnection={handleEditConnection}
-                  onDelete={handleRequestDeleteConnection}
-                  onDeleteConnection={handleRequestDeleteConnection}
-                  onDeleteQuery={handleDeleteQuery}
-                  nodeContextMenuItems={buildNodeContextMenuItems}
-                />
-              ))}
-            </ul>
-          ) : (
-            <div className="text-center text-base-content/40 p-6">
-              <p className="text-sm">暂无数据库连接</p>
-              <p className="text-xs mt-2">
-                请通过 "连接" &gt; "新建连接..." 添加
-              </p>
-            </div>
-          )}
-        </div>
+        {treeData && treeData.length > 0 ? (
+          <TreeSidebar
+            roots={treeData}
+            openNodes={openNodes}
+            selectedNodeId={selectedNodeId}
+            onRowClick={handleNodeActivate}
+            onToggle={handleToggleNode}
+            onAction={handleTreeRowAction}
+            onEditConnection={handleEditConnection}
+            onDeleteConnection={handleRequestDeleteConnection}
+            nodeContextMenuItems={buildNodeContextMenuItems}
+          />
+        ) : (
+          <div className="flex-1 overflow-y-auto text-center text-base-content/40 p-6">
+            <p className="text-sm">暂无数据库连接</p>
+            <p className="text-xs mt-2">
+              请通过 "连接" &gt; "新建连接..." 添加
+            </p>
+          </div>
+        )}
       </div>
       <TabPanel
         tabs={tabs}

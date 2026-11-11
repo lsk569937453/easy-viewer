@@ -4,8 +4,37 @@
  * { id, name, type, icon, iconName, description, details, children, path,
  *   error, isLoading, version?, offline? }
  */
+import {
+  FaDownload,
+  FaEdit,
+  FaPlus,
+  FaSyncAlt,
+  FaTrashAlt,
+} from "react-icons/fa";
 
 export const LEAF_ICON_NAMES = new Set(["textFile"]);
+
+/** 这些节点类型由 handleNodeActivate 自己处理 toggle，行点击不要再额外 toggle */
+export const SELF_TOGGLE_ICON_NAMES = ["singleTable"];
+
+/** 有"刷新/新增"动作的节点类型 */
+export const NODES_WITH_REFRESH_ADD = [
+  "query",
+  "tables",
+  "views",
+  "columns",
+  "index",
+  "partitions",
+  "collections",
+  "database",
+  "bucket",
+];
+
+/** 有"编辑"动作的节点类型 */
+export const NODES_WITH_EDIT = ["singleTable"];
+
+/** 在"新增"通道上生成 SQL 模板的节点类型 */
+export const NODES_WITH_ADD_ACTION = ["column", "primary"];
 
 /** 根节点类型：命中即为连接根节点（可编辑/删除连接，带 version 徽章） */
 export const ACTIONABLE_DB_TYPES = [
@@ -205,3 +234,127 @@ export const pruneOpenNodes = (openNodes, rootIds) => {
 
   return changed ? next : openNodes;
 };
+
+/** 节点是否可以展开（离线、列/主键/已保存查询等叶子不显示展开箭头） */
+export const isNodeExpandable = (node) => {
+  if (!node) return false;
+  if (node.offline === true) return false;
+  if (
+    node.iconName === "column" ||
+    node.iconName === "primary" ||
+    node.iconName === "singleQuery"
+  ) {
+    return false;
+  }
+  return (
+    node.children === null ||
+    (Array.isArray(node.children) && node.children.length > 0)
+  );
+};
+
+/** 行点击时是否还需要额外 toggle（这些类型由 activate 内部处理） */
+export const shouldToggleOnActivate = (iconName) =>
+  !SELF_TOGGLE_ICON_NAMES.includes(iconName);
+
+/**
+ * 行内动作配置：由节点类型驱动，TreeRow 只负责渲染。
+ * key ∈ refresh|add|edit|delete|deleteQuery|download，其中 download 沿用
+ * onEdit 通道（S3/WebDAV 下载）。
+ */
+export const getRowActions = (node) => {
+  if (!node) return [];
+
+  const iconName = node.iconName;
+  const actions = [];
+  const hasRefresh = NODES_WITH_REFRESH_ADD.includes(iconName);
+  const isRoot = isRootNode(node);
+
+  // 加载失败且没有刷新按钮的节点，补一个"重试"入口
+  if (node.error && !node.isLoading && !hasRefresh && !isRoot) {
+    actions.push({ key: "refresh", title: "重试", icon: FaSyncAlt });
+  }
+
+  if (isRoot) {
+    if (iconName === "s3") {
+      actions.push({ key: "add", title: "新增 Bucket", icon: FaPlus });
+    }
+    if (iconName === "webdav") {
+      actions.push({ key: "add", title: "上传文件", icon: FaPlus });
+    }
+    actions.push({ key: "refresh", title: "刷新", icon: FaSyncAlt });
+    actions.push({ key: "delete", title: "删除", icon: FaTrashAlt });
+    return actions;
+  }
+
+  if (iconName === "singleQuery") {
+    actions.push({ key: "deleteQuery", title: "删除查询", icon: FaTrashAlt });
+    return actions;
+  }
+
+  if (hasRefresh) {
+    actions.push({ key: "refresh", title: "刷新", icon: FaSyncAlt });
+  }
+
+  if (iconName === "bucket") {
+    actions.push({ key: "add", title: "上传文件", icon: FaPlus });
+    actions.push({ key: "delete", title: "删除 Bucket", icon: FaTrashAlt });
+    return actions;
+  }
+
+  if (iconName === "folder") {
+    actions.push({ key: "add", title: "上传文件", icon: FaPlus });
+    actions.push({ key: "download", title: "下载", icon: FaDownload });
+    actions.push({ key: "delete", title: "删除", icon: FaTrashAlt });
+    return actions;
+  }
+
+  if (iconName === "textFile") {
+    actions.push({ key: "download", title: "下载", icon: FaDownload });
+    actions.push({ key: "delete", title: "删除", icon: FaTrashAlt });
+    return actions;
+  }
+
+  if (hasRefresh || NODES_WITH_ADD_ACTION.includes(iconName)) {
+    actions.push({ key: "add", title: "新增", icon: FaPlus });
+  }
+
+  if (NODES_WITH_EDIT.includes(iconName)) {
+    actions.push({ key: "edit", title: "编辑", icon: FaEdit });
+  }
+
+  return actions;
+};
+
+/**
+ * DFS 展平"当前可见"节点：跳过未展开节点的 children。
+ * 返回 [{ key, node, depth, parentId, hasChildren, isExpandable, isOpen }]
+ */
+export const flattenVisibleNodes = (roots, openNodes) => {
+  const rows = [];
+
+  const walk = (nodes, parentId, depth) => {
+    for (const node of nodes || []) {
+      const hasChildren =
+        Array.isArray(node.children) && node.children.length > 0;
+      const isOpen = !!openNodes?.[node.id];
+
+      rows.push({
+        key: String(node.id),
+        node,
+        depth,
+        parentId,
+        hasChildren,
+        isExpandable: isNodeExpandable(node),
+        isOpen,
+      });
+
+      if (isOpen && hasChildren) {
+        walk(node.children, node.id, depth + 1);
+      }
+    }
+  };
+
+  walk(roots, null, 0);
+  return rows;
+};
+

@@ -14,6 +14,11 @@ export interface JsonCellProps {
   placeholder?: string;
   /** 阻止点击事件冒泡（表格行点击场景） */
   stopPropagation?: boolean;
+  /**
+   * 是否把 JSON 标量（数字/布尔/字符串字面量）也按 JSON 块渲染。
+   * Kafka/RocketMQ 消息正文沿用旧行为（能 JSON.parse 就格式化），默认关闭。
+   */
+  parseScalarJson?: boolean;
 }
 
 /**
@@ -27,6 +32,7 @@ function JsonCell({
   textClassName,
   placeholder = "-",
   stopPropagation = false,
+  parseScalarJson = false,
 }: JsonCellProps) {
   if (value === null || value === undefined) {
     return <span>{placeholder}</span>;
@@ -34,7 +40,7 @@ function JsonCell({
 
   const isJsonLike =
     typeof value === "string" &&
-    (value.startsWith("{") || value.startsWith("["));
+    (parseScalarJson || value.startsWith("{") || value.startsWith("["));
 
   if (isJsonLike) {
     try {

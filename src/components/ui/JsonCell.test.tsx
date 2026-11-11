@@ -26,4 +26,10 @@ describe("JsonCell", () => {
     expect(html).toContain("hello");
     expect(html).not.toContain("<pre");
   });
+
+  it("parseScalarJson 时标量也按 JSON 块渲染（消息正文沿用旧行为）", () => {
+    const html = renderToStaticMarkup(<JsonCell value="123" parseScalarJson />);
+    expect(html).toContain("<pre");
+    expect(html).toContain("123");
+  });
 });

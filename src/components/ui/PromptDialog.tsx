@@ -74,7 +74,6 @@ function PromptDialog({
     >
       {description}
       <FormField label={label} htmlFor={htmlFor} help={help}>
-        {/* biome-ignore lint/a11y/noAutofocus: 弹窗打开即聚焦唯一输入框，与拆分前的原生行为一致 */}
         <input
           id={htmlFor}
           name={htmlFor}
@@ -86,6 +85,7 @@ function PromptDialog({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           min={min}
+          // biome-ignore lint/a11y/noAutofocus: 弹窗打开即聚焦唯一输入框，与拆分前的原生行为一致
           autoFocus={autoFocus}
         />
       </FormField>

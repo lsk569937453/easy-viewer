@@ -159,6 +159,9 @@ function DaisyTreeNode({
           {isOffline && (
             <span className="ml-2 badge badge-xs badge-ghost text-[10px]">离线</span>
           )}
+          {!isOffline && node.error && !node.isLoading && (
+            <span className="ml-2 text-xs text-error flex-shrink-0">加载失败</span>
+          )}
           {!isOffline && node.description && (
             <span className="ml-2 text-xs text-base-content/60 truncate max-w-[200px]">
               {node.description}
@@ -170,6 +173,15 @@ function DaisyTreeNode({
       <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
         {isRootNode ? (
           <div className="flex items-center space-x-1">
+            {node.error && !node.isLoading && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs text-error"
+                title="重试"
+                onClick={handleRefreshClick}
+              >
+                <FaSyncAlt />
+              </button>
+            )}
             <button
               className="btn btn-ghost btn-circle btn-xs"
               title="刷新"
@@ -188,6 +200,15 @@ function DaisyTreeNode({
           </div>
         ) : (
           <div className="flex items-center space-x-1">
+            {node.error && !node.isLoading && (
+              <button
+                className="btn btn-ghost btn-circle btn-xs text-error"
+                title="重试"
+                onClick={handleRefreshClick}
+              >
+                <FaSyncAlt />
+              </button>
+            )}
             {node.iconName === "singleQuery" && (
               <button
                 className="btn btn-ghost btn-circle btn-xs"

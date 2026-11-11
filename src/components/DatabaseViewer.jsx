@@ -4,23 +4,17 @@ import { invoke } from "@tauri-apps/api/core";
 import DaisyTreeNode from "./DaisyTreeNode.jsx";
 import TabPanel from "./TabPanel.jsx";
 import NewConnectionModal from "./NewConnectionModal.jsx";
-import { DiMysql } from "react-icons/di";
 import TableDetailPage from "./TableDetailPage.jsx";
-import { SiOracle, SiSqlite, SiMongodb, SiRedis } from "react-icons/si";
+import { getNodeIcon } from "./tree/nodeIcons.jsx";
 import {
-  FaTable,
-  FaEye,
-  FaFolder,
-  FaDatabase,
-  FaLayerGroup,
-  FaKey,
-  FaSearch,
-  FaColumns,
-  FaStream,
-  FaStar,
-  FaTerminal,
-  FaCloud,
-} from "react-icons/fa";
+  collectSubtreeIds,
+  findParentNode,
+  isRootNode,
+  mapChildList,
+  pruneOpenNodes,
+  syncRootsWithConnections,
+  updateNodeInTree,
+} from "./tree/treeModel.js";
 
 import {
   generateCreateTableSql,
@@ -28,115 +22,10 @@ import {
   generateCreateIndexSql,
 } from "../utils/SqlUtils.jsx";
 
-const ICON_MAP = {
-  mysql: <DiMysql size="1.2em" color="#00758F" />,
-  oracle: <SiOracle size="1.2em" color="#F80000" />,
-  postgresql: <FaDatabase size="1.2em" color="#336791" />,
-  sqlite: <SiSqlite size="1.2em" color="#003B57" />,
-  mongodb: <SiMongodb size="1.2em" color="#47A248" />,
-  redis: <SiRedis size="1.2em" color="#DC382D" />,
-  clickhouse: <FaDatabase size="1.2em" color="#FFCC00" />,
-  elasticsearch: <FaDatabase size="1.2em" color="#FEC514" />,
-  s3: <FaDatabase size="1.2em" color="#FF9900" />,
-  kafka: <FaStream size="1.2em" color="#231F20" />,
-  rocketmq: <FaStream size="1.2em" color="#D4213D" />,
-  webdav: <FaCloud size="1.2em" color="#3B82F6" />,
-  table: <FaTable />,
-  view: <FaEye />,
-  query: <FaSearch />,
-  tables: <FaColumns />,
-  views: <FaEye />,
-  singleTable: <FaTable />,
-  partitions: <FaLayerGroup />,
-  columns: <FaColumns />,
-  index: <FaKey />,
-  singlePrimaryIndex: <FaStar />,
-  singleCommonIndex: <FaKey />,
-  column: <FaStream />,
-  primary: <FaStar />,
-  default: <FaFolder />,
-  singleQuery: <FaDatabase />,
-  // Kafka specific icons
-  kafka_topics: <FaColumns color="#00A0E4" />,
-  kafka_single_topic: <FaStream color="#00A0E4" />,
-  kafka_partitions: <FaLayerGroup color="#7B68EE" />,
-  kafka_single_partition: <FaLayerGroup color="#9370DB" />,
-  kafka_messages: <FaStream color="#FF6B6B" />,
-  kafka_consumer_groups: <FaDatabase color="#50C878" />,
-  kafka_single_consumer_group: <FaDatabase color="#3CB371" />,
-  kafka_brokers: <FaDatabase color="#FFB347" />,
-  kafka_single_broker: <FaDatabase color="#FFA500" />,
-  kafka_config: <FaKey color="#DDA0DD" />,
-  // RocketMQ specific icons
-  rocketmq_topics: <FaColumns color="#D4213D" />,
-  rocketmq_single_topic: <FaStream color="#D4213D" />,
-  rocketmq_messages: <FaStream color="#FF6B6B" />,
-  // Redis specific icons
-  redis_keys: <FaColumns color="#DC382D" />,
-  strings: <FaStream color="#FF6B6B" />,
-  hashes: <FaLayerGroup color="#7B68EE" />,
-  lists: <FaColumns color="#50C878" />,
-  sets: <FaStar color="#FFB347" />,
-  zsets: <FaKey color="#DDA0DD" />,
-  redis_console: <FaTerminal color="#DC382D" />,
-  // Elasticsearch specific icons
-  es_indices: <FaColumns color="#FEC514" />,
-  es_aliases: <FaEye color="#FEC514" />,
-  es_templates: <FaLayerGroup color="#FEC514" />,
-  es_nodes: <FaDatabase color="#FEC514" />,
-  es_single_alias: <FaEye color="#FEC514" />,
-  es_single_template: <FaLayerGroup color="#FEC514" />,
-  es_single_node: <FaDatabase color="#FEC514" />,
-  // S3 / OSS specific icons
-  bucket: <FaDatabase size="1.2em" color="#FF9900" />,
-  folder: <FaFolder color="#FFB347" />,
-  textFile: <FaEye color="#87CEEB" />,
-};
-
-const getNodeIcon = (nodeType, iconName) => {
-  const key = iconName?.toString() || nodeType?.toString() || "default";
-  return ICON_MAP[key] || ICON_MAP.default;
-};
-
-const updateNodeInTree = (nodes, nodeId, updates) => {
-  return nodes.map((node) => {
-    if (node.id === nodeId) {
-      return { ...node, ...updates };
-    }
-    if (node.children) {
-      const updatedChildren = updateNodeInTree(node.children, nodeId, updates);
-      if (updatedChildren !== node.children) {
-        return { ...node, children: updatedChildren };
-      }
-    }
-    return node;
-  });
-};
-
 const findConnectionByRootConfigId = (connections, rootConfigId) => {
   return connections.find(
     (conn) => conn.base_config_id.toString() === rootConfigId
   );
-};
-
-// 按节点 id 查找父节点；返回 null 表示是根节点，undefined 表示未找到
-const findParentNode = (nodes, nodeId, parent = null) => {
-  for (const node of nodes) {
-    if (node.id === nodeId) return parent;
-    if (node.children) {
-      const found = findParentNode(node.children, nodeId, node);
-      if (found !== undefined) return found;
-    }
-  }
-  return undefined;
-};
-
-const collectSubtreeIds = (node) => {
-  const ids = [node.id];
-  if (node.children) {
-    node.children.forEach((child) => ids.push(...collectSubtreeIds(child)));
-  }
-  return ids;
 };
 
 // path 以 prefix 为前缀（按 config_value 序列比较）
@@ -180,61 +69,83 @@ function DatabaseViewer({
     openNodesRef.current = openNodes;
   }, [openNodes]);
 
-  const fetchNodeChildren = useCallback(async (parentNode) => {
-    setTreeData((prevTree) =>
-      updateNodeInTree(prevTree, parentNode.id, { isLoading: true })
-    );
+  // 树数据的最新快照：connections 同步时需要读取"当前"树，而 effect 闭包里的
+  // treeData 可能是上一轮渲染的值
+  const treeDataRef = useRef(treeData);
+  useEffect(() => {
+    treeDataRef.current = treeData;
+  }, [treeData]);
 
-    try {
-      const listNodeInfoReq = { level_infos: parentNode.path };
-      const responseJson = await invoke("list_node_info", {
-        listNodeInfoReq,
-      });
-      const { response_code, response_msg } = JSON.parse(responseJson);
-      if (response_code === 0) {
-        // Build childNodes BEFORE setTreeData so the value is available
-        // for the caller regardless of React batching timing.
-        const childNodes = response_msg.list.map((child, index) => {
-          const childId = `${parentNode.id}-${child.name}-${index}`;
+  // nodeId -> 递增序号：并发加载时只有最后一次发起的请求可以写回树（P0-4）
+  const loadSeqRef = useRef(new Map());
+  const nextLoadSeq = useCallback((nodeId) => {
+    const key = String(nodeId);
+    const seq = (loadSeqRef.current.get(key) ?? 0) + 1;
+    loadSeqRef.current.set(key, seq);
+    return seq;
+  }, []);
+  const isLatestLoad = useCallback(
+    (nodeId, seq) => loadSeqRef.current.get(String(nodeId)) === seq,
+    []
+  );
 
-          return {
-            id: childId,
-            name: child.name,
-            type: child.type || "default",
-            icon: getNodeIcon(child.type, child.icon_name),
-            description: child.description || "",
-            iconName: child.icon_name,
-            details: `节点: ${child.name}\n类型: ${child.type || "未知"}`,
-            // 文件节点是叶子：置为空数组避免显示展开箭头，文件夹保持 null 懒加载
-            children: child.icon_name === "textFile" ? [] : null,
-            path: [
-              ...parentNode.path,
-              { level: parentNode.path.length + 1, config_value: child.name },
-            ],
-          };
-        });
+  useEffect(() => {
+    const loadSeqMap = loadSeqRef.current;
+    return () => loadSeqMap.clear();
+  }, []);
 
-        setTreeData((prevTree) =>
-          updateNodeInTree(prevTree, parentNode.id, {
-            children: childNodes,
-            isLoading: false,
-          })
-        );
+  const fetchNodeChildren = useCallback(
+    async (parentNode) => {
+      const seq = nextLoadSeq(parentNode.id);
 
-        return childNodes;
-      } else {
-        throw new Error(response_msg);
-      }
-    } catch (error) {
-      console.error("Failed to fetch node children:", error);
       setTreeData((prevTree) =>
         updateNodeInTree(prevTree, parentNode.id, {
-          children: [],
-          isLoading: false,
+          isLoading: true,
+          error: null,
         })
       );
-    }
-  }, []);
+
+      try {
+        const listNodeInfoReq = { level_infos: parentNode.path };
+        const responseJson = await invoke("list_node_info", {
+          listNodeInfoReq,
+        });
+        const { response_code, response_msg } = JSON.parse(responseJson);
+        if (response_code !== 0) {
+          throw new Error(response_msg || "加载失败");
+        }
+
+        // 先构建 childNodes 再写 state：调用方需要立即拿到返回值（不依赖 React 批处理时机）
+        const childNodes = mapChildList(parentNode, response_msg.list, getNodeIcon);
+
+        if (isLatestLoad(parentNode.id, seq)) {
+          setTreeData((prevTree) =>
+            updateNodeInTree(prevTree, parentNode.id, {
+              children: childNodes,
+              isLoading: false,
+              error: null,
+            })
+          );
+        }
+
+        return childNodes;
+      } catch (error) {
+        console.error("Failed to fetch node children:", error);
+        if (isLatestLoad(parentNode.id, seq)) {
+          setTreeData((prevTree) =>
+            updateNodeInTree(prevTree, parentNode.id, {
+              // 保持 null，便于重试/再次展开重新触发拉取
+              children: null,
+              isLoading: false,
+              error: error?.message || String(error),
+            })
+          );
+        }
+        return null;
+      }
+    },
+    [isLatestLoad, nextLoadSeq]
+  );
 
   const updateQueryNodeNameInTree = useCallback((queryIdToUpdate, newName) => {
     setTreeData((prevTree) => {
@@ -262,68 +173,143 @@ function DatabaseViewer({
     });
   }, []);
 
+  // connections -> 根节点描述（不含 children 等运行时状态）
+  const toRootDescriptor = useCallback((conn) => {
+    const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq", 12: "webdav" };
+    const dbType = dbTypeMap[conn.connection_type] || "default";
+
+    return {
+      id: conn.base_config_id,
+      name: conn.connection_name,
+      type: dbType,
+      icon: getNodeIcon(dbType, null),
+      iconName: dbType,
+      description: conn.description,
+      host: conn.host ?? null,
+      port: conn.port ?? null,
+      details: `ID: ${
+        conn.base_config_id
+      }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host || "N/A"}:${
+        conn.port || "N/A"
+      }`,
+      path: [{ level: 1, config_value: conn.base_config_id.toString() }],
+    };
+  }, []);
+
+  // 正在探测版本的根节点：避免 StrictMode 双执行时重复探测
+  const versionProbeRef = useRef(new Set());
+
+  const probeServerVersions = useCallback(async (rootIds) => {
+    const targets = rootIds.filter(
+      (id) => !versionProbeRef.current.has(String(id))
+    );
+    if (targets.length === 0) return;
+
+    targets.forEach((id) => versionProbeRef.current.add(String(id)));
+    setIsRefreshing(true);
+
+    try {
+      const results = await Promise.allSettled(
+        targets.map(async (id) => {
+          try {
+            const res = await invoke("get_server_version", {
+              baseConfigId: id,
+            });
+            const { response_code, response_msg } = JSON.parse(res);
+            if (response_code === 0) {
+              return {
+                id,
+                update: { version: response_msg || null, offline: false },
+              };
+            }
+            return { id, update: { offline: true } };
+          } catch {
+            return { id, update: { offline: true } };
+          }
+        })
+      );
+
+      setTreeData((prev) => {
+        let updated = prev;
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value) {
+            updated = updateNodeInTree(updated, r.value.id, r.value.update);
+          }
+        }
+        return updated;
+      });
+    } finally {
+      targets.forEach((id) => versionProbeRef.current.delete(String(id)));
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  // 恢复已展开但尚未加载 children 的分支（初始挂载 / 连接信息重置两类场景）
+  const hydrateOpenBranch = useCallback(
+    async (node, visited) => {
+      const key = String(node.id);
+      if (visited.has(key)) return;
+      visited.add(key);
+
+      if (!openNodesRef.current[node.id]) return;
+
+      let current = node;
+      if (current.children === null) {
+        const children = await fetchNodeChildren(current);
+        if (!children) return;
+        current = { ...current, children };
+      }
+      if (!Array.isArray(current.children) || current.children.length === 0) {
+        return;
+      }
+
+      for (const child of current.children) {
+        await hydrateOpenBranch(child, visited);
+      }
+    },
+    [fetchNodeChildren]
+  );
+
+  // connections 变化时按 id 合并根节点：不再全量重建，已加载子树与展开态得以保留
   useEffect(() => {
     let cancelled = false;
-    const loadTree = async () => {
-    const newTreeData = (connections || []).map((conn) => {
-      const dbTypeMap = { 0: "mysql", 1: "postgresql", 2: "kafka", 3: "sqlite", 4: "mongodb", 5: "oracle", 6: "mssql", 7: "clickhouse", 8: "s3", 9: "redis", 10: "elasticsearch", 11: "rocketmq", 12: "webdav" };
-      const dbType = dbTypeMap[conn.connection_type] || "default";
 
-      return {
-        id: conn.base_config_id,
-        name: conn.connection_name,
-        type: dbType,
-        icon: getNodeIcon(dbType, null),
-        iconName: dbType,
-        description: conn.description,
-        details: `ID: ${
-          conn.base_config_id
-        }\n类型: ${dbType.toUpperCase()}\n主机: ${conn.host || "N/A"}:${
-          conn.port || "N/A"
-        }`,
-        children: null,
-        path: [{ level: 1, config_value: conn.base_config_id.toString() }],
-      };
-    });
-    setTreeData(newTreeData);
+    const syncTree = async () => {
+      const { roots, addedIds, removedIds } = syncRootsWithConnections(
+        treeDataRef.current,
+        connections,
+        toRootDescriptor
+      );
 
-    // Fetch server versions in parallel, then update all nodes at once
-    setIsRefreshing(true);
-    const versionPromises = newTreeData.map(async (node) => {
-      try {
-        const res = await invoke("get_server_version", { baseConfigId: node.id });
-        const { response_code, response_msg } = JSON.parse(res);
-        if (response_code === 0) {
-          return { id: node.id, update: { version: response_msg || null, offline: false } };
-        }
-        return { id: node.id, update: { offline: true } };
-      } catch {
-        return { id: node.id, update: { offline: true } };
+      setTreeData(roots);
+
+      if (removedIds.length > 0) {
+        setOpenNodes((prev) => pruneOpenNodes(prev, removedIds));
       }
-    });
 
-    const results = await Promise.allSettled(versionPromises);
-    setTreeData((prev) => {
-      let updated = prev;
-      for (const r of results) {
-        if (r.status === "fulfilled" && r.value) {
-          updated = updateNodeInTree(updated, r.value.id, r.value.update);
-        }
+      // 只有新增连接（含首次挂载）才探测版本，未变化的连接不再重复探测
+      if (addedIds.length > 0) {
+        await probeServerVersions(addedIds);
       }
-      return updated;
-    });
-    setIsRefreshing(false);
+      if (cancelled) return;
 
-    const currentOpenNodes = openNodesRef.current;
-    newTreeData.forEach(async (node) => {
-      if (currentOpenNodes[node.id] && node.children === null) {
-        await fetchNodeChildren(node);
+      for (const root of roots) {
+        if (cancelled) return;
+        await hydrateOpenBranch(root, new Set());
       }
-    });
     };
-    if (!cancelled) loadTree();
-    return () => { cancelled = true; };
-  }, [connections, fetchNodeChildren]);
+
+    syncTree();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    connections,
+    hydrateOpenBranch,
+    probeServerVersions,
+    toRootDescriptor,
+  ]);
 
   const generateSqlForNode = (node, allConnections, limit = 100) => {
     if (!node || node.iconName !== "singleTable") {
@@ -840,7 +826,30 @@ function DatabaseViewer({
     }
   };
 
+  // 根节点刷新时顺带重探服务端版本 / 在线状态
+  const refreshRootVersion = useCallback(async (rootNode) => {
+    try {
+      const res = await invoke("get_server_version", {
+        baseConfigId: rootNode.id,
+      });
+      const { response_code, response_msg } = JSON.parse(res);
+      const update =
+        response_code === 0
+          ? { version: response_msg || null, offline: false }
+          : { offline: true };
+      setTreeData((prev) => updateNodeInTree(prev, rootNode.id, update));
+    } catch {
+      setTreeData((prev) =>
+        updateNodeInTree(prev, rootNode.id, { offline: true })
+      );
+    }
+  }, []);
+
   const handleRefreshNode = async (node) => {
+    if (isRootNode(node)) {
+      await refreshRootVersion(node);
+    }
+
     const childNodes = await fetchNodeChildren(node);
     setOpenNodes((prev) => ({ ...prev, [node.id]: true }));
 
@@ -853,46 +862,54 @@ function DatabaseViewer({
       );
 
       if (openChildren.length > 0) {
-        // Fetch all open children's data in parallel via raw invoke
+        // 每个 child 独立取号：只有最后一次发起的加载可以写回
         const results = await Promise.all(
           openChildren.map(async (child) => {
+            const seq = nextLoadSeq(child.id);
             try {
               const responseJson = await invoke("list_node_info", {
                 listNodeInfoReq: { level_infos: child.path },
               });
               const { response_code, response_msg } = JSON.parse(responseJson);
               if (response_code === 0) {
-                return { child, list: response_msg.list };
+                return { child, list: response_msg.list, seq };
               }
+              return {
+                child,
+                error: response_msg || "加载失败",
+                seq,
+              };
             } catch (err) {
               console.error("Failed to re-fetch child:", child.name, err);
+              return { child, error: err?.message || String(err), seq };
             }
-            return null;
           })
         );
 
         // Update tree state ONCE with all results
         setTreeData((prevTree) => {
           let updated = prevTree;
-          for (const result of results.filter(Boolean)) {
-            const { child, list } = result;
-            const grandChildren = list.map((item, index) => ({
-              id: `${child.id}-${item.name}-${index}`,
-              name: item.name,
-              type: item.type || "default",
-              icon: getNodeIcon(item.type, item.icon_name),
-              description: item.description || "",
-              iconName: item.icon_name,
-              details: `节点: ${item.name}\n类型: ${item.type || "未知"}`,
-              children: item.icon_name === "textFile" ? [] : null,
-              path: [
-                ...child.path,
-                { level: child.path.length + 1, config_value: item.name },
-              ],
-            }));
-            updated = updateNodeInTree(updated, child.id, {
+          for (const result of results) {
+            if (!isLatestLoad(result.child.id, result.seq)) continue;
+
+            if (result.error) {
+              updated = updateNodeInTree(updated, result.child.id, {
+                children: null,
+                isLoading: false,
+                error: result.error,
+              });
+              continue;
+            }
+
+            const grandChildren = mapChildList(
+              result.child,
+              result.list,
+              getNodeIcon
+            );
+            updated = updateNodeInTree(updated, result.child.id, {
               children: grandChildren,
               isLoading: false,
+              error: null,
             });
           }
           return updated;

@@ -1,23 +1,32 @@
 {
-  "measuredAt": "2026-11-12T00:33:40.594Z",
-  "commit": "c466b71",
+  "measuredAt": "2026-11-12T03:59:28.722Z",
+  "commit": "289b6cc",
   "dist": {
     "files": 3,
-    "bytes": 1281896,
-    "kib": 1251.85
+    "bytes": 1282837,
+    "kib": 1252.77
   },
   "source": {
     "rust": {
-      "files": 92,
-      "lines": 16252
+      "files": 93,
+      "lines": 16361
     },
     "frontend": {
       "files": 220,
-      "lines": 21115
+      "lines": 21121
     }
   },
   "manual": {
     "cold_start_ms": null,
     "scroll_fps": null
+  },
+  "open_100k_rows": {
+    "metric": "open_100k_rows",
+    "rows": 100000,
+    "cells": 410000,
+    "seed_ms": 1100,
+    "fetch_ms": 90,
+    "convert_ms": 42,
+    "total_ms": 133
   }
 }

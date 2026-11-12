@@ -1,0 +1,38 @@
+{
+  "note": "性能测量历史。baseline.json 只保留最近一次；需要对比时看这里。",
+  "measurements": [
+    {
+      "label": "阶段 1 完成（命令层已压成两层，driver/sql/store 已落地）",
+      "measuredAt": "2026-11-12T00:40:00Z",
+      "commit": "f693d20",
+      "open_100k_rows": {
+        "rows": 100000,
+        "cells": 410000,
+        "fetch_ms": 90,
+        "convert_ms": 43,
+        "total_ms": 134
+      }
+    },
+    {
+      "label": "全部阶段完成（含前端重构与 SQL 家族去重）",
+      "measuredAt": "2026-11-12T03:59:28Z",
+      "commit": "289b6cc",
+      "open_100k_rows": {
+        "rows": 100000,
+        "cells": 410000,
+        "fetch_ms": 90,
+        "convert_ms": 42,
+        "total_ms": 133
+      },
+      "dist": {
+        "bytes": 1282837,
+        "kib": 1252.77
+      }
+    }
+  ],
+  "not_measured": {
+    "cold_start_ms": "需要真实窗口，本环境无头",
+    "scroll_fps": "需要真实窗口，本环境无头",
+    "pre_refactor_baseline": "基准用例在阶段 0 才建立，无法回测原始代码；补测方法见 docs/performance-report.md"
+  }
+}

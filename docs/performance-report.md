@@ -44,8 +44,17 @@ react-datepicker / date-fns）在全仓库**零引用**，Vite 本来就不会�
 删除它们换来的是安装体积、依赖审计面和 lockfile 规模，不是 bundle 体积。
 新增的约 1 kB 来自 DDL 模板迁移后的错误信封与常量。
 
-### 3. `cold_start` / `scroll_fps`
+### 3. 发布二进制体积
 
+新 release profile（`lto=true` + `opt-level="s"` + `panic="abort"` + `strip=true`
++ `codegen-units=1`）实测：`easy_viewer.exe` = **26.49 MiB**。
+
+旧 profile 未重新打包测量（`opt-level="z"` + `lto="thin"`），因此**不给出前后对比数字**。
+方向性预期：`s` 比 `z` 生成更大但更快的代码，`lto=true` 比 `thin` 更激进地内联；
+两者都会让二进制略增、少数路径略快。这是"用体积换启动/执行速度"的主动取舍，
+若要严格验证需把旧 profile 的包也打出来对比。
+
+### 4. `cold_start` / `scroll_fps`
 **未测量。** 两者都需要真实窗口（WebView + 实际渲染），本环境无头，无法复现。
 不做测量就不写数字。测量方法已写进 `scripts/bench/README.md`：
 

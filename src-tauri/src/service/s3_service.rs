@@ -425,8 +425,7 @@ impl S3Config {
             let remaining = file_size - offset;
             let chunk_size = std::cmp::min(part_size, remaining) as usize;
             let mut chunk = vec![0u8; chunk_size];
-            use std::io::Read;
-            file.read_exact(&mut chunk).await?;
+                        file.read_exact(&mut chunk).await?;
 
             let resp = s3_client
                 .upload_part()

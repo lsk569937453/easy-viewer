@@ -108,7 +108,7 @@ impl ClickhouseConfig {
             for field_name in &field_names {
                 let cell = row
                     .get(field_name)
-                    .and_then(|v| json_value_to_string(v));
+                    .and_then(json_value_to_string);
                 row_vec.push(cell);
             }
             rows.push(row_vec);
@@ -317,7 +317,7 @@ WHERE database = '{}'",
             .data
             .first()
             .and_then(|row| row.get("version()"))
-            .and_then(|v| json_value_to_string(v))
+            .and_then(json_value_to_string)
             .ok_or_else(|| anyhow!("No version found in ClickHouse response"))?;
 
         Ok(version)
@@ -467,7 +467,7 @@ WHERE database = '{}'",
             .data
             .first()
             .and_then(|row| row.get("statement"))
-            .and_then(|v| json_value_to_string(v))
+            .and_then(json_value_to_string)
             .ok_or_else(|| anyhow!("No DDL found in response"))?;
 
         Ok(ddl)

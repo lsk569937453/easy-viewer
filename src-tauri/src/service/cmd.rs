@@ -1,100 +1,109 @@
-use super::cmd_service::delete_base_config_with_error;
-use super::cmd_service::exe_sql_with_error;
-use super::cmd_service::get_base_config_by_id_with_error;
-use super::cmd_service::get_base_config_with_error;
-use super::cmd_service::get_column_info_for_insert_sql_with_error;
-use super::cmd_service::list_node_info_with_error;
-use super::cmd_service::save_base_config_with_error;
-use super::cmd_service::update_base_config_with_error;
-use crate::common_tools::about::get_about_version_with_error;
-use crate::common_tools::base_response::BaseResponse;
-use crate::common_tools::database::test_url_with_error;
-use crate::service::base_config_service::BaseConfig;
-use crate::service::cmd_service::create_folder_with_error;
-use crate::service::cmd_service::copy_object_with_error;
-use crate::service::cmd_service::rename_object_with_error;
+//! Tauri 命令层（两层结构的**上层**）。
+//!
+//! 职责边界：
+//! - 只做 IPC 适配：反序列化入参 → 调驱动 → 把结果/错误编码成前端约定的 JSON 字符串；
+//! - **不写业务逻辑**。重构前这里往下还有一层 `cmd_service.rs`（1004 行纯转发）
+//!   和一层 `BaseConfigEnum` 的 161 个 `match` 臂，现在两者都已删除，
+//!   命令直接调用 `Driver` trait。
+//!
+//! 错误约定：成功 `{"response_code":0,"response_msg":T}`；失败
+//! `{"response_code":1,"response_msg":"<中文提示>","error":{code,message,detail,retryable}}`。
+//! `response_code` 语义保持不变（前端已按 0/1 判定），`error` 为**新增**字段。
+
+use std::sync::Arc;
+use std::time::Instant;
+
 use tauri::Emitter;
-use crate::service::cmd_service::create_collection_with_error;
-use crate::service::cmd_service::get_server_version_with_error;
-use crate::service::cmd_service::delete_bucket_with_error;
-use crate::service::cmd_service::create_bucket_with_error;
-use crate::service::cmd_service::delete_table_row_with_error;
-use crate::service::cmd_service::download_bucket_with_error;
-use crate::service::cmd_service::download_file_with_error;
-use crate::service::cmd_service::elasticsearch_search_with_error;
-use crate::service::cmd_service::elasticsearch_index_detail_with_error;
-use crate::service::cmd_service::drop_column_with_error;
-use crate::service::cmd_service::drop_index_with_error;
-use crate::service::cmd_service::drop_table_with_error;
-use crate::service::cmd_service::dump_database_with_error;
-use crate::service::cmd_service::generate_database_document_with_error;
-use crate::service::cmd_service::get_complete_words_with_error;
-use crate::service::cmd_service::get_ddl_with_error;
-use crate::service::cmd_service::get_object_info_with_error;
-use crate::service::cmd_service::get_procedure_details_with_error;
-use crate::service::cmd_service::import_database_with_error;
-use crate::service::cmd_service::init_dump_data_with_error;
-use crate::service::cmd_service::move_column_with_error;
-use crate::service::cmd_service::remove_column_with_error;
-use crate::service::cmd_service::show_columns_with_error;
-use crate::service::cmd_service::truncate_table_with_error;
-use crate::service::cmd_service::update_comment_with_error;
-use crate::service::cmd_service::update_record_with_error;
-use crate::service::cmd_service::upload_file_with_error;
-use crate::service::cmd_service::upload_folder_with_error;
-use crate::service::query_service::get_query_with_error;
-use crate::service::query_service::remove_query_with_error;
-use crate::service::query_service::rename_query_with_error;
-use crate::service::query_service::save_query_with_error;
+use tauri::State;
+
+use crate::common_tools::base_response::BaseResponse;
+use crate::error::{AppError, AppResult};
+use crate::service::base_config_service::BaseConfig;
+use crate::service::query_service;
 use crate::sql_lite::connection::AppState;
+use crate::store;
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::import_database_req::ImportDatabaseReq;
 use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::save_connection_req::SaveConnectionRequest;
 use crate::vojo::update_connection_req::UpdateConnectionRequest;
-use sqlx::Row;
-use std::time::Instant;
-use tauri::State;
-/// 把 `BaseResponse` 序列化成前端约定的 JSON 字符串。
-///
-/// 原实现在两个分支直接 `unwrap()`：一旦序列化失败（结构上几乎不可能，但 `unwrap`
-/// 会直接 panic 整个进程），命令层就会崩溃。这里改为记日志 + 固定兜底 JSON，
-/// 让前端仍能按 `response_code = 1` 展示错误。
-fn encode_base_response<T: serde::Serialize>(res: &BaseResponse<T>) -> String {
-    match serde_json::to_string(res) {
+
+/// 成功信封。
+fn encode_success<T: serde::Serialize>(payload: T) -> String {
+    match serde_json::to_string(&BaseResponse {
+        response_code: 0,
+        response_msg: payload,
+    }) {
         Ok(text) => text,
         Err(err) => {
-            error!("serialize base response failed: {}", err);
+            error!("serialize response failed: {err}");
             r#"{"response_code":1,"response_msg":"响应序列化失败"}"#.to_string()
         }
     }
 }
 
-macro_rules! handle_response {
+/// 失败信封：保留旧的 `response_code/response_msg`，追加结构化 `error`。
+fn encode_failure(err: &AppError) -> String {
+    let payload = serde_json::json!({
+        "response_code": 1,
+        "response_msg": err.message(),
+        "error": err,
+    });
+    match serde_json::to_string(&payload) {
+        Ok(text) => text,
+        Err(serialize_err) => {
+            error!("serialize error response failed: {serialize_err}");
+            r#"{"response_code":1,"response_msg":"内部错误"}"#.to_string()
+        }
+    }
+}
+
+/// 命令层统一的「结果 → JSON 字符串」出口。
+///
+/// 返回 `Result<String, ()>` 而不是裸 `String`：带引用的入参（`State`）在 Tauri
+/// 里要求异步命令返回 `Result`。业务失败已经编码进 `response_code`，
+/// 因此 `Err` 分支实际不会被用到，保留它是为了满足 IPC 约束。
+macro_rules! reply {
     ($result:expr) => {
         match $result {
-            Ok(item) => encode_base_response(&BaseResponse {
-                response_code: 0,
-                response_msg: item,
-            }),
-            Err(e) => {
-                error!("{}", e);
-                encode_base_response(&BaseResponse {
-                    response_code: 1,
-                    response_msg: e.to_string(),
-                })
+            Ok(value) => Ok(encode_success(value)),
+            Err(err) => {
+                // 驱动层统一返回 `AppError`，但查询管理等老模块仍返回 `anyhow::Error`，
+                // 这里就地收敛，避免每个调用点各写一次 `map_err`。
+                let err: AppError = err.into();
+                warn!("[{}] {}", err.code(), err);
+                Ok(encode_failure(&err))
             }
         }
     };
 }
+
+/// 计时日志：只在命令层记一次，驱动内部的 `info!` 不再逐个打点。
+macro_rules! timed {
+    ($name:literal, $body:expr) => {{
+        let started = Instant::now();
+        let result = $body;
+        info!("{}: {:?}", $name, started.elapsed());
+        result
+    }};
+}
+
+/// 无返回值的操作统一回 `"ok"`，兼容前端既有的字符串载荷约定。
+const OK_PAYLOAD: &str = "ok";
+
+// ---------------------------------------------------------------- 连接管理
+
 #[tauri::command]
-pub async fn test_url(test_database_request: BaseConfig) -> String {
-    handle_response!(test_url_with_error(test_database_request).await)
+pub async fn test_url(test_database_request: BaseConfig) -> Result<String, ()> {
+    reply!(timed!(
+        "test_url",
+        crate::common_tools::database::test_connection(&test_database_request).await
+    ))
 }
 
 #[tauri::command]
-pub fn get_about_version() -> String {
-    handle_response!(get_about_version_with_error())
+pub fn get_about_version() -> Result<String, ()> {
+    reply!(crate::common_tools::about::get_about_version_with_error().map_err(AppError::from))
 }
 
 #[tauri::command]
@@ -102,366 +111,133 @@ pub async fn save_base_config(
     state: State<'_, AppState>,
     save_connection_request: SaveConnectionRequest,
 ) -> Result<String, ()> {
-    let res = handle_response!(save_base_config_with_error(state, save_connection_request).await);
-    Ok(res)
+    reply!(store::save(state.inner(), save_connection_request).await)
 }
+
 #[tauri::command]
 pub async fn update_base_config(
     state: State<'_, AppState>,
     save_connection_request: UpdateConnectionRequest,
 ) -> Result<String, ()> {
-    let res = handle_response!(update_base_config_with_error(state, save_connection_request).await);
-    Ok(res)
+    reply!(store::update(state.inner(), save_connection_request).await)
 }
+
 #[tauri::command]
-pub async fn delete_base_config(
-    state: State<'_, AppState>,
-    base_config_id: i32,
-) -> Result<String, ()> {
-    let res = handle_response!(delete_base_config_with_error(state, base_config_id).await);
-    Ok(res)
+pub async fn delete_base_config(state: State<'_, AppState>, base_config_id: i32) -> Result<String, ()> {
+    reply!(store::delete(state.inner(), base_config_id).await)
 }
 
 #[tauri::command]
 pub async fn get_base_config(state: State<'_, AppState>) -> Result<String, ()> {
-    let res = handle_response!(get_base_config_with_error(state).await);
-
-    Ok(res)
+    reply!(store::list(state.inner()).await)
 }
+
 #[tauri::command]
 pub async fn get_base_config_by_id(
     state: State<'_, AppState>,
     base_config_id: i32,
 ) -> Result<String, ()> {
-    let res = handle_response!(get_base_config_by_id_with_error(state, base_config_id).await);
-
-    Ok(res)
+    reply!(store::get_by_id(state.inner(), base_config_id).await)
 }
-#[tauri::command]
 
+// ---------------------------------------------------------------- 左侧树
+
+#[tauri::command]
 pub async fn list_node_info(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
-    let res = handle_response!(list_node_info_with_error(state, list_node_info_req).await);
-    Ok(res)
-}
-#[tauri::command]
-
-pub async fn get_column_info_for_insert_sql(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let res = handle_response!(
-        get_column_info_for_insert_sql_with_error(state, list_node_info_req).await
-    );
-    Ok(res)
-}
-#[tauri::command]
-
-pub async fn remove_column(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    column_name: String,
-) -> Result<String, ()> {
-    let res =
-        handle_response!(remove_column_with_error(state, list_node_info_req, column_name).await);
-    Ok(res)
-}
-#[tauri::command]
-
-pub async fn update_comment(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    new_comment: String,
-) -> Result<String, ()> {
-    let res =
-        handle_response!(update_comment_with_error(state, list_node_info_req, new_comment).await);
-    Ok(res)
-}
-#[tauri::command]
-
-pub async fn exe_sql(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    sql: String,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(exe_sql_with_error(state, list_node_info_req, sql).await);
-    info!("exe_sql: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn download_file(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    destination: String,
-    is_folder: bool,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        download_file_with_error(state, list_node_info_req, destination, is_folder).await
-    );
-    info!("download_file: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn download_bucket(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    destination: String,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res =
-        handle_response!(download_bucket_with_error(state, list_node_info_req, destination).await);
-    info!("download_bucket: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn upload_file(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    local_file_path: String,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res =
-        handle_response!(upload_file_with_error(state, list_node_info_req, local_file_path).await);
-    info!("upload_file: {:?}", time.elapsed());
-    Ok(res)
-}
-
-#[tauri::command]
-pub async fn upload_file_with_progress(
-    state: State<'_, AppState>,
-    app_handle: tauri::AppHandle,
-    list_node_info_req: ListNodeInfoReq,
-    local_file_path: String,
-) -> Result<String, String> {
-    let res = upload_file_with_progress_inner(state, app_handle, list_node_info_req, local_file_path).await;
-    match res {
-        Ok(_) => Ok("{}".to_string()),
-        Err(e) => Err(e.to_string()),
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.list_node_info(list_node_info_req, app).await
     }
-}
-
-async fn upload_file_with_progress_inner(
-    state: State<'_, AppState>,
-    app_handle: tauri::AppHandle,
-    list_node_info_req: ListNodeInfoReq,
-    local_file_path: String,
-) -> Result<(), anyhow::Error> {
-    let value = list_node_info_req.level_infos[0]
-        .config_value
-        .parse::<i32>()?;
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(value)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("not found"))?;
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config: crate::service::base_config_service::BaseConfig =
-        serde_json::from_str(&connection_json_str)?;
-    let ah = app_handle.clone();
-    base_config
-        .base_config_enum
-        .upload_file_multipart(list_node_info_req, local_file_path, move |uploaded, total| {
-            let _ = ah.emit(
-                "s3-upload-progress",
-                serde_json::json!({ "uploaded": uploaded, "total": total }),
-            );
-        })
-        .await?;
-    Ok(())
+    .await)
 }
 
 #[tauri::command]
-pub async fn upload_folder(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    local_file_path: String,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        upload_folder_with_error(state, list_node_info_req, local_file_path).await
-    );
-    info!("upload_folder: {:?}", time.elapsed());
-    Ok(res)
-}
-
-#[tauri::command]
-pub async fn list_local_folder_files(
-    local_directory: String,
-) -> Result<String, ()> {
-    let mut files: Vec<String> = Vec::new();
-    for entry_res in walkdir::WalkDir::new(&local_directory) {
-        let entry = match entry_res {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        if !entry.file_type().is_dir() {
-            if let Some(path_str) = entry.path().to_str() {
-                files.push(path_str.to_string());
-            }
-        }
+pub async fn get_server_version(state: State<'_, AppState>, base_config_id: i32) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
+        // 版本探测只用于连接节点上的角标，超过 1s 视为不可用。
+        tokio::time::timeout(std::time::Duration::from_secs(1), driver.server_version())
+            .await
+            .map_err(|_| {
+                AppError::new(
+                    crate::error::ErrorCode::ConnectionTimeout,
+                    "连接超时（1s）",
+                )
+            })?
     }
-    let res = serde_json::to_string(&files).unwrap_or_else(|_| "[]".to_string());
-    Ok(res)
+    .await)
 }
 
-#[tauri::command]
-pub async fn get_complete_words(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(get_complete_words_with_error(state, list_node_info_req).await);
-    info!("get_complete_words: {:?}", time.elapsed());
-    Ok(res)
-}
-
-#[tauri::command]
-pub async fn get_procedure_details(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(get_procedure_details_with_error(state, list_node_info_req).await);
-    info!("get_procedure_details: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn update_record(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    sqls: Vec<String>,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(update_record_with_error(state, list_node_info_req, sqls).await);
-    info!("update_record: {:?}", time.elapsed());
-    Ok(res)
-}
 #[tauri::command]
 pub async fn create_collection(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     collection_name: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        create_collection_with_error(state, list_node_info_req, collection_name).await
-    );
-    info!("create_collection: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .create_collection(list_node_info_req, app, collection_name)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
-#[tauri::command]
-pub async fn get_server_version(
-    state: State<'_, AppState>,
-    base_config_id: i32,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(get_server_version_with_error(state, base_config_id).await);
-    info!("get_server_version: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn delete_table_row(
-    state: State<'_, AppState>,
-    base_config_id: i32,
-    table_name: String,
-    row_id: String,
-    id_column: String,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        delete_table_row_with_error(state, base_config_id, table_name, row_id, id_column, list_node_info_req).await
-    );
-    info!("delete_table_row: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn show_columns(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(show_columns_with_error(state, list_node_info_req).await);
-    info!("show_columns: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn get_ddl(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(get_ddl_with_error(state, list_node_info_req).await);
-    info!("get_ddl: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-pub async fn save_query(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    query_name: String,
-    sql: Option<String>,
-    database_name: Option<String>,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(save_query_with_error(state, connection_id, query_name, sql, database_name).await);
-    info!("save_query: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
 
-pub async fn move_column(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-    move_direction: i32,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res =
-        handle_response!(move_column_with_error(state, list_node_info_req, move_direction).await);
-    info!("save_query: {:?}", time.elapsed());
-    Ok(res)
-}
 #[tauri::command]
-
 pub async fn create_folder(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     folder_name: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res =
-        handle_response!(create_folder_with_error(state, list_node_info_req, folder_name).await);
-    info!("save_query: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .create_folder(list_node_info_req, app, folder_name)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
-#[tauri::command]
 
-pub async fn get_object_info(
+#[tauri::command]
+pub async fn create_bucket(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-    is_folder: bool,
+    bucket_name: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res =
-        handle_response!(get_object_info_with_error(state, list_node_info_req, is_folder).await);
-    info!("get_object_info: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .create_bucket(bucket_name)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
 #[tauri::command]
-
 pub async fn delete_bucket(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(delete_bucket_with_error(state, list_node_info_req).await);
-    info!("save_query:  {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .delete_bucket(list_node_info_req, app)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
 #[tauri::command]
@@ -471,12 +247,15 @@ pub async fn rename_object(
     new_name: String,
     is_folder: bool,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        rename_object_with_error(state, list_node_info_req, new_name, is_folder).await
-    );
-    info!("rename_object:  {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .rename_object(list_node_info_req, app, new_name, is_folder)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
 #[tauri::command]
@@ -486,128 +265,529 @@ pub async fn copy_object(
     target_dir: String,
     is_folder: bool,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        copy_object_with_error(state, list_node_info_req, target_dir, is_folder).await
-    );
-    info!("copy_object:  {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .copy_object(list_node_info_req, app, target_dir, is_folder)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
+// ---------------------------------------------------------------- 对象传输
+
 #[tauri::command]
-pub async fn create_bucket(
+pub async fn download_file(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
-    bucket_name: String,
+    destination: String,
+    is_folder: bool,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        create_bucket_with_error(state, list_node_info_req, bucket_name).await
-    );
-    info!("create_bucket:  {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(timed!(
+        "download_file",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .download_file(list_node_info_req, app, destination, is_folder)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
 }
 
 #[tauri::command]
+pub async fn download_bucket(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    destination: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "download_bucket",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .download_bucket(list_node_info_req, app, destination)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
+}
 
+#[tauri::command]
+pub async fn upload_file(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "upload_file",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .upload_file(list_node_info_req, app, local_file_path)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
+}
+
+#[tauri::command]
+pub async fn upload_folder(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "upload_folder",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .upload_folder(list_node_info_req, app, local_file_path)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
+}
+
+#[tauri::command]
+pub async fn upload_file_with_progress(
+    state: State<'_, AppState>,
+    app_handle: tauri::AppHandle,
+    list_node_info_req: ListNodeInfoReq,
+    local_file_path: String,
+) -> Result<String, String> {
+    let app = state.inner();
+    let emitter = app_handle.clone();
+    let progress: crate::driver::ProgressFn = Arc::new(move |uploaded, total| {
+        let _ = emitter.emit(
+            "s3-upload-progress",
+            serde_json::json!({ "uploaded": uploaded, "total": total }),
+        );
+    });
+
+    let result = async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .upload_file_multipart(list_node_info_req, local_file_path, progress)
+            .await?;
+        Ok::<_, AppError>(encode_success(OK_PAYLOAD))
+    }
+    .await;
+
+    match result {
+        Ok(payload) => Ok(payload),
+        Err(err) => {
+            // 该命令历史上就靠 Err 让前端感知失败（进度上传不走 parseBaseResponse）。
+            warn!("{}", err);
+            Err(err.message().to_string())
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn list_local_folder_files(local_directory: String) -> String {
+    let mut files: Vec<String> = Vec::new();
+    for entry in walkdir::WalkDir::new(&local_directory)
+        .into_iter()
+        .flatten()
+    {
+        if entry.file_type().is_dir() {
+            continue;
+        }
+        if let Some(path) = entry.path().to_str() {
+            files.push(path.to_string());
+        }
+    }
+    serde_json::to_string(&files).unwrap_or_else(|err| {
+        error!("serialize local folder files failed: {err}");
+        "[]".to_string()
+    })
+}
+
+#[tauri::command]
+pub async fn get_object_info(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    is_folder: bool,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .get_object_info(list_node_info_req, app, is_folder)
+            .await
+    }
+    .await)
+}
+
+// ---------------------------------------------------------------- SQL 与表操作
+
+#[tauri::command]
+pub async fn exe_sql(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    sql: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "exe_sql",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.execute_sql(list_node_info_req, app, sql).await
+        }
+        .await
+    ))
+}
+
+#[tauri::command]
+pub async fn show_columns(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "show_columns",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.show_columns(list_node_info_req, app).await
+        }
+        .await
+    ))
+}
+
+#[tauri::command]
+pub async fn get_ddl(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.get_ddl(list_node_info_req, app).await
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn update_record(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    sqls: Vec<String>,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(timed!(
+        "update_record",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .update_record(list_node_info_req, app, sqls)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
+}
+
+#[tauri::command]
+pub async fn delete_table_row(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+    table_name: String,
+    row_id: String,
+    id_column: String,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
+        driver
+            .delete_table_row(list_node_info_req, app, table_name, row_id, id_column)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn get_column_info_for_insert_sql(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.column_info_for_insert(list_node_info_req, app).await
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn get_complete_words(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.complete_words(list_node_info_req, app).await
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn get_procedure_details(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.procedure_details(list_node_info_req, app).await
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn update_comment(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    new_comment: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .update_comment(list_node_info_req, app, new_comment)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn remove_column(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    column_name: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .remove_column(list_node_info_req, app, column_name)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn move_column(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+    move_direction: i32,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .move_column(list_node_info_req, app, move_direction)
+            .await
+    }
+    .await)
+}
+
+#[tauri::command]
+pub async fn drop_table(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    simple_unit_op(state.inner(), list_node_info_req, |driver, req, app| {
+        Box::pin(async move { driver.drop_table(req, app).await })
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn drop_column(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    simple_unit_op(state.inner(), list_node_info_req, |driver, req, app| {
+        Box::pin(async move { driver.drop_column(req, app).await })
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn drop_index(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    simple_unit_op(state.inner(), list_node_info_req, |driver, req, app| {
+        Box::pin(async move { driver.drop_index(req, app).await })
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn truncate_table(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    simple_unit_op(state.inner(), list_node_info_req, |driver, req, app| {
+        Box::pin(async move { driver.truncate_table(req, app).await })
+    })
+    .await
+}
+
+/// 「加载驱动 → 调一个无返回值操作 → 回 `ok`」的共用实现。
+///
+/// 4 个 drop/truncate 命令此前各自复制了 30 行样板，现在共用这一处。
+async fn simple_unit_op<'a, F>(
+    app: &'a AppState,
+    req: ListNodeInfoReq,
+    operation: F,
+) -> Result<String, ()>
+where
+    F: FnOnce(
+        Box<dyn crate::driver::Driver>,
+        ListNodeInfoReq,
+        &'a AppState,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = AppResult<()>> + Send + 'a>,
+    >,
+{
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &req).await?;
+        operation(driver, req, app).await?;
+        Ok::<_, AppError>(OK_PAYLOAD)
+    }
+    .await)
+}
+
+// ---------------------------------------------------------------- 导入导出
+
+#[tauri::command]
 pub async fn dump_database(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     dump_database_req: DumpDatabaseReq,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        dump_database_with_error(state, list_node_info_req, dump_database_req).await
-    );
-    info!("dump_database: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(timed!(
+        "dump_database",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .dump_database(list_node_info_req, app, dump_database_req)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
 }
 
 #[tauri::command]
-
 pub async fn import_database(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     import_database_req: ImportDatabaseReq,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        import_database_with_error(state, list_node_info_req, import_database_req).await
-    );
-    info!("import_database: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(timed!(
+        "import_database",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .import_database(list_node_info_req, app, import_database_req)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
 }
-#[tauri::command]
 
+#[tauri::command]
+pub async fn init_dump_data(
+    state: State<'_, AppState>,
+    list_node_info_req: ListNodeInfoReq,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.init_dump_data(list_node_info_req, app).await
+    }
+    .await)
+}
+
+#[tauri::command]
 pub async fn generate_database_document(
     state: State<'_, AppState>,
     list_node_info_req: ListNodeInfoReq,
     file_dir: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        generate_database_document_with_error(state, list_node_info_req, file_dir).await
-    );
-    info!("save_query: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(timed!(
+        "generate_database_document",
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .generate_document(list_node_info_req, app, file_dir)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    ))
 }
-#[tauri::command]
 
-pub async fn drop_table(
+// ---------------------------------------------------------------- 查询管理
+
+#[tauri::command]
+pub async fn save_query(
     state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
+    connection_id: i32,
+    query_name: String,
+    sql: Option<String>,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(drop_table_with_error(state, list_node_info_req).await);
-    info!("drop_table: {:?}", time.elapsed());
-    Ok(res)
+    reply!(query_service::save_query_with_error(
+        state,
+        connection_id,
+        query_name,
+        sql,
+        database_name
+    )
+    .await)
 }
-#[tauri::command]
 
-pub async fn drop_column(
+#[tauri::command]
+pub async fn get_query(
     state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
+    connection_id: i32,
+    query_name: String,
+    database_name: Option<String>,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(drop_column_with_error(state, list_node_info_req).await);
-    info!("drop_column: {:?}", time.elapsed());
-    Ok(res)
+    reply!(query_service::get_query_with_error(
+        state,
+        connection_id,
+        query_name,
+        database_name
+    )
+    .await)
 }
-#[tauri::command]
 
-pub async fn drop_index(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(drop_index_with_error(state, list_node_info_req).await);
-    info!("drop_index: {:?}", time.elapsed());
-    Ok(res)
-}
 #[tauri::command]
-
-pub async fn truncate_table(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(truncate_table_with_error(state, list_node_info_req).await);
-    info!("truncate_table: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-
-pub async fn init_dump_data(
-    state: State<'_, AppState>,
-    list_node_info_req: ListNodeInfoReq,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(init_dump_data_with_error(state, list_node_info_req).await);
-    info!("save_query: {:?}", time.elapsed());
-    Ok(res)
-}
-#[tauri::command]
-
 pub async fn rename_query(
     state: State<'_, AppState>,
     connection_id: i32,
@@ -615,41 +795,51 @@ pub async fn rename_query(
     new_query_name: String,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        rename_query_with_error(state, connection_id, old_query_name, new_query_name, database_name).await
-    );
-    info!("rename_query: {:?}", time.elapsed());
-    Ok(res)
+    reply!(query_service::rename_query_with_error(
+        state,
+        connection_id,
+        old_query_name,
+        new_query_name,
+        database_name
+    )
+    .await)
 }
-#[tauri::command]
 
+#[tauri::command]
 pub async fn remove_query(
     state: State<'_, AppState>,
     base_config_id: i32,
     query_name: String,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(remove_query_with_error(state, base_config_id, query_name, database_name).await);
-    info!("remove_query: {:?}", time.elapsed());
-    Ok(res)
+    reply!(query_service::remove_query_with_error(
+        state,
+        base_config_id,
+        query_name,
+        database_name
+    )
+    .await)
 }
-#[tauri::command]
 
-pub async fn get_query(
+// ---------------------------------------------------------------- Redis / 消息 / 搜索
+
+#[tauri::command]
+pub async fn redis_execute_command(
     state: State<'_, AppState>,
     connection_id: i32,
-    query_name: String,
-    database_name: Option<String>,
+    command: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(get_query_with_error(state, connection_id, query_name, database_name).await);
-    info!("get_query: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(timed!(
+        "redis_execute_command",
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+            driver.redis_execute(command).await
+        }
+        .await
+    ))
 }
 
-// Kafka commands
 #[tauri::command]
 pub async fn kafka_create_topic(
     state: State<'_, AppState>,
@@ -658,10 +848,15 @@ pub async fn kafka_create_topic(
     num_partitions: i32,
     replication_factor: i32,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(kafka_create_topic_with_error(state, connection_id, topic, num_partitions, replication_factor).await);
-    info!("kafka_create_topic: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+        driver
+            .kafka_create_topic(topic, num_partitions, replication_factor)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
 #[tauri::command]
@@ -670,10 +865,15 @@ pub async fn kafka_delete_topic(
     connection_id: i32,
     topic: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(kafka_delete_topic_with_error(state, connection_id, topic).await);
-    info!("kafka_delete_topic: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+        driver
+            .kafka_delete_topic(topic)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
 #[tauri::command]
@@ -684,13 +884,36 @@ pub async fn kafka_produce_message(
     key: Option<String>,
     value: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(kafka_produce_message_with_error(state, connection_id, topic, key, value).await);
-    info!("kafka_produce_message: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+        driver
+            .kafka_produce_message(topic, key, value)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
 }
 
-// Elasticsearch commands
+#[tauri::command]
+pub async fn rocketmq_send_message(
+    state: State<'_, AppState>,
+    connection_id: i32,
+    topic: String,
+    tag: Option<String>,
+    value: String,
+) -> Result<String, ()> {
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+        driver
+            .rocketmq_send_message(topic, tag, value)
+            .await
+            .map(|()| OK_PAYLOAD)
+    }
+    .await)
+}
+
 #[tauri::command]
 pub async fn elasticsearch_search(
     state: State<'_, AppState>,
@@ -701,12 +924,14 @@ pub async fn elasticsearch_search(
     from: i64,
     size: i64,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        elasticsearch_search_with_error(state, list_node_info_req, index_name, query, search_query, from, size).await
-    );
-    info!("elasticsearch_search: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver
+            .search_documents(index_name, query, search_query, from, size)
+            .await
+    }
+    .await)
 }
 
 #[tauri::command]
@@ -715,212 +940,65 @@ pub async fn elasticsearch_index_detail(
     list_node_info_req: ListNodeInfoReq,
     index_name: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        elasticsearch_index_detail_with_error(state, list_node_info_req, index_name).await
-    );
-    info!("elasticsearch_index_detail: {:?}", time.elapsed());
-    Ok(res)
+    let app = state.inner();
+    reply!(async {
+        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+        driver.index_detail(index_name).await
+    }
+    .await)
 }
 
-// RocketMQ commands
+// ---------------------------------------------------------------- 元数据
+
+/// 数据源清单（由 `plugins/connection-types/*.yaml` 生成）。
+///
+/// 前端据此渲染类型下拉、图标、默认端口与能力位，不再各自维护一份 13 项硬编码列表；
+/// 新增数据源只需改 YAML，两端自动同步。
 #[tauri::command]
-pub async fn rocketmq_send_message(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    topic: String,
-    tag: Option<String>,
-    value: String,
-) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(
-        rocketmq_send_message_with_error(state, connection_id, topic, tag, value).await
-    );
-    info!("rocketmq_send_message: {:?}", time.elapsed());
-    Ok(res)
+pub fn get_database_types() -> Result<String, ()> {
+    let payload: Vec<serde_json::Value> = crate::generated::DatabaseType::ALL
+        .iter()
+        .map(|db_type| {
+            serde_json::json!({
+                "dbType": db_type.as_str(),
+                "label": db_type.label(),
+                "connectionType": db_type.connection_type(),
+                "category": db_type.category(),
+                "icon": db_type.icon(),
+                "defaultPort": db_type.default_port(),
+                "capabilities": db_type.capabilities().names(),
+            })
+        })
+        .collect();
+    reply!(Ok::<_, AppError>(payload))
 }
 
-async fn kafka_create_topic_with_error(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    topic: String,
-    num_partitions: i32,
-    replication_factor: i32,
-) -> Result<String, anyhow::Error> {
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("Connection not found"))?;
-
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
-
-    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
-        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
-        service.create_topic(&topic, num_partitions, replication_factor).await?;
-        Ok("Topic created successfully".to_string())
-    } else {
-        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
-    }
-}
-
-async fn kafka_delete_topic_with_error(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    topic: String,
-) -> Result<String, anyhow::Error> {
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("Connection not found"))?;
-
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
-
-    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
-        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
-        service.delete_topic(&topic).await?;
-        Ok("Topic deleted successfully".to_string())
-    } else {
-        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
-    }
-}
-
-async fn kafka_produce_message_with_error(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    topic: String,
-    key: Option<String>,
-    value: String,
-) -> Result<String, anyhow::Error> {
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("Connection not found"))?;
-
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
-
-    if let crate::service::base_config_service::BaseConfigEnum::Kafka(kafka_config) = base_config.base_config_enum {
-        let service = crate::service::kafka_service::KafkaService::new(kafka_config);
-        service.produce_message(&topic, key, value).await?;
-        Ok("Message sent successfully".to_string())
-    } else {
-        Err(anyhow::anyhow!("Connection is not a Kafka connection"))
-    }
-}
-
-async fn rocketmq_send_message_with_error(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    topic: String,
-    tag: Option<String>,
-    value: String,
-) -> Result<String, anyhow::Error> {
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("Connection not found"))?;
-
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
-
-    if let crate::service::base_config_service::BaseConfigEnum::Rocketmq(rmq_config) = base_config.base_config_enum {
-        let service = crate::service::rocketmq_service::RocketmqService::new(rmq_config);
-        service.send_message(&topic, tag, value).await?;
-        Ok("Message sent successfully".to_string())
-    } else {
-        Err(anyhow::anyhow!("Connection is not a RocketMQ connection"))
-    }
-}
-
-// Redis commands
+/// 按方言生成 DDL 预览（建表 / 加列 / 建索引）。
+///
+/// 这些模板此前在前端 `src/utils/SqlUtils.ts` 里用 `if (connectionType === 0)…`
+/// 又写了一遍；现在由后端 SQL 方言表统一提供，前端只需要渲染。
 #[tauri::command]
-pub async fn redis_execute_command(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    command: String,
+pub fn get_ddl_template(
+    database_type: String,
+    table_name: String,
+    column_name: String,
 ) -> Result<String, ()> {
-    let time = Instant::now();
-    let res = handle_response!(redis_execute_command_with_error(state, connection_id, command).await);
-    info!("redis_execute_command: {:?}", time.elapsed());
-    Ok(res)
-}
-
-async fn redis_execute_command_with_error(
-    state: State<'_, AppState>,
-    connection_id: i32,
-    command: String,
-) -> Result<String, anyhow::Error> {
-    let sqlite_row = sqlx::query("select connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or(anyhow!("Connection not found"))?;
-
-    let connection_json_str: String = sqlite_row.try_get("connection_json")?;
-    let base_config = crate::service::base_config_service::BaseConfig::deserialize(connection_json_str)?;
-
-    if let crate::service::base_config_service::BaseConfigEnum::Redis(redis_config) = base_config.base_config_enum {
-        // 解析命令：按空格分割，支持引号内的空格
-        let parsed = parse_redis_command(&command);
-        if parsed.is_empty() {
-            return Err(anyhow::anyhow!("Empty command"));
-        }
-
-        let cmd = &parsed[0];
-        let args = &parsed[1..];
-
-        let response = redis_config.execute_raw_command(cmd, args)?;
-        serde_json::to_string(&response).map_err(|e| anyhow::anyhow!("Failed to serialize response: {}", e))
-    } else {
-        Err(anyhow::anyhow!("Connection is not a Redis connection"))
-    }
-}
-
-/// 解析 Redis 命令，支持引号内的空格
-/// 例如：SET key "hello world" -> ["SET", "key", "hello world"]
-fn parse_redis_command(command: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut current = String::new();
-    let mut in_quotes = false;
-    let mut escape_next = false;
-
-    for ch in command.chars() {
-        if escape_next {
-            current.push(ch);
-            escape_next = false;
-            continue;
-        }
-
-        match ch {
-            '\\' => {
-                escape_next = true;
-            }
-            '"' => {
-                in_quotes = !in_quotes;
-            }
-            ' ' | '\t' => {
-                if in_quotes {
-                    current.push(ch);
-                } else if !current.is_empty() {
-                    result.push(current.trim().to_string());
-                    current = String::new();
-                }
-            }
-            _ => {
-                current.push(ch);
-            }
-        }
-    }
-
-    if !current.is_empty() {
-        result.push(current.trim().to_string());
-    }
-
-    result
+    let payload = match crate::generated::DatabaseType::from_db_type(&database_type) {
+        Some(db_type) => match crate::sql::dialect::SqlDialect::from_db_type(db_type) {
+            Some(dialect) => Ok(serde_json::json!({
+                "createTable": dialect.create_table_template(&table_name),
+                "addColumn": dialect.add_column_template(&table_name, &column_name),
+                "createIndex": dialect.create_index_template(&table_name, &column_name),
+            })),
+            None => Err(AppError::new(
+                crate::error::ErrorCode::UnsupportedOperation,
+                format!("{} 不是 SQL 数据源，无法生成 DDL", db_type.label()),
+            )),
+        },
+        None => Err(AppError::new(
+            crate::error::ErrorCode::InvalidArgument,
+            format!("未知数据源类型：{database_type}"),
+        )),
+    };
+    reply!(payload)
 }

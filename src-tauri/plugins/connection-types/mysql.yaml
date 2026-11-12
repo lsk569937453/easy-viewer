@@ -1,0 +1,29 @@
+# 数据源描述符：单一真相源。
+# build.rs 读取本目录下全部 *.yaml，生成 Rust DatabaseType 枚举与前端 TS 常量，
+# 新增数据源只需在此增加一个文件（协议兼容的同族产品可复用已有 rustType）。
+dbType: mysql
+rustVariant: Mysql
+label: MySQL
+# 前端 connection_type 数值，历史兼容：禁止改动已有值，只允许追加新值。
+connectionType: 0
+category: relational
+icon: mysql
+defaultPort: 3306
+order: 10
+rustType: MysqlConfig
+capabilities:
+  - test_connection
+  - schema
+  - query
+  - ddl
+  - columns
+  - comments
+  - column_info
+  - move_column
+  - import_data
+  - dump_data
+  - generate_document
+  - complete_words
+  - procedures
+  - update_rows
+  - truncate

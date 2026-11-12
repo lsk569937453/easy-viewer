@@ -1,0 +1,23 @@
+{
+  "measuredAt": "2026-11-12T00:33:40.594Z",
+  "commit": "c466b71",
+  "dist": {
+    "files": 3,
+    "bytes": 1281896,
+    "kib": 1251.85
+  },
+  "source": {
+    "rust": {
+      "files": 92,
+      "lines": 16252
+    },
+    "frontend": {
+      "files": 220,
+      "lines": 21115
+    }
+  },
+  "manual": {
+    "cold_start_ms": null,
+    "scroll_fps": null
+  }
+}

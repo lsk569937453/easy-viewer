@@ -1,9 +1,8 @@
 pub mod base_config_service;
 pub mod clickhouse_service;
 pub mod cmd;
-pub mod elasticsearch_service;
-pub mod cmd_service;
 pub mod dump_data;
+pub mod elasticsearch_service;
 pub mod kafka_service;
 pub mod mongdb_service;
 pub mod mssql_service;

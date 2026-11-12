@@ -1,0 +1,19 @@
+# 数据源描述符：单一真相源。
+# build.rs 读取本目录下全部 *.yaml，生成 Rust DatabaseType 枚举与前端 TS 常量，
+# 新增数据源只需在此增加一个文件（协议兼容的同族产品可复用已有 rustType）。
+dbType: mongodb
+rustVariant: Mongodb
+label: MongoDB
+# 前端 connection_type 数值，历史兼容：禁止改动已有值，只允许追加新值。
+connectionType: 4
+category: nosql
+icon: mongodb
+defaultPort: 27017
+order: 40
+rustType: MongodbConfig
+capabilities:
+  - test_connection
+  - schema
+  - query
+  - documents
+  - update_rows

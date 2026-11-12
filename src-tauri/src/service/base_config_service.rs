@@ -1,30 +1,34 @@
-use super::clickhouse_service::ClickhouseConfig;
-use super::elasticsearch_service::ElasticsearchConfig;
-use super::kafka_service::KafkaConfig;
-use super::mssql_service::MssqlConfig;
-use super::mysql_service::MysqlConfig;
-use super::oracledb_service::OracledbConfig;
-use super::rocketmq_service::RocketmqConfig;
-use super::s3_service::S3Config;
-use super::webdav_service::WebdavConfig;
-use crate::service::mongdb_service::MongodbConfig;
-use crate::service::redis_service::RedisConfig;
-use crate::service::postgresql_service::PostgresqlConfig;
-use crate::service::sqlite_service::SqliteConfig;
-use crate::sql_lite::connection::AppState;
-use crate::vojo::dump_database_req::DumpDatabaseReq;
-use crate::vojo::exe_sql_response::ExeSqlResponse;
-use crate::vojo::get_column_info_for_is_response::GetColumnInfoForInsertSqlResponse;
-use crate::vojo::get_object_info_res::GetObjectInfoRes;
-use crate::vojo::import_database_req::ImportDatabaseReq;
-use crate::vojo::init_dump_data_response::InitDumpDataResponse;
-use crate::vojo::list_node_info_req::ListNodeInfoReq;
-use crate::vojo::list_node_info_response::ListNodeInfoResponse;
-use crate::vojo::show_column_response::ShowColumnsResponse;
-use anyhow::Ok;
+//! 连接配置模型。
+//!
+//! 这里只保留**数据**：serde 枚举、地址结构体、以及「配置 → 数据源类型」的映射。
+//! 所有行为（测试连接、浏览、执行 SQL、上传下载……）都已经搬到 `crate::driver`。
+//!
+//! 重构前本文件有 36 个分发方法、共 161 个 `match` 臂，把 13 个数据源的行为
+//! 写死了三遍；现在只剩一个 13 行的 `db_type()`。
+
 use serde::Deserialize;
 use serde::Serialize;
-#[derive(Deserialize, Serialize)]
+
+use crate::generated::DatabaseType;
+use crate::service::clickhouse_service::ClickhouseConfig;
+use crate::service::elasticsearch_service::ElasticsearchConfig;
+use crate::service::kafka_service::KafkaConfig;
+use crate::service::mongdb_service::MongodbConfig;
+use crate::service::mssql_service::MssqlConfig;
+use crate::service::mysql_service::MysqlConfig;
+use crate::service::oracledb_service::OracledbConfig;
+use crate::service::postgresql_service::PostgresqlConfig;
+use crate::service::redis_service::RedisConfig;
+use crate::service::rocketmq_service::RocketmqConfig;
+use crate::service::s3_service::S3Config;
+use crate::service::sqlite_service::SqliteConfig;
+use crate::service::webdav_service::WebdavConfig;
+
+/// 连接配置联合体。
+///
+/// `#[serde(rename)]` 的值是**持久化格式**，改动会让已存的连接配置反序列化失败，
+/// 因此与 `plugins/connection-types/*.yaml` 里的 `dbType` 必须保持一致。
+#[derive(Deserialize, Serialize, Clone)]
 pub enum BaseConfigEnum {
     #[serde(rename = "mysql")]
     Mysql(MysqlConfig),
@@ -53,861 +57,46 @@ pub enum BaseConfigEnum {
     #[serde(rename = "webdav")]
     Webdav(WebdavConfig),
 }
+
 impl BaseConfigEnum {
-    pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
+    /// 数据源类型。前端使用的 `connection_type` 数值由 YAML 描述符统一映射，
+    /// 不再像以前那样在这里手写 0..12 的魔数。
+    pub const fn db_type(&self) -> DatabaseType {
         match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.test_connection().await?;
-            }
-            BaseConfigEnum::Postgresql(config) => config.test_connection().await?,
-            BaseConfigEnum::Sqlite(config) => config.test_connection().await?,
-            BaseConfigEnum::Mongodb(config) => config.test_connection().await?,
-            BaseConfigEnum::Oracledb(config) => config.test_connection().await?,
-            BaseConfigEnum::Mssql(config) => config.test_connection().await?,
-            BaseConfigEnum::Clickhouse(config) => config.test_connection().await?,
-            BaseConfigEnum::S3(config) => config.test_connection().await?,
-            BaseConfigEnum::Redis(config) => config.test_connection().await?,
-            BaseConfigEnum::Elasticsearch(config) => config.test_connection().await?,
-            BaseConfigEnum::Kafka(config) => {
-                let service = crate::service::kafka_service::KafkaService::new(config.clone());
-                service.test_connection().await?;
-            }
-            BaseConfigEnum::Rocketmq(config) => {
-                let service =
-                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
-                service.test_connection().await?;
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config.test_connection().await?;
-            }
-        }
-
-        Ok(())
-    }
-    pub fn get_description(&self) -> Result<String, anyhow::Error> {
-        let res = match self {
-            BaseConfigEnum::Mysql(config) => config.get_description()?,
-            BaseConfigEnum::Sqlite(config) => config.get_description()?,
-            BaseConfigEnum::Postgresql(config) => config.get_description()?,
-            BaseConfigEnum::Mongodb(config) => config.get_description()?,
-            BaseConfigEnum::Oracledb(config) => config.get_description()?,
-            BaseConfigEnum::Kafka(config) => format!("Kafka: {}", config.broker),
-            BaseConfigEnum::Clickhouse(_) => "Clickhouse Database".to_string(),
-            BaseConfigEnum::S3(_) => "S3 Storage".to_string(),
-            BaseConfigEnum::Redis(config) => config.get_description()?,
-            BaseConfigEnum::Elasticsearch(config) => config.get_description()?,
-            BaseConfigEnum::Mssql(_) => "MSSQL Database".to_string(),
-            BaseConfigEnum::Rocketmq(config) => format!("RocketMQ: {}", config.proxy_url),
-            BaseConfigEnum::Webdav(config) => config.get_description()?,
-        };
-        Ok(res)
-    }
-    pub fn get_connection_type(&self) -> i32 {
-        match self {
-            BaseConfigEnum::Mysql(_) => 0,
-            BaseConfigEnum::Postgresql(_) => 1,
-            BaseConfigEnum::Kafka(_) => 2,
-            BaseConfigEnum::Sqlite(_) => 3,
-            BaseConfigEnum::Mongodb(_) => 4,
-            BaseConfigEnum::Oracledb(_) => 5,
-            BaseConfigEnum::Mssql(_) => 6,
-            BaseConfigEnum::Clickhouse(_) => 7,
-            BaseConfigEnum::S3(_) => 8,
-            BaseConfigEnum::Redis(_) => 9,
-            BaseConfigEnum::Elasticsearch(_) => 10,
-            BaseConfigEnum::Rocketmq(_) => 11,
-            BaseConfigEnum::Webdav(_) => 12,
+            BaseConfigEnum::Mysql(_) => DatabaseType::Mysql,
+            BaseConfigEnum::Postgresql(_) => DatabaseType::Postgresql,
+            BaseConfigEnum::Kafka(_) => DatabaseType::Kafka,
+            BaseConfigEnum::Sqlite(_) => DatabaseType::Sqlite,
+            BaseConfigEnum::Mongodb(_) => DatabaseType::Mongodb,
+            BaseConfigEnum::Oracledb(_) => DatabaseType::Oracledb,
+            BaseConfigEnum::Mssql(_) => DatabaseType::Mssql,
+            BaseConfigEnum::Clickhouse(_) => DatabaseType::Clickhouse,
+            BaseConfigEnum::S3(_) => DatabaseType::S3,
+            BaseConfigEnum::Redis(_) => DatabaseType::Redis,
+            BaseConfigEnum::Elasticsearch(_) => DatabaseType::Elasticsearch,
+            BaseConfigEnum::Rocketmq(_) => DatabaseType::Rocketmq,
+            BaseConfigEnum::Webdav(_) => DatabaseType::Webdav,
         }
     }
-    pub async fn list_node_info(
-        &self,
 
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<ListNodeInfoResponse, anyhow::Error> {
-        let vec = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
+    /// 前端历史字段 `connection_type`（i32）。
+    pub const fn connection_type(&self) -> i32 {
+        self.db_type().connection_type()
+    }
 
-            BaseConfigEnum::Sqlite(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
+    /// 列表展示用的一行说明。
+    pub fn description(&self) -> String {
+        match crate::driver::registry::build(self) {
+            Ok(driver) => driver.description(),
+            Err(err) => {
+                warn!("build driver for description failed: {err}");
+                self.db_type().label().to_string()
             }
-            BaseConfigEnum::Mongodb(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Oracledb(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Clickhouse(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::S3(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Redis(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Elasticsearch(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Kafka(config) => {
-                let service = crate::service::kafka_service::KafkaService::new(config.clone());
-                service.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Rocketmq(config) => {
-                let service =
-                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
-                service.list_node_info(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config.list_node_info(list_node_info_req, appstate).await?
-            }
-        };
-        Ok(vec)
-    }
-    pub async fn get_column_info_for_is(
-        &self,
-
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<GetColumnInfoForInsertSqlResponse, anyhow::Error> {
-        let vec = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .get_column_info_for_is(list_node_info_req, appstate)
-                    .await?
-            }
-
-            BaseConfigEnum::Sqlite(config) => {
-                config
-                    .get_column_info_for_is(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .get_column_info_for_is(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .get_column_info_for_is(list_node_info_req, appstate)
-                    .await?
-            }
-            _ => GetColumnInfoForInsertSqlResponse::new(),
-        };
-        Ok(vec)
-    }
-    pub async fn update_comment(
-        &self,
-
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        new_comment: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .update_comment(list_node_info_req, appstate, new_comment)
-                    .await?;
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .update_comment(list_node_info_req, appstate, new_comment)
-                    .await?;
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .update_comment(list_node_info_req, appstate, new_comment)
-                    .await?;
-            }
-            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support update comment"))?,
-            _ => (),
-        };
-
-        Ok(())
-    }
-    pub async fn remove_column(
-        &self,
-
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        column_name: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .remove_column(list_node_info_req, appstate, column_name)
-                    .await?;
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .remove_column(list_node_info_req, appstate, column_name)
-                    .await?;
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .remove_column(list_node_info_req, appstate, column_name)
-                    .await?;
-            }
-            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support remove column"))?,
-            _ => (),
-        };
-
-        Ok(())
-    }
-    pub async fn download_file(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        destination: String,
-        is_folder: bool,
-    ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::S3(config) = self {
-            config
-                .download_file(list_node_info_req, appstate, destination, is_folder)
-                .await?
-        } else if let BaseConfigEnum::Webdav(config) = self {
-            config
-                .download_file(list_node_info_req, appstate, destination, is_folder)
-                .await?
-        };
-        Ok(())
-    }
-    pub async fn download_bucket(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        destination: String,
-    ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::S3(config) = self {
-            config
-                .download_bucket(list_node_info_req, appstate, destination)
-                .await?
-        };
-        Ok(())
-    }
-    pub async fn upload_file(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        destination: String,
-    ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::S3(config) = self {
-            config
-                .upload_file(list_node_info_req, appstate, destination)
-                .await?
-        } else if let BaseConfigEnum::Webdav(config) = self {
-            config
-                .upload_file(list_node_info_req, appstate, destination)
-                .await?
-        };
-        Ok(())
-    }
-    pub async fn upload_folder(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        destination: String,
-    ) -> Result<(), anyhow::Error> {
-        if let BaseConfigEnum::S3(config) = self {
-            config
-                .upload_folder(list_node_info_req, appstate, destination)
-                .await?
-        };
-        Ok(())
-    }
-    pub async fn exe_sql(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        sql: String,
-    ) -> Result<ExeSqlResponse, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Clickhouse(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Mongodb(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Redis(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Elasticsearch(config) => {
-                config.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Kafka(config) => {
-                let service = crate::service::kafka_service::KafkaService::new(config.clone());
-                service.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            BaseConfigEnum::Rocketmq(config) => {
-                let service =
-                    crate::service::rocketmq_service::RocketmqService::new(config.clone());
-                service.exe_sql(list_node_info_req, appstate, sql).await?
-            }
-            _ => ExeSqlResponse::new(),
-        };
-        Ok(data)
-    }
-    pub async fn dump_database(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        dump_database_req: DumpDatabaseReq,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .dump_database(list_node_info_req, appstate, dump_database_req)
-                    .await?;
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .dump_database(list_node_info_req, appstate, dump_database_req)
-                    .await?;
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config
-                    .dump_database(list_node_info_req, appstate, dump_database_req)
-                    .await?;
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .dump_database(list_node_info_req, appstate, dump_database_req)
-                    .await?;
-            }
-            _ => (),
         }
-        Ok(())
-    }
-    pub async fn import_database(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        import_database_req: ImportDatabaseReq,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .import_database(list_node_info_req, appstate, import_database_req)
-                    .await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .import_database(list_node_info_req, appstate, import_database_req)
-                    .await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config
-                    .import_database(list_node_info_req, appstate, import_database_req)
-                    .await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .import_database(list_node_info_req, appstate, import_database_req)
-                    .await?
-            }
-
-            _ => (),
-        }
-        Ok(())
-    }
-    pub async fn init_dump_data(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<InitDumpDataResponse, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.init_dump_data(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.init_dump_data(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.init_dump_data(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.init_dump_data(list_node_info_req, appstate).await?
-            }
-            _ => InitDumpDataResponse::new(),
-        };
-        Ok(data)
-    }
-    pub async fn generate_database_document(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        file_dir: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .generate_database_document(list_node_info_req, appstate, file_dir)
-                    .await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .generate_database_document(list_node_info_req, appstate, file_dir)
-                    .await?
-            }
-            BaseConfigEnum::Sqlite(_) => {
-                Err(anyhow!("sqlite not support generate_database_document"))?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .generate_database_document(list_node_info_req, appstate, file_dir)
-                    .await?
-            }
-            _ => (),
-        }
-        Ok(())
-    }
-    pub async fn drop_table(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.drop_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.drop_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.drop_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.drop_table(list_node_info_req, appstate).await?
-            }
-            _ => (),
-        }
-        Ok(())
-    }
-    pub async fn drop_column(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.drop_column(list_node_info_req, appstate).await?;
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.drop_column(list_node_info_req, appstate).await?;
-            }
-            BaseConfigEnum::Sqlite(_) => Err(anyhow!("sqlite not support drop column"))?,
-            BaseConfigEnum::Mssql(config) => {
-                config.drop_column(list_node_info_req, appstate).await?
-            }
-            _ => (),
-        };
-        Ok(())
-    }
-    pub async fn drop_index(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.drop_index(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.drop_index(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.drop_index(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.drop_index(list_node_info_req, appstate).await?
-            }
-            _ => (),
-        }
-        Ok(())
-    }
-    pub async fn truncate_table(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.truncate_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.truncate_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.truncate_table(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.truncate_table(list_node_info_req, appstate).await?
-            }
-            _ => (),
-        }
-        Ok(())
-    }
-    pub async fn move_column(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-        move_direction: i32,
-    ) -> Result<String, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .move_column(appstate, list_node_info_req, move_direction)
-                    .await?
-            }
-
-            _ => Err(anyhow!("Other type not support move column except mysql."))?,
-        };
-        Ok(data)
-    }
-    pub async fn create_folder(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-        folder_name: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::S3(config) => {
-                config
-                    .create_folder(list_node_info_req, appstate, folder_name)
-                    .await?
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config
-                    .create_folder(list_node_info_req, appstate, folder_name)
-                    .await?
-            }
-
-            _ => Err(anyhow!("Other type not support move column except mysql."))?,
-        };
-        Ok(())
-    }
-    pub async fn get_object_info(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-        is_folder: bool,
-    ) -> Result<GetObjectInfoRes, anyhow::Error> {
-        let res = match self {
-            BaseConfigEnum::S3(config) => {
-                config
-                    .get_object_info(list_node_info_req, appstate, is_folder)
-                    .await?
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config
-                    .get_object_info(list_node_info_req, appstate, is_folder)
-                    .await?
-            }
-
-            _ => Err(anyhow!("Other type not support move column except mysql."))?,
-        };
-        Ok(res)
-    }
-    pub async fn delete_bucket(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::S3(config) => {
-                config.delete_bucket(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config.delete_object(list_node_info_req, appstate).await?
-            }
-
-            _ => Err(anyhow!("Other type not support move column except mysql."))?,
-        };
-        Ok(())
-    }
-    pub async fn rename_object(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-        new_name: String,
-        is_folder: bool,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Webdav(config) => {
-                config
-                    .rename_object(list_node_info_req, appstate, new_name, is_folder)
-                    .await?
-            }
-            _ => Err(anyhow!("Only WebDAV supports rename_object."))?,
-        };
-        Ok(())
-    }
-    pub async fn copy_object(
-        &self,
-        appstate: &AppState,
-        list_node_info_req: ListNodeInfoReq,
-        target_dir: String,
-        is_folder: bool,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Webdav(config) => {
-                config
-                    .copy_object(list_node_info_req, appstate, target_dir, is_folder)
-                    .await?
-            }
-            _ => Err(anyhow!("Only WebDAV supports copy_object."))?,
-        };
-        Ok(())
-    }
-    pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::S3(config) => config.create_bucket(bucket_name).await?,
-            _ => Err(anyhow!("Only S3 supports create_bucket."))?,
-        }
-        Ok(())
-    }
-    pub async fn upload_file_multipart<F: Fn(u64, u64) + Send + 'static>(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        local_file_path: String,
-        on_progress: F,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::S3(config) => {
-                config
-                    .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
-                    .await?
-            }
-            BaseConfigEnum::Webdav(config) => {
-                config
-                    .upload_file_multipart(list_node_info_req, local_file_path, on_progress)
-                    .await?
-            }
-            _ => Err(anyhow!("Only S3 supports upload_file_multipart."))?,
-        }
-        Ok(())
-    }
-    pub async fn get_complete_words(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<Vec<String>, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .get_complete_words(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .get_complete_words(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config
-                    .get_complete_words(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .get_complete_words(list_node_info_req, appstate)
-                    .await?
-            }
-            _ => vec![],
-        };
-        Ok(data)
-    }
-    pub async fn get_procedure_details(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<String, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .get_procedure_details(list_node_info_req, appstate)
-                    .await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .get_procedure_details(list_node_info_req, appstate)
-                    .await?
-            }
-            _ => "vec![]".to_string(),
-        };
-        Ok(data)
-    }
-    pub async fn get_server_version(&self) -> Result<String, anyhow::Error> {
-        let version = match self {
-            BaseConfigEnum::Mysql(config) => config.get_server_version().await?,
-            BaseConfigEnum::Postgresql(config) => config.get_server_version().await?,
-            BaseConfigEnum::Sqlite(config) => config.get_server_version().await?,
-            BaseConfigEnum::Oracledb(config) => config.get_server_version().await?,
-            BaseConfigEnum::Mssql(config) => config.get_server_version().await?,
-            BaseConfigEnum::Mongodb(config) => config.get_server_version().await?,
-            BaseConfigEnum::Redis(config) => config.get_server_version().await?,
-            BaseConfigEnum::Clickhouse(config) => config.get_server_version().await?,
-            BaseConfigEnum::Elasticsearch(config) => config.get_server_version().await?,
-            BaseConfigEnum::S3(config) => config.get_server_version().await?,
-            BaseConfigEnum::Kafka(config) => {
-                let service = crate::service::kafka_service::KafkaService::new(config.clone());
-                service.test_connection().await?;
-                String::new()
-            }
-            BaseConfigEnum::Rocketmq(config) => {
-                let service = crate::service::rocketmq_service::RocketmqService::new(config.clone());
-                service.test_connection().await?;
-                String::new()
-            }
-            BaseConfigEnum::Webdav(config) => config.get_server_version().await?,
-        };
-        Ok(version)
-    }
-    pub async fn update_record(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        sql: Vec<String>,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mysql(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-
-            BaseConfigEnum::Sqlite(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-            BaseConfigEnum::Mongodb(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-            BaseConfigEnum::Clickhouse(config) => {
-                config
-                    .update_record(list_node_info_req, appstate, sql)
-                    .await?
-            }
-            _ => (),
-        };
-        Ok(())
-    }
-    pub async fn create_collection(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        collection_name: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mongodb(config) => {
-                config
-                    .create_collection(list_node_info_req, appstate, collection_name)
-                    .await?
-            }
-            _ => return Err(anyhow!("Unsupported database type for create_collection")),
-        };
-        Ok(())
-    }
-    pub async fn delete_table_row(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-        table_name: String,
-        row_id: String,
-        id_column: String,
-    ) -> Result<(), anyhow::Error> {
-        match self {
-            BaseConfigEnum::Mongodb(config) => {
-                config
-                    .delete_table_row(list_node_info_req, appstate, table_name, row_id)
-                    .await?
-            }
-            BaseConfigEnum::Clickhouse(config) => {
-                config
-                    .delete_table_row(list_node_info_req, appstate, table_name, row_id, id_column)
-                    .await?
-            }
-            _ => (),
-        };
-        Ok(())
-    }
-    pub async fn show_columns(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<ShowColumnsResponse, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => {
-                config.show_columns(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Postgresql(config) => {
-                config.show_columns(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Sqlite(config) => {
-                config.show_columns(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => {
-                config.show_columns(list_node_info_req, appstate).await?
-            }
-            _ => ShowColumnsResponse::new(),
-        };
-        Ok(data)
-    }
-    pub async fn get_ddl(
-        &self,
-        list_node_info_req: ListNodeInfoReq,
-        appstate: &AppState,
-    ) -> Result<String, anyhow::Error> {
-        let data = match self {
-            BaseConfigEnum::Mysql(config) => config.get_ddl(list_node_info_req, appstate).await?,
-
-            BaseConfigEnum::Sqlite(config) => config.get_ddl(list_node_info_req, appstate).await?,
-            BaseConfigEnum::Postgresql(config) => {
-                config.get_ddl(list_node_info_req, appstate).await?
-            }
-            BaseConfigEnum::Mssql(config) => config.get_ddl(list_node_info_req, appstate).await?,
-            BaseConfigEnum::Clickhouse(config) => {
-                config.get_ddl(list_node_info_req, appstate).await?
-            }
-            _ => "ExeSqlResponse::new()".to_string(),
-        };
-        Ok(data)
     }
 }
 
+/// 数据库连接地址（由各关系型/类关系型配置共用）。
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct DatabaseHostStruct {
     pub host: String,
@@ -916,34 +105,71 @@ pub struct DatabaseHostStruct {
     pub password: String,
     pub port: i32,
 }
+
 impl DatabaseHostStruct {
     pub fn to_url(&self, protocol_name: String) -> String {
-        if let Some(database) = &self.database {
-            format!(
+        match &self.database {
+            Some(database) => format!(
                 "{}://{}:{}@{}:{}/{}",
                 protocol_name, self.user_name, self.password, self.host, self.port, database
-            )
-        } else {
-            format!(
+            ),
+            None => format!(
                 "{}://{}:{}@{}:{}",
                 protocol_name, self.user_name, self.password, self.host, self.port
-            )
+            ),
         }
     }
 }
+
+/// 持久化到 `base_config.connection_json` 的外层信封。
 #[derive(Deserialize, Serialize)]
 pub struct BaseConfig {
     pub base_config_enum: BaseConfigEnum,
 }
 
-impl BaseConfig {
-    pub fn deserialize(json_str: String) -> Result<Self, anyhow::Error> {
-        let config: BaseConfig = serde_json::from_str(&json_str)?;
-        Ok(config)
-    }
-}
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_host() -> Result<(), anyhow::Error> {
-    Ok(())
+    #[test]
+    fn decodes_every_connection_type() {
+        // 关系型/类关系型配置都是 `{ "config": DatabaseHostStruct }` 形状。
+        let host = r#"{"config":{"host":"h","user_name":"u","password":"p","port":1}}"#;
+        let samples = [
+            ("mysql", host),
+            ("postgresql", host),
+            ("mssql", host),
+            ("clickhouse", host),
+            ("oracledb", host),
+            ("mongodb", host),
+            ("redis", host),
+            ("elasticsearch", host),
+            ("sqlite", r#"{"file_path":"/tmp/a.db"}"#),
+            ("kafka", r#"{"broker":"h:9092"}"#),
+            ("rocketmq", r#"{"proxy_url":"h:8081","topics":[]}"#),
+            (
+                "s3",
+                r#"{"config":{"host":"h","port":443,"access_key":"a","secret_key":"s","region":"r"}}"#,
+            ),
+            (
+                "webdav",
+                r#"{"config":{"host":"h","port":80,"username":"u","password":"p","root_path":"/","use_tls":false}}"#,
+            ),
+        ];
+        assert_eq!(samples.len(), 13, "应覆盖全部数据源");
+        for (tag, payload) in samples {
+            let json = format!(r#"{{"base_config_enum":{{"{tag}":{payload}}}}}"#);
+            let parsed: BaseConfig = serde_json::from_str(&json)
+                .unwrap_or_else(|err| panic!("{tag} 反序列化失败: {err}"));
+            assert_eq!(parsed.base_config_enum.db_type().as_str(), tag);
+        }
+    }
+
+    #[test]
+    fn connection_type_matches_manifest() {
+        let json = r#"{"base_config_enum":{"sqlite":{"file_path":"/tmp/a.db"}}}"#;
+        let parsed: BaseConfig = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.base_config_enum.connection_type(), 3);
+    }
 }

@@ -1,10 +1,17 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod common_tools;
+mod driver;
+mod error;
+mod generated;
 mod service;
+mod sql;
+mod store;
 use chrono::Local;
 mod sql_lite;
 mod util;
+#[cfg(test)]
+mod perf_bench;
 mod vojo;
 use crate::service::cmd::*;
 use log::LevelFilter;
@@ -19,7 +26,6 @@ use tauri::tray::MouseButtonState;
 use tauri::tray::TrayIconBuilder;
 use tauri::tray::TrayIconEvent;
 use tauri::Manager;
-use tauri::Emitter;
 
 #[tauri::command]
 fn show_main_window(app: tauri::AppHandle) {
@@ -115,6 +121,8 @@ async fn main() -> Result<(), anyhow::Error> {
         })
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            get_database_types,
+            get_ddl_template,
             create_folder,
             create_collection,
             delete_base_config,

@@ -8,9 +8,6 @@ pub enum InitDumpDataResponse {
     SchemaList(Vec<InitDumpSchemaResponseItem>),
 }
 impl InitDumpDataResponse {
-    pub fn new() -> Self {
-        InitDumpDataResponse::TableList(vec![])
-    }
     pub fn from_table_list(list: Vec<InitDumpTableResponseItem>) -> Self {
         InitDumpDataResponse::TableList(list)
     }

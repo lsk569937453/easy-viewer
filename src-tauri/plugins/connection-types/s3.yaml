@@ -1,0 +1,18 @@
+# 数据源描述符：单一真相源。
+# build.rs 读取本目录下全部 *.yaml，生成 Rust DatabaseType 枚举与前端 TS 常量，
+# 新增数据源只需在此增加一个文件（协议兼容的同族产品可复用已有 rustType）。
+dbType: s3
+rustVariant: S3
+label: S3 / OSS
+# 前端 connection_type 数值，历史兼容：禁止改动已有值，只允许追加新值。
+connectionType: 8
+category: storage
+icon: s3
+defaultPort: 0
+order: 110
+rustType: S3Config
+capabilities:
+  - test_connection
+  - schema
+  - object_store
+  - buckets

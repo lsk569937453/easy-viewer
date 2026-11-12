@@ -52,10 +52,10 @@ impl RocketmqService {
     }
 
     pub async fn test_connection(&self) -> Result<(), anyhow::Error> {
-        let mut client_option = self.build_client_option();
+        let client_option = self.build_client_option();
 
         let mut consumer_option = SimpleConsumerOption::default();
-        consumer_option.set_consumer_group(&format!(
+        consumer_option.set_consumer_group(format!(
             "easy_viewer_test_{}",
             chrono::Utc::now().timestamp()
         ));
@@ -145,10 +145,10 @@ impl RocketmqService {
         topic: &str,
         limit: usize,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
-        let mut client_option = self.build_client_option();
+        let client_option = self.build_client_option();
 
         let mut consumer_option = SimpleConsumerOption::default();
-        consumer_option.set_consumer_group(&format!(
+        consumer_option.set_consumer_group(format!(
             "easy_viewer_rmq_{}",
             chrono::Utc::now().timestamp()
         ));

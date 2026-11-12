@@ -11,6 +11,9 @@ edition = "2021"
 
 [build-dependencies]
 tauri-build = { version = "2.6.2", features = [] }
+# 构建期读取 plugins/connection-types/*.yaml 生成数据源枚举与前端 TS 常量。
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34"
 
 [dependencies]
 anyhow = "1.0.102"
@@ -99,12 +102,15 @@ default = ["custom-protocol"]
 # DO NOT remove this
 custom-protocol = ["tauri/custom-protocol"]
 
-# Optimized for bundle size. If you want faster builds comment out/delete this section.
+# 发布体积与启动时间优化（参考 dbx 的发布配置）：
+# lto + codegen-units=1 换取跨 crate 内联，opt-level="s" 在体积与速度间取平衡，
+# strip 去掉符号表，panic="abort" 去掉展开表。若需 backtrace 调试，请临时注释 panic/strip。
 [profile.release]
-lto = "thin"
-opt-level = "z"   # Optimize for size.
-codegen-units = 1 # Reduce number of codegen units to increase optimizations.
-strip = true      # Automatically strip symbols from the binary.
+lto = true
+opt-level = "s"   # 体积优先，但比 "z" 更少牺牲循环/内联优化
+codegen-units = 1 # 单一 codegen 单元以提升跨模块优化
+strip = true      # 自动剥离符号
+panic = "abort"   # 不生成 unwinding 表
 debug = false
 
 

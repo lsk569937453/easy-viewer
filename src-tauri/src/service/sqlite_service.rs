@@ -578,11 +578,7 @@ WHERE type = 'view';",
             } else {
                 false
             };
-            headers.push(Header {
-                name: column_name.to_string(),
-                type_name: type_name.to_string().to_uppercase(),
-                is_primary_key: is_primary,
-            });
+            headers.push(crate::sql::row::header(column_name, type_name, is_primary));
         }
         info!("headers: {:?}", headers);
         let mut response_rows = vec![];
@@ -596,13 +592,7 @@ WHERE type = 'view';",
                 let type_info = raw.type_info();
                 let type_name = type_info.name();
                 let val = sqlite_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
-                }
+                row.push(crate::sql::row::cell_to_display(&val));
             }
             response_rows.push(row);
         }
@@ -713,13 +703,7 @@ WHERE type = 'view';",
                 let type_name = type_info.name();
 
                 let val = sqlite_row_to_json(item, type_name, i)?;
-                if val.is_string() {
-                    row.push(Some(val.as_str().unwrap_or_default().to_string()));
-                } else if val.is_null() {
-                    row.push(None);
-                } else {
-                    row.push(Some(val.to_string()));
-                }
+                row.push(crate::sql::row::cell_to_display(&val));
             }
             response_rows.push(row);
         }

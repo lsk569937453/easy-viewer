@@ -178,7 +178,7 @@ impl RedisConfig {
 
     pub async fn exe_sql(
         &self,
-        list_node_info_req: ListNodeInfoReq,
+        _list_node_info_req: ListNodeInfoReq,
         _appstate: &AppState,
         sql: String,
     ) -> Result<ExeSqlResponse, anyhow::Error> {
@@ -253,7 +253,7 @@ impl RedisConfig {
                 let values: Vec<Option<String>> = redis::cmd("LRANGE")
                     .arg(&key_name)
                     .arg(0)
-                    .arg(limit as i64 - 1)
+                    .arg(limit - 1)
                     .query(&mut con)?;
 
                 let headers = vec![
@@ -294,7 +294,7 @@ impl RedisConfig {
                 let members: Vec<(String, f64)> = redis::cmd("ZRANGE")
                     .arg(&key_name)
                     .arg(0)
-                    .arg(limit as i64 - 1)
+                    .arg(limit - 1)
                     .arg("WITHSCORES")
                     .query(&mut con)?;
 
@@ -493,5 +493,85 @@ fn convert_redis_value(value: redis::Value, execution_time_ms: u64) -> RedisComm
             array_items: None,
             execution_time_ms,
         },
+    }
+}
+
+/// 执行一条用户输入的 Redis 原生命令文本（如 `SET key "hello world"`）。
+///
+/// 命令解析放在驱动层，命令层不再关心「怎么切词」：
+/// 之前这段逻辑散在 `cmd.rs` 里，和 `#[tauri::command]` 混在一起。
+pub fn execute_command_text(
+    config: &RedisConfig,
+    command: &str,
+) -> Result<RedisCommandResponse, anyhow::Error> {
+    let parsed = parse_command(command);
+    let Some(first) = parsed.first() else {
+        return Err(anyhow!("命令为空"));
+    };
+    config.execute_raw_command(first, &parsed[1..])
+}
+
+/// 按空格切分命令，支持双引号内的空格与反斜杠转义。
+///
+/// 例如：`SET key "hello world"` → `["SET", "key", "hello world"]`
+pub fn parse_command(command: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut escape_next = false;
+
+    for ch in command.chars() {
+        if escape_next {
+            current.push(ch);
+            escape_next = false;
+            continue;
+        }
+        match ch {
+            '\\' => escape_next = true,
+            '"' => in_quotes = !in_quotes,
+            ' ' | '\t' => {
+                if in_quotes {
+                    current.push(ch);
+                } else if !current.is_empty() {
+                    result.push(current.trim().to_string());
+                    current = String::new();
+                }
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    if !current.is_empty() {
+        result.push(current.trim().to_string());
+    }
+    result
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+mod command_parse_tests {
+    use super::parse_command;
+
+    #[test]
+    fn splits_plain_command() {
+        assert_eq!(parse_command("GET key"), vec!["GET", "key"]);
+    }
+
+    #[test]
+    fn keeps_quoted_spaces() {
+        assert_eq!(
+            parse_command("SET key \"hello world\""),
+            vec!["SET", "key", "hello world"]
+        );
+    }
+
+    #[test]
+    fn handles_escape() {
+        assert_eq!(parse_command("SET a b\\ c"), vec!["SET", "a", "b c"]);
+    }
+
+    #[test]
+    fn empty_command_yields_no_tokens() {
+        assert!(parse_command("   ").is_empty());
     }
 }

@@ -85,8 +85,8 @@ impl ClickhouseConfig {
         }
 
         let raw_json = response.text().await?;
-        let ch_response: ClickhouseJsonResponse =
-            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+        let ch_response: ClickhouseJsonResponse = serde_json::from_str(&raw_json)
+            .map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
 
         // Build headers from meta
         let headers: Vec<Header> = ch_response
@@ -106,9 +106,7 @@ impl ClickhouseConfig {
         for row in &ch_response.data {
             let mut row_vec: Vec<Option<String>> = Vec::new();
             for field_name in &field_names {
-                let cell = row
-                    .get(field_name)
-                    .and_then(json_value_to_string);
+                let cell = row.get(field_name).and_then(json_value_to_string);
                 row_vec.push(cell);
             }
             rows.push(row_vec);
@@ -310,8 +308,8 @@ WHERE database = '{}'",
         }
 
         let raw_json = response.text().await?;
-        let ch_response: ClickhouseJsonResponse =
-            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+        let ch_response: ClickhouseJsonResponse = serde_json::from_str(&raw_json)
+            .map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
 
         let version = ch_response
             .data
@@ -398,7 +396,10 @@ WHERE database = '{}'",
         // ClickHouse uses ALTER TABLE ... DELETE WHERE syntax
         let sql = format!(
             "ALTER TABLE `{}`.`{}` DELETE WHERE `{}` = '{}'",
-            db_name, table_name, id_column, row_id.replace('\'', "''")
+            db_name,
+            table_name,
+            id_column,
+            row_id.replace('\'', "''")
         );
         info!("ClickHouse delete SQL: {}", sql);
 
@@ -415,7 +416,11 @@ WHERE database = '{}'",
         let status = response.status();
         if !status.is_success() {
             let error_text = response.text().await.unwrap_or_default();
-            return Err(anyhow!("ClickHouse delete error {}: {}", status, error_text));
+            return Err(anyhow!(
+                "ClickHouse delete error {}: {}",
+                status,
+                error_text
+            ));
         }
 
         Ok(())
@@ -459,8 +464,8 @@ WHERE database = '{}'",
         }
 
         let raw_json = response.text().await?;
-        let ch_response: ClickhouseJsonResponse =
-            serde_json::from_str(&raw_json).map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
+        let ch_response: ClickhouseJsonResponse = serde_json::from_str(&raw_json)
+            .map_err(|e| anyhow!("Failed to parse JSON: {:?}", e))?;
 
         // SHOW CREATE TABLE returns a single row with a "statement" column
         let ddl = ch_response
@@ -533,7 +538,12 @@ fn convert_update_to_clickhouse_syntax(sql: &str, db_name: &str) -> String {
     let where_part = &sql[where_pos..];
 
     // Build ClickHouse ALTER TABLE ... UPDATE syntax
-    format!("ALTER TABLE {} UPDATE {} {}", qualified_table, set_where_part.trim_start_matches("SET").trim(), where_part)
+    format!(
+        "ALTER TABLE {} UPDATE {} {}",
+        qualified_table,
+        set_where_part.trim_start_matches("SET").trim(),
+        where_part
+    )
 }
 
 /// Convert a serde_json::Value to an Option<String>

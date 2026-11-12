@@ -8,10 +8,10 @@ mod service;
 mod sql;
 mod store;
 use chrono::Local;
-mod sql_lite;
-mod util;
 #[cfg(test)]
 mod perf_bench;
+mod sql_lite;
+mod util;
 mod vojo;
 use crate::service::cmd::*;
 use log::LevelFilter;

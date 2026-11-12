@@ -64,7 +64,10 @@ impl ErrorCode {
 
     /// 该错误是否值得让用户直接重试。
     pub const fn is_retryable(self) -> bool {
-        matches!(self, ErrorCode::ConnectionTimeout | ErrorCode::ConnectionFailed)
+        matches!(
+            self,
+            ErrorCode::ConnectionTimeout | ErrorCode::ConnectionFailed
+        )
     }
 }
 
@@ -106,7 +109,10 @@ impl AppError {
         &self.message
     }
 
-    #[allow(dead_code, reason = "公共访问器：序列化已包含 detail，此处供日志/诊断按需读取")]
+    #[allow(
+        dead_code,
+        reason = "公共访问器：序列化已包含 detail，此处供日志/诊断按需读取"
+    )]
     pub fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
@@ -245,7 +251,14 @@ fn redact_credentials(text: &str) -> String {
     // 形如 scheme://user:password@host
     out = redact_between(&out, "://", "@");
     // 形如 password=xxx / password: xxx / pwd=xxx
-    for key in ["password", "passwd", "pwd", "secret_key", "secretkey", "secret"] {
+    for key in [
+        "password",
+        "passwd",
+        "pwd",
+        "secret_key",
+        "secretkey",
+        "secret",
+    ] {
         out = redact_assignment(&out, key);
     }
     out
@@ -357,7 +370,10 @@ mod tests {
     #[test]
     fn classifies_timeout() {
         let err = anyhow::anyhow!("operation timed out after 1s");
-        assert_eq!(AppError::classify(&err).code(), ErrorCode::ConnectionTimeout);
+        assert_eq!(
+            AppError::classify(&err).code(),
+            ErrorCode::ConnectionTimeout
+        );
     }
 
     #[test]

@@ -188,10 +188,7 @@ impl Driver for ElasticsearchConfig {
         ))
     }
 
-    fn index_detail(
-        &self,
-        index_name: String,
-    ) -> BoxFuture<'_, AppResult<serde_json::Value>> {
+    fn index_detail(&self, index_name: String) -> BoxFuture<'_, AppResult<serde_json::Value>> {
         delegate!(ElasticsearchConfig::get_index_detail(self, index_name))
     }
 }

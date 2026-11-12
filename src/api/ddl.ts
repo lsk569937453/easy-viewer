@@ -28,9 +28,10 @@ export const backendErrorText = (
   if (!error) {
     return fallback;
   }
-  return import.meta.env.DEV
-    ? `${error.message}（${error.code}）`
+  const base = error.detail
+    ? `${error.message}：${error.detail}`
     : error.message;
+  return import.meta.env.DEV ? `${base}（${error.code}）` : base;
 };
 
 /**

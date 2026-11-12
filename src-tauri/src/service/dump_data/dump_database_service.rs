@@ -1,12 +1,12 @@
 use crate::vojo::dump_database_req::DumpDatabaseReq;
 use crate::vojo::dump_database_req::ExportOption;
 use crate::vojo::dump_database_req::ExportType;
+use rust_xlsxwriter::Workbook;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use serde_json::Value;
 use std::fmt::Debug;
 use std::io::Write;
-use rust_xlsxwriter::Workbook;
 #[derive(Deserialize, Serialize, Debug)]
 pub struct DumpDatabaseRes {
     pub data_list: DumpTableList,
@@ -99,7 +99,11 @@ impl DumpTableList {
                     let mut row: u32 = 0;
 
                     for (column_index, column_item) in item.column_structs.iter().enumerate() {
-                        worksheet.write_string(row, column_index as u16, &column_item.column_name)?;
+                        worksheet.write_string(
+                            row,
+                            column_index as u16,
+                            &column_item.column_name,
+                        )?;
                     }
                     row += 1;
 

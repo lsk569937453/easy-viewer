@@ -266,11 +266,7 @@ impl S3Config {
 
     pub async fn create_bucket(&self, bucket_name: String) -> Result<(), anyhow::Error> {
         let client = self.get_connection().await?;
-        client
-            .create_bucket()
-            .bucket(bucket_name)
-            .send()
-            .await?;
+        client.create_bucket().bucket(bucket_name).send().await?;
         Ok(())
     }
 
@@ -425,7 +421,7 @@ impl S3Config {
             let remaining = file_size - offset;
             let chunk_size = std::cmp::min(part_size, remaining) as usize;
             let mut chunk = vec![0u8; chunk_size];
-                        file.read_exact(&mut chunk).await?;
+            file.read_exact(&mut chunk).await?;
 
             let resp = s3_client
                 .upload_part()

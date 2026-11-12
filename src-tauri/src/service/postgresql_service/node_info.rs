@@ -124,7 +124,9 @@ impl PostgresqlConfig {
                 .await;
         }
         if node_name == "Query" {
-            return crate::driver::node::query_nodes(appstate, base_config_id).await.map_err(Into::into);
+            return crate::driver::node::query_nodes(appstate, base_config_id)
+                .await
+                .map_err(Into::into);
         }
         Ok(vec![])
     }

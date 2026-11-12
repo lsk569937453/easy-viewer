@@ -43,8 +43,7 @@ pub async fn load_config(pool: &SqlitePool, connection_id: i64) -> AppResult<Bas
 
 fn decode_config(json: &str) -> AppResult<BaseConfigEnum> {
     let parsed: BaseConfig = serde_json::from_str(json).map_err(|err| {
-        AppError::new(ErrorCode::ConfigInvalid, "连接配置格式不正确")
-            .with_detail(err.to_string())
+        AppError::new(ErrorCode::ConfigInvalid, "连接配置格式不正确").with_detail(err.to_string())
     })?;
     Ok(parsed.base_config_enum)
 }
@@ -184,15 +183,15 @@ pub async fn get_by_id(
     state: &AppState,
     connection_id: i32,
 ) -> AppResult<GetBaseConnectionByIdResponse> {
-    let row = sqlx::query("select connection_name,id,connection_json from base_config where id = ?")
-        .bind(connection_id)
-        .fetch_optional(&state.pool)
-        .await?
-        .ok_or_else(|| {
-            AppError::new(ErrorCode::ConnectionNotFound, "连接配置不存在").with_detail(format!(
-                "connection id = {connection_id}"
-            ))
-        })?;
+    let row =
+        sqlx::query("select connection_name,id,connection_json from base_config where id = ?")
+            .bind(connection_id)
+            .fetch_optional(&state.pool)
+            .await?
+            .ok_or_else(|| {
+                AppError::new(ErrorCode::ConnectionNotFound, "连接配置不存在")
+                    .with_detail(format!("connection id = {connection_id}"))
+            })?;
 
     let id: u64 = row.try_get("id")?;
     let json: String = row.try_get("connection_json")?;
@@ -245,8 +244,8 @@ mod tests {
 
     #[test]
     fn decodes_valid_config() {
-        let config = decode_config(r#"{"base_config_enum":{"sqlite":{"file_path":"/tmp/a.db"}}}"#)
-            .unwrap();
+        let config =
+            decode_config(r#"{"base_config_enum":{"sqlite":{"file_path":"/tmp/a.db"}}}"#).unwrap();
         assert_eq!(config.connection_type(), 3);
     }
 

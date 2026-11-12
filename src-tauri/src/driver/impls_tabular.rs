@@ -69,11 +69,7 @@ impl Driver for MysqlConfig {
         delegate_app!(app, MysqlConfig::show_columns(self, req, &app))
     }
 
-    fn get_ddl(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<String>> {
+    fn get_ddl(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<String>> {
         delegate_app!(app, MysqlConfig::get_ddl(self, req, &app))
     }
 
@@ -100,7 +96,10 @@ impl Driver for MysqlConfig {
         app: &AppState,
         new_comment: String,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MysqlConfig::update_comment(self, req, &app, new_comment))
+        delegate_app!(
+            app,
+            MysqlConfig::update_comment(self, req, &app, new_comment)
+        )
     }
 
     fn remove_column(
@@ -109,7 +108,10 @@ impl Driver for MysqlConfig {
         app: &AppState,
         column_name: String,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MysqlConfig::remove_column(self, req, &app, column_name))
+        delegate_app!(
+            app,
+            MysqlConfig::remove_column(self, req, &app, column_name)
+        )
     }
 
     fn move_column(
@@ -124,35 +126,19 @@ impl Driver for MysqlConfig {
         )
     }
 
-    fn drop_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MysqlConfig::drop_table(self, req, &app))
     }
 
-    fn drop_column(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_column(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MysqlConfig::drop_column(self, req, &app))
     }
 
-    fn drop_index(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_index(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MysqlConfig::drop_index(self, req, &app))
     }
 
-    fn truncate_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn truncate_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MysqlConfig::truncate_table(self, req, &app))
     }
 
@@ -187,7 +173,10 @@ impl Driver for MysqlConfig {
         app: &AppState,
         import_req: ImportDatabaseReq,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MysqlConfig::import_database(self, req, &app, import_req))
+        delegate_app!(
+            app,
+            MysqlConfig::import_database(self, req, &app, import_req)
+        )
     }
 
     fn init_dump_data(
@@ -256,11 +245,7 @@ impl Driver for PostgresqlConfig {
         delegate_app!(app, PostgresqlConfig::show_columns(self, req, &app))
     }
 
-    fn get_ddl(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<String>> {
+    fn get_ddl(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<String>> {
         delegate_app!(app, PostgresqlConfig::get_ddl(self, req, &app))
     }
 
@@ -269,7 +254,10 @@ impl Driver for PostgresqlConfig {
         req: ListNodeInfoReq,
         app: &AppState,
     ) -> BoxFuture<'_, AppResult<GetColumnInfoForInsertSqlResponse>> {
-        delegate_app!(app, PostgresqlConfig::get_column_info_for_is(self, req, &app))
+        delegate_app!(
+            app,
+            PostgresqlConfig::get_column_info_for_is(self, req, &app)
+        )
     }
 
     fn update_record(
@@ -305,35 +293,19 @@ impl Driver for PostgresqlConfig {
         )
     }
 
-    fn drop_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, PostgresqlConfig::drop_table(self, req, &app))
     }
 
-    fn drop_column(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_column(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, PostgresqlConfig::drop_column(self, req, &app))
     }
 
-    fn drop_index(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_index(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, PostgresqlConfig::drop_index(self, req, &app))
     }
 
-    fn truncate_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn truncate_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, PostgresqlConfig::truncate_table(self, req, &app))
     }
 
@@ -435,11 +407,7 @@ impl Driver for SqliteConfig {
         delegate_app!(app, SqliteConfig::show_columns(self, req, &app))
     }
 
-    fn get_ddl(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<String>> {
+    fn get_ddl(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<String>> {
         delegate_app!(app, SqliteConfig::get_ddl(self, req, &app))
     }
 
@@ -460,27 +428,15 @@ impl Driver for SqliteConfig {
         delegate_app!(app, SqliteConfig::update_record(self, req, &app, sqls))
     }
 
-    fn drop_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, SqliteConfig::drop_table(self, req, &app))
     }
 
-    fn drop_index(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_index(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, SqliteConfig::drop_index(self, req, &app))
     }
 
-    fn truncate_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn truncate_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, SqliteConfig::truncate_table(self, req, &app))
     }
 
@@ -507,7 +463,10 @@ impl Driver for SqliteConfig {
         app: &AppState,
         import_req: ImportDatabaseReq,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, SqliteConfig::import_database(self, req, &app, import_req))
+        delegate_app!(
+            app,
+            SqliteConfig::import_database(self, req, &app, import_req)
+        )
     }
 
     fn init_dump_data(
@@ -557,11 +516,7 @@ impl Driver for MssqlConfig {
         delegate_app!(app, MssqlConfig::show_columns(self, req, &app))
     }
 
-    fn get_ddl(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<String>> {
+    fn get_ddl(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<String>> {
         delegate_app!(app, MssqlConfig::get_ddl(self, req, &app))
     }
 
@@ -588,7 +543,10 @@ impl Driver for MssqlConfig {
         app: &AppState,
         new_comment: String,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MssqlConfig::update_comment(self, req, &app, new_comment))
+        delegate_app!(
+            app,
+            MssqlConfig::update_comment(self, req, &app, new_comment)
+        )
     }
 
     fn remove_column(
@@ -597,38 +555,25 @@ impl Driver for MssqlConfig {
         app: &AppState,
         column_name: String,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MssqlConfig::remove_column(self, req, &app, column_name))
+        delegate_app!(
+            app,
+            MssqlConfig::remove_column(self, req, &app, column_name)
+        )
     }
 
-    fn drop_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MssqlConfig::drop_table(self, req, &app))
     }
 
-    fn drop_column(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_column(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MssqlConfig::drop_column(self, req, &app))
     }
 
-    fn drop_index(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn drop_index(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MssqlConfig::drop_index(self, req, &app))
     }
 
-    fn truncate_table(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn truncate_table(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, MssqlConfig::truncate_table(self, req, &app))
     }
 
@@ -663,7 +608,10 @@ impl Driver for MssqlConfig {
         app: &AppState,
         import_req: ImportDatabaseReq,
     ) -> BoxFuture<'_, AppResult<()>> {
-        delegate_app!(app, MssqlConfig::import_database(self, req, &app, import_req))
+        delegate_app!(
+            app,
+            MssqlConfig::import_database(self, req, &app, import_req)
+        )
     }
 
     fn init_dump_data(
@@ -717,11 +665,7 @@ impl Driver for ClickhouseConfig {
         delegate_app!(app, ClickhouseConfig::exe_sql(self, req, &app, sql))
     }
 
-    fn get_ddl(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<String>> {
+    fn get_ddl(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<String>> {
         delegate_app!(app, ClickhouseConfig::get_ddl(self, req, &app))
     }
 

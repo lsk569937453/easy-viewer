@@ -109,11 +109,7 @@ impl Driver for S3Config {
         delegate!(S3Config::create_bucket(self, bucket_name))
     }
 
-    fn delete_bucket(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn delete_bucket(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, S3Config::delete_bucket(self, req, &app))
     }
 }
@@ -152,7 +148,10 @@ impl Driver for WebdavConfig {
         app: &AppState,
         is_folder: bool,
     ) -> BoxFuture<'_, AppResult<GetObjectInfoRes>> {
-        delegate_app!(app, WebdavConfig::get_object_info(self, req, &app, is_folder))
+        delegate_app!(
+            app,
+            WebdavConfig::get_object_info(self, req, &app, is_folder)
+        )
     }
 
     fn download_file(
@@ -206,11 +205,7 @@ impl Driver for WebdavConfig {
         )
     }
 
-    fn delete_bucket(
-        &self,
-        req: ListNodeInfoReq,
-        app: &AppState,
-    ) -> BoxFuture<'_, AppResult<()>> {
+    fn delete_bucket(&self, req: ListNodeInfoReq, app: &AppState) -> BoxFuture<'_, AppResult<()>> {
         delegate_app!(app, WebdavConfig::delete_object(self, req, &app))
     }
 

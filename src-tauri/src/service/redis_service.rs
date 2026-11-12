@@ -146,13 +146,13 @@ impl RedisConfig {
                     let key_type: String = redis::cmd("TYPE").arg(&key).query(&mut con)?;
 
                     let should_include = match selected_type.as_str() {
-                        "keys" => true,            // show all keys
+                        "keys" => true, // show all keys
                         "strings" => key_type == "string",
                         "hashes" => key_type == "hash",
                         "lists" => key_type == "list",
                         "sets" => key_type == "set",
                         "sorted sets" => key_type == "zset",
-                        "console" => false,        // console is not a key category
+                        "console" => false, // console is not a key category
                         _ => false,
                     };
 

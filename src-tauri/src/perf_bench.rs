@@ -56,11 +56,7 @@ mod tests {
             .bind(format!("row-{index}"))
             .bind(index as f64 * 0.5)
             .bind("2026-01-01 00:00:00")
-            .bind(if index % 10 == 0 {
-                Some("note")
-            } else {
-                None
-            })
+            .bind(if index % 10 == 0 { Some("note") } else { None })
             .execute(&mut *tx)
             .await
             .unwrap();

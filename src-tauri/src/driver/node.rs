@@ -41,7 +41,10 @@ pub fn count_description(count: i64) -> Option<String> {
 ///
 /// 这份数据来自应用自身的 SQLite（`sql_query` 表），与所连数据源无关，
 /// 因此所有 SQL 类驱动共用同一段实现。
-pub async fn query_nodes(app: &AppState, connection_id: i32) -> AppResult<Vec<ListNodeInfoResponseItem>> {
+pub async fn query_nodes(
+    app: &AppState,
+    connection_id: i32,
+) -> AppResult<Vec<ListNodeInfoResponseItem>> {
     let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
         .bind(connection_id)
         .fetch_all(&app.pool)

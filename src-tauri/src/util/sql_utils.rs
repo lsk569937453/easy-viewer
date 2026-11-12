@@ -345,8 +345,7 @@ fn from_sec_fragments(sec_fragments: i64) -> Result<NaiveTime, anyhow::Error> {
     Ok(base + chrono::Duration::nanoseconds(sec_fragments * (1e9 as i64) / 300))
 }
 fn midnight_time() -> Result<NaiveTime, anyhow::Error> {
-    NaiveTime::from_hms_opt(0, 0, 0)
-        .ok_or_else(|| anyhow!("Failed to create midnight NaiveTime"))
+    NaiveTime::from_hms_opt(0, 0, 0).ok_or_else(|| anyhow!("Failed to create midnight NaiveTime"))
 }
 
 pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Error> {
@@ -356,7 +355,9 @@ pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Erro
         ColumnData::Binary(value) => json!(value.clone()),
         ColumnData::Bit(value) => json!(value.clone()),
         ColumnData::Date(value) => {
-            json!(value.map(|item| from_days(item.days() as i64, 1)).transpose()?)
+            json!(value
+                .map(|item| from_days(item.days() as i64, 1))
+                .transpose()?)
         }
         ColumnData::DateTime(value) => json!(value
             .map(|item| {
@@ -372,8 +373,7 @@ pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Erro
                 let time_base = midnight_time()?;
                 let time = time_base
                     + chrono::Duration::nanoseconds(
-                        item.time().increments() as i64
-                            * 10i64.pow(9 - item.time().scale() as u32),
+                        item.time().increments() as i64 * 10i64.pow(9 - item.time().scale() as u32),
                     );
                 Ok::<NaiveDateTime>(NaiveDateTime::new(date, time))
             })
@@ -387,12 +387,12 @@ pub fn mssql_row_to_json(column_data: &ColumnData) -> Result<Value, anyhow::Erro
                 let time = time_base + chrono::Duration::nanoseconds(ns);
                 let offset = chrono::Duration::minutes(dto.offset() as i64);
                 let naive = NaiveDateTime::new(date, time).sub(offset);
-                Ok::<chrono::DateTime<tiberius::time::chrono::Utc>>(
-                    chrono::DateTime::<tiberius::time::chrono::Utc>::from_naive_utc_and_offset(
-                        naive,
-                        tiberius::time::chrono::Utc,
-                    ),
-                )
+                Ok::<chrono::DateTime<tiberius::time::chrono::Utc>>(chrono::DateTime::<
+                    tiberius::time::chrono::Utc,
+                >::from_naive_utc_and_offset(
+                    naive,
+                    tiberius::time::chrono::Utc,
+                ))
             })
             .transpose()?),
         ColumnData::Time(value) => json!(value

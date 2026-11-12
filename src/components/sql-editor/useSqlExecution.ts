@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { backendErrorText } from "../../api/ddl";
 import { exeSql } from "../../api/sql";
 import type { ExeSqlResponse } from "../../types/backend";
 import { parseBaseResponse } from "../../utils/backendResponse";
@@ -91,8 +92,8 @@ export function useSqlExecution({
         };
 
         const responseJson = await exeSql(sqlContent, listNodeInfoReqObject);
-        const { response_code, response_msg } =
-          parseBaseResponse<ExeSqlResponse>(responseJson);
+        const parsed = parseBaseResponse<ExeSqlResponse>(responseJson);
+        const { response_code, response_msg } = parsed;
 
         if (response_code === 0) {
           const rawHeaders = response_msg.header;
@@ -123,7 +124,12 @@ export function useSqlExecution({
           setExecutionTime(0);
           setCurrentPage(1);
         } else {
-          throw new Error(response_msg || "未能获取查询结果或响应格式不正确");
+          throw new Error(
+            backendErrorText(
+              parsed.error,
+              response_msg || "未能获取查询结果或响应格式不正确",
+            ),
+          );
         }
       } catch (err) {
         console.error("SQL execution failed:", err);

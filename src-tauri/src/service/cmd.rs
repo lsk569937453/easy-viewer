@@ -123,7 +123,10 @@ pub async fn update_base_config(
 }
 
 #[tauri::command]
-pub async fn delete_base_config(state: State<'_, AppState>, base_config_id: i32) -> Result<String, ()> {
+pub async fn delete_base_config(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, ()> {
     reply!(store::delete(state.inner(), base_config_id).await)
 }
 
@@ -148,29 +151,33 @@ pub async fn list_node_info(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.list_node_info(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.list_node_info(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
-pub async fn get_server_version(state: State<'_, AppState>, base_config_id: i32) -> Result<String, ()> {
+pub async fn get_server_version(
+    state: State<'_, AppState>,
+    base_config_id: i32,
+) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
-        // 版本探测只用于连接节点上的角标，超过 1s 视为不可用。
-        tokio::time::timeout(std::time::Duration::from_secs(1), driver.server_version())
-            .await
-            .map_err(|_| {
-                AppError::new(
-                    crate::error::ErrorCode::ConnectionTimeout,
-                    "连接超时（1s）",
-                )
-            })?
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
+            // 版本探测只用于连接节点上的角标，超过 1s 视为不可用。
+            tokio::time::timeout(std::time::Duration::from_secs(1), driver.server_version())
+                .await
+                .map_err(|_| {
+                    AppError::new(crate::error::ErrorCode::ConnectionTimeout, "连接超时（1s）")
+                })?
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -180,14 +187,16 @@ pub async fn create_collection(
     collection_name: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .create_collection(list_node_info_req, app, collection_name)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .create_collection(list_node_info_req, app, collection_name)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -197,14 +206,16 @@ pub async fn create_folder(
     folder_name: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .create_folder(list_node_info_req, app, folder_name)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .create_folder(list_node_info_req, app, folder_name)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -214,14 +225,13 @@ pub async fn create_bucket(
     bucket_name: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .create_bucket(bucket_name)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.create_bucket(bucket_name).await.map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -230,14 +240,16 @@ pub async fn delete_bucket(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .delete_bucket(list_node_info_req, app)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .delete_bucket(list_node_info_req, app)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -248,14 +260,16 @@ pub async fn rename_object(
     is_folder: bool,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .rename_object(list_node_info_req, app, new_name, is_folder)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .rename_object(list_node_info_req, app, new_name, is_folder)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -266,14 +280,16 @@ pub async fn copy_object(
     is_folder: bool,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .copy_object(list_node_info_req, app, target_dir, is_folder)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .copy_object(list_node_info_req, app, target_dir, is_folder)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 // ---------------------------------------------------------------- 对象传输
@@ -421,13 +437,15 @@ pub async fn get_object_info(
     is_folder: bool,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .get_object_info(list_node_info_req, app, is_folder)
-            .await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .get_object_info(list_node_info_req, app, is_folder)
+                .await
+        }
+        .await
+    )
 }
 
 // ---------------------------------------------------------------- SQL 与表操作
@@ -471,11 +489,13 @@ pub async fn get_ddl(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.get_ddl(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.get_ddl(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -508,14 +528,16 @@ pub async fn delete_table_row(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
-        driver
-            .delete_table_row(list_node_info_req, app, table_name, row_id, id_column)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(base_config_id)).await?;
+            driver
+                .delete_table_row(list_node_info_req, app, table_name, row_id, id_column)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -524,11 +546,13 @@ pub async fn get_column_info_for_insert_sql(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.column_info_for_insert(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.column_info_for_insert(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -537,11 +561,13 @@ pub async fn get_complete_words(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.complete_words(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.complete_words(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -550,11 +576,13 @@ pub async fn get_procedure_details(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.procedure_details(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.procedure_details(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -564,14 +592,16 @@ pub async fn update_comment(
     new_comment: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .update_comment(list_node_info_req, app, new_comment)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .update_comment(list_node_info_req, app, new_comment)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -581,14 +611,16 @@ pub async fn remove_column(
     column_name: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .remove_column(list_node_info_req, app, column_name)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .remove_column(list_node_info_req, app, column_name)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -598,13 +630,15 @@ pub async fn move_column(
     move_direction: i32,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .move_column(list_node_info_req, app, move_direction)
-            .await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .move_column(list_node_info_req, app, move_direction)
+                .await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -664,16 +698,17 @@ where
         Box<dyn crate::driver::Driver>,
         ListNodeInfoReq,
         &'a AppState,
-    ) -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = AppResult<()>> + Send + 'a>,
-    >,
+    )
+        -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<()>> + Send + 'a>>,
 {
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &req).await?;
-        operation(driver, req, app).await?;
-        Ok::<_, AppError>(OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &req).await?;
+            operation(driver, req, app).await?;
+            Ok::<_, AppError>(OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 // ---------------------------------------------------------------- 导入导出
@@ -724,11 +759,13 @@ pub async fn init_dump_data(
     list_node_info_req: ListNodeInfoReq,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.init_dump_data(list_node_info_req, app).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.init_dump_data(list_node_info_req, app).await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -761,14 +798,10 @@ pub async fn save_query(
     sql: Option<String>,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    reply!(query_service::save_query_with_error(
-        state,
-        connection_id,
-        query_name,
-        sql,
-        database_name
+    reply!(
+        query_service::save_query_with_error(state, connection_id, query_name, sql, database_name)
+            .await
     )
-    .await)
 }
 
 #[tauri::command]
@@ -778,13 +811,9 @@ pub async fn get_query(
     query_name: String,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    reply!(query_service::get_query_with_error(
-        state,
-        connection_id,
-        query_name,
-        database_name
+    reply!(
+        query_service::get_query_with_error(state, connection_id, query_name, database_name).await
     )
-    .await)
 }
 
 #[tauri::command]
@@ -795,14 +824,16 @@ pub async fn rename_query(
     new_query_name: String,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    reply!(query_service::rename_query_with_error(
-        state,
-        connection_id,
-        old_query_name,
-        new_query_name,
-        database_name
+    reply!(
+        query_service::rename_query_with_error(
+            state,
+            connection_id,
+            old_query_name,
+            new_query_name,
+            database_name
+        )
+        .await
     )
-    .await)
 }
 
 #[tauri::command]
@@ -812,13 +843,10 @@ pub async fn remove_query(
     query_name: String,
     database_name: Option<String>,
 ) -> Result<String, ()> {
-    reply!(query_service::remove_query_with_error(
-        state,
-        base_config_id,
-        query_name,
-        database_name
+    reply!(
+        query_service::remove_query_with_error(state, base_config_id, query_name, database_name)
+            .await
     )
-    .await)
 }
 
 // ---------------------------------------------------------------- Redis / 消息 / 搜索
@@ -849,14 +877,16 @@ pub async fn kafka_create_topic(
     replication_factor: i32,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
-        driver
-            .kafka_create_topic(topic, num_partitions, replication_factor)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+            driver
+                .kafka_create_topic(topic, num_partitions, replication_factor)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -866,14 +896,13 @@ pub async fn kafka_delete_topic(
     topic: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
-        driver
-            .kafka_delete_topic(topic)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+            driver.kafka_delete_topic(topic).await.map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -885,14 +914,16 @@ pub async fn kafka_produce_message(
     value: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
-        driver
-            .kafka_produce_message(topic, key, value)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+            driver
+                .kafka_produce_message(topic, key, value)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -904,14 +935,16 @@ pub async fn rocketmq_send_message(
     value: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
-        driver
-            .rocketmq_send_message(topic, tag, value)
-            .await
-            .map(|()| OK_PAYLOAD)
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_by_id(app, i64::from(connection_id)).await?;
+            driver
+                .rocketmq_send_message(topic, tag, value)
+                .await
+                .map(|()| OK_PAYLOAD)
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -925,13 +958,15 @@ pub async fn elasticsearch_search(
     size: i64,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver
-            .search_documents(index_name, query, search_query, from, size)
-            .await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver
+                .search_documents(index_name, query, search_query, from, size)
+                .await
+        }
+        .await
+    )
 }
 
 #[tauri::command]
@@ -941,11 +976,13 @@ pub async fn elasticsearch_index_detail(
     index_name: String,
 ) -> Result<String, ()> {
     let app = state.inner();
-    reply!(async {
-        let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
-        driver.index_detail(index_name).await
-    }
-    .await)
+    reply!(
+        async {
+            let driver = store::load_driver_for_request(app, &list_node_info_req).await?;
+            driver.index_detail(index_name).await
+        }
+        .await
+    )
 }
 
 // ---------------------------------------------------------------- 元数据

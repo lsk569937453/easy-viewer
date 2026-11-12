@@ -11,29 +11,28 @@ WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
 
 pub(super) fn generate_ddl(schema_name: String, table_name: String) -> String {
     format!(
-        "SELECT 'CREATE TABLE ' || table_schema || '.' || table_name || ' (' || E'\n' ||
-       array_to_string(
-           array_agg(
-               '    ' || column_name || ' ' || 
-               data_type || 
-               CASE 
-                   WHEN character_maximum_length IS NOT NULL 
+        "SELECT 'CREATE TABLE ' || table_schema || '.' || table_name || ' (' || chr(10) ||
+       string_agg(
+           '    ' || column_name || ' ' ||
+               data_type ||
+               CASE
+                   WHEN character_maximum_length IS NOT NULL
                    THEN '(' || character_maximum_length || ')'
                    ELSE ''
                END ||
-               CASE 
-                   WHEN numeric_precision IS NOT NULL 
+               CASE
+                   WHEN numeric_precision IS NOT NULL
                    THEN '(' || numeric_precision || ',' || numeric_scale || ')'
                    ELSE ''
                END ||
-               CASE 
+               CASE
                    WHEN is_nullable = 'NO' THEN ' NOT NULL'
                    ELSE ''
-               END
-           ), E',\n'
-       ) || E'\n);'
+               END,
+           ',' || chr(10)
+       ) || chr(10) || ');'
 FROM information_schema.columns
-WHERE table_name = '{}' 
+WHERE table_name = '{}'
   AND table_schema = '{}'
 GROUP BY table_schema, table_name;
 ",

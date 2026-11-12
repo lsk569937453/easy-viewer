@@ -3,11 +3,11 @@ use crate::vojo::list_node_info_req::ListNodeInfoReq;
 use crate::vojo::list_node_info_response::ListNodeInfoResponse;
 use crate::vojo::list_node_info_response::ListNodeInfoResponseItem;
 use crate::AppState;
-use std::time::Duration;
-use tokio::time::timeout;
 use oracle::Connection;
 use serde::Deserialize;
 use serde::Serialize;
+use std::time::Duration;
+use tokio::time::timeout;
 #[derive(Deserialize, Serialize, Clone)]
 pub struct OracledbConfig {
     pub config: DatabaseHostStruct,
@@ -113,10 +113,8 @@ impl OracledbConfig {
                     connect_string,
                 )
                 .map_err(|e| anyhow!(e))?;
-                let version = conn.query_row_as::<String>(
-                    "SELECT BANNER FROM v$version WHERE ROWNUM = 1",
-                    &[],
-                )?;
+                let version = conn
+                    .query_row_as::<String>("SELECT BANNER FROM v$version WHERE ROWNUM = 1", &[])?;
                 Ok(version)
             })
             .await

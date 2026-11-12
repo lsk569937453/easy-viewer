@@ -29,12 +29,14 @@ pub async fn save_query_with_error(
     .await?;
 
     // Return the id of the inserted row
-    let row = sqlx::query("SELECT id FROM sql_query WHERE connection_id=?1 AND database_name=?2 AND query_name=?3")
-        .bind(connection_id)
-        .bind(&db_name)
-        .bind(&query_name)
-        .fetch_one(&state.pool)
-        .await?;
+    let row = sqlx::query(
+        "SELECT id FROM sql_query WHERE connection_id=?1 AND database_name=?2 AND query_name=?3",
+    )
+    .bind(connection_id)
+    .bind(&db_name)
+    .bind(&query_name)
+    .fetch_one(&state.pool)
+    .await?;
     let id: i32 = row.try_get(0)?;
     Ok(id.to_string())
 }
@@ -66,7 +68,10 @@ pub async fn rename_query_with_error(
     database_name: Option<String>,
 ) -> Result<(), anyhow::Error> {
     let db_name = database_name.unwrap_or_default();
-    info!("{}|{}|{}|{}", connection_id, old_query_name, new_query_name, db_name);
+    info!(
+        "{}|{}|{}|{}",
+        connection_id, old_query_name, new_query_name, db_name
+    );
     sqlx::query(
         r#"
             UPDATE sql_query
@@ -89,7 +94,10 @@ pub async fn remove_query_with_error(
     database_name: Option<String>,
 ) -> Result<String, anyhow::Error> {
     let db_name = database_name.unwrap_or_default();
-    info!("remove_query_with_error:{},{},{}", connection_id, query_name, db_name);
+    info!(
+        "remove_query_with_error:{},{},{}",
+        connection_id, query_name, db_name
+    );
 
     sqlx::query(r#"DELETE FROM sql_query WHERE connection_id = ?1 AND database_name = ?2 AND query_name = ?3"#)
         .bind(connection_id)

@@ -40,9 +40,10 @@ impl SqlDialect {
         match self {
             SqlDialect::Mysql => ('`', '`'),
             SqlDialect::Mssql => ('[', ']'),
-            SqlDialect::Postgres | SqlDialect::Sqlite | SqlDialect::Clickhouse | SqlDialect::Oracle => {
-                ('"', '"')
-            }
+            SqlDialect::Postgres
+            | SqlDialect::Sqlite
+            | SqlDialect::Clickhouse
+            | SqlDialect::Oracle => ('"', '"'),
         }
     }
 
@@ -52,7 +53,9 @@ impl SqlDialect {
         let escaped = if open == close {
             ident.replace(close, &format!("{close}{close}"))
         } else {
-            ident.replace(close, &format!("{close}{close}")).replace(open, &format!("{open}{open}"))
+            ident
+                .replace(close, &format!("{close}{close}"))
+                .replace(open, &format!("{open}{open}"))
         };
         format!("{open}{escaped}{close}")
     }
@@ -149,9 +152,9 @@ impl SqlDialect {
             SqlDialect::Mysql => format!(
                 "ALTER TABLE `{table}` ADD KEY `idx_{table}_column` (`column_name_to_index`);"
             ),
-            SqlDialect::Sqlite => format!(
-                "CREATE INDEX `idx_{table}_column` ON `{table}` (`column_name_to_index`);"
-            ),
+            SqlDialect::Sqlite => {
+                format!("CREATE INDEX `idx_{table}_column` ON `{table}` (`column_name_to_index`);")
+            }
             SqlDialect::Oracle => {
                 let upper = table.to_uppercase();
                 format!(
@@ -161,9 +164,9 @@ impl SqlDialect {
             SqlDialect::Postgres => format!(
                 "CREATE INDEX \"idx_{table}_column\" ON \"{table}\" (\"column_name_to_index\");"
             ),
-            SqlDialect::Mssql => format!(
-                "CREATE INDEX [idx_{table}_column] ON [{table}] ([column_name_to_index]);"
-            ),
+            SqlDialect::Mssql => {
+                format!("CREATE INDEX [idx_{table}_column] ON [{table}] ([column_name_to_index]);")
+            }
             SqlDialect::Clickhouse => format!(
                 "CREATE INDEX idx_{table}_column column_name_to_index TYPE minmax GRANULARITY 1;"
             ),
@@ -269,7 +272,9 @@ mod tests {
     #[test]
     fn identifies_read_only_statements() {
         assert!(SqlDialect::is_read_only_statement("  select 1"));
-        assert!(SqlDialect::is_read_only_statement("WITH x AS (SELECT 1) SELECT * FROM x"));
+        assert!(SqlDialect::is_read_only_statement(
+            "WITH x AS (SELECT 1) SELECT * FROM x"
+        ));
         assert!(!SqlDialect::is_read_only_statement("update t set a = 1"));
     }
 

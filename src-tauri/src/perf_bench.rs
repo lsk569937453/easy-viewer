@@ -15,7 +15,7 @@ mod tests {
     use std::time::Instant;
 
     use sqlx::sqlite::SqliteConnectOptions;
-    use sqlx::{Column, Connection, Row, SqliteConnection, TypeInfo, ValueRef};
+    use sqlx::{Connection, Row, SqliteConnection, TypeInfo, ValueRef};
 
     /// 造表行数：与性能指标口径一致。
     const ROWS: usize = 100_000;
@@ -82,7 +82,8 @@ mod tests {
             let column_count = row.columns().len();
             for index in 0..column_count {
                 let raw = row.try_get_raw(index).unwrap();
-                let type_name = raw.type_info().name();
+                let type_info = raw.type_info();
+                let type_name = type_info.name();
                 let value =
                     crate::util::sql_utils::sqlite_row_to_json(row, type_name, index).unwrap();
                 if crate::sql::row::cell_to_display(&value).is_some() {

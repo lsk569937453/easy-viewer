@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiSend } from "react-icons/fi";
-import { sendMessage } from "../../services/kafka";
+import { sendMessage } from "../../api/kafka";
 import { parseBaseResponse } from "../../utils/backendResponse";
 import { getErrorMessage } from "../../utils/error";
 import { showError, showSuccess } from "../../utils/showToast";
@@ -21,7 +21,7 @@ export interface ProduceMessageDialogProps {
 
 /**
  * 发送消息弹窗：字段 id（message-meta / message-value）、校验与提示文案
- * 与拆分前保持一致，发送命令由 config.metaField 经 services/kafka 统一分发。
+ * 与拆分前保持一致，发送命令由 config.metaField 经 api/kafka 统一分发。
  */
 function ProduceMessageDialog({
   open,

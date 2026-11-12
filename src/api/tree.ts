@@ -1,5 +1,5 @@
 import type { ListNodeInfoReq } from "../types/backend";
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 /** 树节点相关命令。参数名与 `src-tauri/src/service/cmd.rs` 的入参一致。 */
 export const listNodeInfo = (

@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from "react";
-import { saveConnection, updateConnection } from "../../services/connections";
+import { saveConnection, updateConnection } from "../../api/connections";
 import type {
   SaveConnectionRequest,
   UpdateConnectionRequest,

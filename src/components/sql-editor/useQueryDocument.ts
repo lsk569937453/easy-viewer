@@ -1,6 +1,6 @@
 import { type ChangeEvent, useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { BACKEND_COMMANDS, callBackend } from "../../services/invoke";
+import { BACKEND_COMMANDS, callBackend } from "../../api/client";
 import type { SetActiveTabId, SetTabs, SqlEditorTab } from "../../types/tab";
 import { parseBaseResponse } from "../../utils/backendResponse";
 import { getErrorMessage } from "../../utils/error";

@@ -1,3 +1,4 @@
+import { CONNECTION_TYPE_VALUES } from "../../../types/generated/databaseTypes";
 import type { TreeNode } from "../../../types/tree";
 import { showError } from "../../../utils/showToast";
 import { findConnectionByRootConfigId } from "../../../utils/treeConnection";
@@ -50,11 +51,11 @@ export const activateNode = async (
     return;
   }
   if (node.iconName === "singleTable") {
-    if (connection.connection_type === 9) {
+    if (connection.connection_type === CONNECTION_TYPE_VALUES.REDIS) {
       await activateRedisNode(args);
       return;
     }
-    if (connection.connection_type === 10) {
+    if (connection.connection_type === CONNECTION_TYPE_VALUES.ELASTICSEARCH) {
       await activateElasticsearchNode(args);
       return;
     }

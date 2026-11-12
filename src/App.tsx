@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
+import { fetchBaseConfigById, fetchBaseConfigList } from "./api/connections";
+import { showMainWindow } from "./api/system";
 import AppMenu from "./components/AppMenu";
 import DatabaseViewer from "./components/DatabaseViewer";
-import {
-  fetchBaseConfigById,
-  fetchBaseConfigList,
-} from "./services/connections";
-import { showMainWindow } from "./services/system";
 import type {
   ConnectionSummary,
   GetBaseConnectionByIdResponse,
   GetBaseConnectionResponse,
 } from "./types/backend";
+import { CONNECTION_TYPE_VALUES } from "./types/generated/databaseTypes";
 import { parseBaseResponse } from "./utils/backendResponse";
 import { getErrorMessage } from "./utils/error";
 import { showError } from "./utils/showToast";
@@ -74,7 +72,11 @@ function App() {
           connection_type: rawUpdatedConnection.connection_type,
           description: rawUpdatedConnection.description,
           // 列表接口不提供 host/port；保持原逻辑：SQLite(3) 编辑回填后展示 localhost
-          host: rawUpdatedConnection.connection_type === 3 ? "localhost" : null,
+          host:
+            rawUpdatedConnection.connection_type ===
+            CONNECTION_TYPE_VALUES.SQLITE
+              ? "localhost"
+              : null,
           port: null,
         };
 

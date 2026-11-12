@@ -10,22 +10,8 @@ use anyhow::anyhow;
 use sqlx::PgConnection;
 use sqlx::Row;
 
-fn expandable_node(
-    icon_name: &str,
-    name: String,
-    description: Option<String>,
-) -> ListNodeInfoResponseItem {
-    ListNodeInfoResponseItem::new(true, true, icon_name.to_string(), name, description)
-}
-
-fn leaf_node(
-    icon_name: &str,
-    name: String,
-    description: Option<String>,
-) -> ListNodeInfoResponseItem {
-    ListNodeInfoResponseItem::new(false, true, icon_name.to_string(), name, description)
-}
-
+use crate::driver::node::expandable as expandable_node;
+use crate::driver::node::leaf as leaf_node;
 impl PostgresqlConfig {
     pub async fn list_node_info(
         &self,
@@ -138,7 +124,7 @@ impl PostgresqlConfig {
                 .await;
         }
         if node_name == "Query" {
-            return list_query_nodes(appstate, base_config_id).await;
+            return crate::driver::node::query_nodes(appstate, base_config_id).await.map_err(Into::into);
         }
         Ok(vec![])
     }
@@ -175,11 +161,7 @@ WHERE schemaname = '{}';",
                 .fetch_one(&mut connection)
                 .await?
                 .try_get(0)?;
-            let description = if record_count > 0 {
-                Some(format!("{}", record_count))
-            } else {
-                None
-            };
+            let description = crate::driver::node::count_description(record_count);
             vec.push(expandable_node("singleTable", table_name, description));
         }
         Ok(vec)
@@ -295,25 +277,6 @@ WHERE table_schema = '{}';",
         .ok_or(anyhow!(""))?;
     let tables_count: i64 = result_row.try_get(0)?;
     Ok(tables_count)
-}
-
-async fn list_query_nodes(
-    appstate: &AppState,
-    base_config_id: i32,
-) -> Result<Vec<ListNodeInfoResponseItem>, anyhow::Error> {
-    let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
-        .bind(base_config_id)
-        .fetch_all(&appstate.pool)
-        .await?;
-    let mut vec = vec![];
-    for row in rows {
-        let row_str: String = row.try_get(0)?;
-
-        vec.push(leaf_node("singleQuery", row_str, None));
-    }
-
-    info!("list_node_info: {:?}", vec);
-    Ok(vec)
 }
 
 fn list_table_category_nodes() -> Vec<ListNodeInfoResponseItem> {

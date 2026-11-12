@@ -1,5 +1,5 @@
 import type { ListNodeInfoReq } from "../types/backend";
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 export const fetchIndexDetail = (
   listNodeInfoReq: ListNodeInfoReq,

@@ -1,4 +1,4 @@
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 export const createKafkaTopic = (
   connectionId: number,

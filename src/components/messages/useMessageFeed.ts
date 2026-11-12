@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { exeSql } from "../../services/sql";
+import { exeSql } from "../../api/sql";
 import type { ExeSqlResponse, SqlHeader } from "../../types/backend";
 import type { TreeNode } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";

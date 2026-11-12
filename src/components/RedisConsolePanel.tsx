@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 import { IoHelpCircleOutline, IoTrashOutline } from "react-icons/io5";
-import { executeRedisCommand } from "../services/redis";
+import { executeRedisCommand } from "../api/redis";
 import type { ConnectionSummary, RedisCommandResponse } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";

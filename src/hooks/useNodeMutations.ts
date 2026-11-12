@@ -1,4 +1,17 @@
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import { deleteConnection } from "../api/connections";
+import { fetchDdlTemplate } from "../api/ddl";
+import { createKafkaTopic } from "../api/kafka";
+import { removeQuery } from "../api/queries";
+import {
+  copyObject,
+  createBucket,
+  createCollection,
+  deleteBucket,
+  downloadNodeFile,
+  listNodeInfo,
+  renameObject,
+} from "../api/tree";
 import { getNodeIcon } from "../components/tree/nodeIcons";
 import {
   collectSubtreeIds,
@@ -8,38 +21,26 @@ import {
   removeNodeFromTree,
   updateNodeInTree,
 } from "../components/tree/treeModel";
-import { deleteConnection } from "../services/connections";
-import { createKafkaTopic } from "../services/kafka";
-import { removeQuery } from "../services/queries";
-import {
-  copyObject,
-  createBucket,
-  createCollection,
-  deleteBucket,
-  downloadNodeFile,
-  listNodeInfo,
-  renameObject,
-} from "../services/tree";
 import type { ConnectionSummary, ListNodeInfoResponse } from "../types/backend";
+import { descriptorByConnectionType } from "../types/generated/databaseTypes";
 import type { SetActiveTabId, SetTabs, Tab } from "../types/tab";
 import type { OpenNodes, RowActionKey, TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";
 import { getErrorMessage } from "../utils/error";
-import {
-  generateCreateColumnSql,
-  generateCreateIndexSql,
-  generateCreateTableSql,
-} from "../utils/SqlUtils";
 import { showError, showSuccess } from "../utils/showToast";
 import { findConnectionByRootConfigId } from "../utils/treeConnection";
 import type { NodeDialogs } from "./useNodeDialogs";
 
-interface NodeMutationParams {
+interface NodeMutationParams extends TreeSlice, TabSlice, DialogSlice {}
+
+/**
+ * 变异上下文按职责分组，避免「一个 16 字段的平行参数表」随功能增长继续膨胀。
+ *
+ * 分组只影响可读性与未来的局部替换：`NodeMutationParams` 由三组 compose 而成，
+ * 调用方无需改写（`DatabaseViewer` 仍然一次性传一个对象）。
+ */
+interface TreeSlice {
   connections: ConnectionSummary[];
-  tabs: Tab[];
-  setTabs: SetTabs;
-  activeTabId: string | null;
-  setActiveTabId: SetActiveTabId;
   treeData: TreeNode[];
   setTreeData: Dispatch<SetStateAction<TreeNode[]>>;
   setOpenNodes: Dispatch<SetStateAction<OpenNodes>>;
@@ -48,7 +49,13 @@ interface NodeMutationParams {
   nextLoadSeq: (nodeId: TreeNode["id"]) => number;
   isLatestLoad: (nodeId: TreeNode["id"], seq: number) => boolean;
   refreshRootVersion: (node: TreeNode) => Promise<void>;
-  dialogs: NodeDialogs;
+}
+
+interface TabSlice {
+  tabs: Tab[];
+  setTabs: SetTabs;
+  activeTabId: string | null;
+  setActiveTabId: SetActiveTabId;
   openSqlEditorTabWithContent: (
     connectionId: number,
     nodeIcon: ReactNode,
@@ -57,6 +64,10 @@ interface NodeMutationParams {
     databaseName?: string,
   ) => Promise<boolean>;
   closeTabsUnderPath: (prefix: TreeNode["path"]) => void;
+}
+
+interface DialogSlice {
+  dialogs: NodeDialogs;
   onConnectionDeleted: () => Promise<void>;
 }
 
@@ -183,6 +194,11 @@ const addNode = async (node: TreeNode, ctx: MutationContext) => {
 
   const connectionId = parseInt(rootConfigId, 10);
   const connectionType = connection.connection_type;
+  const dbType = descriptorByConnectionType(connectionType)?.dbType;
+  if (!dbType) {
+    showError(`未知的数据源类型（${connectionType}），无法生成 SQL。`);
+    return;
+  }
   const databaseName = node.path[1]?.config_value || "";
   let generatedSql = "";
   let defaultQueryName = "";
@@ -191,7 +207,7 @@ const addNode = async (node: TreeNode, ctx: MutationContext) => {
     // 查询节点不预生成 SQL，由下方统一打开空编辑器
   } else if (node.iconName === "tables") {
     const tableName = node.name;
-    generatedSql = generateCreateTableSql(connectionType, tableName);
+    generatedSql = (await fetchDdlTemplate(dbType, tableName)).createTable;
     defaultQueryName = `Create_Table_${tableName}`;
   } else if (
     node.iconName === "columns" ||
@@ -209,7 +225,7 @@ const addNode = async (node: TreeNode, ctx: MutationContext) => {
       showError("无法确定表名来生成 CREATE COLUMN SQL。");
       return;
     }
-    generatedSql = generateCreateColumnSql(connectionType, tableName);
+    generatedSql = (await fetchDdlTemplate(dbType, tableName)).addColumn;
     defaultQueryName = `Add_Column_to_${tableName}`;
   } else if (node.iconName === "index") {
     const tableName = node.path[node.path.length - 2]?.config_value;
@@ -217,7 +233,7 @@ const addNode = async (node: TreeNode, ctx: MutationContext) => {
       showError("无法确定表名来生成 CREATE INDEX SQL。");
       return;
     }
-    generatedSql = generateCreateIndexSql(connectionType, tableName);
+    generatedSql = (await fetchDdlTemplate(dbType, tableName)).createIndex;
     defaultQueryName = `Add_Index_to_${tableName}`;
   } else if (node.iconName === "s3") {
     ctx.dialogs.openCreateBucketDialog(node);

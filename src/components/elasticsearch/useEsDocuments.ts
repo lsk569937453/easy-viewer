@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { searchIndex } from "../../services/elasticsearch";
+import { searchIndex } from "../../api/elasticsearch";
 import type { ExeSqlResponse, SqlHeader } from "../../types/backend";
 import type { TreeNode } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";

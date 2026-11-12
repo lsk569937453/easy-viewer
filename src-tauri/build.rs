@@ -384,7 +384,13 @@ fn render_typescript(types: &[ConnectionType]) -> String {
     out.push_str("] as const;\n\n");
     out.push_str("export type Capability = (typeof CAPABILITIES)[number];\n\n");
 
-    out.push_str("/** 前端 `connection_type` 数值 → 稳定标识。禁止改动已有数值，只允许追加。 */\nexport const CONNECTION_TYPE = {\n");
+    out.push_str("export type DatabaseTypeId =\n");
+    for (index, item) in types.iter().enumerate() {
+        let terminator = if index + 1 == types.len() { ";\n\n" } else { "\n" };
+        out.push_str(&format!("  | \"{}\"{}", item.db_type, terminator));
+    }
+    out.push_str("/** `connection_type` 数值 → 稳定标识。禁止改动已有数值，只允许追加。 */\n");
+    out.push_str("export const CONNECTION_TYPE = {\n");
     for item in types {
         out.push_str(&format!(
             "  {}: \"{}\",\n",
@@ -404,7 +410,7 @@ fn render_typescript(types: &[ConnectionType]) -> String {
     }
     out.push_str("} as const;\n\n");
 
-    out.push_str("export interface DatabaseTypeDescriptor {\n  /** YAML `dbType` */\n  dbType: string;\n  label: string;\n  /** 前端 `connection_type` 数值 */\n  connectionType: number;\n  category: string;\n  icon: string;\n  defaultPort: number;\n  capabilities: readonly Capability[];\n}\n\n");
+    out.push_str("export interface DatabaseTypeDescriptor {\n  /** YAML `dbType` */\n  dbType: DatabaseTypeId;\n  label: string;\n  /** 前端 `connection_type` 数值 */\n  connectionType: number;\n  category: string;\n  icon: string;\n  defaultPort: number;\n  capabilities: readonly Capability[];\n}\n\n");
 
     out.push_str("export const DATABASE_TYPES: readonly DatabaseTypeDescriptor[] = [\n");
     for item in types {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { FaList, FaSearch } from "react-icons/fa";
 import { IoRefresh } from "react-icons/io5";
-import { fetchIndexDetail } from "../services/elasticsearch";
+import { fetchIndexDetail } from "../api/elasticsearch";
 import type { ConnectionSummary } from "../types/backend";
 import type { EsIndexDetail } from "../types/elasticsearch";
 import type { TreeNode } from "../types/tree";

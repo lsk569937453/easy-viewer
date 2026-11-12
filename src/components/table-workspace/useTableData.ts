@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
+import { exeSql } from "../../api/sql";
 import { useDebouncedValue } from "../../hooks/useDebouncedValue";
-import { exeSql } from "../../services/sql";
 import type { ExeSqlResponse } from "../../types/backend";
 import type { TreeNode } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";

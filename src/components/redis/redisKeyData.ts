@@ -1,5 +1,5 @@
-import { executeRedisCommand } from "../../services/redis";
-import { exeSql } from "../../services/sql";
+import { executeRedisCommand } from "../../api/redis";
+import { exeSql } from "../../api/sql";
 import type {
   ExeSqlResponse,
   RedisCommandResponse,

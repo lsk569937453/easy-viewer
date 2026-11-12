@@ -1,4 +1,5 @@
 import type { ConnectionSummary } from "../../types/backend";
+import { CONNECTION_TYPE_VALUES } from "../../types/generated/databaseTypes";
 import type { TreeNode } from "../../types/tree";
 import { findConnectionByRootConfigId } from "../../utils/treeConnection";
 
@@ -19,7 +20,8 @@ export const createNodeContextMenuItems = (
     connections,
     node.path?.[0]?.config_value,
   );
-  if (connection?.connection_type !== 12) return null;
+  if (connection?.connection_type !== CONNECTION_TYPE_VALUES.WEBDAV)
+    return null;
   return [
     { label: "复制到其他目录...", onClick: () => actions.copy(node) },
     { label: "重命名...", onClick: () => actions.rename(node) },

@@ -1,11 +1,11 @@
 import type { Dispatch, ReactNode, SetStateAction } from "react";
+import { saveQuery } from "../api/queries";
 import { activateNode } from "../components/database-viewer/activation/activateNode";
 import { isPathPrefix } from "../components/database-viewer/path";
 import {
   findParentNode,
   removeNodeFromTree,
 } from "../components/tree/treeModel";
-import { saveQuery } from "../services/queries";
 import type { ConnectionSummary } from "../types/backend";
 import type { SetActiveTabId, SetTabs, Tab } from "../types/tab";
 import type { OpenNodes, TreeNode } from "../types/tree";

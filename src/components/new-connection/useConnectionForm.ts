@@ -1,6 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { useEffect, useState } from "react";
-import { fetchBaseConfigById } from "../../services/connections";
+import { fetchBaseConfigById } from "../../api/connections";
 import {
   type GetBaseConnectionByIdResponse,
   isUiDbType,

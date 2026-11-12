@@ -1,5 +1,5 @@
 import type { ListNodeInfoReq } from "../types/backend";
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 /** SQL 执行与行级变更。 */
 export const exeSql = (

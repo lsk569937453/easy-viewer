@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchShowColumns } from "../../services/tree";
+import { fetchShowColumns } from "../../api/tree";
 import type { ShowColumnsResponse } from "../../types/backend";
 import type { TreeNode } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";

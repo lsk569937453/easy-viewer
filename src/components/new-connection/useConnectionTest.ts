@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { testConnection } from "../../services/connections";
+import { testConnection } from "../../api/connections";
 import type { BaseConfig } from "../../types/backend";
 import { parseBaseResponse } from "../../utils/backendResponse";
 import {

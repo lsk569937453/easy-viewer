@@ -374,11 +374,8 @@ WHERE type = 'table' and name !='sqlite_sequence';",
                     info!("sql: {}", sql);
                     let record_count: i32 =
                         sqlx::query(sqlx::AssertSqlSafe(sql)).fetch_one(&mut conn).await?.try_get(0)?;
-                    let description = if record_count > 0 {
-                        Some(format!("{}", record_count))
-                    } else {
-                        None
-                    };
+                    let description =
+                        crate::driver::node::count_description(i64::from(record_count));
                     let list_node_info_response_item = ListNodeInfoResponseItem::new(
                         true,
                         true,
@@ -389,23 +386,13 @@ WHERE type = 'table' and name !='sqlite_sequence';",
                     vec.push(list_node_info_response_item);
                 }
             } else if node_name == "Query" {
-                let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
-                    .bind(base_config_id)
-                    .fetch_all(&appstate.pool)
-                    .await?;
-                info!("row length:{}", rows.len());
-                for row in rows {
-                    let row_str: String = row.try_get(0)?;
-                    let list_node_info_response_item = ListNodeInfoResponseItem::new(
-                        false,
-                        true,
-                        "singleQuery".to_string(),
-                        row_str,
-                        None,
-                    );
-                    vec.push(list_node_info_response_item);
-                }
-                info!("vec: {:?}", vec);
+                // 「Query」文件夹来自应用自身 SQLite，走共享实现。
+                vec.extend(
+                    crate::driver::node::query_nodes(appstate, base_config_id)
+                        .await
+                        .map_err(anyhow::Error::from)?,
+                );
+                info!("query nodes: {}", vec.len());
             } else if node_name == "Views" {
                 let mut conn = SqliteConnection::connect(&self.file_path).await?;
 

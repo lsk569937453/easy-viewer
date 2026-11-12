@@ -976,25 +976,36 @@ pub fn get_database_types() -> Result<String, ()> {
 /// 按方言生成 DDL 预览（建表 / 加列 / 建索引）。
 ///
 /// 这些模板此前在前端 `src/utils/SqlUtils.ts` 里用 `if (connectionType === 0)…`
-/// 又写了一遍；现在由后端 SQL 方言表统一提供，前端只需要渲染。
+/// 又写了一遍；现在由后端 SQL 方言表统一提供，前端只负责渲染。
+/// 输出与历史 TS 实现逐字一致，非 SQL 数据源保留原来的 warning 兜底文案。
 #[tauri::command]
-pub fn get_ddl_template(
-    database_type: String,
-    table_name: String,
-    column_name: String,
-) -> Result<String, ()> {
+pub fn get_ddl_template(database_type: String, table_name: String) -> Result<String, ()> {
     let payload = match crate::generated::DatabaseType::from_db_type(&database_type) {
-        Some(db_type) => match crate::sql::dialect::SqlDialect::from_db_type(db_type) {
-            Some(dialect) => Ok(serde_json::json!({
-                "createTable": dialect.create_table_template(&table_name),
-                "addColumn": dialect.add_column_template(&table_name, &column_name),
-                "createIndex": dialect.create_index_template(&table_name, &column_name),
-            })),
-            None => Err(AppError::new(
-                crate::error::ErrorCode::UnsupportedOperation,
-                format!("{} 不是 SQL 数据源，无法生成 DDL", db_type.label()),
-            )),
-        },
+        Some(db_type) => {
+            let connection_type = db_type.connection_type();
+            let template = match crate::sql::dialect::SqlDialect::from_db_type(db_type) {
+                Some(dialect) => serde_json::json!({
+                    "createTable": dialect.create_table_template(&table_name),
+                    "addColumn": dialect.add_column_template(&table_name),
+                    "createIndex": dialect.create_index_template(&table_name),
+                }),
+                None => serde_json::json!({
+                    "createTable": crate::sql::dialect::SqlDialect::unknown_create_table_template(
+                        connection_type,
+                        &table_name,
+                    ),
+                    "addColumn": crate::sql::dialect::SqlDialect::unknown_add_column_template(
+                        connection_type,
+                        &table_name,
+                    ),
+                    "createIndex": crate::sql::dialect::SqlDialect::unknown_create_index_template(
+                        connection_type,
+                        &table_name,
+                    ),
+                }),
+            };
+            Ok(template)
+        }
         None => Err(AppError::new(
             crate::error::ErrorCode::InvalidArgument,
             format!("未知数据源类型：{database_type}"),

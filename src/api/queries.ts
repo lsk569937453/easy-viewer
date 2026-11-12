@@ -1,4 +1,4 @@
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 /** 已保存查询的增删改查。参数名与 `src-tauri/src/service/cmd.rs` 的 Tauri 入参一致。 */
 

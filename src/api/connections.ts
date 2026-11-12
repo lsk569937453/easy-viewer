@@ -3,7 +3,7 @@ import type {
   SaveConnectionRequest,
   UpdateConnectionRequest,
 } from "../types/backend";
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 /** 连接管理相关命令（返回值仍是后端 JSON 字符串，由调用方 parseBaseResponse）。 */
 export const fetchBaseConfigList = (): Promise<string> =>

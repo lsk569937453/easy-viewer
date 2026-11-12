@@ -5,7 +5,7 @@ import {
   listLocalFolderFiles,
   uploadNodeFile,
   uploadNodeFileWithProgress,
-} from "../services/tree";
+} from "../api/tree";
 import type { S3UploadTab } from "../types/tab";
 import {
   parseBaseResponse,

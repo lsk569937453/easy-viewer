@@ -1,14 +1,28 @@
 /**
  * 后端（src-tauri）serde 契约类型。
  * 所有字段以 Rust 结构为准：`src-tauri/src/vojo/**`、`src-tauri/src/service/cmd.rs`、
- * `src-tauri/src/service/cmd_service.rs`、`src-tauri/src/service/base_config_service.rs`。
+ * `src-tauri/src/service/base_config_service.rs`。
  * 前端不得单方面给这里补后端未返回的字段；字段缺失时应修调用方。
  */
 
-/** `handle_response!`：成功 code=0 + T；失败 code=1 + String。 */
+import { DATABASE_TYPES, type DatabaseTypeId } from "./generated/databaseTypes";
+
+/** 后端统一错误信封（`code` + 中文 message + 脱敏 detail + 是否可重试）。 */
+export interface BackendErrorInfo {
+  /** 稳定错误码，形如 `EV-CONN-0001`；只允许追加，禁止改语义。 */
+  code: string;
+  /** 面向用户的中文提示。 */
+  message: string;
+  /** 驱动原文（已脱敏、截断），可用于展开诊断。 */
+  detail: string | null;
+  /** 是否值得直接重试。 */
+  retryable: boolean;
+}
+
+/** `reply!`：成功 code=0 + T；失败 code=1 + String，并附带结构化 `error`。 */
 export type BaseResponse<T> =
   | { response_code: 0; response_msg: T }
-  | { response_code: 1; response_msg: string };
+  | { response_code: 1; response_msg: string; error?: BackendErrorInfo };
 
 export interface GetBaseConnectionResponseItem {
   base_config_id: number;
@@ -35,20 +49,11 @@ export interface ConnectionSummary extends GetBaseConnectionResponseItem {
   port: number | null;
 }
 
-export type BackendDbType =
-  | "mysql"
-  | "postgresql"
-  | "kafka"
-  | "sqlite"
-  | "mongodb"
-  | "oracledb"
-  | "mssql"
-  | "clickhouse"
-  | "s3"
-  | "redis"
-  | "elasticsearch"
-  | "rocketmq"
-  | "webdav";
+/**
+ * 后端数据源标识：直接复用 YAML 描述符生成的 `DatabaseTypeId`，
+ * 不再手写 13 项字面量联合 —— 新增数据源只改 YAML。
+ */
+export type BackendDbType = DatabaseTypeId;
 
 /** 前端下拉框/树节点使用的数据库类型；Oracle 后端 serde tag 为 `oracledb`。 */
 export type UiDbType =
@@ -66,21 +71,10 @@ export type UiDbType =
   | "rocketmq"
   | "webdav";
 
-export const BACKEND_DB_TYPES: readonly BackendDbType[] = [
-  "mysql",
-  "postgresql",
-  "kafka",
-  "sqlite",
-  "mongodb",
-  "oracledb",
-  "mssql",
-  "clickhouse",
-  "s3",
-  "redis",
-  "elasticsearch",
-  "rocketmq",
-  "webdav",
-];
+/** 前端数据源标识清单：由 YAML 描述符生成，不再手写 13 项。 */
+export const BACKEND_DB_TYPES: readonly BackendDbType[] = DATABASE_TYPES.map(
+  (item) => item.dbType,
+);
 
 export function isBackendDbType(value: string): value is BackendDbType {
   return BACKEND_DB_TYPES.some((type) => type === value);
@@ -138,22 +132,19 @@ export const BACKEND_TO_UI_DB_TYPE: Record<BackendDbType, UiDbType> = {
   webdav: "webdav",
 };
 
-/** `connection_type`（后端 i32）→ 前端展示类型。 */
-export const CONNECTION_TYPE_TO_DB_TYPE: Record<number, UiDbType> = {
-  0: "mysql",
-  1: "postgresql",
-  2: "kafka",
-  3: "sqlite",
-  4: "mongodb",
-  5: "oracle",
-  6: "mssql",
-  7: "clickhouse",
-  8: "s3",
-  9: "redis",
-  10: "elasticsearch",
-  11: "rocketmq",
-  12: "webdav",
-};
+/**
+ * `connection_type`（后端 i32）→ 前端展示类型。
+ *
+ * 由 YAML 描述符推导，不再手写 0..12 的映射表：数值与类型的对应关系
+ * 只在 `src-tauri/plugins/connection-types/*.yaml` 里维护一份。
+ */
+export const CONNECTION_TYPE_TO_DB_TYPE: Record<number, UiDbType> =
+  Object.fromEntries(
+    DATABASE_TYPES.map((item) => [
+      item.connectionType,
+      BACKEND_TO_UI_DB_TYPE[item.dbType],
+    ]),
+  );
 
 export interface DatabaseHostStruct {
   host: string;

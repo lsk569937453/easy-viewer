@@ -1,4 +1,5 @@
 import type { ConnectionSummary } from "../../types/backend";
+import { CONNECTION_TYPE_VALUES } from "../../types/generated/databaseTypes";
 import type { TreeNode } from "../../types/tree";
 import { findConnectionByRootConfigId } from "../../utils/treeConnection";
 
@@ -25,7 +26,7 @@ export const generateSqlForNode = (
   const tableName = node.name;
 
   switch (dbType) {
-    case 0: {
+    case CONNECTION_TYPE_VALUES.MYSQL: {
       // MySQL
       const mysqlDatabaseName =
         node.path.length > 2
@@ -33,7 +34,7 @@ export const generateSqlForNode = (
           : connection.connection_name;
       return `SELECT * FROM \`${mysqlDatabaseName}\`.\`${tableName}\` LIMIT ${limit};`;
     }
-    case 5: {
+    case CONNECTION_TYPE_VALUES.ORACLEDB: {
       // OracleDB
       const oracleSchemaName =
         node.path.length > 2
@@ -41,16 +42,16 @@ export const generateSqlForNode = (
           : connection.connection_name;
       return `SELECT * FROM "${oracleSchemaName}"."${tableName}" WHERE ROWNUM <= ${limit};`;
     }
-    case 3:
+    case CONNECTION_TYPE_VALUES.SQLITE:
       // SQLite
       return `SELECT * FROM \`${tableName}\` LIMIT ${limit};`;
-    case 1: {
+    case CONNECTION_TYPE_VALUES.POSTGRESQL: {
       // PostgreSQL
       const pgSchemaName =
         node.path.length > 2 ? node.path[1].config_value : "public";
       return `SELECT * FROM "${pgSchemaName}"."${tableName}" LIMIT ${limit};`;
     }
-    case 6: {
+    case CONNECTION_TYPE_VALUES.MSSQL: {
       // MSSQL
       const mssqlDatabaseName =
         node.path.length > 2
@@ -60,16 +61,16 @@ export const generateSqlForNode = (
         node.path.length > 4 ? node.path[3].config_value : "dbo";
       return `SELECT TOP ${limit} * FROM [${mssqlDatabaseName}].[${mssqlSchemaName}].[${tableName}];`;
     }
-    case 7:
+    case CONNECTION_TYPE_VALUES.CLICKHOUSE:
       // Clickhouse
       return `SELECT * FROM ${tableName} LIMIT ${limit};`;
-    case 4:
+    case CONNECTION_TYPE_VALUES.MONGODB:
       // MongoDB
       return `SELECT * FROM ${tableName} LIMIT ${limit}`;
-    case 9:
+    case CONNECTION_TYPE_VALUES.REDIS:
       // Redis
       return `SELECT * FROM ${tableName} LIMIT ${limit}`;
-    case 10:
+    case CONNECTION_TYPE_VALUES.ELASTICSEARCH:
       // Elasticsearch
       return `SELECT * FROM ${tableName} LIMIT ${limit}`;
     default:

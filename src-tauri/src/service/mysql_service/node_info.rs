@@ -204,21 +204,10 @@ async fn list_queries(
     base_config_id: i32,
     appstate: &AppState,
 ) -> Result<Vec<ListNodeInfoResponseItem>, anyhow::Error> {
-    let rows = sqlx::query("select query_name from sql_query where connection_id=?1")
-        .bind(base_config_id)
-        .fetch_all(&appstate.pool)
-        .await?;
-    let mut vec = vec![];
-    for row in rows {
-        let row_str: String = row.try_get(0)?;
-
-        let list_node_info_response_item =
-            ListNodeInfoResponseItem::new(false, true, "singleQuery".to_string(), row_str, None);
-        vec.push(list_node_info_response_item);
-    }
-
-    info!("list_node_info: {:?}", vec);
-    Ok(vec)
+    // 「Query」文件夹的内容来自应用自身 SQLite，与所连数据源无关，统一走共享实现。
+    Ok(crate::driver::node::query_nodes(appstate, base_config_id)
+        .await
+        .map_err(anyhow::Error::from)?)
 }
 
 async fn list_procedures(

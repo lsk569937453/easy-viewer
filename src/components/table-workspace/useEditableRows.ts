@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { v4 as uuid } from "uuid";
-import { deleteTableRow, updateRecord } from "../../services/sql";
+import { deleteTableRow, updateRecord } from "../../api/sql";
 import type { TreeNodePathSegment } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";
 import { getErrorMessage } from "../../utils/error";

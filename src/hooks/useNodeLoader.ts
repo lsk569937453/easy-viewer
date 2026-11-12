@@ -7,9 +7,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { fetchServerVersion, listNodeInfo } from "../api/tree";
 import { getNodeIcon } from "../components/tree/nodeIcons";
 import { mapChildList, updateNodeInTree } from "../components/tree/treeModel";
-import { fetchServerVersion, listNodeInfo } from "../services/tree";
 import type { ListNodeInfoResponse } from "../types/backend";
 import type { OpenNodes, TreeNode, TreeNodeId } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";

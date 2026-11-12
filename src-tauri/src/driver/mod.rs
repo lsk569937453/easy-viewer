@@ -4,6 +4,7 @@
 //! - [`registry`]：连接配置 → 驱动实例的唯一构造入口
 //! - `impls_*`：13 个数据源对 `Driver` 的实现（只粘合，不放业务逻辑）
 
+pub mod node;
 pub mod registry;
 pub mod traits;
 

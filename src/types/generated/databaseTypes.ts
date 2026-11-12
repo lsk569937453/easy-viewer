@@ -29,7 +29,22 @@ export const CAPABILITIES = [
 
 export type Capability = (typeof CAPABILITIES)[number];
 
-/** 前端 `connection_type` 数值 → 稳定标识。禁止改动已有数值，只允许追加。 */
+export type DatabaseTypeId =
+  | "mysql"
+  | "postgresql"
+  | "sqlite"
+  | "mongodb"
+  | "oracledb"
+  | "mssql"
+  | "clickhouse"
+  | "redis"
+  | "kafka"
+  | "rocketmq"
+  | "elasticsearch"
+  | "s3"
+  | "webdav";
+
+/** `connection_type` 数值 → 稳定标识。禁止改动已有数值，只允许追加。 */
 export const CONNECTION_TYPE = {
   MYSQL: "mysql",
   POSTGRESQL: "postgresql",
@@ -64,7 +79,7 @@ export const CONNECTION_TYPE_VALUES = {
 
 export interface DatabaseTypeDescriptor {
   /** YAML `dbType` */
-  dbType: string;
+  dbType: DatabaseTypeId;
   label: string;
   /** 前端 `connection_type` 数值 */
   connectionType: number;

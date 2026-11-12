@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { exeSql } from "../../services/sql";
+import { exeSql } from "../../api/sql";
 import type { ExeSqlResponse } from "../../types/backend";
 import { parseBaseResponse } from "../../utils/backendResponse";
 import { getErrorMessage } from "../../utils/error";

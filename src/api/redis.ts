@@ -1,4 +1,4 @@
-import { BACKEND_COMMANDS, callBackend } from "./invoke";
+import { BACKEND_COMMANDS, callBackend } from "./client";
 
 /** Redis 控制台 / key 详情统一出口。 */
 export const executeRedisCommand = (

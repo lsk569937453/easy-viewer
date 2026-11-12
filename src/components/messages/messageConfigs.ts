@@ -2,7 +2,7 @@
  * Kafka / RocketMQ 消息面板的差异配置。
  * 两个面板的结构完全一样，只有"元数据字段名、正文列名、时间列名"
  * 不同，因此收敛成一份配置（AGENTS.md：禁止复制大块雷同代码）。
- * 发送命令由 `metaField` 在 `services/kafka.ts` 的 sendMessage 内统一映射，
+ * 发送命令由 `metaField` 在 `api/kafka.ts` 的 sendMessage 内统一映射，
  * 不再单独登记 sendCommand，避免同一映射存在两处来源。
  */
 export interface MessagePanelConfig {

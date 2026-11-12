@@ -101,7 +101,7 @@ pub fn sqlite_row_to_json(
                 .try_get::<Option<bool>, usize>(key)
                 .map(|item| json!(item))?,
 
-            "DOUBLE" => row
+            "DOUBLE" | "REAL" => row
                 .try_get::<Option<f64>, usize>(key)
                 .map(|item| json!(item))?,
 

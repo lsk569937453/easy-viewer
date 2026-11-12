@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaStream } from "react-icons/fa";
 import { IoRefresh, IoTrashOutline } from "react-icons/io5";
-import { deleteKafkaTopic } from "../services/kafka";
+import { deleteKafkaTopic } from "../api/kafka";
 import type { ConnectionSummary } from "../types/backend";
 import type { TreeNode } from "../types/tree";
 import { parseBaseResponse } from "../utils/backendResponse";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { FaDownload, FaFile, FaFolder } from "react-icons/fa";
-import { downloadNodeFile, fetchObjectInfo } from "../services/tree";
+import { downloadNodeFile, fetchObjectInfo } from "../api/tree";
 import type { GetObjectInfoRes } from "../types/backend";
 import type { S3ObjectTab } from "../types/tab";
 import { parseBaseResponse } from "../utils/backendResponse";

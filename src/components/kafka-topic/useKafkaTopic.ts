@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { listNodeInfo } from "../../services/tree";
+import { listNodeInfo } from "../../api/tree";
 import type { ListNodeInfoResponse } from "../../types/backend";
 import type { TreeNode } from "../../types/tree";
 import { parseBaseResponse } from "../../utils/backendResponse";

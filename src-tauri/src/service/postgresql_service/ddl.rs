@@ -1,5 +1,5 @@
 use super::config::PostgresqlConfig;
-use super::queries::generate_ddl;
+use super::queries::generate_ddl_columns_sql;
 use crate::sql_lite::connection::AppState;
 use crate::util::common_utils::serde_value_to_string;
 use crate::util::sql_utils::postgres_row_to_json;
@@ -11,6 +11,87 @@ use anyhow::anyhow;
 use sqlx::Column;
 use sqlx::Row;
 use sqlx::TypeInfo;
+
+/// 单列的 DDL 片段：`column_name type[(len|prec,scale)][ NOT NULL]`
+fn format_ddl_column(
+    column_name: &str,
+    data_type: &str,
+    char_max_len: Option<i32>,
+    numeric_precision: Option<i32>,
+    numeric_scale: Option<i32>,
+    is_nullable: &str,
+) -> String {
+    let mut result = format!("    {column_name} {data_type}");
+    if let Some(len) = char_max_len {
+        result = format!("{result}({len})");
+    }
+    if let Some(precision) = numeric_precision {
+        let scale = numeric_scale.unwrap_or(0);
+        result = format!("{result}({precision},{scale})");
+    }
+    if is_nullable.eq_ignore_ascii_case("NO") {
+        result.push_str(" NOT NULL");
+    }
+    result
+}
+
+/// 查列元数据并在 Rust 侧拼 CREATE TABLE，避免 SQL 端的模式敏感语法。
+pub(super) async fn fetch_create_table_ddl<'e, E>(
+    executor: E,
+    schema_name: &str,
+    table_name: &str,
+) -> Result<String, anyhow::Error>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Postgres>,
+{
+    let sql = generate_ddl_columns_sql(schema_name.to_string(), table_name.to_string());
+    let rows = sqlx::query(sqlx::AssertSqlSafe(sql))
+        .fetch_all(executor)
+        .await?;
+    if rows.is_empty() {
+        return Err(anyhow!("Not found table: {schema_name}.{table_name}"));
+    }
+    let columns = rows
+        .iter()
+        .map(|row| {
+            let column_name: String = row.try_get(0)?;
+            let data_type: String = row.try_get(1)?;
+            let char_max_len: Option<i32> = row.try_get(2)?;
+            let numeric_precision: Option<i32> = row.try_get(3)?;
+            let numeric_scale: Option<i32> = row.try_get(4)?;
+            let is_nullable: String = row.try_get(5)?;
+            Ok::<String, anyhow::Error>(format_ddl_column(
+                &column_name,
+                &data_type,
+                char_max_len,
+                numeric_precision,
+                numeric_scale,
+                &is_nullable,
+            ))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(format!(
+        "CREATE TABLE {schema_name}.{table_name} (\n{}\n);",
+        columns.join(",\n")
+    ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::format_ddl_column;
+
+    #[test]
+    fn test_format_ddl_column_variants() {
+        let varchar = format_ddl_column("name", "character varying", Some(64), None, None, "NO");
+        assert_eq!(varchar, "    name character varying(64) NOT NULL");
+
+        let numeric = format_ddl_column("price", "numeric", None, Some(10), Some(2), "YES");
+        assert_eq!(numeric, "    price numeric(10,2)");
+
+        let plain = format_ddl_column("flag", "integer", None, None, None, "YES");
+        assert_eq!(plain, "    flag integer");
+    }
+}
 
 impl PostgresqlConfig {
     pub async fn get_column_info_for_is(
@@ -85,12 +166,7 @@ WHERE c.table_schema = '{}'
         let table_name = level_infos[4].config_value.clone();
 
         let mut conn = self.get_connection_with_database(database_name).await?;
-        let sql = generate_ddl(schema_name, table_name);
-        let row = sqlx::query(sqlx::AssertSqlSafe(sql))
-            .fetch_optional(&mut conn)
-            .await?
-            .ok_or(anyhow!("Not found table"))?;
-        let ddl: String = row.try_get(0)?;
+        let ddl = fetch_create_table_ddl(&mut conn, &schema_name, &table_name).await?;
         Ok(ddl)
     }
 }

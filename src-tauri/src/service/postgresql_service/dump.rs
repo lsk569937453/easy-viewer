@@ -1,5 +1,5 @@
 use super::config::PostgresqlConfig;
-use super::queries::generate_ddl;
+use super::ddl::fetch_create_table_ddl;
 use super::queries::GET_SCHEMA_SQL;
 use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnItem;
 use crate::service::dump_data::dump_database_service::DumpDatabaseResColumnStructItem;
@@ -165,17 +165,13 @@ WHERE schema_name = '{}';",
                     continue;
                 }
                 let table_name = table.table_name;
-                let create_table_sql = generate_ddl(schema_name.clone(), table_name.clone());
-                info!("create_table_sql: {}", create_table_sql);
-                let creat_table_row: String = sqlx::query(sqlx::AssertSqlSafe(create_table_sql))
-                    .fetch_optional(&mut conn)
-                    .await?
-                    .ok_or(anyhow!("Not found table"))?
-                    .try_get(0)?;
+                let create_table_ddl =
+                    fetch_create_table_ddl(&mut conn, &schema_name, &table_name).await?;
+                info!("create_table_sql: {}", create_table_ddl);
 
                 let mut dump_database_res_item = DumpDatabaseResItem::new();
                 dump_database_res_item.table_name = table_name.clone();
-                dump_database_res_item.table_struct = creat_table_row;
+                dump_database_res_item.table_struct = create_table_ddl;
                 if dump_database_req.export_option.is_export_data() {
                     let selected_column = table
                         .columns

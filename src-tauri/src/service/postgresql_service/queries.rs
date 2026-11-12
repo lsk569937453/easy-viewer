@@ -9,33 +9,20 @@ FROM information_schema.schemata
 WHERE schema_name NOT IN ('information_schema', 'pg_catalog', 'pg_toast')
   AND schema_name NOT LIKE 'pg_%';";
 
-pub(super) fn generate_ddl(schema_name: String, table_name: String) -> String {
+/// DDL 只取列元数据，字符串拼接放到 Rust 侧完成：
+/// SQL 端的 `||`、array_agg 等在磐维等 openGauss 内核的 MySQL 兼容库下不可用。
+pub(super) fn generate_ddl_columns_sql(schema_name: String, table_name: String) -> String {
     format!(
-        "SELECT 'CREATE TABLE ' || table_schema || '.' || table_name || ' (' || chr(10) ||
-       string_agg(
-           '    ' || column_name || ' ' ||
-               data_type ||
-               CASE
-                   WHEN character_maximum_length IS NOT NULL
-                   THEN '(' || character_maximum_length || ')'
-                   ELSE ''
-               END ||
-               CASE
-                   WHEN numeric_precision IS NOT NULL
-                   THEN '(' || numeric_precision || ',' || numeric_scale || ')'
-                   ELSE ''
-               END ||
-               CASE
-                   WHEN is_nullable = 'NO' THEN ' NOT NULL'
-                   ELSE ''
-               END,
-           ',' || chr(10)
-       ) || chr(10) || ');'
+        "SELECT column_name,
+       data_type,
+       character_maximum_length,
+       numeric_precision,
+       numeric_scale,
+       is_nullable
 FROM information_schema.columns
 WHERE table_name = '{}'
   AND table_schema = '{}'
-GROUP BY table_schema, table_name;
-",
+ORDER BY ordinal_position;",
         table_name, schema_name
     )
 }

@@ -33,9 +33,10 @@ fn show_main_window(app: tauri::AppHandle) {
         let _ = window.show();
     }
 }
-#[tokio::main]
-async fn main() -> Result<(), anyhow::Error> {
-    let appstate = AppState::new().await?;
+fn main() -> Result<(), anyhow::Error> {
+    // 不使用 #[tokio::main]：事件循环若嵌在 tokio block_on 中运行，
+    // 会与 dialog 插件的 blocking 对话框 API 死锁（保存对话框确认后不关闭）。
+    let appstate = tauri::async_runtime::block_on(AppState::new())?;
 
     tauri::Builder::default()
         .plugin(tauri_plugin_os::init())

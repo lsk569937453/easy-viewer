@@ -189,6 +189,9 @@ impl WebdavConfig {
     async fn get_connection(&self) -> Result<DavClient, anyhow::Error> {
         let agent = reqwest::Client::builder()
             .connect_timeout(std::time::Duration::from_secs(10))
+            // read 超时只限制单次读停滞，不影响大文件整体传输；
+            // 缺失时下载流停滞会让 download_file 命令永久挂起
+            .read_timeout(std::time::Duration::from_secs(60))
             .build()?;
         let client = ClientBuilder::new()
             .set_agent(agent)

@@ -52,10 +52,18 @@ function S3ObjectPanel({ tab }: S3ObjectPanelProps) {
 
   const handleDownload = async () => {
     try {
-      const { save } = await import("@tauri-apps/plugin-dialog");
-      const selected = await save({
-        title: isFolder ? "选择保存位置" : "保存文件",
-      });
+      const { save, open } = await import("@tauri-apps/plugin-dialog");
+      // 文件：保存对话框预填文件名；文件夹：选择目录（后端在所选目录下拼文件夹名）
+      const selected = isFolder
+        ? await open({
+            directory: true,
+            multiple: false,
+            title: "选择保存位置",
+          })
+        : await save({
+            title: "保存文件",
+            defaultPath: node.name,
+          });
       if (!selected) return;
 
       const responseJson = await downloadNodeFile(

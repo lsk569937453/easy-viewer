@@ -491,11 +491,8 @@ impl S3Config {
             .join("/");
         if !is_folder {
             info!("object_path: {}", object_key);
-            let dst_file_path = format!(
-                "{}/{}",
-                local_file_path,
-                list.last().ok_or(anyhow!(""))?.config_value
-            );
+            // 前端保存对话框已预填对象名，所选路径即最终文件
+            let dst_file_path = local_file_path.clone();
             let get_object_output = s3_client
                 .get_object()
                 .bucket(bucket_name)
